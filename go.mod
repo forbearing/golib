@@ -3,6 +3,7 @@ module github.com/forbearing/golib
 go 1.20
 
 require (
+	github.com/allegro/bigcache v1.2.1
 	github.com/casbin/casbin/v2 v2.82.0
 	github.com/casbin/gorm-adapter/v3 v3.20.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
