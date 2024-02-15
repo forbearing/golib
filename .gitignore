@@ -1,0 +1,14 @@
+.DS_Store
+*.nogit
+*.nopush
+*.nosync
+*.bak
+*.log
+
+logs
+bin
+tmp
+
+resources
+rsync.sh
+TODO
