@@ -4,9 +4,9 @@ import (
 	"strconv"
 )
 
-func init() {
-	Register[*User]()
-}
+// func init() {
+// 	Register[*User]()
+// }
 
 type User struct {
 	Username     string `json:"username,omitempty" gorm:"unique" binding:"required"`
