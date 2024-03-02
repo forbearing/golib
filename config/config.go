@@ -1,6 +1,7 @@
 package config
 
 import (
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -18,6 +19,11 @@ const (
 
 var App = new(Config)
 
+var (
+	configPaths = []string{}
+	mu          sync.Mutex
+)
+
 type Mode string
 
 const (
@@ -31,6 +37,9 @@ func Init() (err error) {
 	viper.SetConfigType("ini")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/")
+	for _, path := range configPaths {
+		viper.AddConfigPath(path)
+	}
 
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
@@ -84,6 +93,15 @@ func Init() (err error) {
 	return nil
 }
 
+// AddPath add custom config path. default: ./config, /etc
+// You should always call this funtion before `Init`.
+func AddPath(paths ...string) {
+	mu.Lock()
+	defer mu.Unlock()
+	configPaths = append(configPaths, paths...)
+}
+
+// Save config instance to file.
 func Save(filename string) error {
 	return viper.WriteConfigAs(filename)
 }
@@ -113,6 +131,10 @@ type ServerConfig struct {
 type LoggerConfig struct {
 	// LogDir specifies which direcotory log to.
 	LogDir string `json:"log_dir" ini:"log_dir" yaml:"log_dir" mapstructure:"log_dir"`
+
+	// LogPrefix specifies the log prefix.
+	// You can set the prefix name to your project name.
+	LogPrefix string `json:"log_prefix" ini:"log_prefix" yaml:"log_prefix" mapstructure:"log_prefix"`
 
 	// LogFile specifies the which file log to.
 	// If value is "/dev/stdout", log to os.Stdout.
