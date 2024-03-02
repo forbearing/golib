@@ -163,15 +163,21 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 			}
 			continue
 		}
-		// not typ.Field(i).Name
+		// json tag priority is higher than typ.Field(i).Name
 		jsonTagStr := typ.Field(i).Tag.Get("json")
 		jsonTagItems := strings.Split(jsonTagStr, ",")
+		// NOTE: strings.Split always returns at least one element(empty string)
+		// We should not use len(jsonTagItems) to check the json tags exists.
 		jsonTag := ""
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
-			jsonTagItems[0] = strings.ToLower(typ.Field(i).Name)
+			jsonTagItems[0] = typ.Field(i).Name
 		}
 		jsonTag = jsonTagItems[0]
+		if len(jsonTag) == 0 {
+			// the structure lowercase field name as the query condition.
+			jsonTag = typ.Field(i).Name
+		}
 
 		v := val.Field(i).Interface()
 		var _v string
