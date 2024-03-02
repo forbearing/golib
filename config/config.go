@@ -20,6 +20,7 @@ const (
 var App = new(Config)
 
 var (
+	configName  = "config"
 	configPaths = []string{}
 	mu          sync.Mutex
 )
@@ -33,7 +34,7 @@ const (
 )
 
 func Init() (err error) {
-	viper.SetConfigName("config")
+	viper.SetConfigName(configName)
 	viper.SetConfigType("ini")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/")
@@ -99,6 +100,15 @@ func AddPath(paths ...string) {
 	mu.Lock()
 	defer mu.Unlock()
 	configPaths = append(configPaths, paths...)
+}
+
+// SetConfigName set the config file name, default to 'config'.
+// NOTE: any suffix will be ignored and the default file type is ini.
+// You should always call this funtion before `Init`.
+func SetConfigName(name string) {
+	mu.Lock()
+	defer mu.Unlock()
+	configName = name
 }
 
 // Save config instance to file.
