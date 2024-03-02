@@ -30,8 +30,10 @@ var (
 	ErrNotSetSlice         = errors.New("slice cannot set")
 )
 
-var DB *gorm.DB
-var defaultLimit = 1000
+var (
+	DB           *gorm.DB
+	defaultLimit = 1000
+)
 
 // func Init() (err error) {
 // 	if err = mysql.Init(); err != nil {
@@ -166,11 +168,12 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		jsonTag := ""
 		if len(jsonTagItems) == 0 {
-			continue
+			// the structure lowercase field name as the query condition.
+			jsonTagItems[0] = strings.ToLower(typ.Field(i).Name)
 		}
 		jsonTag = jsonTagItems[0]
 
-		var v = val.Field(i).Interface()
+		v := val.Field(i).Interface()
 		var _v string
 		switch val.Field(i).Kind() {
 		case reflect.Bool:
@@ -684,6 +687,7 @@ func (db *database[M]) Update(objs ...M) error {
 	}
 	return nil
 }
+
 func (db *database[M]) UpdateById(id any, key string, val any) error {
 	if db.db == nil || db.db == new(gorm.DB) {
 		return ErrInvalidDB
