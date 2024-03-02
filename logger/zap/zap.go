@@ -3,6 +3,7 @@ package zap
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/forbearing/golib/config"
@@ -40,14 +41,14 @@ func Init() error {
 		zap.AddStacktrace(zapcore.FatalLevel),
 	))
 	logger.Global = New()
-	logger.Controller = New("logs/controller.log")
-	logger.Service = New("logs/service.log")
-	logger.Database = New("logs/database.log")
-	logger.Redis = New("logs/redis.log")
-	logger.Task = New("logs/task.log")
-	logger.Visitor = New("logs/visitor.log")
-	logger.Cronjob = New("logs/cronjob.log")
-	logger.Job = New("logs/job.log")
+	logger.Controller = New(filepath.Join(config.App.LogDir, "controller.log"))
+	logger.Service = New(filepath.Join(config.App.LogDir, "service.log"))
+	logger.Database = New(filepath.Join(config.App.LogDir, "database.log"))
+	logger.Redis = New(filepath.Join(config.App.LogDir, "redis.log"))
+	logger.Task = New(filepath.Join(config.App.LogDir, "task.log"))
+	logger.Visitor = New(filepath.Join(config.App.LogDir, "visitor.log"))
+	logger.Cronjob = New(filepath.Join(config.App.LogDir, "cronjob.log"))
+	logger.Job = New(filepath.Join(config.App.LogDir, "job.log"))
 	logger.Gin = NewGin()
 	logger.Gorm = NewGorm("logs/gorm.log")
 	// if len(logFile) != 0 {
@@ -175,7 +176,7 @@ func newLogLevel(_ ...option) zapcore.Level {
 	if len(logLevel) == 0 {
 		return zapcore.InfoLevel
 	}
-	var level = new(zapcore.Level)
+	level := new(zapcore.Level)
 	if err := level.UnmarshalText([]byte(logLevel)); err != nil {
 		return zapcore.InfoLevel
 	}
@@ -185,11 +186,11 @@ func newLogLevel(_ ...option) zapcore.Level {
 // newLogEncoder
 func newLogEncoder(opt ...option) zapcore.Encoder {
 	encConfig := zap.NewProductionEncoderConfig()
-	//encConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	// encConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	// encConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	//encConfig.EncodeDuration = zapcore.MillisDurationEncoder
-	//encConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	//encConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+	// encConfig.EncodeDuration = zapcore.MillisDurationEncoder
+	// encConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	// encConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
 	encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
 	if len(opt) > 0 {
 		o := opt[0]

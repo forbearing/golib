@@ -16,9 +16,7 @@ const (
 	NoneExpirePass  = "admin"
 )
 
-var (
-	App = new(Config)
-)
+var App = new(Config)
 
 type Mode string
 
@@ -38,6 +36,7 @@ func Init() (err error) {
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.token_expire_duration", "24h")
 
+	viper.SetDefault("logger.log_dir", "./logs")
 	viper.SetDefault("logger.log_file", "./logs/server.log")
 	viper.SetDefault("logger.log_level", "info")
 	viper.SetDefault("logger.log_format", "json")
@@ -112,6 +111,9 @@ type ServerConfig struct {
 // LoggerConfig represents section "logger" for client-side or server-side configuration,
 // and there is only one copy during the application entire lifetime.
 type LoggerConfig struct {
+	// LogDir specifies which direcotory log to.
+	LogDir string `json:"log_dir" ini:"log_dir" yaml:"log_dir" mapstructure:"log_dir"`
+
 	// LogFile specifies the which file log to.
 	// If value is "/dev/stdout", log to os.Stdout.
 	// If value is "/dev/stderr", log to os.Stderr.
