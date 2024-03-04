@@ -90,10 +90,13 @@ func GinContext(c *gin.Context) *types.ServiceContext {
 	}
 
 	return &types.ServiceContext{
-		Method:    c.Request.Method,
-		URL:       c.Request.URL,
-		Header:    c.Writer.Header(),
-		ClientIP:  c.ClientIP(),
+		Method:       c.Request.Method,
+		URL:          c.Request.URL,
+		Header:       c.Request.Header,
+		WriterHeader: c.Writer.Header(),
+		ClientIP:     c.ClientIP(),
+		UserAgent:    c.Request.UserAgent(),
+
 		Username:  c.GetString(types.CTX_USERNAME),
 		UserId:    c.GetString(types.CTX_USER_ID),
 		SessionId: c.GetString(types.CTX_SESSION_ID),

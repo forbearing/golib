@@ -53,10 +53,12 @@ func Sort[M Model](order Order, data []M, reverse ...bool) {
 }
 
 type ServiceContext struct {
-	Method   string      // http method
-	URL      *url.URL    // request url
-	Header   http.Header // http header
-	ClientIP string      // client ip
+	Method       string      // http method
+	URL          *url.URL    // request url
+	Header       http.Header // http request header
+	WriterHeader http.Header // http writer header
+	ClientIP     string      // client ip
+	UserAgent    string      // user agent
 
 	SessionId string // session id
 	Username  string // currrent login user.
