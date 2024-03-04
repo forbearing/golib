@@ -3,6 +3,7 @@ package service
 import (
 	"io"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/forbearing/golib/logger"
@@ -11,8 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-var serviceMap = make(map[string]any)
-var mu sync.Mutex
+var (
+	serviceMap = make(map[string]any)
+	mu         sync.Mutex
+)
+
 var (
 	ErrNotFoundService   = errors.New("no service instant matches the give Model interface, skip processing service layer")
 	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
@@ -42,8 +46,8 @@ func Init() error {
 			typ := reflect.TypeOf(s).Elem()
 			val := reflect.ValueOf(s).Elem()
 			for i := 0; i < typ.NumField(); i++ {
-				switch typ.Field(i).Name {
-				case "Logger": // service object has itself types.Logger
+				switch strings.ToLower(typ.Field(i).Name) {
+				case "logger": // service object has itself types.Logger
 					if val.Field(i).IsZero() {
 						val.Field(i).Set(reflect.ValueOf(logger.Service))
 					}
@@ -71,7 +75,7 @@ func (f Factory[M]) Service() types.Service[M] {
 	svc, ok := serviceMap[reflect.TypeOf(*new(M)).String()]
 	if !ok {
 		logger.Service.Debugw(ErrNotFoundService.Error(), "model", reflect.TypeOf(*new(M)).String())
-		return new(base[M])
+		return new(Base[M])
 	}
 	return svc.(types.Service[M])
 }
@@ -96,20 +100,20 @@ func GinContext(c *gin.Context) *types.ServiceContext {
 	}
 }
 
-type base[M types.Model] struct{ types.Logger }
+type Base[M types.Model] struct{ types.Logger }
 
-func (base[M]) CreateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (base[M]) CreateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (base[M]) DeleteBefore(*types.ServiceContext, ...M) error        { return nil }
-func (base[M]) DeleteAfter(*types.ServiceContext, ...M) error         { return nil }
-func (base[M]) UpdateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (base[M]) UpdateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (base[M]) UpdatePartialBefore(*types.ServiceContext, ...M) error { return nil }
-func (base[M]) UpdatePartialAfter(*types.ServiceContext, ...M) error  { return nil }
-func (base[M]) ListBefore(*types.ServiceContext, *[]M) error          { return nil }
-func (base[M]) ListAfter(*types.ServiceContext, *[]M) error           { return nil }
-func (base[M]) GetBefore(*types.ServiceContext, ...M) error           { return nil }
-func (base[M]) GetAfter(*types.ServiceContext, ...M) error            { return nil }
-func (base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error)  { return make([]M, 0), nil }
-func (base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)    { return make([]byte, 0), nil }
-func (base[M]) Filter(_ *types.ServiceContext, m M) M                 { return m }
+func (Base[M]) CreateBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) CreateAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) DeleteBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) DeleteAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) UpdateBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) UpdateAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) UpdatePartialBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M]) UpdatePartialAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error          { return nil }
+func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error           { return nil }
+func (Base[M]) GetBefore(*types.ServiceContext, ...M) error           { return nil }
+func (Base[M]) GetAfter(*types.ServiceContext, ...M) error            { return nil }
+func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error)  { return make([]M, 0), nil }
+func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)    { return make([]byte, 0), nil }
+func (Base[M]) Filter(_ *types.ServiceContext, m M) M                 { return m }
