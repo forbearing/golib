@@ -22,10 +22,10 @@ var (
 	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
 )
 
-// register service instance into serviceMap.
+// Register service instance into serviceMap.
 // pass parameters to replace the default service instance.
 // If the passed parameters is nil, skip replace.
-func register[S types.Service[M], M types.Model](s ...S) {
+func Register[S types.Service[M], M types.Model](s ...S) {
 	mu.Lock()
 	defer mu.Unlock()
 	key := reflect.TypeOf(*new(M)).String()
