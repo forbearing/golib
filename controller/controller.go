@@ -58,9 +58,7 @@ import (
 	1.记录操作日志也在 controller 层
 */
 
-var (
-	pluralizeCli = pluralize.NewClient()
-)
+var pluralizeCli = pluralize.NewClient()
 
 // Create is a generic function to product gin handler to create one resource.
 // The resource type depends on the type of interface types.Model.
