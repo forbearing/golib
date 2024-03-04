@@ -36,7 +36,7 @@ func Sort[M Model](order Order, data []M, reverse ...bool) {
 	if len(reverse) > 0 {
 		_reverse = reverse[0]
 	}
-	var _sort = func(data sort.Interface) {
+	_sort := func(data sort.Interface) {
 		if _reverse {
 			sort.Sort(sort.Reverse(data))
 		} else {
@@ -53,9 +53,10 @@ func Sort[M Model](order Order, data []M, reverse ...bool) {
 }
 
 type ServiceContext struct {
-	Method string      // http method
-	URL    *url.URL    // request url
-	Header http.Header // http header
+	Method   string      // http method
+	URL      *url.URL    // request url
+	Header   http.Header // http header
+	ClientIP string      // client ip
 
 	SessionId string // session id
 	Username  string // currrent login user.
