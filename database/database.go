@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -258,9 +259,15 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		for k, v := range q {
 			items := strings.Split(v, ",")
 			// TODO: should we skip if items length is 0?
+			// skip the string slice which all element is empty.
+			if len(strings.Join(items, "")) == 0 {
+				continue
+			}
 			var regexpVal string
 			for _, item := range items {
-				regexpVal = regexpVal + "|.*" + item + ".*"
+				// WARN: not forget to escape the regexp value using regexp.QuoteMeta.
+				// eg: localhost\hello.world -> localhost\\hello\.world
+				regexpVal = regexpVal + "|.*" + regexp.QuoteMeta(item) + ".*"
 			}
 			regexpVal = strings.TrimPrefix(regexpVal, "|")
 			db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
