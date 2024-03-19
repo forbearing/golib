@@ -1,6 +1,8 @@
 package util
 
 import (
+	"reflect"
+
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/ksuid"
 )
@@ -15,15 +17,17 @@ func UUID(name ...string) string {
 	}
 	return uuid.NewV5(uuid.NewV4(), _name).String()
 }
+
 func IndexedUUID() string {
 	return ksuid.New().String()
 }
 
 // Pointer will return a pointer to T with given value.
 func Pointer[T comparable](t T) *T {
-	p := new(T)
-	p = &t
-	return p
+	if reflect.DeepEqual(t, nil) {
+		return new(T)
+	}
+	return &t
 }
 
 // Depointer will return a T with given value.
