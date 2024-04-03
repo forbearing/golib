@@ -8,7 +8,7 @@ import (
 
 func RequestId() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := util.UUID()
+		id := util.LightUUID()
 		c.Set(types.REQUEST_ID, id)
 		c.Header("X-Request-Id", id)
 	}

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/forbearing/golib/database"
@@ -65,6 +66,7 @@ var pluralizeCli = pluralize.NewClient()
 func Create[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "create").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	req := *new(M)
@@ -95,7 +97,7 @@ func Create[M types.Model](c *gin.Context) {
 
 	req.SetCreatedBy(c.GetString(CTX_USERNAME))
 	req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-	log.Infoz("Create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+	log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 
 	// 1.Perform business logic processing before create resource.
 	if err := new(service.Factory[M]).Service().CreateBefore(service.GinContext(c), req); err != nil {
@@ -158,6 +160,7 @@ func Create[M types.Model](c *gin.Context) {
 func Delete[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "delete").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -205,7 +208,7 @@ func Delete[M types.Model](c *gin.Context) {
 		log.Warn(err)
 	}
 
-	log.Info("delete", ids)
+	log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
 	// 1.Perform business logic processing before delete resources.
 	if err := new(service.Factory[M]).Service().DeleteBefore(service.GinContext(c), ml...); err != nil {
 		log.Error(err)
@@ -271,6 +274,7 @@ func Delete[M types.Model](c *gin.Context) {
 func Update[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "update").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	id := c.Param(PARAM_ID)
@@ -280,7 +284,7 @@ func Update[M types.Model](c *gin.Context) {
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	log.Infoz("update request", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+	log.Infoz("update from request", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 	if len(id) == 0 {
 		id = req.GetID()
 	}
@@ -314,7 +318,7 @@ func Update[M types.Model](c *gin.Context) {
 		return
 	}
 	// 2.Update resource in database.
-	log.Infoz("update", zap.Object(typ.Name(), req))
+	log.Infoz("update in database", zap.Object(typ.Name(), req))
 	if err := database.Database[M]().Update(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -363,6 +367,7 @@ func Update[M types.Model](c *gin.Context) {
 func UpdatePartial[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "update_partial").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	id := c.Param(PARAM_ID)
@@ -394,9 +399,10 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 		ResponseJSON(c, CodeNotFound)
 		return
 	}
-	req.SetCreatedAt(data[0].GetCreatedAt())
-	req.SetCreatedBy(data[0].GetCreatedBy())
-	req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+	// req.SetCreatedAt(data[0].GetCreatedAt())
+	// req.SetCreatedBy(data[0].GetCreatedBy())
+	// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+	data[0].SetUpdatedBy(c.GetString(CTX_USERNAME))
 
 	newVal := reflect.ValueOf(req).Elem()
 	oldVal := reflect.ValueOf(data[0]).Elem()
@@ -416,15 +422,15 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 
 				// Make sure the type of "Remark" is pointer to golang base type.
 				fieldRemark := "Remark"
-				if newVal.FieldByName(fieldRemark).IsValid() {
+				if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
 					if !newVal.FieldByName(fieldRemark).IsZero() {
 						if newVal.FieldByName(fieldRemark).CanSet() {
 							// output log must before set value.
 							if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", fieldRemark,
-									oldVal.FieldByName(fieldRemark).Elem().Interface(), newVal.FieldByName(fieldRemark).Elem().Interface()))
+								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
+									oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
 							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", fieldRemark,
+								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
 									oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
 							}
 							oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
@@ -433,15 +439,15 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 				}
 				// Make sure the type of "Order" is pointer to golang base type.
 				fieldOrder := "Order"
-				if newVal.FieldByName(fieldOrder).IsValid() {
+				if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
 					if !newVal.FieldByName(fieldOrder).IsZero() {
 						if newVal.FieldByName(fieldOrder).CanSet() {
 							// output log must before set value.
 							if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", fieldOrder,
-									oldVal.FieldByName(fieldOrder).Elem().Interface(), newVal.FieldByName(fieldOrder).Elem().Interface()))
+								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
+									oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
 							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", fieldOrder,
+								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
 									oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
 							}
 							oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
@@ -455,6 +461,7 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 			}
 		}
 		if !newVal.Field(i).IsValid() {
+			// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
 			continue
 		}
 		// base type such like int and string have default value(zero value).
@@ -468,9 +475,9 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 		if newVal.Field(i).CanSet() {
 			// output log must before set value.
 			if newVal.Field(i).Kind() == reflect.Pointer {
-				log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
+				log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
 			} else {
-				log.Info(fmt.Sprintf("[UpdatePartial] field: %s: %v --> %v", typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
+				log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
 			}
 			oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
 		}
@@ -556,14 +563,23 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 func List[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "list").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	var page, size int
+	var startTime, endTime time.Time
 	if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
 		page, _ = strconv.Atoi(pageStr)
 	}
 	if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
 		size, _ = strconv.Atoi(sizeStr)
+	}
+	columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+	if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+		startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+	}
+	if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+		endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 	}
 
 	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -575,7 +591,7 @@ func List[M types.Model](c *gin.Context) {
 	if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
 		log.Warn("failed to parse uri query parameter into model: ", err)
 	}
-	log.Infoz("List query parameter", zap.Object(typ.String(), m))
+	log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
 
 	var err error
 	var fuzzy bool
@@ -659,6 +675,7 @@ func List[M types.Model](c *gin.Context) {
 		WithExclude(m.Excludes()).
 		WithExpand(expands, sortBy).
 		WithOrder(sortBy).
+		WithTimeRange(columnName, startTime, endTime).
 		WithCache(!nocache).
 		List(&data, &cache); err != nil {
 		log.Error(err)
@@ -679,6 +696,7 @@ func List[M types.Model](c *gin.Context) {
 		// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 		WithQuery(svc.Filter(svcCtx, m), fuzzy).
 		WithExclude(m.Excludes()).
+		WithTimeRange(columnName, startTime, endTime).
 		WithCache(!nocache).
 		Count(total); err != nil {
 		log.Error(err)
@@ -735,6 +753,7 @@ func List[M types.Model](c *gin.Context) {
 func Get[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "get").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	if len(c.Param(PARAM_ID)) == 0 {
@@ -898,14 +917,26 @@ func Get[M types.Model](c *gin.Context) {
 func Export[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "export").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	var page, size int
+	var page, size, limit int
+	var startTime, endTime time.Time
 	if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
 		page, _ = strconv.Atoi(pageStr)
 	}
 	if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
 		size, _ = strconv.Atoi(sizeStr)
+	}
+	if limitStr, ok := c.GetQuery(QUERY_LIMIT); ok {
+		limit, _ = strconv.Atoi(limitStr)
+	}
+	columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+	if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+		startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+	}
+	if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+		endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 	}
 
 	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -983,13 +1014,18 @@ func Export[M types.Model](c *gin.Context) {
 		return
 	}
 	sortBy, _ := c.GetQuery(QUERY_SORTBY)
+	_, _ = page, size
+	svc := new(service.Factory[M]).Service()
+	svcCtx := service.GinContext(c)
 	// 2.List resources from database.
 	if err = database.Database[M]().
-		WithScope(page, size).
-		WithQuery(m, fuzzy).
+		// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
+		WithLimit(limit).
+		WithQuery(svc.Filter(svcCtx, m), fuzzy).
 		WithExclude(m.Excludes()).
 		WithExpand(expands, sortBy).
 		WithOrder(sortBy).
+		WithTimeRange(columnName, startTime, endTime).
 		List(&data); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -1038,6 +1074,7 @@ func Export[M types.Model](c *gin.Context) {
 func Import[M types.Model](c *gin.Context) {
 	log := logger.Controller.
 		With(types.PHASE, "import").
+		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 	// NOTE:字段为 file 必须和前端协商好.

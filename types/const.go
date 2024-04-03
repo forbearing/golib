@@ -16,16 +16,20 @@ const (
 )
 
 const (
-	QUERY_ID       = "id"
-	QUERY_PAGE     = "page"
-	QUERY_SIZE     = "size"
-	QUERY_EXPAND   = "_expand"
-	QUERY_DEPTH    = "_depth"
-	QUERY_FUZZY    = "_fuzzy"
-	QUERY_SORTBY   = "_sortby"
-	QUERY_NOCACHE  = "_nocache"
-	QUERY_TYPE     = "type"
-	QUERY_FILENAME = "filename"
+	QUERY_ID          = "id"
+	QUERY_PAGE        = "page"
+	QUERY_SIZE        = "size"
+	QUERY_LIMIT       = "limit"
+	QUERY_EXPAND      = "_expand"
+	QUERY_DEPTH       = "_depth"
+	QUERY_FUZZY       = "_fuzzy"
+	QUERY_SORTBY      = "_sortby"
+	QUERY_COLUMN_NAME = "_column_name"
+	QUERY_START_TIME  = "_start_time"
+	QUERY_END_TIME    = "_end_time"
+	QUERY_NOCACHE     = "_nocache"
+	QUERY_TYPE        = "type"
+	QUERY_FILENAME    = "filename"
 
 	PARAM_ID   = "id"
 	PARAM_FILE = "file"
@@ -35,4 +39,7 @@ const (
 	REQUEST_ID = "request_id"
 
 	PHASE = "phase"
+
+	USER_SYSTEM = "system"
+	USER_ROOT   = "root"
 )

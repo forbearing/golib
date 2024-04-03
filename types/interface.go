@@ -57,14 +57,16 @@ type Database[M Model] interface {
 	// Create one or multiple record.
 	// Pass T to create one record,
 	// Pass []M to create multiple record.
+	// It will update the "created_at" and "updated_at" field.
 	Create(objs ...M) error
 	// Delete one or multiple record.
 	// Pass T to delete one record.
 	// Pass []M to delete multiple record.
 	Delete(objs ...M) error
-	// Update one or multiple record.
+	// Update one or multiple record, if record doesn't exist, it will be created.
 	// Pass T to update one record.
 	// Pass []M to update multiple record.
+	// It will update the "created_at" and "updated_at" field.
 	Update(objs ...M) error
 	// UpdateById only update one record with specific id.
 	UpdateById(id any, key string, value any) error
@@ -107,7 +109,34 @@ type DatabaseOption[M Model] interface {
 	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.
 	WithQueryRaw(query any, args ...any) Database[M]
 
-	// WithScope used to pagination.
+	// WithTimeRange applies a time range filter to the query based on the specified column name.
+	// It restricts the results to records where the column's value falls within the specified start and end times.
+	// This method is designed to be used in a chainable manner, allowing for the construction of complex queries.
+	//
+	// Parameters:
+	// - columnName: The name of the column to apply the time range filter on. This should be a valid date/time column in the database.
+	// - startTime: The beginning of the time range. Records with the column's value equal to or later than this time will be included.
+	// - endTime: The end of the time range. Records with the column's value equal to or earlier than this time will be included.
+	//
+	// Returns: A modified Database instance that includes the time range filter in its query conditions.
+	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
+
+	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
+	WithBatchSize(size int) Database[M]
+
+	// WithScope applies pagination parameters to the query, useful for retrieving data in pages.
+	// This method enables front-end applications to request a specific subset of records,
+	// based on the desired page number and the number of records per page.
+	//
+	// Parameters:
+	// - page: The page number being requested. Page numbers typically start at 1.
+	// - size: The number of records to return per page. This determines the "size" of each page.
+	//
+	// The pagination logic calculates the offset based on the page number and size,
+	// and applies it along with the limit (size) to the query. This facilitates efficient
+	// data fetching suitable for front-end pagination displays.
+	//
+	// Returns: A modified Database instance that includes pagination parameters in its query conditions.
 	WithScope(page, size int) Database[M]
 
 	// WithLimit determines how much record should retrieve.

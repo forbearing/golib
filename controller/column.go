@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/forbearing/golib/database/mysql"
 	. "github.com/forbearing/golib/response"
@@ -20,13 +22,14 @@ var (
 		"category_level1_id",
 		"category_level2_id",
 		"owner_id",
+		"owner_status",
+		"label_status",
 		"current_user",
 		"department_level1_id",
 		"department_level2_id",
 		"brand",
 		"brand_model",
 	}
-
 	columnDistribute = []string{
 		"status",
 		"user_id",
@@ -44,12 +47,65 @@ var (
 		"progress",
 	}
 	columnSoftware = []string{
+		"type",
+		"os",
 		"hostname",
-		"machine_id",
-		"mac_addresses",
 		"user",
 		"ip_addresses",
+		"mac_addresses",
+		"machine_id",
+		// "name",
+		// "version",
+		// "maintainer",
+		// "description",
+		// "home_page",
+	}
+	columnSoftwrarePurchased = []string{
+		"name",
+		"version",
+		"platform",
+		"purchase_user",
+		"purchase_method",
+		"purchase_date",
+		"expire_date",
+		"license_type",
+		"license_quantity",
+		"vendor",
+		"cost",
+	}
+	columnSoftwrarePurchasedAssignment = []string{
 		"type",
+		"machine_id",
+		"hostname",
+		"user",
+		"ip_addresses",
+		"mac_addresses",
+		"name",
+		"version",
+	}
+	columnSoftwareReport = []string{
+		"name",
+		"version",
+		"status",
+		"type",
+		"os",
+		"hostname",
+		"user",
+		"ip_addresses",
+		"mac_addresses",
+		"machine_id",
+		"maintainer",
+		"description",
+		"home_page",
+	}
+	columnSoftwareCatalog = []string{
+		"label",
+		"os",
+		"name",
+		"version",
+		"maintainer",
+		// "description",
+		// "home_page",
 	}
 	columnFeishuApproval = []string{
 		"status",
@@ -69,29 +125,59 @@ var (
 func (cs *column) Get(c *gin.Context) {
 	switch c.Param(PARAM_ID) {
 	case "asset":
-		cs.Asset(c)
+		// cs.Asset(c)
+		cs.GetColumns(c, "assets", columnAsset)
 	case "distribute":
-		cs.Distribute(c)
+		// cs.Distribute(c)
+		cs.GetColumns(c, "distributes", columnDistribute)
 	case "back":
-		cs.Back(c)
+		// cs.Back(c)
+		cs.GetColumns(c, "backs", columnBack)
 	case "change":
-		cs.Change(c)
+		// cs.Change(c)
+		cs.GetColumns(c, "changes", columnChange)
 	case "check":
-		cs.Check(c)
+		// cs.Check(c)
+		cs.GetColumns(c, "checks", columnCheck)
 	case "software":
-		cs.Software(c)
+		// cs.Software(c)
+		cs.GetColumns(c, "softwares", columnSoftware)
+	case "software_purchased":
+		// cs.SoftwarePurchased(c)
+		cs.GetColumns(c, "software_purchaseds", columnSoftwrarePurchased)
+	case "software_purchased_assignment":
+		// cs.SoftwarePurchasedAssignment(c)
+		cs.GetColumns(c, "software_purchased_assignments", columnSoftwrarePurchasedAssignment)
+	case "software_report":
+		// cs.SoftwareReport(c)
+		cs.GetColumns(c, "software_reports", columnSoftwareReport)
+	case "software_catalog":
+		// cs.SoftwareCatalog(c)
+		cs.GetColumns(c, "software_catalogs", columnSoftwareCatalog)
 	case "feishu_approval":
-		cs.FeishuApproval(c)
+		// cs.FeishuApproval(c)
+		cs.GetColumns(c, "feishu_approvals", columnFeishuApproval)
 	case "feishu_event_approval":
-		cs.FeishuEventApproval(c)
+		// cs.FeishuEventApproval(c)
+		cs.GetColumns(c, "feishu_event_approvals", columnFeishuEventApproval)
 	default:
 		zap.S().Warn("unknow id: ", c.Param(PARAM_ID))
 		ResponseJSON(c, CodeSuccess)
 	}
 }
 
+func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string) {
+	columnRes, err := queryColumnsWithQuery(tableName, columns, c.Request.URL.Query())
+	if err != nil {
+		zap.S().Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	ResponseJSON(c, CodeSuccess, columnRes)
+}
+
 func (cs *column) Asset(c *gin.Context) {
-	columnRes, err := queryColumns("assets", columnAsset)
+	columnRes, err := queryColumnsWithQuery("assets", columnAsset, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -101,7 +187,7 @@ func (cs *column) Asset(c *gin.Context) {
 }
 
 func (cs *column) Distribute(c *gin.Context) {
-	columnRes, err := queryColumns("distributes", columnDistribute)
+	columnRes, err := queryColumnsWithQuery("distributes", columnDistribute, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -109,8 +195,9 @@ func (cs *column) Distribute(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnRes)
 }
+
 func (cs *column) Back(c *gin.Context) {
-	columnRes, err := queryColumns("backs", columnBack)
+	columnRes, err := queryColumnsWithQuery("backs", columnBack, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -118,8 +205,9 @@ func (cs *column) Back(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnRes)
 }
+
 func (cs *column) Change(c *gin.Context) {
-	columnRes, err := queryColumns("changes", columnChange)
+	columnRes, err := queryColumnsWithQuery("changes", columnChange, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -127,8 +215,9 @@ func (cs *column) Change(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnRes)
 }
+
 func (cs *column) Check(c *gin.Context) {
-	columnsRes, err := queryColumns("checks", columnCheck)
+	columnsRes, err := queryColumnsWithQuery("checks", columnCheck, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -136,8 +225,9 @@ func (cs *column) Check(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnsRes)
 }
+
 func (cs *column) Software(c *gin.Context) {
-	columnsRes, err := queryColumns("softwares", columnSoftware)
+	columnsRes, err := queryColumnsWithQuery("softwares", columnSoftware, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -145,8 +235,49 @@ func (cs *column) Software(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnsRes)
 }
+
+func (cs *column) SoftwarePurchased(c *gin.Context) {
+	columnsRes, err := queryColumnsWithQuery("software_purchaseds", columnSoftwrarePurchased, c.Request.URL.Query())
+	if err != nil {
+		zap.S().Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	ResponseJSON(c, CodeSuccess, columnsRes)
+}
+
+func (cs *column) SoftwarePurchasedAssignment(c *gin.Context) {
+	columnsRes, err := queryColumnsWithQuery("software_purchased_assignments", columnSoftwrarePurchasedAssignment, c.Request.URL.Query())
+	if err != nil {
+		zap.S().Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	ResponseJSON(c, CodeSuccess, columnsRes)
+}
+
+func (cs *column) SoftwareReport(c *gin.Context) {
+	columnsRes, err := queryColumnsWithQuery("software_reports", columnSoftwareReport, c.Request.URL.Query())
+	if err != nil {
+		zap.S().Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	ResponseJSON(c, CodeSuccess, columnsRes)
+}
+
+func (cs *column) SoftwareCatalog(c *gin.Context) {
+	columnsRes, err := queryColumnsWithQuery("software_catalogs", columnSoftwareCatalog, c.Request.URL.Query())
+	if err != nil {
+		zap.S().Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	ResponseJSON(c, CodeSuccess, columnsRes)
+}
+
 func (cs *column) FeishuApproval(c *gin.Context) {
-	columnsRes, err := queryColumns("feishu_approvals", columnFeishuApproval)
+	columnsRes, err := queryColumnsWithQuery("feishu_approvals", columnFeishuApproval, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -154,8 +285,9 @@ func (cs *column) FeishuApproval(c *gin.Context) {
 	}
 	ResponseJSON(c, CodeSuccess, columnsRes)
 }
+
 func (cs *column) FeishuEventApproval(c *gin.Context) {
-	columnsRes, err := queryColumns("feishu_event_approvals", columnFeishuEventApproval)
+	columnsRes, err := queryColumnsWithQuery("feishu_event_approvals", columnFeishuEventApproval, c.Request.URL.Query())
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -189,6 +321,76 @@ func queryColumns(table string, columns []string) (map[string][]string, error) {
 			var name string
 			if err := rows.Scan(&name); err != nil {
 				return nil, err
+			}
+			// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
+			// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
+			if len(name) == 0 {
+				continue
+			}
+			results = append(results, name)
+		}
+		cr[column] = results
+	}
+	return cr, nil
+}
+
+func queryColumnsWithQuery(table string, columns []string, query map[string][]string) (map[string][]string, error) {
+	cr := make(map[string][]string)
+	sql := `SELECT %s FROM %s WHERE deleted_at IS NULL %s GROUP BY %s`
+
+	var queryBuilder strings.Builder
+	for k, v := range query { // v eg: [process,package,]
+		if len(k) > 0 && len(strings.Join(v, "")) > 0 {
+			items := make([]string, 0)
+			for _, item := range v {
+				if len(item) > 0 && strings.TrimSpace(item) != "," {
+					for _, _item := range strings.Split(item, ",") {
+						if len(strings.TrimSpace(_item)) > 0 {
+							items = append(items, strings.TrimSpace(_item))
+						}
+					}
+				}
+			}
+
+			var out strings.Builder
+			for i, item := range items {
+				switch i {
+				case 0:
+					if len(items) == 1 {
+						out.WriteString(fmt.Sprintf(`('%s')`, regexp.QuoteMeta(strings.TrimSpace(item))))
+					} else {
+						out.WriteString(fmt.Sprintf(`('%s'`, regexp.QuoteMeta(strings.TrimSpace(item))))
+					}
+				case len(items) - 1:
+					out.WriteString(fmt.Sprintf(`,'%s')`, regexp.QuoteMeta(strings.TrimSpace(item))))
+				default:
+					out.WriteString(fmt.Sprintf(`,'%s'`, regexp.QuoteMeta(strings.TrimSpace(item))))
+				}
+			}
+			if len(strings.TrimSpace(out.String())) > 0 {
+				queryBuilder.WriteString(fmt.Sprintf(" AND `%s` IN %s", k, strings.TrimSpace(out.String())))
+			}
+		}
+	}
+
+	for _, column := range columns {
+		statement := fmt.Sprintf(sql, column, table, queryBuilder.String(), column)
+		// fmt.Println("---------------------", statement)
+		rows, err := mysql.Asset.Raw(statement).Rows()
+		if err != nil {
+			zap.S().Error(err)
+			return nil, err
+		}
+		results := make([]string, 0)
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return nil, err
+			}
+			// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
+			// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
+			if len(name) == 0 {
+				continue
 			}
 			results = append(results, name)
 		}

@@ -15,9 +15,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	ErrMobileLength = errors.New("mobile number length must be 11")
-)
+var ErrMobileLength = errors.New("mobile number length must be 11")
+
 var (
 	// Records is the table records must be pr-eexists before any database curd,
 	// its register by register function.
@@ -113,13 +112,14 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy string    `json:"created_by" schema:"-"`
-	UpdatedBy string    `json:"updated_by" schema:"-"`
-	CreatedAt time.Time `json:"created_at" schema:"-"`
-	UpdatedAt time.Time `json:"updated_at" schema:"-"`
-	Remark    *string   `json:"remark" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order     *uint     `json:"order" schema:"-"`
-	Error     string    `json:"error" schema:"-"`
+	CreatedBy      string    `json:"created_by" schema:"-"`
+	UpdatedBy      string    `json:"updated_by" schema:"-"`
+	CreatedAt      time.Time `json:"created_at" schema:"-"`
+	UpdatedAt      time.Time `json:"updated_at" schema:"-"`
+	Remark         *string   `json:"remark" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
+	Order          *uint     `json:"order" schema:"-"`
+	Error          string    `json:"error" schema:"-"`
+	InternalRemark string    `json:"internal_remark" schema:"-"` // 内部系统的备注
 
 	// Query parameter
 	Page    uint    `json:"-" gorm:"-" schema:"page"`     // Query parameter, eg: "page=2"
@@ -147,20 +147,16 @@ func (b *Base) SetID(id ...string)         { SetID(b, id...) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if b == nil {
-		return nil
-	}
-	enc.AddString("id", b.ID)
-	if b.Remark != nil {
-		enc.AddString("remark", *b.Remark)
-	}
-	enc.AddString("create_by", b.CreatedBy)
-	enc.AddString("updated_by", b.UpdatedBy)
-	enc.AddTime("created_at", b.CreatedAt)
-	enc.AddTime("updated_at", b.UpdatedAt)
-	if len(b.Error) > 0 {
-		enc.AddString("error", b.Error)
-	}
+	// if b == nil {
+	// 	return nil
+	// }
+	// enc.AddString("id", b.ID)
+	// enc.AddString("remark", util.Depointer(b.Remark))
+	// enc.AddString("create_by", b.CreatedBy)
+	// enc.AddString("updated_by", b.UpdatedBy)
+	// enc.AddTime("created_at", b.CreatedAt)
+	// enc.AddTime("updated_at", b.UpdatedAt)
+	// enc.AddString("error", b.Error)
 	return nil
 }
 
@@ -209,9 +205,11 @@ func (t *GormTime) Scan(value any) error {
 	*t = GormTime(localTime)
 	return nil
 }
+
 func (t GormTime) Value() (driver.Value, error) {
 	return time.Time(t).Format(types.DATE_TIME_LAYOUT), nil
 }
+
 func (t *GormTime) UnmarshalJSON(b []byte) error {
 	// Trim quotes from the stringified JSON value
 	s := strings.Trim(string(b), "\"")
@@ -224,6 +222,7 @@ func (t *GormTime) UnmarshalJSON(b []byte) error {
 	*t = GormTime(parsedTime)
 	return nil
 }
+
 func (ct GormTime) MarshalJSON() ([]byte, error) {
 	// Convert the time to the custom format and stringify it
 	return []byte("\"" + time.Time(ct).Format(types.DATE_TIME_LAYOUT) + "\""), nil
@@ -246,6 +245,7 @@ func (gs *GormStrings) Scan(value any) error {
 	}
 	return nil
 }
+
 func (gs GormStrings) Value() (driver.Value, error) {
 	// It will return "", if gs is nil or empty string.
 	return strings.Join(gs, ","), nil

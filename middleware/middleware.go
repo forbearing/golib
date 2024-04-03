@@ -32,17 +32,17 @@ func Logger(filename ...string) gin.HandlerFunc {
 		query := c.Request.URL.RawQuery
 		c.Next()
 
-		requestId, _ := c.Get(types.REQUEST_ID)
-		latency := time.Since(start)
 		fields := []zapcore.Field{
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
+			zap.String("username", c.GetString(types.CTX_USERNAME)),
+			zap.String("user_id", c.GetString(types.CTX_USER_ID)),
+			zap.String("log_id", c.GetString(types.REQUEST_ID)),
 			zap.String("path", path),
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
-			zap.Duration("latency", latency),
-			zap.String("log_id", requestId.(string)),
+			zap.Duration("latency", time.Since(start)),
 		}
 
 		if len(c.Errors) > 0 {
@@ -82,7 +82,7 @@ func JwtAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Authorization")
 		if len(header) == 0 {
-			//zap.S().Error("not found authorization header")
+			// zap.S().Error("not found authorization header")
 			ResponseJSON(c, CodeNeedLogin)
 			c.Abort()
 			return
@@ -91,7 +91,7 @@ func JwtAuth() gin.HandlerFunc {
 		// 按空格分割
 		items := strings.SplitN(header, " ", 2)
 		if !(len(items) == 2 && items[0] == "Bearer") {
-			//zap.S().Error("authorization header is invalid")
+			// zap.S().Error("authorization header is invalid")
 			ResponseJSON(c, CodeInvalidToken)
 			c.Abort()
 			return
@@ -100,7 +100,7 @@ func JwtAuth() gin.HandlerFunc {
 		// items[1] 是获取到的 tokenString, 我们使用之前定义好的解析 jwt 的函数来解析它
 		claims, err := jwt.ParseToken(items[1])
 		if err != nil {
-			//zap.S().Error(err)
+			// zap.S().Error(err)
 			ResponseJSON(c, CodeInvalidToken)
 			c.Abort()
 			return

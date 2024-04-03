@@ -15,6 +15,7 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
 	"github.com/stoewer/go-strcase"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -32,8 +33,9 @@ var (
 )
 
 var (
-	DB           *gorm.DB
-	defaultLimit = 1000
+	DB               *gorm.DB
+	defaultLimit     = 1000
+	defaultBatchSize = 1000
 )
 
 // func Init() (err error) {
@@ -68,6 +70,8 @@ type database[M types.Model] struct {
 	enableCache bool   // using cache or not, only works 'List', 'Get', 'Count' method.
 	tableName   string // support multiple custom table name, always used with the `WithDB` method.
 	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
+
+	shouldAutoMigrate bool
 }
 
 // reset will reset the database interface to default value.
@@ -79,9 +83,23 @@ func (db *database[M]) reset() {
 	db.enableCache = false
 	db.tableName = ""
 	db.batchSize = 0
+	db.shouldAutoMigrate = false
+}
+
+func (db *database[M]) prepare() error {
+	if db.db == nil || db.db == new(gorm.DB) {
+		return ErrInvalidDB
+	}
+	if db.shouldAutoMigrate {
+		if err := db.db.AutoMigrate(new(M)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // WithDB returns a new database manipulator, only support *gorm.DB.
+// eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithDB(x any) types.Database[M] {
 	// if x is nil, return the default database.
 	if x == nil {
@@ -94,6 +112,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	db.shouldAutoMigrate = true
 	if strings.ToLower(config.App.LogLevel) == "debug" {
 		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
 	} else {
@@ -103,6 +122,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 }
 
 // WithTable multiple custom table, always used with the method `WithDB`.
+// eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithTable(name string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -287,10 +307,24 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		// eg: SELECT id FROM users WHERE name IN ('user01', 'user02', 'user03', 'user04')
 		for k, v := range q {
 			items := strings.Split(v, ",")
-			// TODO: should we skip if items length is 0?
+			// TODO: should we skip if items total length is 0?
+			if len(strings.Join(items, "")) == 0 {
+				continue
+			}
 			db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 		}
 	}
+	return db
+}
+
+// WithTimeRange
+func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, endTime time.Time) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if len(columnName) == 0 || startTime.IsZero() || endTime.IsZero() {
+		return db
+	}
+	db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
 	return db
 }
 
@@ -301,7 +335,6 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 // - WithQueryRaw("name IN (?)", []string{"hybfkuf", "hybfkuf 2"})
 // - WithQueryRaw("name LIKE ?", "%hybfkuf%")
 // - WithQueryRaw("name = ? AND age >= ?", "hybfkuf", "100")
-
 // - WithQueryRaw("updated_at > ?", lastWeek)
 // - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
 func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
@@ -501,8 +534,8 @@ func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 // Examples:
 // - database.XXX().Create(&model.XXX{ID: id, Field1: field1, Field2: field2})
 func (db *database[M]) Create(objs ...M) error {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err := db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	if config.App.RedisConfig.Enable {
@@ -537,40 +570,29 @@ func (db *database[M]) Create(objs ...M) error {
 		objs[i].SetID() // set id when id is empty.
 	}
 
-	// TODO: batch size mode
-	// var shouldSplit bool
-	// if db.batchSize > 0 {
-	// 	if len(objs) > int(db.batchSize) {
-	// 		shouldSplit = true
-	// 	}
+	// if err := db.db.Save(objs).Error; err != nil {
+	// if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
+	// 	return err
 	// }
-	// if shouldSplit {
-	// 	for i := 0; i < len(objs); i += db.batchSize {
-	// 		if i+db.batchSize > len(objs) {
-	// 			if err := db.db.Table(db.tableName).Save(objs[i:]).Error; err != nil {
-	// 				return err
-	// 			}
-	// 		} else {
-	// 			if err := db.db.Table(db.tableName).Save(objs[i : i+db.batchSize]).Error; err != nil {
-	// 				return err
-	// 			}
-	// 		}
-	// 	}
-	// } else {
-	// 	if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
-	// 		return err
-	// 	}
-	// }
+	//
+	batchSize := defaultBatchSize
+	if db.batchSize > 0 {
+		batchSize = db.batchSize
+	}
+	for i := 0; i < len(objs); i += batchSize {
+		end := i + batchSize
+		if end > len(objs) {
+			end = len(objs)
+		}
+		if err := db.db.Table(db.tableName).Save(objs[i:end]).Error; err != nil {
+			return err
+		}
+	}
 
 	// because db.db.Delete method just update field "delete_at" to current time,
 	// not really delete it(soft delete).
 	// If record already exists, Update method update all fields but exlcude "created_at" by
-	// mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should call UpdateById to
-	// specially update the "created_at" field.
-	// if err := db.db.Save(objs).Error; err != nil {
-	if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
-		return err
-	}
+	// mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should update the "created_at" field manually.
 	for i := range objs {
 		// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
 		// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
@@ -599,8 +621,8 @@ func (db *database[M]) Create(objs ...M) error {
 // - database.XXX().Delete(&model.XXX{ID: id}) // delete record with primary key
 // - database.XXX().WithQuery(req).Delete(req) // delete record with where condiions.
 func (db *database[M]) Delete(objs ...M) error {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err := db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	if config.App.RedisConfig.Enable {
@@ -629,15 +651,43 @@ func (db *database[M]) Delete(objs ...M) error {
 	if db.enablePurge {
 		// delete permanently.
 		// if err := db.db.Unscoped().Delete(objs).Error; err != nil {
-		if err := db.db.Table(db.tableName).Unscoped().Delete(objs).Error; err != nil {
-			return err
+		// if err := db.db.Table(db.tableName).Unscoped().Delete(objs).Error; err != nil {
+		// 	return err
+		// }
+		//
+		batchSize := defaultBatchSize
+		if db.batchSize > 0 {
+			batchSize = db.batchSize
+		}
+		for i := 0; i < len(objs); i += batchSize {
+			end := i + batchSize
+			if end > len(objs) {
+				end = len(objs)
+			}
+			if err := db.db.Table(db.tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+				return err
+			}
 		}
 	} else {
 		// Delete() method just update field "delete_at" to currrent time.
 		// DO NOT FORGET update the "created_at" field when create/update if record already exists.
 		// if err := db.db.Delete(objs).Error; err != nil {
-		if err := db.db.Table(db.tableName).Delete(objs).Error; err != nil {
-			return err
+		// if err := db.db.Table(db.tableName).Delete(objs).Error; err != nil {
+		// 	return err
+		// }
+		//
+		batchSize := defaultBatchSize
+		if db.batchSize > 0 {
+			batchSize = db.batchSize
+		}
+		for i := 0; i < len(objs); i += batchSize {
+			end := i + batchSize
+			if end > len(objs) {
+				end = len(objs)
+			}
+			if err := db.db.Table(db.tableName).Delete(objs[i:end]).Error; err != nil {
+				return err
+			}
 		}
 	}
 	// Invoke model hook: DeleteAfter.
@@ -660,8 +710,8 @@ func (db *database[M]) Delete(objs ...M) error {
 //     database.XXX().Update(obj)
 //     database.XXX().Update(objs)
 func (db *database[M]) Update(objs ...M) error {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err := db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	if config.App.RedisConfig.Enable {
@@ -689,8 +739,23 @@ func (db *database[M]) Update(objs ...M) error {
 		objs[i].SetID() // set id when id is empty
 	}
 	// if err := db.db.Save(objs).Error; err != nil {
-	if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
-		return err
+	// if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
+	// 	return err
+	// }
+	//
+	batchSize := defaultBatchSize
+	if db.batchSize > 0 {
+		batchSize = db.batchSize
+	}
+	for i := 0; i < len(objs); i += batchSize {
+		end := i + batchSize
+		if end > len(objs) {
+			end = len(objs)
+		}
+		if err := db.db.Table(db.tableName).Save(objs[i:end]).Error; err != nil {
+			zap.S().Error(err)
+			return err
+		}
 	}
 	// Invoke model hook: UpdateAfter.
 	for i := range objs {
@@ -702,8 +767,8 @@ func (db *database[M]) Update(objs ...M) error {
 }
 
 func (db *database[M]) UpdateById(id any, key string, val any) error {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err := db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	if config.App.RedisConfig.Enable {
@@ -730,8 +795,8 @@ func (db *database[M]) UpdateById(id any, key string, val any) error {
 //   - data := make([]*model.XXX, 0)
 //     database.XXX().List(&data)
 func (db *database[M]) List(dest *[]M, cache ...*[]byte) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	if dest == nil {
@@ -833,8 +898,8 @@ QUERY:
 
 // Get find one record accoding to `id`.
 func (db *database[M]) Get(dest M, id string, cache ...*[]byte) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	var key string
@@ -920,8 +985,8 @@ QUERY:
 // Count returns the total number of records with the given query condition.
 // NOTE: The underlying type msut be pointer to struct, otherwise panic will occur.
 func (db *database[M]) Count(count *int64) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	var key string
@@ -968,8 +1033,8 @@ QUERY:
 
 // First finds the first record ordered by primary key.
 func (db *database[M]) First(dest M, cache ...*[]byte) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	var key string
@@ -1052,8 +1117,8 @@ QUERY:
 
 // Last finds the last record ordered by primary key.
 func (db *database[M]) Last(dest M, cache ...*[]byte) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	var key string
@@ -1135,8 +1200,8 @@ QUERY:
 
 // Take finds the first record returned by the database in no specified order.
 func (db *database[M]) Take(dest M, cache ...*[]byte) (err error) {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err = db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	var key string
@@ -1219,8 +1284,8 @@ QUERY:
 
 // Cleanup delete all records that column 'deleted_at' is not null.
 func (db *database[M]) Cleanup() error {
-	if db.db == nil || db.db == new(gorm.DB) {
-		return ErrInvalidDB
+	if err := db.prepare(); err != nil {
+		return err
 	}
 	defer db.reset()
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
