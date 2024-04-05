@@ -2,7 +2,11 @@ package util
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"reflect"
+	"runtime"
+	"unsafe"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/ksuid"
@@ -73,4 +77,60 @@ func SplitByDoublePipe(data []byte, atEOF bool) (advance int, token []byte, err 
 
 	// If no delimiter is found, return no data and wait for more input
 	return 0, nil, nil
+}
+
+// RunOrDie will panic when error encountered.
+func RunOrDie(fn func() error) {
+	if err := fn(); err != nil {
+		panic(err)
+	}
+}
+
+// HandleErr will call os.Exit() when any error encountered.
+func HandleErr(err error, notExit ...bool) {
+	var flag bool
+	if len(notExit) != 0 {
+		flag = notExit[0]
+	}
+	if err != nil {
+		fmt.Println(err)
+		if !flag {
+			os.Exit(1)
+		}
+	}
+}
+
+// CheckErr just check error and print it.
+func CheckErr(err error) {
+	HandleErr(err, true)
+}
+
+// StringAny format anything to string.
+func StringAny(x any) string {
+	if x == nil {
+		return ""
+	}
+	if v, ok := x.(fmt.Stringer); ok {
+		return v.String()
+	}
+
+	switch v := x.(type) {
+	case []byte:
+		return *(*string)(unsafe.Pointer(&v))
+	case string:
+		return v
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", x)
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
+func GetFunctionName(x any) string {
+	switch v := x.(type) {
+	case uintptr:
+		return runtime.FuncForPC(v).Name()
+	default:
+		return runtime.FuncForPC(reflect.ValueOf(x).Pointer()).Name()
+	}
 }
