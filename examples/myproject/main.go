@@ -14,6 +14,7 @@ import (
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
+	. "github.com/forbearing/golib/util"
 )
 
 func main() {
@@ -29,9 +30,9 @@ func main() {
 		task.Init,
 		router.Init,
 	)
-	if err := bootstrap.Run(); err != nil {
-		panic(err)
-	}
+	bootstrap.RegisterGo(router.Run)
+
+	RunOrDie(bootstrap.Init)
 
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
@@ -45,7 +46,5 @@ func main() {
 	router.API.GET("/category/export", controller.Export[*model.Category])
 	router.API.POST("/category/import", controller.Import[*model.Category])
 
-	if err := router.Run(); err != nil {
-		panic(err)
-	}
+	RunOrDie(bootstrap.Go)
 }
