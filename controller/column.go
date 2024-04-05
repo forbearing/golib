@@ -376,7 +376,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 	for _, column := range columns {
 		statement := fmt.Sprintf(sql, column, table, queryBuilder.String(), column)
 		// fmt.Println("---------------------", statement)
-		rows, err := mysql.Asset.Raw(statement).Rows()
+		rows, err := mysql.Default.Raw(statement).Rows()
 		if err != nil {
 			zap.S().Error(err)
 			return nil, err
