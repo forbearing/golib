@@ -112,23 +112,26 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy      string    `json:"created_by" schema:"-"`
-	UpdatedBy      string    `json:"updated_by" schema:"-"`
-	CreatedAt      time.Time `json:"created_at" schema:"-"`
-	UpdatedAt      time.Time `json:"updated_at" schema:"-"`
-	Remark         *string   `json:"remark" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order          *uint     `json:"order" schema:"-"`
-	Error          string    `json:"error" schema:"-"`
-	InternalRemark string    `json:"internal_remark" schema:"-"` // 内部系统的备注
+	CreatedBy      string    `json:"created_by,omitempty" schema:"-"`
+	UpdatedBy      string    `json:"updated_by,omitempty" schema:"-"`
+	CreatedAt      time.Time `json:"created_at,omitempty" schema:"-"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty" schema:"-"`
+	Remark         *string   `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
+	Order          *uint     `json:"order,omitempty" schema:"-"`
+	Error          string    `json:"error,omitempty" schema:"-"`
+	InternalRemark string    `json:"internal_remark,omitempty" schema:"-"` // 内部系统的备注
 
 	// Query parameter
-	Page    uint    `json:"-" gorm:"-" schema:"page"`     // Query parameter, eg: "page=2"
-	Size    uint    `json:"-" gorm:"-" schema:"size"`     // Query parameter, eg: "size=10"
-	Expand  *string `json:"-" gorm:"-" schema:"_expand"`  // Query parameter, eg: "_expand=children,parent".
-	Depth   *uint   `json:"-" gorm:"-" schema:"_depth"`   // Query parameter, eg: "_depth=3".
-	Fuzzy   *bool   `json:"-" gorm:"-" schema:"_fuzzy"`   // Query parameter, eg: "_fuzzy=true"
-	SortBy  string  `json:"-" gorm:"-" schema:"_sortby"`  // Query parameter, eg: "_sortby=name"
-	NoCache bool    `json:"-" gorm:"-" schema:"_nocache"` // Query parameter: eg: "_nocache=false"
+	Page       uint    `json:"-" gorm:"-" schema:"page"`         // Query parameter, eg: "page=2"
+	Size       uint    `json:"-" gorm:"-" schema:"size"`         // Query parameter, eg: "size=10"
+	Expand     *string `json:"-" gorm:"-" schema:"_expand"`      // Query parameter, eg: "_expand=children,parent".
+	Depth      *uint   `json:"-" gorm:"-" schema:"_depth"`       // Query parameter, eg: "_depth=3".
+	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy"`       // Query parameter, eg: "_fuzzy=true"
+	SortBy     string  `json:"-" gorm:"-" schema:"_sortby"`      // Query parameter, eg: "_sortby=name"
+	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache"`     // Query parameter: eg: "_nocache=false"
+	ColumnName string  `json:"-" gorm:"-" schema:"_column_name"` // Query parameter: eg: "_column_name=created_at"
+	StartTime  string  `json:"-" gorm:"-" schema:"_start_time"`  // Query parameter: eg: "_start_time=2024-04-29+23:59:59"
+	EndTime    string  `json:"-" gorm:"-" schema:"_end_time"`    // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
 
 	gorm.Model `json:"-"`
 }
@@ -150,7 +153,9 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	// if b == nil {
 	// 	return nil
 	// }
-	// enc.AddString("id", b.ID)
+	enc.AddString("id", b.ID)
+	enc.AddUint("page", b.Page)
+	enc.AddUint("size", b.Size)
 	// enc.AddString("remark", util.Depointer(b.Remark))
 	// enc.AddString("create_by", b.CreatedBy)
 	// enc.AddString("updated_by", b.UpdatedBy)

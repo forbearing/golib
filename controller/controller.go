@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/filetype"
 	"github.com/forbearing/golib/logger"
@@ -24,6 +23,8 @@ import (
 	"github.com/gorilla/schema"
 	"go.uber.org/zap"
 )
+
+// TODO: 记录失败的操作.
 
 /*
 1.Model 层处理单个 types.Model, 功能: 数据预处理
@@ -64,86 +65,96 @@ var pluralizeCli = pluralize.NewClient()
 // Create is a generic function to product gin handler to create one resource.
 // The resource type depends on the type of interface types.Model.
 func Create[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "create").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	req := *new(M)
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeInvalidParam)
-		return
-	}
+	CreateFactory[M]()(c)
+}
 
-	// TODO: how to make sure resource already exists?
-	//
-	// Make sure record must be not exists.
-	// var err error
-	// data := make([]M, 0)
-	// if err = database.Database[M]().WithLimit(1).WithQuery(req).List(&data); err != nil {
-	// 	zlog.Error(err)
-	// 	ResponseJSON(c, CodeFailure)
-	// 	return
-	// }
-	// if len(data) != 0 {
-	// 	for i := range data {
-	// 		zlog.Debug(data[i])
-	// 	}
-	// 	zlog.Error(CodeAlreadyExist)
-	// 	ResponseJSON(c, CodeAlreadyExist)
-	// 	return
-	// }
+// CreateFactory is a factory function to product gin handler to create one resource.
+func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "create").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		req := *new(M)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeInvalidParam)
+			return
+		}
 
-	req.SetCreatedBy(c.GetString(CTX_USERNAME))
-	req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-	log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+		// TODO: how to make sure resource already exists?
+		//
+		// Make sure record must be not exists.
+		// var err error
+		// data := make([]M, 0)
+		// if err = handler.WithLimit(1).WithQuery(req).List(&data); err != nil {
+		// 	zlog.Error(err)
+		// 	ResponseJSON(c, CodeFailure)
+		// 	return
+		// }
+		// if len(data) != 0 {
+		// 	for i := range data {
+		// 		zlog.Debug(data[i])
+		// 	}
+		// 	zlog.Error(CodeAlreadyExist)
+		// 	ResponseJSON(c, CodeAlreadyExist)
+		// 	return
+		// }
 
-	// 1.Perform business logic processing before create resource.
-	if err := new(service.Factory[M]).Service().CreateBefore(service.GinContext(c), req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
+		req.SetCreatedBy(c.GetString(CTX_USERNAME))
+		req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+		log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+
+		// 1.Perform business logic processing before create resource.
+		if err := new(service.Factory[M]).Service().CreateBefore(service.GinContext(c), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Create resource in database.
+		// database.Database().Delete just set "deleted_at" field to current time, not really delete.
+		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
+		// NOTE: WithExpand(req.Expands()...) is not a good choices.
+		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
+		if err := handler().WithExpand(req.Expands()).Create(req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 3.Perform business logic processing after create resource
+		if err := new(service.Factory[M]).Service().CreateAfter(service.GinContext(c), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 4.record operation log to database.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		// TODO: should we record the operation in the database of `db` instance.
+		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+			Op:        model.OperationTypeCreate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(types.CTX_USERNAME),
+			RequestId: c.GetString(types.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		}); err != nil {
+			log.Error("failed to write operation log to database: ", err.Error())
+		}
+		ResponseJSON(c, CodeSuccess, req)
 	}
-	// 2.Create resource in database.
-	// database.Database().Delete just set "deleted_at" field to current time, not really delete.
-	// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
-	// NOTE: WithExpand(req.Expands()...) is not a good choices.
-	// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-	if err := database.Database[M]().WithExpand(req.Expands()).Create(req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 3.Perform business logic processing after create resource
-	if err := new(service.Factory[M]).Service().CreateAfter(service.GinContext(c), req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 4.record operation log to database.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	record, _ := json.Marshal(req)
-	if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		Op:        model.OperationTypeCreate,
-		Model:     typ.Name(),
-		Table:     tableName,
-		RecordId:  req.GetID(),
-		Record:    util.BytesToString(record),
-		IP:        c.ClientIP(),
-		User:      c.GetString(types.CTX_USERNAME),
-		URI:       c.Request.RequestURI,
-		Method:    c.Request.Method,
-		UserAgent: c.Request.UserAgent(),
-	}); err != nil {
-		log.Error("failed to write operation log to database: ", err.Error())
-	}
-	ResponseJSON(c, CodeSuccess, req)
 }
 
 // Delete is a generic function to product gin handler to delete one or multiple resources.
@@ -158,109 +169,118 @@ func Create[M types.Model](c *gin.Context) {
 // Delete multiple resources:
 // - specify resource `id` slice in "http body data".
 func Delete[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "delete").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	ml := make([]M, 0)
+	DeleteFactory[M]()(c)
+}
 
-	// Delete one record accoding to "query parameter `id`".
-	if id, ok := c.GetQuery(QUERY_ID); ok {
-		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(id)
-		ml = append(ml, m)
-	}
-	// Delete one record accoding to "route parameter `id`".
-	if id := c.Param(PARAM_ID); len(id) != 0 {
-		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(id)
-		ml = append(ml, m)
-	}
-	// Delete multiple records accoding to "http body data".
-	ids := make([]string, 0)
-	if err := c.ShouldBindJSON(&ids); err == nil {
-		// remove empty string
-		_ids := make([]string, 0)
-		for i := range ids {
-			if len(ids[i]) == 0 {
-				continue
-			}
-			_ids = append(_ids, ids[i])
-		}
-		if len(_ids) == 0 {
-			log.Warn("id list is empty, skip delete")
-			ResponseJSON(c, CodeSuccess)
-			return
-		}
-		for i := range _ids {
+// DeleteFactory is a factory function to product gin handler to delete one or multiple resources.
+func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "delete").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		ml := make([]M, 0)
+
+		// Delete one record accoding to "query parameter `id`".
+		if id, ok := c.GetQuery(QUERY_ID); ok {
 			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
 			m := reflect.New(typ).Interface().(M)
-			m.SetID(_ids[i])
+			m.SetID(id)
 			ml = append(ml, m)
 		}
-	} else {
-		log.Warn(err)
-	}
+		// Delete one record accoding to "route parameter `id`".
+		if id := c.Param(PARAM_ID); len(id) != 0 {
+			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
+			ml = append(ml, m)
+		}
+		// Delete multiple records accoding to "http body data".
+		ids := make([]string, 0)
+		if err := c.ShouldBindJSON(&ids); err == nil {
+			// remove empty string
+			_ids := make([]string, 0)
+			for i := range ids {
+				if len(ids[i]) == 0 {
+					continue
+				}
+				_ids = append(_ids, ids[i])
+			}
+			if len(_ids) == 0 {
+				log.Warn("id list is empty, skip delete")
+				ResponseJSON(c, CodeSuccess)
+				return
+			}
+			for i := range _ids {
+				// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+				m := reflect.New(typ).Interface().(M)
+				m.SetID(_ids[i])
+				ml = append(ml, m)
+			}
+		} else {
+			log.Warn(err)
+		}
 
-	log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
-	// 1.Perform business logic processing before delete resources.
-	if err := new(service.Factory[M]).Service().DeleteBefore(service.GinContext(c), ml...); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// find out the records and record to operation log.
-	copied := make([]M, len(ml))
-	for i := range ml {
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(ml[i].GetID())
-		if err := database.Database[M]().WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
+		// 1.Perform business logic processing before delete resources.
+		if err := new(service.Factory[M]).Service().DeleteBefore(service.GinContext(c), ml...); err != nil {
 			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
 		}
-		copied[i] = m
-	}
-	// 2.Delete resources in database.
-	if err := database.Database[M]().Delete(ml...); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 3.Perform business logic processing after delete resources.
-	if err := new(service.Factory[M]).Service().DeleteAfter(service.GinContext(c), ml...); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 4.record operation log to database.
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	for i := range ml {
-		record, _ := json.Marshal(copied[i])
-		if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-			Op:        model.OperationTypeDelete,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  ml[i].GetID(),
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
+		// find out the records and record to operation log.
+		copied := make([]M, len(ml))
+		for i := range ml {
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(ml[i].GetID())
+			if err := handler().WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+				log.Error(err)
+			}
+			copied[i] = m
 		}
+		// 2.Delete resources in database.
+		if err := handler().Delete(ml...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 3.Perform business logic processing after delete resources.
+		if err := new(service.Factory[M]).Service().DeleteAfter(service.GinContext(c), ml...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		for i := range ml {
+			record, _ := json.Marshal(copied[i])
+			if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+				Op:        model.OperationTypeDelete,
+				Model:     typ.Name(),
+				Table:     tableName,
+				RecordId:  ml[i].GetID(),
+				Record:    util.BytesToString(record),
+				IP:        c.ClientIP(),
+				User:      c.GetString(types.CTX_USERNAME),
+				RequestId: c.GetString(types.REQUEST_ID),
+				URI:       c.Request.RequestURI,
+				Method:    c.Request.Method,
+				UserAgent: c.Request.UserAgent(),
+			}); err != nil {
+				log.Error("failed to write operation log to database: ", err.Error())
+			}
+		}
+		ResponseJSON(c, CodeSuccess)
 	}
-	ResponseJSON(c, CodeSuccess)
 }
 
 // Update is a generic function to product gin handler to update one resource.
@@ -272,86 +292,95 @@ func Delete[M types.Model](c *gin.Context) {
 // "router parameter `id`" has more priority than "http body data".
 // It will skip decode id from "http body data" if "router parameter `id`" not empty.
 func Update[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "update").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	id := c.Param(PARAM_ID)
-	req := *new(M)
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	log.Infoz("update from request", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
-	if len(id) == 0 {
-		id = req.GetID()
-	}
-	data := make([]M, 0)
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	m := reflect.New(typ).Interface().(M)
-	m.SetID(id)
+	UpdateFactory[M]()(c)
+}
 
-	// Make sure the record must be already exists.
-	if err := database.Database[M]().WithLimit(1).WithQuery(m).List(&data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if len(data) != 1 {
-		log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
-		ResponseJSON(c, CodeNotFound)
-		return
-	}
+// UpdateFactory is a factory function to product gin handler to update one resource.
+func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "update").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		id := c.Param(PARAM_ID)
+		req := *new(M)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		log.Infoz("update from request", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+		if len(id) == 0 {
+			id = req.GetID()
+		}
+		data := make([]M, 0)
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		m := reflect.New(typ).Interface().(M)
+		m.SetID(id)
 
-	req.SetCreatedAt(data[0].GetCreatedAt())    // keep original "created_at"
-	req.SetCreatedBy(data[0].GetCreatedBy())    // keep original "created_by"
-	req.SetUpdatedBy(c.GetString(CTX_USERNAME)) // keep original "updated_by"
-	// 1.Perform business logic processing before update resource.
-	if err := new(service.Factory[M]).Service().UpdateBefore(service.GinContext(c), req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
+		// Make sure the record must be already exists.
+		if err := handler().WithLimit(1).WithQuery(m).List(&data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if len(data) != 1 {
+			log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
+			ResponseJSON(c, CodeNotFound)
+			return
+		}
+
+		req.SetCreatedAt(data[0].GetCreatedAt())    // keep original "created_at"
+		req.SetCreatedBy(data[0].GetCreatedBy())    // keep original "created_by"
+		req.SetUpdatedBy(c.GetString(CTX_USERNAME)) // keep original "updated_by"
+		// 1.Perform business logic processing before update resource.
+		if err := new(service.Factory[M]).Service().UpdateBefore(service.GinContext(c), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Update resource in database.
+		log.Infoz("update in database", zap.Object(typ.Name(), req))
+		if err := handler().Update(req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 3.Perform business logic processing after update resource.
+		if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+			Op:        model.OperationTypeUpdate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(types.CTX_USERNAME),
+			RequestId: c.GetString(types.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		}); err != nil {
+			log.Error("failed to write operation log to database: ", err.Error())
+		}
+		ResponseJSON(c, CodeSuccess, req)
 	}
-	// 2.Update resource in database.
-	log.Infoz("update in database", zap.Object(typ.Name(), req))
-	if err := database.Database[M]().Update(req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 3.Perform business logic processing after update resource.
-	if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 4.record operation log to database.
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	record, _ := json.Marshal(req)
-	if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		Op:        model.OperationTypeUpdate,
-		Model:     typ.Name(),
-		Table:     tableName,
-		RecordId:  req.GetID(),
-		Record:    util.BytesToString(record),
-		IP:        c.ClientIP(),
-		User:      c.GetString(types.CTX_USERNAME),
-		URI:       c.Request.RequestURI,
-		Method:    c.Request.Method,
-		UserAgent: c.Request.UserAgent(),
-	}); err != nil {
-		log.Error("failed to write operation log to database: ", err.Error())
-	}
-	ResponseJSON(c, CodeSuccess, req)
 }
 
 // UpdatePartial is a generic function to product gin handler to partial update one resource.
@@ -365,170 +394,179 @@ func Update[M types.Model](c *gin.Context) {
 // - specified in "query parameter".
 // - specified in "http body data".
 func UpdatePartial[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "update_partial").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	id := c.Param(PARAM_ID)
-	req := *new(M)
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if len(id) == 0 {
-		id = req.GetID()
-	}
-	data := make([]M, 0)
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	m := reflect.New(typ).Interface().(M)
-	m.SetID(id)
+	UpdatePartialFactory[M]()(c)
+}
 
-	// Make sure the record must be already exists.
-	if err := database.Database[M]().WithLimit(1).WithQuery(m).List(&data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if len(data) != 1 {
-		log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
-		ResponseJSON(c, CodeNotFound)
-		return
-	}
-	// req.SetCreatedAt(data[0].GetCreatedAt())
-	// req.SetCreatedBy(data[0].GetCreatedBy())
-	// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-	data[0].SetUpdatedBy(c.GetString(CTX_USERNAME))
+// UpdatePartialFactory is a factory function to product gin handler to partial update one resource.
+func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "update_partial").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		id := c.Param(PARAM_ID)
+		req := *new(M)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if len(id) == 0 {
+			id = req.GetID()
+		}
+		data := make([]M, 0)
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		m := reflect.New(typ).Interface().(M)
+		m.SetID(id)
 
-	newVal := reflect.ValueOf(req).Elem()
-	oldVal := reflect.ValueOf(data[0]).Elem()
-	for i := 0; i < typ.NumField(); i++ {
-		// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
-		switch typ.Field(i).Type.Kind() {
-		case reflect.Struct: // skip update base model.
-			switch typ.Field(i).Type.Name() {
-			case "GormTime": // The underlying type of model.GormTime(type of time.Time) is struct, we should continue handle.
+		// Make sure the record must be already exists.
+		if err := handler().WithLimit(1).WithQuery(m).List(&data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if len(data) != 1 {
+			log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
+			ResponseJSON(c, CodeNotFound)
+			return
+		}
+		// req.SetCreatedAt(data[0].GetCreatedAt())
+		// req.SetCreatedBy(data[0].GetCreatedBy())
+		// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+		data[0].SetUpdatedBy(c.GetString(CTX_USERNAME))
 
-			case "Asset", "Base":
-				// AssetChecking 有匿名继承 Asset, 所以要检查是不是结构体 Asset.
-				//
-				// 可以自动深度查找,不需要链式查找, 例如
-				// newVal.FieldByName("Asset").FieldByName("Remark").IsValid() 可以简化为
-				// newVal.FieldByName("Remark").IsValid()
+		newVal := reflect.ValueOf(req).Elem()
+		oldVal := reflect.ValueOf(data[0]).Elem()
+		for i := 0; i < typ.NumField(); i++ {
+			// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
+			switch typ.Field(i).Type.Kind() {
+			case reflect.Struct: // skip update base model.
+				switch typ.Field(i).Type.Name() {
+				case "GormTime": // The underlying type of model.GormTime(type of time.Time) is struct, we should continue handle.
 
-				// Make sure the type of "Remark" is pointer to golang base type.
-				fieldRemark := "Remark"
-				if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
-					if !newVal.FieldByName(fieldRemark).IsZero() {
-						if newVal.FieldByName(fieldRemark).CanSet() {
-							// output log must before set value.
-							if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-									oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
-							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-									oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
+				case "Asset", "Base":
+					// AssetChecking 有匿名继承 Asset, 所以要检查是不是结构体 Asset.
+					//
+					// 可以自动深度查找,不需要链式查找, 例如
+					// newVal.FieldByName("Asset").FieldByName("Remark").IsValid() 可以简化为
+					// newVal.FieldByName("Remark").IsValid()
+
+					// Make sure the type of "Remark" is pointer to golang base type.
+					fieldRemark := "Remark"
+					if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
+						if !newVal.FieldByName(fieldRemark).IsZero() {
+							if newVal.FieldByName(fieldRemark).CanSet() {
+								// output log must before set value.
+								if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
+									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
+										oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
+								} else {
+									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
+										oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
+								}
+								oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
 							}
-							oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
 						}
 					}
-				}
-				// Make sure the type of "Order" is pointer to golang base type.
-				fieldOrder := "Order"
-				if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
-					if !newVal.FieldByName(fieldOrder).IsZero() {
-						if newVal.FieldByName(fieldOrder).CanSet() {
-							// output log must before set value.
-							if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-									oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
-							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-									oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
+					// Make sure the type of "Order" is pointer to golang base type.
+					fieldOrder := "Order"
+					if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
+						if !newVal.FieldByName(fieldOrder).IsZero() {
+							if newVal.FieldByName(fieldOrder).CanSet() {
+								// output log must before set value.
+								if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
+									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
+										oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
+								} else {
+									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
+										oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
+								}
+								oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
 							}
-							oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
 						}
 					}
+					continue
+
+				default:
+					continue
 				}
-				continue
-
-			default:
+			}
+			if !newVal.Field(i).IsValid() {
+				// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
 				continue
 			}
-		}
-		if !newVal.Field(i).IsValid() {
-			// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
-			continue
-		}
-		// base type such like int and string have default value(zero value).
-		// If the struct field(the field type is golang base type) supported by patch update,
-		// the field type must be pointer to base type, such like *string, *int.
-		if newVal.Field(i).IsZero() {
-			// slog.Infof("field %s is zero value, skip", typ.Field(i).Name)
-			// slog.Infof("DeepEqual: %v : %v : %v : %v", typ.Field(i).Name, newVal.Field(i).Interface(), oldVal.Field(i).Interface(), reflect.DeepEqual(newVal.Field(i), oldVal.Field(i)))
-			continue
-		}
-		if newVal.Field(i).CanSet() {
-			// output log must before set value.
-			if newVal.Field(i).Kind() == reflect.Pointer {
-				log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
-			} else {
-				log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
+			// base type such like int and string have default value(zero value).
+			// If the struct field(the field type is golang base type) supported by patch update,
+			// the field type must be pointer to base type, such like *string, *int.
+			if newVal.Field(i).IsZero() {
+				// log.Warnf("field %s is zero value, skip", typ.Field(i).Name)
+				// log.Warnf("DeepEqual: %v : %v : %v : %v", typ.Field(i).Name, newVal.Field(i).Interface(), oldVal.Field(i).Interface(), reflect.DeepEqual(newVal.Field(i), oldVal.Field(i)))
+				continue
 			}
-			oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
+			if newVal.Field(i).CanSet() {
+				// output log must before set value.
+				if newVal.Field(i).Kind() == reflect.Pointer {
+					log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
+				} else {
+					log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
+				}
+				oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
+			}
 		}
-	}
-	// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
+		// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
 
-	// 1.Perform business logic processing before partial update resource.
-	if err := new(service.Factory[M]).Service().UpdatePartialBefore(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
+		// 1.Perform business logic processing before partial update resource.
+		if err := new(service.Factory[M]).Service().UpdatePartialBefore(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Partial update resource in database.
+		if err := handler().Update(oldVal.Addr().Interface().(M)); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 3.Perform business logic processing after partial update resource.
+		if err := new(service.Factory[M]).Service().UpdatePartialAfter(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		// NOTE: We should record the `req` instead of `oldVal`,
+		// The req is `newVal`.
+		record, _ := json.Marshal(req)
+		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+			Op:        model.OperationTypeUpdatePartial,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(types.CTX_USERNAME),
+			RequestId: c.GetString(types.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		}); err != nil {
+			log.Error("failed to write operation log to database: ", err.Error())
+		}
+		// NOTE: You should response `oldVal` instead of `req`.
+		// The req is `newVal`.
+		ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
+		// ResponseJSON(c, CodeSuccess, req)
 	}
-	// 2.Partial update resource in database.
-	if err := database.Database[M]().Update(oldVal.Addr().Interface().(M)); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 3.Perform business logic processing after partial update resource.
-	if err := new(service.Factory[M]).Service().UpdatePartialAfter(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 4.record operation log to database.
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	// NOTE: We should record the `req` instead of `oldVal`,
-	// The req is `newVal`.
-	record, _ := json.Marshal(req)
-	if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		Op:        model.OperationTypeUpdatePartial,
-		Model:     typ.Name(),
-		Table:     tableName,
-		RecordId:  req.GetID(),
-		Record:    util.BytesToString(record),
-		IP:        c.ClientIP(),
-		User:      c.GetString(types.CTX_USERNAME),
-		URI:       c.Request.RequestURI,
-		Method:    c.Request.Method,
-		UserAgent: c.Request.UserAgent(),
-	}); err != nil {
-		log.Error("failed to write operation log to database: ", err.Error())
-	}
-	// NOTE: You should response `oldVal` instead of `req`.
-	// The req is `newVal`.
-	ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
-	// ResponseJSON(c, CodeSuccess, req)
 }
 
 // List is a generic function to product gin handler to list resources in backend.
@@ -561,175 +599,185 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 //     For examples:
 //     /department/myid?_fuzzy=true
 func List[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "list").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	var page, size int
-	var startTime, endTime time.Time
-	if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
-		page, _ = strconv.Atoi(pageStr)
-	}
-	if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
-		size, _ = strconv.Atoi(sizeStr)
-	}
-	columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
-	if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
-		startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
-	}
-	if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
-		endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
-	}
+	ListFactory[M]()(c)
+}
 
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
-	typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-	m := reflect.New(typ).Interface().(M)
-
-	if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
-		log.Warn("failed to parse uri query parameter into model: ", err)
-	}
-	log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
-
-	var err error
-	var fuzzy bool
-	var expands []string
-	nocache := true // default disable cache.
-	depth := 1
-	data := make([]M, 0)
-	if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
-		var _nocache bool
-		if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
-			nocache = _nocache
+// ListFactory is a factory function to product gin handler to list resources in backend.
+func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "list").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		var page, size int
+		var startTime, endTime time.Time
+		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
+			page, _ = strconv.Atoi(pageStr)
 		}
-	}
-	if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
-		fuzzy, _ = strconv.ParseBool(fuzzyStr)
-	}
-	if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
-		depth, _ = strconv.Atoi(depthStr)
-		if depth < 1 || depth > 99 {
-			depth = 1
+		if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
+			size, _ = strconv.Atoi(sizeStr)
 		}
-	}
-	if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
-		var _expands []string
-		items := strings.Split(expandStr, ",")
-		if len(items) > 0 {
-			if items[0] == VALUE_ALL { // expand all feilds
-				items = m.Expands()
+		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+		}
+		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+			endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
+		}
+
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
+		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
+		m := reflect.New(typ).Interface().(M)
+
+		// FIXME: failed to convert value when size value is -1.
+		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
+			log.Warn("failed to parse uri query parameter into model: ", err)
+		}
+		log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
+
+		var err error
+		var fuzzy bool
+		var expands []string
+		nocache := true // default disable cache.
+		depth := 1
+		data := make([]M, 0)
+		if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
+			var _nocache bool
+			if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
+				nocache = _nocache
 			}
 		}
-		for _, e := range m.Expands() {
-			for _, item := range items {
-				if strings.EqualFold(item, e) {
-					_expands = append(_expands, e)
+		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
+			fuzzy, _ = strconv.ParseBool(fuzzyStr)
+		}
+		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+			depth, _ = strconv.Atoi(depthStr)
+			if depth < 1 || depth > 99 {
+				depth = 1
+			}
+		}
+		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+			var _expands []string
+			items := strings.Split(expandStr, ",")
+			if len(items) > 0 {
+				if items[0] == VALUE_ALL { // expand all feilds
+					items = m.Expands()
 				}
 			}
-		}
-		// fmt.Println("_expends: ", _expands)
-		fieldsMap := make(map[string]reflect.Kind)
-		for i := 0; i < typ.NumField(); i++ {
-			fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
-		}
-		for _, e := range _expands {
-			// If the expanding field not exists in the structure fiedls, skip depth expand.
-			kind, found := fieldsMap[e]
-			if !found {
-				expands = append(expands, e)
-				continue
+			for _, e := range m.Expands() {
+				for _, item := range items {
+					if strings.EqualFold(item, e) {
+						_expands = append(_expands, e)
+					}
+				}
 			}
-			// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
-			if kind != reflect.Slice {
-				expands = append(expands, e)
-				continue
+			// fmt.Println("_expends: ", _expands)
+			fieldsMap := make(map[string]reflect.Kind)
+			for i := 0; i < typ.NumField(); i++ {
+				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
 			}
-			t := make([]string, depth)
-			for i := 0; i < depth; i++ {
-				t[i] = e
+			for _, e := range _expands {
+				// If the expanding field not exists in the structure fiedls, skip depth expand.
+				kind, found := fieldsMap[e]
+				if !found {
+					expands = append(expands, e)
+					continue
+				}
+				// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
+				if kind != reflect.Slice {
+					expands = append(expands, e)
+					continue
+				}
+				t := make([]string, depth)
+				for i := 0; i < depth; i++ {
+					t[i] = e
+				}
+				// fmt.Println("t: ", t)
+				// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
+				expands = append(expands, strings.Join(t, "."))
 			}
-			// fmt.Println("t: ", t)
-			// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
-			expands = append(expands, strings.Join(t, "."))
+			// fmt.Println("expands: ", expands)
 		}
-		// fmt.Println("expands: ", expands)
-	}
 
-	svc := new(service.Factory[M]).Service()
-	svcCtx := service.GinContext(c)
-	// 1.Perform business logic processing before list resources.
-	if err = svc.ListBefore(svcCtx, &data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	sortBy, _ := c.GetQuery(QUERY_SORTBY)
-	// 2.List resources from database.
-	cache := make([]byte, 0)
-	cached := false
-	if err = database.Database[M]().
-		WithScope(page, size).
-		WithQuery(svc.Filter(svcCtx, m), fuzzy).
-		WithExclude(m.Excludes()).
-		WithExpand(expands, sortBy).
-		WithOrder(sortBy).
-		WithTimeRange(columnName, startTime, endTime).
-		WithCache(!nocache).
-		List(&data, &cache); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if len(cache) > 0 {
-		cached = true
-	}
-	// 3.Perform business logic processing after list resources.
-	if err := svc.ListAfter(svcCtx, &data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	total := new(int64)
-	if err := database.Database[M]().
-		// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
-		WithQuery(svc.Filter(svcCtx, m), fuzzy).
-		WithExclude(m.Excludes()).
-		WithTimeRange(columnName, startTime, endTime).
-		WithCache(!nocache).
-		Count(total); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// // 4.record operation log to database.
-	// var tableName string
-	// items := strings.Split(typ.Name(), ".")
-	// if len(items) > 0 {
-	// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	// }
-	// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-	// 	Op:        model.OperationTypeList,
-	// 	Model:     typ.Name(),
-	// 	Table:     tableName,
-	// 	IP:        c.ClientIP(),
-	// 	User:      c.GetString(types.GinCtxUsername),
-	// 	URI:       c.Request.RequestURI,
-	// 	Method:    c.Request.Method,
-	// 	UserAgent: c.Request.UserAgent(),
-	// }); err != nil {
-	// 	slog.Error("failed to write operation log to database: ", err.Error())
-	// }
-	// types.Sort[M](types.UpdatedTime, data)
-	log.Info(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total))
-	if cached {
-		ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
-	} else {
-		ResponseJSON(c, CodeSuccess, gin.H{
-			"items": data,
-			"total": *total,
-		})
+		svc := new(service.Factory[M]).Service()
+		svcCtx := service.GinContext(c)
+		// 1.Perform business logic processing before list resources.
+		if err = svc.ListBefore(svcCtx, &data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		sortBy, _ := c.GetQuery(QUERY_SORTBY)
+		// 2.List resources from database.
+		cache := make([]byte, 0)
+		cached := false
+		if err = handler().
+			WithScope(page, size).
+			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithExclude(m.Excludes()).
+			WithExpand(expands, sortBy).
+			WithOrder(sortBy).
+			WithTimeRange(columnName, startTime, endTime).
+			WithCache(!nocache).
+			List(&data, &cache); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if len(cache) > 0 {
+			cached = true
+		}
+		// 3.Perform business logic processing after list resources.
+		if err := svc.ListAfter(svcCtx, &data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		total := new(int64)
+		if err := handler().
+			// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
+			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithExclude(m.Excludes()).
+			WithTimeRange(columnName, startTime, endTime).
+			WithCache(!nocache).
+			Count(total); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeList,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(types.CTX_USERNAME),
+		// 	RequestId: c.GetString(types.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error("failed to write operation log to database: ", err.Error())
+		// }
+		// types.Sort[M](types.UpdatedTime, data)
+		log.Infoz(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total), zap.Object(typ.Name(), m))
+		if cached {
+			ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
+		} else {
+			ResponseJSON(c, CodeSuccess, gin.H{
+				"items": data,
+				"total": *total,
+			})
+		}
 	}
 }
 
@@ -751,137 +799,146 @@ func List[M types.Model](c *gin.Context) {
 // Route parameters:
 // - id: string or integer.
 func Get[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "get").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	if len(c.Param(PARAM_ID)) == 0 {
-		log.Error(CodeNotFoundRouteID)
-		ResponseJSON(c, CodeNotFoundRouteID)
-		return
-	}
+	GetFactory[M]()(c)
+}
 
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	m := reflect.New(typ).Interface().(M)
-
-	var err error
-	var expands []string
-	nocache := true // default disable cache.
-	depth := 1
-	if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
-		var _nocache bool
-		if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
-			nocache = _nocache
-		}
-	}
-	if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
-		depth, _ = strconv.Atoi(depthStr)
-		if depth < 1 || depth > 99 {
-			depth = 1
-		}
-	}
-	if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
-		var _expands []string
-		items := strings.Split(expandStr, ",")
-		if len(items) > 0 {
-			if items[0] == VALUE_ALL { // expand all feilds
-				items = m.Expands()
-			}
-		}
-		for _, e := range m.Expands() {
-			for _, item := range items {
-				if strings.EqualFold(item, e) {
-					_expands = append(_expands, e)
-				}
-			}
-		}
-		fmt.Println("_expends: ", _expands)
-		fieldsMap := make(map[string]reflect.Kind)
-		for i := 0; i < typ.NumField(); i++ {
-			fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
-		}
-		for _, e := range _expands {
-			// If the expanding field not exists in the structure fiedls, skip depth expand.
-			// TODO: if the field type is the structure name, make depth expand.
-			kind, found := fieldsMap[e]
-			if !found {
-				expands = append(expands, e)
-				continue
-			}
-			// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
-			if kind != reflect.Slice {
-				expands = append(expands, e)
-				continue
-			}
-			t := make([]string, depth)
-			for i := 0; i < depth; i++ {
-				t[i] = e
-			}
-			// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
-			expands = append(expands, strings.Join(t, "."))
-		}
-		fmt.Println("expands: ", expands)
-	}
-
-	// 1.Perform business logic processing before get resource.
-	if err = new(service.Factory[M]).Service().GetBefore(service.GinContext(c), m); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 2.Get resource from database.
-	cache := make([]byte, 0)
-	cached := false
-	if err = database.Database[M]().WithExpand(expands).WithCache(!nocache).Get(m, c.Param(PARAM_ID), &cache); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if len(cache) > 0 {
-		cached = true
-	}
-	// 3.Perform business logic processing after get resource.
-	if err := new(service.Factory[M]).Service().GetAfter(service.GinContext(c), m); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// It will returns a empty types.Model if found nothing from database,
-	// we should response status code "CodeNotFound".
-	if !cached {
-		if len(m.GetID()) == 0 {
-			log.Error(CodeNotFound)
-			ResponseJSON(c, CodeNotFound)
+// GetFactory is a factory function to product gin handler to list resource in backend.
+func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "get").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		if len(c.Param(PARAM_ID)) == 0 {
+			log.Error(CodeNotFoundRouteID)
+			ResponseJSON(c, CodeNotFoundRouteID)
 			return
 		}
-	}
 
-	// // 4.record operation log to database.
-	// var tableName string
-	// items := strings.Split(typ.Name(), ".")
-	// if len(items) > 0 {
-	// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	// }
-	// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-	// 	Op:        model.OperationTypeGet,
-	// 	Model:     typ.Name(),
-	// 	Table:     tableName,
-	// 	IP:        c.ClientIP(),
-	// 	User:      c.GetString(types.GinCtxUsername),
-	// 	URI:       c.Request.RequestURI,
-	// 	Method:    c.Request.Method,
-	// 	UserAgent: c.Request.UserAgent(),
-	// }); err != nil {
-	// 	slog.Error("failed to write operation log to database: ", err.Error())
-	// }
-	if cached {
-		ResponseBytes(c, CodeSuccess, cache)
-	} else {
-		ResponseJSON(c, CodeSuccess, m)
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		m := reflect.New(typ).Interface().(M)
+
+		var err error
+		var expands []string
+		nocache := true // default disable cache.
+		depth := 1
+		if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
+			var _nocache bool
+			if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
+				nocache = _nocache
+			}
+		}
+		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+			depth, _ = strconv.Atoi(depthStr)
+			if depth < 1 || depth > 99 {
+				depth = 1
+			}
+		}
+		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+			var _expands []string
+			items := strings.Split(expandStr, ",")
+			if len(items) > 0 {
+				if items[0] == VALUE_ALL { // expand all feilds
+					items = m.Expands()
+				}
+			}
+			for _, e := range m.Expands() {
+				for _, item := range items {
+					if strings.EqualFold(item, e) {
+						_expands = append(_expands, e)
+					}
+				}
+			}
+			// fmt.Println("_expends: ", _expands)
+			fieldsMap := make(map[string]reflect.Kind)
+			for i := 0; i < typ.NumField(); i++ {
+				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
+			}
+			for _, e := range _expands {
+				// If the expanding field not exists in the structure fiedls, skip depth expand.
+				// TODO: if the field type is the structure name, make depth expand.
+				kind, found := fieldsMap[e]
+				if !found {
+					expands = append(expands, e)
+					continue
+				}
+				// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
+				if kind != reflect.Slice {
+					expands = append(expands, e)
+					continue
+				}
+				t := make([]string, depth)
+				for i := 0; i < depth; i++ {
+					t[i] = e
+				}
+				// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
+				expands = append(expands, strings.Join(t, "."))
+			}
+			// fmt.Println("expands: ", expands)
+		}
+
+		// 1.Perform business logic processing before get resource.
+		if err = new(service.Factory[M]).Service().GetBefore(service.GinContext(c), m); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Get resource from database.
+		cache := make([]byte, 0)
+		cached := false
+		if err = handler().WithExpand(expands).WithCache(!nocache).Get(m, c.Param(PARAM_ID), &cache); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if len(cache) > 0 {
+			cached = true
+		}
+		// 3.Perform business logic processing after get resource.
+		if err := new(service.Factory[M]).Service().GetAfter(service.GinContext(c), m); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// It will returns a empty types.Model if found nothing from database,
+		// we should response status code "CodeNotFound".
+		if !cached {
+			if len(m.GetID()) == 0 {
+				log.Error(CodeNotFound)
+				ResponseJSON(c, CodeNotFound)
+				return
+			}
+		}
+
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeGet,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(types.CTX_USERNAME),
+		// 	RequestId: c.GetString(types.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error("failed to write operation log to database: ", err.Error())
+		// }
+		if cached {
+			ResponseBytes(c, CodeSuccess, cache)
+		} else {
+			ResponseJSON(c, CodeSuccess, m)
+		}
 	}
 }
 
@@ -915,263 +972,291 @@ func Get[M types.Model](c *gin.Context) {
 //     For examples:
 //     /department/myid?_fuzzy=true
 func Export[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "export").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	var page, size, limit int
-	var startTime, endTime time.Time
-	if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
-		page, _ = strconv.Atoi(pageStr)
-	}
-	if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
-		size, _ = strconv.Atoi(sizeStr)
-	}
-	if limitStr, ok := c.GetQuery(QUERY_LIMIT); ok {
-		limit, _ = strconv.Atoi(limitStr)
-	}
-	columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
-	if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
-		startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
-	}
-	if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
-		endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
-	}
-
-	// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-	// 'typ' is the structure type, such as: model.User.
-	// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
-	typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-	m := reflect.New(typ).Interface().(M)
-
-	if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
-		log.Warn("failed to parse uri query parameter into model: ", err)
-	}
-	log.Info("query parameter: ", m)
-
-	var err error
-	var fuzzy bool
-	var depth int = 1
-	var expands []string
-	data := make([]M, 0)
-	if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
-		fuzzy, _ = strconv.ParseBool(fuzzyStr)
-	}
-	if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
-		depth, _ = strconv.Atoi(depthStr)
-		if depth < 1 || depth > 99 {
-			depth = 1
-		}
-	}
-	if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
-		var _expands []string
-		items := strings.Split(expandStr, ",")
-		if len(items) > 0 {
-			if items[0] == VALUE_ALL { // expand all feilds
-				items = m.Expands()
-			}
-		}
-		for _, e := range m.Expands() {
-			for _, item := range items {
-				if strings.EqualFold(item, e) {
-					_expands = append(_expands, e)
-				}
-			}
-		}
-		fmt.Println("_expends: ", _expands)
-		fieldsMap := make(map[string]reflect.Kind)
-		for i := 0; i < typ.NumField(); i++ {
-			fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
-		}
-		for _, e := range _expands {
-			// If the expanding field not exists in the structure fiedls, skip depth expand.
-			kind, found := fieldsMap[e]
-			if !found {
-				expands = append(expands, e)
-				continue
-			}
-			// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
-			if kind != reflect.Slice {
-				expands = append(expands, e)
-				continue
-			}
-			t := make([]string, depth)
-			for i := 0; i < depth; i++ {
-				t[i] = e
-			}
-			fmt.Println("t: ", t)
-			// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
-			expands = append(expands, strings.Join(t, "."))
-		}
-		fmt.Println("expands: ", expands)
-	}
-
-	// 1.Perform business logic processing before list resources.
-	if err = new(service.Factory[M]).Service().ListBefore(service.GinContext(c), &data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	sortBy, _ := c.GetQuery(QUERY_SORTBY)
-	_, _ = page, size
-	svc := new(service.Factory[M]).Service()
-	svcCtx := service.GinContext(c)
-	// 2.List resources from database.
-	if err = database.Database[M]().
-		// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
-		WithLimit(limit).
-		WithQuery(svc.Filter(svcCtx, m), fuzzy).
-		WithExclude(m.Excludes()).
-		WithExpand(expands, sortBy).
-		WithOrder(sortBy).
-		WithTimeRange(columnName, startTime, endTime).
-		List(&data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 3.Perform business logic processing after list resources.
-	if err = new(service.Factory[M]).Service().ListAfter(service.GinContext(c), &data); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	log.Info("export data length: ", len(data))
-	// 4.Export
-	exported, err := new(service.Factory[M]).Service().Export(service.GinContext(c), data...)
-	if err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// 5.record operation log to database.
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	record, _ := json.Marshal(data)
-	if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		Op:        model.OperationTypeExport,
-		Model:     typ.Name(),
-		Table:     tableName,
-		Record:    util.BytesToString(record),
-		IP:        c.ClientIP(),
-		User:      c.GetString(types.CTX_USERNAME),
-		URI:       c.Request.RequestURI,
-		Method:    c.Request.Method,
-		UserAgent: c.Request.UserAgent(),
-	}); err != nil {
-		log.Error("failed to write operation log to database: ", err.Error())
-	}
-	ResponseDATA(c, exported, map[string]string{
-		"Content-Disposition": "attachment; filename=exported.xlsx",
-	})
+	ExportFactory[M]()(c)
 }
 
-// Import
-func Import[M types.Model](c *gin.Context) {
-	log := logger.Controller.
-		With(types.PHASE, "import").
-		With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-		With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-		With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
-	// NOTE:字段为 file 必须和前端协商好.
+// ExportFactory is a factory function to export resources to frontend.
+func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "export").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		var page, size, limit int
+		var startTime, endTime time.Time
+		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
+			page, _ = strconv.Atoi(pageStr)
+		}
+		if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
+			size, _ = strconv.Atoi(sizeStr)
+		}
+		if limitStr, ok := c.GetQuery(QUERY_LIMIT); ok {
+			limit, _ = strconv.Atoi(limitStr)
+		}
+		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+		}
+		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+			endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
+		}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// check file size.
-	if file.Size > int64(MAX_IMPORT_SIZE) {
-		log.Error(CodeTooLargeFile)
-		ResponseJSON(c, CodeTooLargeFile)
-		return
-	}
-	fd, err := file.Open()
-	if err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	defer fd.Close()
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
+		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
+		m := reflect.New(typ).Interface().(M)
 
-	buf := new(bytes.Buffer)
-	if _, err = io.Copy(buf, fd); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	// filetype must be png or jpg.
-	filetype, mime := filetype.DetectBytes(buf.Bytes())
-	_, _ = filetype, mime
+		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
+			log.Warn("failed to parse uri query parameter into model: ", err)
+		}
+		log.Info("query parameter: ", m)
 
-	// check filetype
+		var err error
+		var fuzzy bool
+		var depth int = 1
+		var expands []string
+		data := make([]M, 0)
+		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
+			fuzzy, _ = strconv.ParseBool(fuzzyStr)
+		}
+		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+			depth, _ = strconv.Atoi(depthStr)
+			if depth < 1 || depth > 99 {
+				depth = 1
+			}
+		}
+		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+			var _expands []string
+			items := strings.Split(expandStr, ",")
+			if len(items) > 0 {
+				if items[0] == VALUE_ALL { // expand all feilds
+					items = m.Expands()
+				}
+			}
+			for _, e := range m.Expands() {
+				for _, item := range items {
+					if strings.EqualFold(item, e) {
+						_expands = append(_expands, e)
+					}
+				}
+			}
+			// fmt.Println("_expends: ", _expands)
+			fieldsMap := make(map[string]reflect.Kind)
+			for i := 0; i < typ.NumField(); i++ {
+				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
+			}
+			for _, e := range _expands {
+				// If the expanding field not exists in the structure fiedls, skip depth expand.
+				kind, found := fieldsMap[e]
+				if !found {
+					expands = append(expands, e)
+					continue
+				}
+				// If the expanding field exists in the structure but the kind is not slice, skip depth expand.
+				if kind != reflect.Slice {
+					expands = append(expands, e)
+					continue
+				}
+				t := make([]string, depth)
+				for i := 0; i < depth; i++ {
+					t[i] = e
+				}
+				// fmt.Println("t: ", t)
+				// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
+				expands = append(expands, strings.Join(t, "."))
+			}
+			// fmt.Println("expands: ", expands)
+		}
 
-	ml, err := new(service.Factory[M]).Service().Import(service.GinContext(c), buf)
-	if err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-
-	// service layer already create/update the records in database, just update fields "created_by", "updated_by".
-	for i := range ml {
-		ml[i].SetCreatedBy(c.GetString(CTX_USERNAME))
-		ml[i].SetUpdatedBy(c.GetString(CTX_USERNAME))
-	}
-	if err := database.Database[M]().Update(ml...); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), ml...); err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	for i := range ml {
-		if err := ml[i].UpdateAfter(); err != nil {
+		// 1.Perform business logic processing before list resources.
+		if err = new(service.Factory[M]).Service().ListBefore(service.GinContext(c), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
 		}
+		sortBy, _ := c.GetQuery(QUERY_SORTBY)
+		_, _ = page, size
+		svc := new(service.Factory[M]).Service()
+		svcCtx := service.GinContext(c)
+		// 2.List resources from database.
+		if err = handler().
+			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
+			WithLimit(limit).
+			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithExclude(m.Excludes()).
+			WithExpand(expands, sortBy).
+			WithOrder(sortBy).
+			WithTimeRange(columnName, startTime, endTime).
+			List(&data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 3.Perform business logic processing after list resources.
+		if err = new(service.Factory[M]).Service().ListAfter(service.GinContext(c), &data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		log.Info("export data length: ", len(data))
+		// 4.Export
+		exported, err := new(service.Factory[M]).Service().Export(service.GinContext(c), data...)
+		if err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 5.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(data)
+		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+			Op:        model.OperationTypeExport,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(types.CTX_USERNAME),
+			RequestId: c.GetString(types.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		}); err != nil {
+			log.Error("failed to write operation log to database: ", err.Error())
+		}
+		ResponseDATA(c, exported, map[string]string{
+			"Content-Disposition": "attachment; filename=exported.xlsx",
+		})
 	}
-	// record operation log to database.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	var tableName string
-	items := strings.Split(typ.Name(), ".")
-	if len(items) > 0 {
-		tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-	}
-	record, _ := json.Marshal(ml)
-	if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		Op:        model.OperationTypeImport,
-		Model:     typ.Name(),
-		Table:     tableName,
-		Record:    util.BytesToString(record),
-		IP:        c.ClientIP(),
-		User:      c.GetString(types.CTX_USERNAME),
-		URI:       c.Request.RequestURI,
-		Method:    c.Request.Method,
-		UserAgent: c.Request.UserAgent(),
-	}); err != nil {
-		log.Error("failed to write operation log to database: ", err.Error())
-	}
-	ResponseJSON(c, CodeSuccess)
 }
 
-func Test[M types.Model](c *gin.Context) {
-	typ := reflect.TypeOf(new(M)).Elem()
-	val := reflect.New(reflect.TypeOf(new(M)).Elem()).Interface()
-	spew.Dump(typ)
-	spew.Dump(val)
-	fmt.Println(typ)
-	fmt.Println(val)
-	ResponseJSON(c, CodeSuccess, gin.H{
-		"typ": typ,
-	})
+// Import
+func Import[M types.Model](c *gin.Context) {
+	ImportFactory[M]()(c)
+}
+
+// ImportFactory
+func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, db := extractConfig(cfg...)
+	return func(c *gin.Context) {
+		log := logger.Controller.
+			With(types.PHASE, "import").
+			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		// NOTE:字段为 file 必须和前端协商好.
+
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// check file size.
+		if file.Size > int64(MAX_IMPORT_SIZE) {
+			log.Error(CodeTooLargeFile)
+			ResponseJSON(c, CodeTooLargeFile)
+			return
+		}
+		fd, err := file.Open()
+		if err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		defer fd.Close()
+
+		buf := new(bytes.Buffer)
+		if _, err = io.Copy(buf, fd); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// filetype must be png or jpg.
+		filetype, mime := filetype.DetectBytes(buf.Bytes())
+		_, _ = filetype, mime
+
+		// check filetype
+
+		ml, err := new(service.Factory[M]).Service().Import(service.GinContext(c), buf)
+		if err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		// service layer already create/update the records in database, just update fields "created_by", "updated_by".
+		for i := range ml {
+			ml[i].SetCreatedBy(c.GetString(CTX_USERNAME))
+			ml[i].SetUpdatedBy(c.GetString(CTX_USERNAME))
+		}
+		if err := handler().Update(ml...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), ml...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		for i := range ml {
+			if err := ml[i].UpdateAfter(); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
+		}
+		// record operation log to database.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(ml)
+		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+			Op:        model.OperationTypeImport,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(types.CTX_USERNAME),
+			RequestId: c.GetString(types.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		}); err != nil {
+			log.Error("failed to write operation log to database: ", err.Error())
+		}
+		ResponseJSON(c, CodeSuccess)
+	}
+}
+
+func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler func() types.Database[M], db any) {
+	if len(cfg) > 0 {
+		if cfg[0] != nil {
+			db = cfg[0].DB
+		}
+	}
+	handler = func() types.Database[M] {
+		fn := database.Database[M]()
+		if len(cfg) > 0 {
+			if cfg[0] != nil {
+				if len(cfg[0].TableName) > 0 {
+					fn = database.Database[M]().WithDB(cfg[0].DB).WithTable(cfg[0].TableName)
+				} else {
+					fn = database.Database[M]().WithDB(cfg[0].DB)
+				}
+			}
+		}
+		return fn
+	}
+	return
 }

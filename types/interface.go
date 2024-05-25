@@ -268,3 +268,159 @@ type Hooker interface {
 	// GetAfter is a hook that will be invoked after get in database.
 	GetAfter() error
 }
+
+// Cache interface defines the standard operations for a generic cache mechanism.
+type Cache[M Model] interface {
+	// Set stores a Model identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing Model is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	// Returns an error if the operation fails.
+	Set(key string, values ...M)
+	// SetInt stores an integer value identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing value is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	// This method is specifically for storing integer values.
+	SetInt(key string, values ...int64)
+	// SetBool stores a boolean value identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing value is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	SetBool(key string, values ...bool)
+	// SetFloat stores a floating-point value identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing value is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	SetFloat(key string, values ...float64)
+	// SetString stores a string value identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing value is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	SetString(key string, values ...string)
+	// SetAny stores a value identified by a key in the cache, with an expiration time.
+	// If the cache already contains the key, the existing value is overwritten.
+	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
+	SetAny(key string, value any)
+
+	// Get retrieves a Model based on its key from the cache.
+	// Returns the Model associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist, the returned error will be non-nil.
+	Get(key string) ([]M, bool)
+	// GetInt retrieves an integer value based on its key from the cache.
+	// Returns the integer value associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist or the value is not an integer, the returned error will be non-nil.
+	GetInt(key string) ([]int64, bool)
+	// GetBool retrieves a boolean value based on its key from the cache.
+	// Returns the boolean value associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist, the returned error will be non-nil.
+	GetBool(key string) ([]bool, bool)
+	// GetFloat retrieves a floating-point value based on its key from the cache.
+	// Returns the floating-point value associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist, the returned error will be non-nil.
+	GetFloat(key string) ([]float64, bool)
+	// GetString retrieves a string value based on its key from the cache.
+	// Returns the string value associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist, the returned error will be non-nil.
+	GetString(key string) ([]string, bool)
+	// GetAny retrieves a value based on its key from the cache.
+	// Returns the value associated with the key and a boolean indicating whether the key was found.
+	// If the key does not exist, the returned error will be non-nil.
+	GetAny(key string) (any, bool)
+
+	// GetAll returns a map of all key-value pairs currently in the cache.
+	GetAll() map[string][]M
+	// GetAllInt returns a map containing the key-value pairs where the values are integers in the cache.
+	GetAllInt() map[string][]int64
+	// GetAllBool returns a map containing the key-value pairs where the values are booleans in the cache.
+	GetAllBool() map[string][]bool
+	// GetAllFloat returns a map containing the key-value pairs where the values are floating-point numbers in the cache.
+	GetAllFloat() map[string][]float64
+
+	// GetAllString returns a map containing the key-value pairs where the values are strings in the cache.
+	GetAllString() map[string][]string
+
+	// GetAllAny returns a map containing all the key-value pairs present in the cache, regardless of the value types.
+	GetAllAny() map[string]any
+
+	// Peek retrieves the Model associated with the given key without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the Model associated with the key and a boolean indicating whether the key was found.
+	Peek(key string) ([]M, bool)
+	// PeekInt retrieves the integer value associated with the given key from the cache without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the integer value associated with the key and a boolean indicating whether the key was found.
+	PeekInt(key string) ([]int64, bool)
+	// PeekBool retrieves the boolean value associated with the given key from the cache without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the boolean value associated with the key and a boolean indicating whether the key was found.
+	PeekBool(key string) ([]bool, bool)
+	// PeekString retrieves the string value associated with the given key from the cache without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the string value associated with the key and a boolean indicating whether the key was found.
+	PeekString(key string) ([]string, bool)
+	// PeekFloat retrieves the floating-point value associated with the given key from the cache without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the floating-point value associated with the key and a boolean indicating whether the key was found.
+	PeekFloat(key string) ([]float64, bool)
+	// PeekAny retrieves the value associated with the given key from the cache without updating the key's access time.
+	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
+	// Returns the value associated with the key and a boolean indicating whether the key was found.
+	PeekAny(key string) (any, bool)
+
+	// Remove removes the Model associated with a key from the cache.
+	Remove(key string)
+	// RemoveInt removes the integer value associated with the given key from the cache.
+	RemoveInt(key string)
+	// RemoveBool removes the boolean value associated with the given key from the cache.
+	RemoveBool(key string)
+	// RemoveFloat removes the floating-point value associated with the given key from the cache.
+	RemoveFloat(key string)
+	// RemoveString removes the string value associated with the given key from the cache.
+	RemoveString(key string)
+	// RemoveAny removes the value associated with the given key from the cache.
+	RemoveAny(key string)
+
+	// Exists checks if the cache contains a Model associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache.
+	Exists(key string) bool
+	// ExistsInt checks if the cache contains an integer value associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache and the value is an integer.
+	ExistsInt(key string) bool
+	// ExistsBool checks if the cache contains a boolean value associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache and the value is a boolean.
+	ExistsBool(key string) bool
+	// ExistsFloat checks if the cache contains a floating-point value associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache and the value is a floating-point number.
+	ExistsFloat(key string) bool
+	// ExistsString checks if the cache contains a string value associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache and the value is a string.
+	ExistsString(key string) bool
+	// ExistsAny checks if the cache contains a value associated with the given key.
+	// Returns a boolean indicating whether the key exists in the cache.
+	ExistsAny(key string) bool
+
+	// Keys returns a slice of all the keys present in the cache.
+	Keys() []string
+	// KeysInt returns a slice of keys that have integer values associated with them in the cache.
+	KeysInt() []string
+	// KeysBool returns a slice of keys that have boolean values associated with them in the cache.
+	KeysBool() []string
+	// KeysFloat returns a slice of keys that have floating-point values associated with them in the cache.
+	KeysFloat() []string
+	// KeysString returns a slice of keys that have string values associated with them in the cache.
+	KeysString() []string
+	// KeysAny returns a slice of keys that have values of any type associated with them in the cache.
+	KeysAny() []string
+
+	// Flush clears all entries in the cache.
+	Flush()
+
+	// // Count returns the number of items currently in the cache.
+	// // This can be useful for monitoring cache usage or for debugging.
+	// // Returns the count of items and an error if the operation fails.
+	// Count() int
+
+	// // Increment atomically increases the integer value of a key by delta.
+	// // The function returns the new value after the increment and an error if the operation fails or if the value is not an integer.
+	// Increment(key string, delta int64) (int64, error)
+
+	// // Decrement atomically decreases the integer value of a key by delta.
+	// // The function returns the new value after the decrement and an error if the operation fails or if the value is not an integer.
+	// Decrement(key string, delta int64) (int64, error)
+}

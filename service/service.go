@@ -28,6 +28,8 @@ var (
 func Register[S types.Service[M], M types.Model](s ...S) {
 	mu.Lock()
 	defer mu.Unlock()
+	// WARN: 一定不要使用 reflect.TypeOf(*new(M)).Name(), 因为可能存在 model.User, model2.User 的情况,
+	// 这样就会导致 key 重复.
 	key := reflect.TypeOf(*new(M)).String()
 	val := reflect.New(reflect.TypeOf(*new(S)).Elem()).Interface()
 	serviceMap[key] = val

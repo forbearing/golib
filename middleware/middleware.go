@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -19,9 +18,15 @@ import (
 	"github.com/gin-contrib/gzip"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
+)
+
+var (
+	ratelimitMap   = cmap.New[*limiter.Limiter]()
+	ratelimiterMap = cmap.New[*rate.Limiter]()
 )
 
 func Logger(filename ...string) gin.HandlerFunc {
@@ -42,7 +47,7 @@ func Logger(filename ...string) gin.HandlerFunc {
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
-			zap.Duration("latency", time.Since(start)),
+			zap.String("latency", time.Since(start).String()),
 		}
 
 		if len(c.Errors) > 0 {
@@ -117,11 +122,21 @@ func JwtAuth() gin.HandlerFunc {
 }
 
 func RateLimiter() gin.HandlerFunc {
-	limiter := rate.NewLimiter(rate.Every(100*time.Millisecond), 10)
 	return func(c *gin.Context) {
-		if err := limiter.Wait(context.TODO()); err != nil {
-			zap.S().Error(err)
-			ResponseJSON(c, CodeFailure)
+		limiter, found := ratelimiterMap.Get(c.ClientIP())
+		if !found {
+			// 桶大小为100, 每秒最多5个请求.
+			limiter = rate.NewLimiter(rate.Every(200*time.Millisecond), 100)
+			ratelimiterMap.Set(c.ClientIP(), limiter)
+		}
+		// if err := limiter.Wait(context.TODO()); err != nil {
+		// 	zap.S().Error(err)
+		// 	ResponseJSON(c, CodeFailure)
+		// 	c.Abort()
+		// 	return
+		// }
+		if !limiter.Allow() {
+			ResponseJSON(c, CodeTooManyRequests)
 			c.Abort()
 			return
 		}
@@ -175,15 +190,19 @@ func Gzip() gin.HandlerFunc {
 }
 
 func RateLimit() gin.HandlerFunc {
-	// This setting means:
-	// create a 1 request/second limiter and
-	// every token bucket in it will expire 1 hour after it was initially set.
-	lmt := tollbooth.NewLimiter(100, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
-	lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"}).
-		SetMethods([]string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete})
 	return func(c *gin.Context) {
+		lmt, exists := ratelimitMap.Get(c.ClientIP())
+		if !exists {
+			// This setting means:
+			// create a 1 request/second limiter and
+			// every token bucket in it will expire 1 hour after it was initially set.
+			lmt = tollbooth.NewLimiter(2, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
+			lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"}).
+				SetMethods([]string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete})
+		}
+
 		if err := tollbooth.LimitByRequest(lmt, c.Writer, c.Request); err != nil {
-			ResponseJSON(c, CodeTooManyRequest)
+			ResponseJSON(c, CodeTooManyRequests)
 			logger.Global.Debug(err)
 			c.Abort()
 		} else {

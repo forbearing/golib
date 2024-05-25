@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database/redis"
+	"github.com/forbearing/golib/database/cache"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
+
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -84,6 +85,7 @@ func (db *database[M]) reset() {
 	db.tableName = ""
 	db.batchSize = 0
 	db.shouldAutoMigrate = false
+	db.db = DB.WithContext(context.Background())
 }
 
 func (db *database[M]) prepare() error {
@@ -101,8 +103,9 @@ func (db *database[M]) prepare() error {
 // WithDB returns a new database manipulator, only support *gorm.DB.
 // eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithDB(x any) types.Database[M] {
-	// if x is nil, return the default database.
-	if x == nil {
+	var empty *gorm.DB
+	// if x is nil or empty gorm instance, return the default database.
+	if x == nil || x == new(gorm.DB) || x == empty {
 		return db
 	}
 	// if x type is not *gorm.DB, return the default database manipulator.
@@ -112,7 +115,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.shouldAutoMigrate = true
+	// db.shouldAutoMigrate = true
 	if strings.ToLower(config.App.LogLevel) == "debug" {
 		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
 	} else {
@@ -162,30 +165,215 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 	if len(fuzzyMatch) > 0 {
 		_fuzzyMatch = fuzzyMatch[0]
 	}
-
 	typ := reflect.TypeOf(query).Elem()
 	val := reflect.ValueOf(query).Elem()
 	q := make(map[string]string)
+
+	// for i := 0; i < typ.NumField(); i++ {
+	// 	// fmt.Println("---------------- for type ", typ.Field(i).Type, typ.Field(i).Type.Kind(), typ.Field(i).Name, val.Field(i).IsZero())
+	// 	if val.Field(i).IsZero() {
+	// 		continue
+	// 	}
+	//
+	// 	switch typ.Field(i).Type.Kind() {
+	// 	case reflect.Chan, reflect.Map, reflect.Func:
+	// 		continue
+	// 	case reflect.Struct:
+	// 		// All `model.XXX` extends the basic model named `Base`,
+	// 		if typ.Field(i).Name == "Base" {
+	// 			if !val.Field(i).FieldByName("ID").IsZero() {
+	// 				// Not overwrite the "ID" value set in types.Model.
+	// 				// The "ID" value set in types.Model has higher priority than base model.
+	// 				if _, loaded := q["id"]; !loaded {
+	// 					q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
+	// 				}
+	// 			}
+	// 		} else {
+	// 			structFieldToMap(typ.Field(i).Type, val.Field(i), q)
+	// 		}
+	// 		continue
+	// 	}
+	// 	// "json" tag priority is higher than typ.Field(i).Name
+	// 	jsonTagStr := typ.Field(i).Tag.Get("json")
+	// 	jsonTagItems := strings.Split(jsonTagStr, ",")
+	// 	// NOTE: strings.Split always returns at least one element(empty string)
+	// 	// We should not use len(jsonTagItems) to check the json tags exists.
+	// 	jsonTag := ""
+	// 	if len(jsonTagItems) == 0 {
+	// 		// the structure lowercase field name as the query condition.
+	// 		jsonTagItems[0] = typ.Field(i).Name
+	// 	}
+	// 	jsonTag = jsonTagItems[0]
+	// 	if len(jsonTag) == 0 {
+	// 		// the structure lowercase field name as the query condition.
+	// 		jsonTag = typ.Field(i).Name
+	// 	}
+	// 	// "schema" tag have higher priority than "json" tag
+	// 	schemaTagStr := strings.TrimSpace(typ.Field(i).Tag.Get("schema"))
+	// 	if len(schemaTagStr) > 0 && schemaTagStr != jsonTagStr {
+	// 		fmt.Println("-------------  schema tag overwrite json tag")
+	// 		jsonTag = strings.TrimSpace(typ.Field(i).Tag.Get("schema"))
+	// 	}
+	//
+	// 	v := val.Field(i).Interface()
+	// 	var _v string
+	// 	switch val.Field(i).Kind() {
+	// 	case reflect.Bool:
+	// 		// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
+	// 		// 但是我们想要的是 WHERE `default` IN (true),
+	// 		// 所以没办法就只能直接转成 int 了.
+	// 		_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+	// 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	// 		_v = fmt.Sprintf("%d", v)
+	// 	case reflect.Float32, reflect.Float64:
+	// 		_v = fmt.Sprintf("%g", v)
+	// 	case reflect.String:
+	// 		_v = fmt.Sprintf("%s", v)
+	// 	case reflect.Pointer:
+	// 		v = val.Field(i).Elem().Interface()
+	// 		// switch typ.Elem().Kind() {
+	// 		switch val.Field(i).Elem().Kind() {
+	// 		case reflect.Bool:
+	// 			_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+	// 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	// 			_v = fmt.Sprintf("%d", v)
+	// 		case reflect.Float32, reflect.Float64:
+	// 			_v = fmt.Sprintf("%g", v)
+	// 		case reflect.String:
+	// 			_v = fmt.Sprintf("%s", v)
+	// 		case reflect.Struct, reflect.Map, reflect.Chan, reflect.Func: // ignore the struct, map, chan, func
+	// 		default:
+	// 			_v = fmt.Sprintf("%v", v)
+	// 		}
+	// 	case reflect.Slice:
+	// 		_len := val.Field(i).Len()
+	// 		if _len == 0 {
+	// 			logger.Database.Warn("reflect.Slice length is 0")
+	// 			_len = 1
+	// 		}
+	// 		slice := reflect.MakeSlice(val.Field(i).Type(), _len, _len)
+	// 		// fmt.Println("--------------- slice element", slice.Index(0), slice.Index(0).Kind(), slice.Index(0).Type())
+	// 		switch slice.Index(0).Kind() {
+	// 		case reflect.String: // handle string slice.
+	// 			// WARN: val.Field(i).Type() is model.GormStrings not []string,
+	// 			// execute statement `slice.Interface().([]string)` directly will case panic.
+	// 			// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
+	// 			// We should make the slice of []string again.
+	// 			slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
+	// 			reflect.Copy(slice, val.Field(i))
+	// 			_v = strings.Join(slice.Interface().([]string), ",")
+	// 		default:
+	// 			_v = fmt.Sprintf("%v", v)
+	// 		}
+	// 	case reflect.Struct, reflect.Map, reflect.Chan, reflect.Func: // ignore the struct, map, chan, func
+	// 	default:
+	// 		_v = fmt.Sprintf("%v", v)
+	// 	}
+	//
+	// 	// json tag name naming format must be same as gorm table columns,
+	// 	// both should be "snake case" or "camel case".
+	// 	// gorm table columns naming format default to 'snake case',
+	// 	// so the json tag name is converted to "snake case here"
+	// 	// q[strcase.SnakeCase(jsonTag)] = val.Field(i).Interface()
+	// 	q[strcase.SnakeCase(jsonTag)] = _v
+	// }
+
+	structFieldToMap(typ, val, q)
+	// fmt.Println("------------- WithQuery", q)
+
+	if _fuzzyMatch {
+		// // Deprecated!
+		// for k, v := range q {
+		// 	// WARN: THE SQL STATEMENT MUST CONTAINS backticks ``.
+		// 	db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+		// }
+
+		// TODO: empty query conditions will list all resource from database.
+		// We should make sure nothing record will be matched.
+		// db.db = db.db.Where(`1 = 0`)
+
+		// If the query strings has multiple value(seperated by ',')
+		// construct the 'WHERE' 'REGEXP' SQL statement
+		// eg: SELECT * FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
+		//     SELECT count(*) FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
+		for k, v := range q {
+			items := strings.Split(v, ",")
+			// TODO: should we skip if items length is 0?
+			// skip the string slice which all element is empty.
+			if len(strings.Join(items, "")) == 0 {
+				continue
+			}
+			if len(items) > 1 { // If the query string has multiple value(seperated by ','), using regexp
+				var regexpVal string
+				for _, item := range items {
+					// WARN: not forget to escape the regexp value using regexp.QuoteMeta.
+					// eg: localhost\hello.world -> localhost\\hello\.world
+					regexpVal = regexpVal + "|.*" + regexp.QuoteMeta(item) + ".*"
+				}
+				regexpVal = strings.TrimPrefix(regexpVal, "|")
+				db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+			} else { // If the query string has only one value, using LIKE
+				db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+			}
+		}
+	} else {
+		// // Deprecated!
+		// // SELECT * FROM `assets` WHERE `assets`.`category_level2_id` = 'NU
+		// // SELECT count(*) FROM `assets` WHERE `assets`.`category_level2_id` = 'NU'
+		// db.db = db.db.Where(query)
+
+		// TODO: empty query conditions will list all resource from database.
+		// We should make sure nothing record will be matched.
+		// db.db = db.db.Where(`1 = 0`)
+
+		// If the query string has multiple value(seperated by ','),
+		// construct the 'WHERE' 'IN' SQL statement.
+		// eg: SELECT id FROM users WHERE name IN ('user01', 'user02', 'user03', 'user04')
+		for k, v := range q {
+			items := strings.Split(v, ",")
+			// TODO: should we skip if items total length is 0?
+			if len(strings.Join(items, "")) == 0 {
+				continue
+			}
+			db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
+		}
+	}
+	return db
+}
+
+// StructFieldToMap extracts the field tags from a struct and writes them into a map.
+// This map can then be used to build SQL query conditions.
+func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) {
+	if q == nil {
+		q = make(map[string]string)
+	}
 	for i := 0; i < typ.NumField(); i++ {
 		if val.Field(i).IsZero() {
 			continue
 		}
+
 		switch typ.Field(i).Type.Kind() {
 		case reflect.Chan, reflect.Map, reflect.Func:
 			continue
 		case reflect.Struct:
 			// All `model.XXX` extends the basic model named `Base`,
-			if !val.Field(i).FieldByName("ID").IsZero() {
-				// Not overwrite the "ID" value set in types.Model.
-				// The "ID" value set in types.Model has higher priority than base model.
-				if _, loaded := q["id"]; !loaded {
-					q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
+			if typ.Field(i).Name == "Base" {
+				if !val.Field(i).FieldByName("ID").IsZero() {
+					// Not overwrite the "ID" value set in types.Model.
+					// The "ID" value set in types.Model has higher priority than base model.
+					if _, loaded := q["id"]; !loaded {
+						q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
+						// q["created_by"] = val.Field(i).FieldByName("CreatedBy").Interface().(string)
+						// q["updated_by"] = val.Field(i).FieldByName("UpdatedBy").Interface().(string)
+					}
 				}
+			} else {
+				structFieldToMap(typ.Field(i).Type, val.Field(i), q)
 			}
 			continue
 		}
-		// json tag priority is higher than typ.Field(i).Name
-		jsonTagStr := typ.Field(i).Tag.Get("json")
+		// "json" tag priority is higher than typ.Field(i).Name
+		jsonTagStr := strings.TrimSpace(typ.Field(i).Tag.Get("json"))
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		// NOTE: strings.Split always returns at least one element(empty string)
 		// We should not use len(jsonTagItems) to check the json tags exists.
@@ -198,6 +386,17 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		if len(jsonTag) == 0 {
 			// the structure lowercase field name as the query condition.
 			jsonTag = typ.Field(i).Name
+		}
+		// "schema" tag have higher priority than "json" tag
+		schemaTagStr := strings.TrimSpace(typ.Field(i).Tag.Get("schema"))
+		schemaTagItems := strings.Split(schemaTagStr, ",")
+		schemaTag := ""
+		if len(schemaTagItems) > 0 {
+			schemaTag = schemaTagItems[0]
+		}
+		if len(schemaTag) > 0 && schemaTag != jsonTag {
+			fmt.Printf("------------------ json tag replace by schema tag: %s -> %s\n", jsonTag, schemaTag)
+			jsonTag = schemaTag
 		}
 
 		v := val.Field(i).Interface()
@@ -226,6 +425,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 				_v = fmt.Sprintf("%g", v)
 			case reflect.String:
 				_v = fmt.Sprintf("%s", v)
+			case reflect.Struct, reflect.Map, reflect.Chan, reflect.Func: // ignore the struct, map, chan, func
 			default:
 				_v = fmt.Sprintf("%v", v)
 			}
@@ -249,6 +449,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 			default:
 				_v = fmt.Sprintf("%v", v)
 			}
+		case reflect.Struct, reflect.Map, reflect.Chan, reflect.Func: // ignore the struct, map, chan, func
 		default:
 			_v = fmt.Sprintf("%v", v)
 		}
@@ -260,61 +461,6 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		// q[strcase.SnakeCase(jsonTag)] = val.Field(i).Interface()
 		q[strcase.SnakeCase(jsonTag)] = _v
 	}
-
-	if _fuzzyMatch {
-		// // Deprecated!
-		// for k, v := range q {
-		// 	// WARN: THE SQL STATEMENT MUST CONTAINS backticks ``.
-		// 	db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
-		// }
-
-		// TODO: empty query conditions will list all resource from database.
-		// We should make sure nothing record will be matched.
-		// db.db = db.db.Where(`1 = 0`)
-
-		// If the query strings has multiple value(seperated by ',')
-		// construct the 'WHERE' 'REGEXP' SQL statement
-		// eg: SELECT * FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
-		//     SELECT count(*) FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
-		for k, v := range q {
-			items := strings.Split(v, ",")
-			// TODO: should we skip if items length is 0?
-			// skip the string slice which all element is empty.
-			if len(strings.Join(items, "")) == 0 {
-				continue
-			}
-			var regexpVal string
-			for _, item := range items {
-				// WARN: not forget to escape the regexp value using regexp.QuoteMeta.
-				// eg: localhost\hello.world -> localhost\\hello\.world
-				regexpVal = regexpVal + "|.*" + regexp.QuoteMeta(item) + ".*"
-			}
-			regexpVal = strings.TrimPrefix(regexpVal, "|")
-			db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
-		}
-	} else {
-		// // Deprecated!
-		// // SELECT * FROM `assets` WHERE `assets`.`category_level2_id` = 'NU
-		// // SELECT count(*) FROM `assets` WHERE `assets`.`category_level2_id` = 'NU'
-		// db.db = db.db.Where(query)
-
-		// TODO: empty query conditions will list all resource from database.
-		// We should make sure nothing record will be matched.
-		// db.db = db.db.Where(`1 = 0`)
-
-		// If the query string has multiple value(seperated by ','),
-		// construct the 'WHERE' 'IN' SQL statement.
-		// eg: SELECT id FROM users WHERE name IN ('user01', 'user02', 'user03', 'user04')
-		for k, v := range q {
-			items := strings.Split(v, ",")
-			// TODO: should we skip if items total length is 0?
-			if len(strings.Join(items, "")) == 0 {
-				continue
-			}
-			db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
-		}
-	}
-	return db
 }
 
 // WithTimeRange
@@ -538,36 +684,37 @@ func (db *database[M]) Create(objs ...M) error {
 		return err
 	}
 	defer db.reset()
-	if config.App.RedisConfig.Enable {
-		defer func() {
-			go func() {
-				begin := time.Now()
-				prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "create")
-				defer logger.Database.Infow("remove cache after create", "cost", time.Since(begin).String(), "prefix", prefix)
-				if err := redis.RemovePrefix(prefix); err != nil {
-					logger.Database.Errorw("failed to remove cache keys", err, "action", "create")
-				}
-			}()
-		}()
-	}
-	// if len(objs) == 0 {
-	// 	return nil
-	// }
-	// for i := range objs {
-	// 	objs[i].SetID() // set id when id is empty.
-	// }
-	// return db.db.Create(objs).Error
 	if len(objs) == 0 {
 		return nil
 	}
+
+	defer cache.Cache[M]().Flush()
+	// if config.App.RedisConfig.Enable {
+	// 	defer func() {
+	// 		go func() {
+	// 			begin := time.Now()
+	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "create")
+	// 			defer logger.Database.Infow("remove cache after create", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err := redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "create")
+	// 			}
+	// 		}()
+	// 	}()
+	// }
+
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: CreateBefore.
 	for i := range objs {
-		if err := objs[i].CreateBefore(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].CreateBefore(); err != nil {
+				return err
+			}
 		}
 	}
 	for i := range objs {
-		objs[i].SetID() // set id when id is empty.
+		if !reflect.DeepEqual(empty, objs[i]) {
+			objs[i].SetID() // set id when id is empty.
+		}
 	}
 
 	// if err := db.db.Save(objs).Error; err != nil {
@@ -575,6 +722,11 @@ func (db *database[M]) Create(objs ...M) error {
 	// 	return err
 	// }
 	//
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
 	batchSize := defaultBatchSize
 	if db.batchSize > 0 {
 		batchSize = db.batchSize
@@ -584,7 +736,7 @@ func (db *database[M]) Create(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Table(db.tableName).Save(objs[i:end]).Error; err != nil {
+		if err := db.db.Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
@@ -603,14 +755,16 @@ func (db *database[M]) Create(objs ...M) error {
 			_db = DB
 		}
 		// if err := _db.Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
-		if err := _db.Table(db.tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
+		if err := _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
 			return err
 		}
 	}
 	// Invoke model hook: CreateAfter.
 	for i := range objs {
-		if err := objs[i].CreateAfter(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].CreateAfter(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -625,28 +779,38 @@ func (db *database[M]) Delete(objs ...M) error {
 		return err
 	}
 	defer db.reset()
-	if config.App.RedisConfig.Enable {
-		defer func() {
-			// TODO:only delete cache of all list statement and cache for current get statements.
-			go func() {
-				begin := time.Now()
-				prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "delete")
-				defer logger.Database.Infow("remove cache after delete", "cost", time.Since(begin).String(), "prefix", prefix)
-				if err := redis.RemovePrefix(prefix); err != nil {
-					logger.Database.Errorw("failed to remove cache keys", err, "action", "delete")
-				}
-			}()
-		}()
-	}
-
 	if len(objs) == 0 {
 		return nil
 	}
+
+	defer cache.Cache[M]().Flush()
+	// if config.App.RedisConfig.Enable {
+	// 	defer func() {
+	// 		// TODO:only delete cache of all list statement and cache for current get statements.
+	// 		go func() {
+	// 			begin := time.Now()
+	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "delete")
+	// 			defer logger.Database.Infow("remove cache after delete", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err := redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "delete")
+	// 			}
+	// 		}()
+	// 	}()
+	// }
+
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: DeleteBefore.
 	for i := range objs {
-		if err := objs[i].DeleteBefore(); err != nil {
-			return nil
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].DeleteBefore(); err != nil {
+				return nil
+			}
 		}
+	}
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
 	}
 	if db.enablePurge {
 		// delete permanently.
@@ -664,7 +828,7 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Table(db.tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+			if err := db.db.Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 		}
@@ -685,15 +849,17 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Table(db.tableName).Delete(objs[i:end]).Error; err != nil {
+			if err := db.db.Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 		}
 	}
 	// Invoke model hook: DeleteAfter.
 	for i := range objs {
-		if err := objs[i].DeleteAfter(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].DeleteAfter(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -714,35 +880,48 @@ func (db *database[M]) Update(objs ...M) error {
 		return err
 	}
 	defer db.reset()
-	if config.App.RedisConfig.Enable {
-		defer func() {
-			go func() {
-				begin := time.Now()
-				prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update")
-				defer logger.Database.Infow("remove cache after update", "cost", time.Since(begin).String(), "prefix", prefix)
-				if err := redis.RemovePrefix(prefix); err != nil {
-					logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
-				}
-			}()
-		}()
-	}
 	if len(objs) == 0 {
 		return nil
 	}
+
+	defer cache.Cache[M]().Flush()
+	// if config.App.RedisConfig.Enable {
+	// 	defer func() {
+	// 		go func() {
+	// 			begin := time.Now()
+	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update")
+	// 			defer logger.Database.Infow("remove cache after update", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err := redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
+	// 			}
+	// 		}()
+	// 	}()
+	// }
+
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: UpdateBefore.
 	for i := range objs {
-		if err := objs[i].UpdateBefore(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].UpdateBefore(); err != nil {
+				return err
+			}
 		}
 	}
 	for i := range objs {
-		objs[i].SetID() // set id when id is empty
+		if !reflect.DeepEqual(empty, objs[i]) {
+			objs[i].SetID() // set id when id is empty
+		}
 	}
 	// if err := db.db.Save(objs).Error; err != nil {
 	// if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
 	// 	return err
 	// }
 	//
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
 	batchSize := defaultBatchSize
 	if db.batchSize > 0 {
 		batchSize = db.batchSize
@@ -752,15 +931,17 @@ func (db *database[M]) Update(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Table(db.tableName).Save(objs[i:end]).Error; err != nil {
+		if err := db.db.Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
 		}
 	}
 	// Invoke model hook: UpdateAfter.
 	for i := range objs {
-		if err := objs[i].UpdateAfter(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, objs[i]) {
+			if err := objs[i].UpdateAfter(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -771,20 +952,28 @@ func (db *database[M]) UpdateById(id any, key string, val any) error {
 		return err
 	}
 	defer db.reset()
-	if config.App.RedisConfig.Enable {
-		defer func() {
-			go func() {
-				begin := time.Now()
-				prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update_by_id")
-				defer logger.Database.Infow("remove cache after update_by_id", "cost", time.Since(begin).String(), "prefix", prefix)
-				if err := redis.RemovePrefix(prefix); err != nil {
-					logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
-				}
-			}()
-		}()
-	}
+
+	defer cache.Cache[M]().Flush()
+	// if config.App.RedisConfig.Enable {
+	// 	defer func() {
+	// 		go func() {
+	// 			begin := time.Now()
+	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update_by_id")
+	// 			defer logger.Database.Infow("remove cache after update_by_id", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err := redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
+	// 			}
+	// 		}()
+	// 	}()
+	// }
+
 	// return db.db.Model(*new(M)).Where("id = ?", id).Update(key, val).Error
-	return db.db.Table(db.tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	return db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error
 }
 
 // List find all record if not run WithQuery(query).
@@ -794,7 +983,7 @@ func (db *database[M]) UpdateById(id any, key string, val any) error {
 //     database.XXX().WithScope(page, size).WithQuery(&model.XXX{Field1: field1, Field2: field2}).List(&data)
 //   - data := make([]*model.XXX, 0)
 //     database.XXX().List(&data)
-func (db *database[M]) List(dest *[]M, cache ...*[]byte) (err error) {
+func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
@@ -802,89 +991,126 @@ func (db *database[M]) List(dest *[]M, cache ...*[]byte) (err error) {
 	if dest == nil {
 		return nil
 	}
+
 	begin := time.Now()
 	var key string
-	var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
-	var _cache []byte
+	var _dest []M
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
-	if len(cache) == 0 {
-		shouldDecode = true
+	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+		goto QUERY
 	} else {
-		if cache[0] == nil {
-			shouldDecode = true
-		}
+		*dest = _dest
+		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
+		return nil
 	}
-	if shouldDecode {
-		var _dest []M
-		if _dest, err = redis.GetML[M](key); err == nil {
-			val := reflect.ValueOf(dest)
-			if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			if !val.Elem().CanSet() {
-				return ErrNotSetSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_dest))
-			logger.Database.Infow("list and decode from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
-	} else {
-		if _cache, err = redis.Get(key); err == nil {
-			val := reflect.ValueOf(cache[0])
-			if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			if !val.Elem().CanSet() {
-				return ErrNotSetSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_cache))
-			logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
-	}
-	if !errors.Is(err, redis.ErrKeyNotExists) {
-		logger.Database.Error(err)
-		return err
-	}
-	// Not Found cache and continue.
+
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+	// var _cache []byte
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
+	// if len(cache) == 0 {
+	// 	shouldDecode = true
+	// } else {
+	// 	if cache[0] == nil {
+	// 		shouldDecode = true
+	// 	}
+	// }
+	// if shouldDecode {
+	// 	var _dest []M
+	// 	if _dest, err = redis.GetML[M](key); err == nil {
+	// 		val := reflect.ValueOf(dest)
+	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		if !val.Elem().CanSet() {
+	// 			return ErrNotSetSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_dest))
+	// 		logger.Database.Infow("list and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// } else {
+	// 	if _cache, err = redis.Get(key); err == nil {
+	// 		val := reflect.ValueOf(cache[0])
+	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		if !val.Elem().CanSet() {
+	// 			return ErrNotSetSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_cache))
+	// 		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// }
+	// if !errors.Is(err, redis.ErrKeyNotExists) {
+	// 	logger.Database.Error(err)
+	// 	return err
+	// }
+	// // Not Found cache and continue.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
 
 QUERY:
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: ListBefore.
 	for i := range *dest {
-		if err = (*dest)[i].ListBefore(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, (*dest)[i]) {
+			if err = (*dest)[i].ListBefore(); err != nil {
+				return err
+			}
 		}
 	}
 	// if err = db.db.Find(dest).Error; err != nil {
-	if err = db.db.Table(db.tableName).Find(dest).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: ListAfter()
 	for i := range *dest {
-		if err = (*dest)[i].ListAfter(); err != nil {
-			return err
+		if !reflect.DeepEqual(empty, (*dest)[i]) {
+			if err = (*dest)[i].ListAfter(); err != nil {
+				return err
+			}
 		}
 	}
 	// Cache the result.
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.SetML[M](key, *dest); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	// }
+	if db.enableCache {
 		logger.Database.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.SetML[M](key, *dest); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
+		cache.Cache[M]().Set(key, *dest...)
 	}
 
 	return nil
@@ -897,87 +1123,131 @@ QUERY:
 // }
 
 // Get find one record accoding to `id`.
-func (db *database[M]) Get(dest M, id string, cache ...*[]byte) (err error) {
+func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
-	var key string
-	var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+
 	begin := time.Now()
+	var key string
+	var _dest []M
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
-	// _, key = BuildKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get")
-	// 我发现这个 id 的值怎么都无法填充到 sql 语句中, 所以直接用 id 作为 key 的一部分,而不是用 sql 语句
-	// 如果不用 id 作为 redis key, 那么多个 get 的语句相同则 key 相同,获取到的都是同一个缓存.
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if len(cache) == 0 {
-		shouldDecode = true
+	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		goto QUERY
 	} else {
-		if cache[0] == nil {
-			shouldDecode = true
+		val := reflect.ValueOf(dest)
+		if val.Kind() != reflect.Ptr {
+			return ErrNotPtrStruct
 		}
-	}
-	if shouldDecode { // query cache from redis and decoded into 'dest'.
-		var _dest M
-		if _dest, err = redis.GetM[M](key); err == nil {
-			val := reflect.ValueOf(dest)
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrStruct
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableModel
-			}
-			val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-			logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
+		if !val.Elem().CanAddr() {
+			return ErrNotAddressableModel
 		}
-	} else {
-		var _cache []byte
-		if _cache, err = redis.Get(key); err == nil {
-			val := reflect.ValueOf(cache[0])
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_cache))
-			logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
+		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
+		return nil
 	}
-	if err != redis.ErrKeyNotExists {
-		logger.Database.Error(err)
-		return err
-	}
-	// Not Found cache, continue query database.
+
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// // _, key = BuildKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get")
+	// // 我发现这个 id 的值怎么都无法填充到 sql 语句中, 所以直接用 id 作为 key 的一部分,而不是用 sql 语句
+	// // 如果不用 id 作为 redis key, 那么多个 get 的语句相同则 key 相同,获取到的都是同一个缓存.
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	// if len(cache) == 0 {
+	// 	shouldDecode = true
+	// } else {
+	// 	if cache[0] == nil {
+	// 		shouldDecode = true
+	// 	}
+	// }
+	// if shouldDecode { // query cache from redis and decoded into 'dest'.
+	// 	var _dest M
+	// 	if _dest, err = redis.GetM[M](key); err == nil {
+	// 		val := reflect.ValueOf(dest)
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrStruct
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableModel
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
+	// 		logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// } else {
+	// 	var _cache []byte
+	// 	if _cache, err = redis.Get(key); err == nil {
+	// 		val := reflect.ValueOf(cache[0])
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_cache))
+	// 		logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// }
+	// if err != redis.ErrKeyNotExists {
+	// 	logger.Database.Error(err)
+	// 	return err
+	// }
+	// // Not Found cache, continue query database.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
 
 QUERY:
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if err = dest.GetBefore(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetBefore(); err != nil {
+			return err
+		}
 	}
 	// if err = db.db.Where("id = ?", id).Find(dest).Error; err != nil {
-	if err = db.db.Table(db.tableName).Where("id = ?", id).Find(dest).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).Where("id = ?", id).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if err = dest.GetAfter(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetAfter(); err != nil {
+			return err
+		}
 	}
-	// Cache the result.
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// // Cache the result.
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.SetM[M](key, dest); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	// }
+	if db.enableCache {
 		logger.Database.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.SetM[M](key, dest); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
+		cache.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
@@ -989,295 +1259,460 @@ func (db *database[M]) Count(count *int64) (err error) {
 		return err
 	}
 	defer db.reset()
-	var key string
-	var _cache int64
+
 	begin := time.Now()
-	if count == nil {
-		return nil
-	}
+	var key string
+	var _cache []int64
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, err = redis.GetInt(key); err == nil {
-		*count = _cache
+	if _cache, exists = cache.Cache[M]().GetInt(key); !exists && len(_cache) == 0 {
+		goto QUERY
+	} else {
+		*count = _cache[0]
 		logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
 		return
 	}
-	if !errors.Is(err, redis.ErrKeyNotExists) {
-		logger.Database.Error(err)
-		return err
-	}
-	// NOT FOUND cache, continue query.
+
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var _cache int64
+	// if count == nil {
+	// 	return nil
+	// }
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// fmt.Println("---- buildCacheKey count")
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
+	// if _cache, err = redis.GetInt(key); err == nil {
+	// 	*count = _cache
+	// 	logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
+	// 	return
+	// }
+	// if !errors.Is(err, redis.ErrKeyNotExists) {
+	// 	logger.Database.Error(err)
+	// 	return err
+	// }
+	// // NOT FOUND cache, continue query.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
 
 QUERY:
 	// if err = db.db.Model(*new(M)).Count(count).Error; err != nil {
-	if err = db.db.Table(db.tableName).Model(*new(M)).Count(count).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).Model(*new(M)).Count(count).Error; err != nil {
 		logger.Database.Error(err)
 		return err
 	}
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.Set(key, *count); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	//
+	// }
+	if db.enableCache {
 		logger.Database.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.Set(key, *count); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
+		cache.Cache[M]().SetInt(key, *count)
 
 	}
 	return nil
 }
 
 // First finds the first record ordered by primary key.
-func (db *database[M]) First(dest M, cache ...*[]byte) (err error) {
+func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
-	var key string
-	var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+
 	begin := time.Now()
+	var key string
+	var _dest []M
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
-	if len(cache) == 0 {
-		shouldDecode = true
+	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		goto QUERY
 	} else {
-		if cache[0] == nil {
-			shouldDecode = true
+		val := reflect.ValueOf(dest)
+		if val.Kind() != reflect.Ptr {
+			return ErrNotPtrStruct
 		}
+		if !val.Elem().CanAddr() {
+			return ErrNotAddressableModel
+		}
+		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
+		return nil // Found cache and return.
 	}
 
-	if shouldDecode { // query cache from redis and decode into 'dest'.
-		var _dest M
-		if _dest, err = redis.GetM[M](key); err == nil {
-			val := reflect.ValueOf(dest)
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrStruct
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableModel
-			}
-			val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-			logger.Database.Infow("first and decode from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
-	} else {
-		var _cache []byte
-		if _cache, err = redis.Get(key); err == nil {
-			val := reflect.ValueOf(cache[0])
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_cache))
-			logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
-		if err != redis.ErrKeyNotExists {
-			logger.Database.Error(err)
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
+	// if len(cache) == 0 {
+	// 	shouldDecode = true
+	// } else {
+	// 	if cache[0] == nil {
+	// 		shouldDecode = true
+	// 	}
+	// }
+	// if shouldDecode { // query cache from redis and decode into 'dest'.
+	// 	var _dest M
+	// 	if _dest, err = redis.GetM[M](key); err == nil {
+	// 		val := reflect.ValueOf(dest)
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrStruct
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableModel
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
+	// 		logger.Database.Infow("first and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// } else {
+	// 	var _cache []byte
+	// 	if _cache, err = redis.Get(key); err == nil {
+	// 		val := reflect.ValueOf(cache[0])
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_cache))
+	// 		logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// 	if err != redis.ErrKeyNotExists {
+	// 		logger.Database.Error(err)
+	// 		return err
+	// 	}
+	// }
+	// Not Found cache, continue query database.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
+
+QUERY:
+	var empty M // call nil value M will cause panic.
+	// Invoke model hook: GetBefore
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetBefore(); err != nil {
 			return err
 		}
 	}
-	// Not Found cache, continue query database.
-
-QUERY:
-	// Invoke model hook: GetBefore
-	if err = dest.GetBefore(); err != nil {
-		return err
-	}
 	// if err = db.db.First(dest).Error; err != nil {
-	if err = db.db.Table(db.tableName).First(dest).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).First(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if err = dest.GetAfter(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetAfter(); err != nil {
+			return err
+		}
 	}
-	// Cache the result.
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// // Cache the result.
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.SetM[M](key, dest); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	// }
+	if db.enableCache {
 		logger.Database.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.SetM[M](key, dest); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
+		cache.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
 
 // Last finds the last record ordered by primary key.
-func (db *database[M]) Last(dest M, cache ...*[]byte) (err error) {
+func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
-	var key string
-	var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+
 	begin := time.Now()
+	var key string
+	var _dest []M
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
-	if len(cache) == 0 {
-		shouldDecode = true
+	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		goto QUERY
 	} else {
-		if cache[0] == nil {
-			shouldDecode = true
+		val := reflect.ValueOf(dest)
+		if val.Kind() != reflect.Ptr {
+			return ErrNotPtrStruct
 		}
-	}
-	if shouldDecode { // query cache from redis and decode into 'dest'.
-		var _dest M
-		if _dest, err = redis.GetM[M](key); err == nil {
-			val := reflect.ValueOf(dest)
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrStruct
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableModel
-			}
-			val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-			logger.Database.Infow("last and decode from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
+		if !val.Elem().CanAddr() {
+			return ErrNotAddressableModel
 		}
-	} else {
-		var _cache []byte
-		if _cache, err = redis.Get(key); err == nil {
-			val := reflect.ValueOf(cache[0])
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_cache))
-			logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
+		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
+		return nil // Found cache and return.
 	}
-	if err != redis.ErrKeyNotExists {
-		logger.Database.Error(err)
-		return err
-	}
-	// Not Found cache, continue query database.
+
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
+	// if len(cache) == 0 {
+	// 	shouldDecode = true
+	// } else {
+	// 	if cache[0] == nil {
+	// 		shouldDecode = true
+	// 	}
+	// }
+	// if shouldDecode { // query cache from redis and decode into 'dest'.
+	// 	var _dest M
+	// 	if _dest, err = redis.GetM[M](key); err == nil {
+	// 		val := reflect.ValueOf(dest)
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrStruct
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableModel
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
+	// 		logger.Database.Infow("last and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// } else {
+	// 	var _cache []byte
+	// 	if _cache, err = redis.Get(key); err == nil {
+	// 		val := reflect.ValueOf(cache[0])
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_cache))
+	// 		logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// }
+	// if err != redis.ErrKeyNotExists {
+	// 	logger.Database.Error(err)
+	// 	return err
+	// }
+	// // Not Found cache, continue query database.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
 
 QUERY:
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if err = dest.GetBefore(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetBefore(); err != nil {
+			return err
+		}
 	}
 	// if err = db.db.Last(dest).Error; err != nil {
-	if err = db.db.Table(db.tableName).Last(dest).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).Last(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if err = dest.GetAfter(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetAfter(); err != nil {
+			return err
+		}
 	}
-	// Cache the result.
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// // Cache the result.
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.SetM[M](key, dest); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	// }
+	if db.enableCache {
 		logger.Database.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.SetM[M](key, dest); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
+		cache.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
 
 // Take finds the first record returned by the database in no specified order.
-func (db *database[M]) Take(dest M, cache ...*[]byte) (err error) {
+func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
-	var key string
-	var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+
 	begin := time.Now()
+	var key string
+	var _dest []M
+	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	if !config.App.RedisConfig.Enable {
-		goto QUERY
-	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
-	if len(cache) == 0 {
-		shouldDecode = true
+	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		goto QUERY
 	} else {
-		if cache[0] == nil {
-			shouldDecode = true
+		val := reflect.ValueOf(dest)
+		if val.Kind() != reflect.Ptr {
+			return ErrNotPtrStruct
 		}
-	}
-	if shouldDecode { // query cache from redis and decode into 'dest'.
-		var _dest M
-		if _dest, err = redis.GetM[M](key); err == nil {
-			val := reflect.ValueOf(dest)
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrStruct
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableModel
-			}
-			val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-			logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
+		if !val.Elem().CanAddr() {
+			return ErrNotAddressableModel
 		}
-	} else {
-		var _cache []byte
-		if _cache, err = redis.Get(key); err == nil {
-			val := reflect.ValueOf(cache[0])
-			if val.Kind() != reflect.Ptr {
-				return ErrNotPtrSlice
-			}
-			if !val.Elem().CanAddr() {
-				return ErrNotAddressableSlice
-			}
-			val.Elem().Set(reflect.ValueOf(_cache))
-			logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
-			return nil // Found cache and return.
-		}
+		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
+		return nil // Found cache and return.
 	}
-	if err != redis.ErrKeyNotExists {
-		logger.Database.Error(err)
-		return err
-	}
-	// Not Found cache, continue query database.
+
+	// =============================
+	// ===== BEGIN redis cache =====
+	// =============================
+	// begin := time.Now()
+	// var key string
+	// var shouldDecode bool // if cache is nil or cache[0] is nil, we should decod the queryed cache in to "dest".
+	// if !db.enableCache {
+	// 	goto QUERY
+	// }
+	// if !config.App.RedisConfig.Enable {
+	// 	goto QUERY
+	// }
+	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
+	// if len(cache) == 0 {
+	// 	shouldDecode = true
+	// } else {
+	// 	if cache[0] == nil {
+	// 		shouldDecode = true
+	// 	}
+	// }
+	// if shouldDecode { // query cache from redis and decode into 'dest'.
+	// 	var _dest M
+	// 	if _dest, err = redis.GetM[M](key); err == nil {
+	// 		val := reflect.ValueOf(dest)
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrStruct
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableModel
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
+	// 		logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// } else {
+	// 	var _cache []byte
+	// 	if _cache, err = redis.Get(key); err == nil {
+	// 		val := reflect.ValueOf(cache[0])
+	// 		if val.Kind() != reflect.Ptr {
+	// 			return ErrNotPtrSlice
+	// 		}
+	// 		if !val.Elem().CanAddr() {
+	// 			return ErrNotAddressableSlice
+	// 		}
+	// 		val.Elem().Set(reflect.ValueOf(_cache))
+	// 		logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		return nil // Found cache and return.
+	// 	}
+	// }
+	// if err != redis.ErrKeyNotExists {
+	// 	logger.Database.Error(err)
+	// 	return err
+	// }
+	// // Not Found cache, continue query database.
+	// ===========================
+	// ===== END redis cache =====
+	// ===========================
 
 QUERY:
+	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if err = dest.GetBefore(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetBefore(); err != nil {
+			return err
+		}
 	}
 	// if err = db.db.Take(dest).Error; err != nil {
-	if err = db.db.Table(db.tableName).Take(dest).Error; err != nil {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	if err = db.db.Table(tableName).Take(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if err = dest.GetAfter(); err != nil {
-		return err
+	if !reflect.DeepEqual(empty, dest) {
+		if err = dest.GetAfter(); err != nil {
+			return err
+		}
 	}
-	// Cache the result.
-	if db.enableCache && config.App.RedisConfig.Enable {
+	// // Cache the result.
+	// if db.enableCache && config.App.RedisConfig.Enable {
+	// 	logger.Database.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
+	// 	go func() {
+	// 		if err = redis.SetM[M](key, dest); err != nil {
+	// 			logger.Database.Error(err)
+	// 		}
+	// 	}()
+	//
+	// }
+	if db.enableCache {
 		logger.Database.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
-		go func() {
-			if err = redis.SetM[M](key, dest); err != nil {
-				logger.Database.Error(err)
-			}
-		}()
-
+		cache.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
@@ -1289,10 +1724,16 @@ func (db *database[M]) Cleanup() error {
 	}
 	defer db.reset()
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
-	return db.db.Table(db.tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
+	typ := reflect.TypeOf(*new(M)).Elem()
+	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	if len(db.tableName) > 0 {
+		tableName = db.tableName
+	}
+	return db.db.Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 }
 
 // Database implement interface types.Database, its default database manipulator.
+// Database[M] returns a generic database manipulator with the `curd` capabilities.
 func Database[M types.Model](ctx ...context.Context) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")

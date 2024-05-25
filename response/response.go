@@ -24,9 +24,9 @@ const (
 	CodeUnauthorized
 	CodeNetworkTimeout
 	CodeContextTimeout
-	CodeTooManyRequest
+	CodeTooManyRequests
 	CodeNotFound
-	CodeNoPermission
+	CodeForbidden
 	CodeAlreadyExist
 )
 
@@ -55,6 +55,8 @@ const (
 
 	CodeTooLargeFile
 	CodeNotPNGJPG
+
+	CodeInvalidSoftwareLabel
 )
 
 type codeValue struct {
@@ -68,17 +70,17 @@ var codeValueMap = map[Code]codeValue{
 	CodeFailure: {http.StatusBadRequest, "failure"},
 
 	// 通用状态码值
-	CodeInvalidParam:   {http.StatusBadRequest, "invalid query parameter"},
-	CodeBadRequest:     {http.StatusBadRequest, "invalid request"},
-	CodeInvalidToken:   {http.StatusUnauthorized, "invalid token"},
-	CodeNeedLogin:      {http.StatusUnauthorized, "need login"},
-	CodeUnauthorized:   {http.StatusUnauthorized, "unauthorized"},
-	CodeNetworkTimeout: {http.StatusBadRequest, "network timeout"},
-	CodeContextTimeout: {http.StatusBadRequest, "context timeout"},
-	CodeTooManyRequest: {http.StatusTooManyRequests, "too many requests"},
-	CodeNotFound:       {http.StatusNotFound, "not found"},
-	CodeNoPermission:   {http.StatusBadRequest, "no permission"},
-	CodeAlreadyExist:   {http.StatusBadRequest, "already exist"},
+	CodeInvalidParam:    {http.StatusBadRequest, "Invalid parameters provided in the request."},
+	CodeBadRequest:      {http.StatusBadRequest, "Malformed or illegal request."},
+	CodeInvalidToken:    {http.StatusUnauthorized, "Invalid or expired authentication token."},
+	CodeNeedLogin:       {http.StatusUnauthorized, "Authentication required to access the requested resource."},
+	CodeUnauthorized:    {http.StatusUnauthorized, "Unauthorized access to the requested resource."},
+	CodeNetworkTimeout:  {http.StatusGatewayTimeout, "Network operation timed out."},
+	CodeContextTimeout:  {http.StatusGatewayTimeout, "Request context timed out."},
+	CodeTooManyRequests: {http.StatusTooManyRequests, "too many requests, please try again later."},
+	CodeNotFound:        {http.StatusNotFound, "Requested resource not found."},
+	CodeForbidden:       {http.StatusForbidden, "Forbidden: Inadequate privileges for the requested operation."},
+	CodeAlreadyExist:    {http.StatusConflict, "Resource already exists."},
 
 	// 业务状态码值
 	CodeServerCallbackTimeout: {http.StatusOK, "server callback timeout"},
@@ -96,13 +98,15 @@ var codeValueMap = map[Code]codeValue{
 	CodeNotFoundRoomType: {http.StatusBadRequest, "room type not found"},
 	CodeNotFoundCategory: {http.StatusBadRequest, "category not found"},
 
-	CodeAlreadyExistsUser:     {http.StatusBadRequest, "user already exists"},
-	CodeAlreadyExistsRole:     {http.StatusBadRequest, "role already exists"},
-	CodeAlreadyExistsRoomType: {http.StatusBadRequest, "room type already exists"},
-	CodeAlreadyExistsCategory: {http.StatusBadRequest, "category already exists"},
+	CodeAlreadyExistsUser:     {http.StatusConflict, "user already exists"},
+	CodeAlreadyExistsRole:     {http.StatusConflict, "role already exists"},
+	CodeAlreadyExistsRoomType: {http.StatusConflict, "room type already exists"},
+	CodeAlreadyExistsCategory: {http.StatusConflict, "category already exists"},
 
 	CodeTooLargeFile: {http.StatusBadRequest, "too large file"},
 	CodeNotPNGJPG:    {http.StatusBadGateway, "image must be png or jpg"},
+
+	CodeInvalidSoftwareLabel: {http.StatusBadRequest, "invalid software label"},
 }
 
 type Code int32
@@ -114,9 +118,11 @@ func (r Code) Msg() string {
 	}
 	return val.Msg
 }
+
 func (r Code) String() string {
 	return r.Msg()
 }
+
 func (r Code) Status() int {
 	val, ok := codeValueMap[r]
 	if !ok {
@@ -140,6 +146,7 @@ func ResponseJSON(c *gin.Context, code Code, data ...any) {
 		})
 	}
 }
+
 func ResponseBytes(c *gin.Context, code Code, data ...[]byte) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	c.Header("X-cached", "true")
@@ -172,6 +179,7 @@ func ResponseTEXT(c *gin.Context, code Code, data ...any) {
 		c.String(code.Status(), "")
 	}
 }
+
 func ResponseDATA(c *gin.Context, data []byte, headers ...map[string]string) {
 	header := make(map[string]string)
 	if len(headers) > 0 {
@@ -184,6 +192,7 @@ func ResponseDATA(c *gin.Context, data []byte, headers ...map[string]string) {
 	}
 	c.Data(http.StatusOK, "application/octet-stream", data)
 }
+
 func ResponesFILE(c *gin.Context, filename string) {
 	c.File(filename)
 }

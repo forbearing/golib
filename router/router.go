@@ -11,19 +11,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var router *gin.Engine
-var API *gin.RouterGroup
+var (
+	router *gin.Engine
+	API    *gin.RouterGroup
+)
 
 func Init() error {
 	gin.SetMode(gin.ReleaseMode)
 	router = gin.New()
 
 	router.Use(
-		middleware.RequestId(),
+		middleware.RequestID(),
 		middleware.Logger("./logs/api.log"),
 		middleware.Recovery("./logs/recovery.log"),
 		middleware.Cors(),
-		// middleware.RateLimit(),
+		middleware.RateLimiter(),
 	)
 	router.GET("/ping", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "pong")
@@ -32,7 +34,7 @@ func Init() error {
 	API = router.Group("/api")
 	API.Use(
 		middleware.JwtAuth(),
-		// middleware.RBAC(),
+		// middleware.Authz(),
 		middleware.Gzip(),
 	)
 	return nil

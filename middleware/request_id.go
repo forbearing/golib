@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RequestId() gin.HandlerFunc {
+func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id := util.LightUUID()
+		id := util.RequestID()
 		c.Set(types.REQUEST_ID, id)
-		c.Header("X-Request-Id", id)
+		c.Header("X-Request-ID", id)
 	}
 }

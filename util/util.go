@@ -2,12 +2,18 @@ package util
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"runtime"
+	"time"
 	"unsafe"
 
+	tcping "github.com/cloverstd/tcping/ping"
+	"github.com/go-ping/ping"
+	"github.com/rs/xid"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/ksuid"
 )
@@ -23,10 +29,11 @@ func UUID(name ...string) string {
 	}
 	return uuid.NewV5(uuid.NewV4(), _name).String()
 }
+func RequestID() string { return xid.New().String() }
 
-// LightUUID used in logger request id.
-// It will use uuid.NewV4() instead of uuid.NewV5() which have less cpu cost.
-func LightUUID() string { return uuid.NewV4().String() }
+// // LightUUID used in logger request id.
+// // It will use uuid.NewV4() instead of uuid.NewV5() which have less cpu cost.
+// func LightUUID() string { return uuid.NewV4().String() }
 
 // IndexedUUID generate indexable uuid.
 func IndexedUUID() string { return ksuid.New().String() }
@@ -45,6 +52,17 @@ func Depointer[T comparable](t *T) T {
 		return *new(T)
 	}
 	return *t
+}
+
+func SafePointer[T any](v T) T {
+	if reflect.DeepEqual(v, nil) {
+		return *new(T)
+	}
+	if reflect.DeepEqual(v, reflect.Zero(reflect.TypeOf(v)).Interface()) {
+		return *new(T)
+		// return reflect.Zero(reflect.TypeOf(v)).Interface().(T)
+	}
+	return v
 }
 
 // CharSpliter is the custom split function for bufio.Scanner.
@@ -133,4 +151,75 @@ func GetFunctionName(x any) string {
 	default:
 		return runtime.FuncForPC(reflect.ValueOf(x).Pointer()).Name()
 	}
+}
+
+func ParseScheme(req *http.Request) string {
+	if scheme := req.Header.Get("x-forwarded-proto"); len(scheme) != 0 {
+		return scheme
+	}
+	if scheme := req.Header.Get("x-forwarded-protocol"); len(scheme) != 0 {
+		return scheme
+	}
+	if ssl := req.Header.Get("x-forwarded-ssl"); ssl == "on" {
+		return "https"
+	}
+	if scheme := req.Header.Get("x-url-scheme"); len(scheme) != 0 {
+		return scheme
+	}
+	if req.TLS != nil {
+		return "https"
+	}
+	return ""
+}
+
+// _tcping work like command `tcping`.
+func Tcping(host string, port int, timeout time.Duration) bool {
+	if timeout < 500*time.Millisecond {
+		timeout = 1 * time.Second
+	}
+	_, _, _, res := _tcping(host, port, 1, 1, timeout)
+	return res.SuccessCounter == 1
+}
+
+func _tcping(host string, port, count int, interval, timeout time.Duration) (minLatency, maxLatency, avgLatency time.Duration, result *tcping.Result) {
+	pinger := tcping.NewTCPing()
+	pinger.SetTarget(&tcping.Target{
+		Protocol: tcping.TCP,
+		Host:     host,
+		Port:     port,
+		Counter:  count,
+		Interval: interval,
+		Timeout:  timeout,
+	})
+	<-pinger.Start()
+	if pinger.Result() == nil {
+		return
+	}
+	return pinger.Result().MinDuration, pinger.Result().MaxDuration, pinger.Result().Avg(), pinger.Result()
+}
+
+// Ping work like command `ping`.
+// If target ip is reachable, return true, nil,
+// If target ip is unreachable, return false, nil,
+// If error encountered, return false, error.
+// More usage see tests in `pkg/util/util_test.go`.
+func Ping(ip string, timeout time.Duration) (bool, error) {
+	if len(ip) == 0 {
+		return false, errors.New("ip is empty")
+	}
+	if timeout < 500*time.Millisecond {
+		timeout = 1 * time.Second
+	}
+	pinger, err := ping.NewPinger(ip)
+	if err != nil {
+		return false, err
+	}
+	pinger.Count = 1
+	pinger.Timeout = timeout
+
+	err = pinger.Run()
+	if err != nil {
+		return false, err
+	}
+	return pinger.Statistics().PacketsSent == pinger.Statistics().PacketsRecv, nil
 }
