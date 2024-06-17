@@ -17,11 +17,12 @@ const (
 	NoneExpirePass  = "admin"
 )
 
-var App = new(Config)
-
 var (
-	configName  = "config"
+	App = new(Config)
+
 	configPaths = []string{}
+	configName  = "config"
+	configType  = "ini"
 	mu          sync.Mutex
 )
 
@@ -94,14 +95,6 @@ func Init() (err error) {
 	return nil
 }
 
-// AddPath add custom config path. default: ./config, /etc
-// You should always call this funtion before `Init`.
-func AddPath(paths ...string) {
-	mu.Lock()
-	defer mu.Unlock()
-	configPaths = append(configPaths, paths...)
-}
-
 // SetConfigName set the config file name, default to 'config'.
 // NOTE: any suffix will be ignored and the default file type is ini.
 // You should always call this funtion before `Init`.
@@ -109,6 +102,22 @@ func SetConfigName(name string) {
 	mu.Lock()
 	defer mu.Unlock()
 	configName = name
+}
+
+// SetConfigType set the config file type, default to 'ini'.
+// You should always call this funtion before `Init`.
+func SetConfigType(typ string) {
+	mu.Lock()
+	defer mu.Unlock()
+	configType = typ
+}
+
+// AddPath add custom config path. default: ./config, /etc
+// You should always call this funtion before `Init`.
+func AddPath(paths ...string) {
+	mu.Lock()
+	defer mu.Unlock()
+	configPaths = append(configPaths, paths...)
 }
 
 // Save config instance to file.
