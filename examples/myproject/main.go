@@ -4,6 +4,7 @@ import (
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/database/cache"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/examples/myproject/model"
@@ -22,6 +23,7 @@ func main() {
 		config.Init,
 		zap.Init,
 		logrus.Init,
+		cache.Init,
 		mysql.Init,
 		redis.Init,
 		rbac.Init,
