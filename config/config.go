@@ -21,6 +21,7 @@ var (
 	App = new(Config)
 
 	configPaths = []string{}
+	configFile  = ""
 	configName  = "config"
 	configType  = "ini"
 	mu          sync.Mutex
@@ -35,8 +36,12 @@ const (
 )
 
 func Init() (err error) {
-	viper.SetConfigName(configName)
-	viper.SetConfigType("ini")
+	if len(configFile) > 0 {
+		viper.SetConfigFile(configFile)
+	} else {
+		viper.SetConfigName(configName)
+		viper.SetConfigType(configType)
+	}
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/")
 	for _, path := range configPaths {
@@ -93,6 +98,14 @@ func Init() (err error) {
 		App.Domain = "http://192.168.1.1:5173"
 	}
 	return nil
+}
+
+// SetConfigFile set the config file path.
+// You should always call this funtion before `Init`.
+func SetConfigFile(file string) {
+	mu.Lock()
+	defer mu.Unlock()
+	configFile = file
 }
 
 // SetConfigName set the config file name, default to 'config'.
