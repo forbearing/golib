@@ -43,3 +43,21 @@ const (
 	USER_SYSTEM = "system"
 	USER_ROOT   = "root"
 )
+
+type Phase string
+
+const (
+	PHASE_CREATE_BEFORE         Phase = "create_before"
+	PHASE_CREATE_AFTER          Phase = "create_after"
+	PHASE_UPDATE_BEFORE         Phase = "update_before"
+	PHASE_UPDATE_AFTER          Phase = "update_after"
+	PHASE_UPDATE_PARTIAL_BEFORE Phase = "update_partial_before"
+	PHASE_UPDATE_PARTIAL_AFTER  Phase = "update_partial_after"
+	PHASE_DELETE_BEFORE         Phase = "delete_before"
+	PHASE_DELETE_AFTER          Phase = "delete_after"
+	PHASE_LIST_BEFORE           Phase = "list_before"
+	PHASE_LIST_AFTER            Phase = "list_after"
+	PHASE_GET_BEFORE            Phase = "get_before"
+	PHASE_GET_AFTER             Phase = "get_after"
+	PHASE_FILTER                Phase = "filter"
+)

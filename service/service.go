@@ -92,6 +92,8 @@ func GinContext(c *gin.Context) *types.ServiceContext {
 	}
 
 	return &types.ServiceContext{
+		Request: c.Request,
+
 		Method:       c.Request.Method,
 		URL:          c.Request.URL,
 		Header:       c.Request.Header,

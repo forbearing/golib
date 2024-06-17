@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"errors"
 	"reflect"
@@ -242,9 +243,13 @@ func (gs *GormStrings) Scan(value any) error {
 	}
 	switch v := value.(type) {
 	case []byte:
-		*gs = strings.Split(string(v), ",")
+		_v := bytes.TrimSpace(v)
+		_v = bytes.Trim(_v, ",")
+		*gs = strings.Split(string(_v), ",")
 	case string:
-		*gs = strings.Split(v, ",")
+		_v := strings.TrimSpace(v)
+		_v = strings.Trim(_v, ",")
+		*gs = strings.Split(_v, ",")
 	default:
 		return errors.New("unsupported data type for GormStrings")
 	}

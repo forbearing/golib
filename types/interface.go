@@ -69,6 +69,7 @@ type Database[M Model] interface {
 	// It will update the "created_at" and "updated_at" field.
 	Update(objs ...M) error
 	// UpdateById only update one record with specific id.
+	// its not invoke model hook.
 	UpdateById(id any, key string, value any) error
 
 	// List all record and write to dest.

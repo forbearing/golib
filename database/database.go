@@ -947,6 +947,8 @@ func (db *database[M]) Update(objs ...M) error {
 	return nil
 }
 
+// UpdateById only update one record with specific id.
+// its not invoke model hook.
 func (db *database[M]) UpdateById(id any, key string, val any) error {
 	if err := db.prepare(); err != nil {
 		return err
