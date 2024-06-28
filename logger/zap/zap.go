@@ -3,7 +3,6 @@ package zap
 import (
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/forbearing/golib/config"
@@ -40,22 +39,25 @@ func Init() error {
 		zap.AddCaller(),
 		zap.AddStacktrace(zapcore.FatalLevel),
 	))
+
 	logger.Global = New()
-	logger.Controller = New(filepath.Join(config.App.LogDir, "controller.log"))
-	logger.Service = New(filepath.Join(config.App.LogDir, "service.log"))
-	logger.Database = New(filepath.Join(config.App.LogDir, "database.log"))
-	logger.Redis = New(filepath.Join(config.App.LogDir, "redis.log"))
-	logger.Task = New(filepath.Join(config.App.LogDir, "task.log"))
-	logger.Visitor = New(filepath.Join(config.App.LogDir, "visitor.log"))
-	logger.Cronjob = New(filepath.Join(config.App.LogDir, "cronjob.log"))
-	logger.Job = New(filepath.Join(config.App.LogDir, "job.log"))
+	logger.Internal = New("internal.log")
+	logger.Controller = New("controller.log")
+	logger.Service = New("service.log")
+	logger.Database = New("database.log")
+	logger.Cache = New("cache.log")
+	logger.Redis = New("redis.log")
+	logger.Task = New("task.log")
+	logger.Visitor = New("visitor.log")
+	logger.Cronjob = New("cronjob.log")
+	logger.Job = New("job.log")
 	logger.Gin = NewGin()
-	logger.Gorm = NewGorm("logs/gorm.log")
-	// if len(logFile) != 0 {
-	// 	logger.Visitor = NewLogger(filepath.Join(filepath.Dir(logFile), "logs/visitor.log"))
-	// } else {
-	// 	logger.Visitor = NewLogger()
-	// }
+	logger.Gorm = NewGorm("gorm_asset.log")
+	logger.GormDLP = NewGorm("gorm_dlp.log")
+	logger.GormSOC = NewGorm("gorm_soc.log")
+	logger.GormSocAgent = NewGorm("gorm_socagent.log")
+	logger.GormSoftware = NewGorm("gorm_software.log")
+	logger.GormCulture = NewGorm("gorm_culture.log")
 
 	return nil
 }
@@ -191,7 +193,13 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 	// encConfig.EncodeDuration = zapcore.MillisDurationEncoder
 	// encConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	// encConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
-	encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
+	// encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
+	encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02|15:04:05")
+	encConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	// encConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	// encConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
+	// encConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	// encConfig.EncodeLevel = colorfulLevelEncoder
 	if len(opt) > 0 {
 		o := opt[0]
 		if o.disableMsg {
@@ -223,4 +231,25 @@ func initVar() {
 	logMaxAge = int(config.App.LogMaxAge)
 	logMaxSize = int(config.App.LogMaxSize)
 	logMaxBackups = int(config.App.LogMaxBackups)
+}
+
+// colorfulLevelEncoder 自定义 Level Encoder，为不同的日志级别添加颜色
+func colorfulLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+	var color string
+	switch level {
+	case zapcore.DebugLevel:
+		color = "\033[36m" // Cyan
+	case zapcore.InfoLevel:
+		color = "\033[32m" // Green
+	case zapcore.WarnLevel:
+		color = "\033[33m" // Yellow
+	case zapcore.ErrorLevel:
+		color = "\033[31m" // Red
+	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+		color = "\033[35m" // Magenta
+	default:
+		color = "\033[0m" // Reset
+	}
+	// 使用颜色代码包装原始 Level 字符串
+	enc.AppendString(color + level.String() + "\033[0m")
 }
