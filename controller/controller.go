@@ -635,7 +635,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 
 		// FIXME: failed to convert value when size value is -1.
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
-			log.Warn("failed to parse uri query parameter into model: ", err)
+			log.Warn("failed to decode uri query parameter into model: ", err)
 		}
 		log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
 
@@ -718,6 +718,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		if err = handler().
 			WithScope(page, size).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
 			WithExpand(expands, sortBy).
 			WithOrder(sortBy).
@@ -741,6 +742,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		if err := handler().
 			// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
 			WithTimeRange(columnName, startTime, endTime).
 			WithCache(!nocache).
@@ -1086,6 +1088,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
 			WithLimit(limit).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
 			WithExpand(expands, sortBy).
 			WithOrder(sortBy).

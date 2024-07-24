@@ -32,5 +32,6 @@ func Authz() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Next()
 	}
 }

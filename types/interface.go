@@ -66,7 +66,7 @@ type Database[M Model] interface {
 	// Update one or multiple record, if record doesn't exist, it will be created.
 	// Pass T to update one record.
 	// Pass []M to update multiple record.
-	// It will update the "created_at" and "updated_at" field.
+	// It will just update the "updated_at" field.
 	Update(objs ...M) error
 	// UpdateById only update one record with specific id.
 	// its not invoke model hook.
@@ -108,6 +108,14 @@ type DatabaseOption[M Model] interface {
 
 	// WithQueryRaw is where condition.
 	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.
+	// Examples:
+	// - WithQueryRaw("name = ?", "hybfkuf")
+	// - WithQueryRaw("name <> ?", "hybfkuf")
+	// - WithQueryRaw("name IN (?)", []string{"hybfkuf", "hybfkuf 2"})
+	// - WithQueryRaw("name LIKE ?", "%hybfkuf%")
+	// - WithQueryRaw("name = ? AND age >= ?", "hybfkuf", "100")
+	// - WithQueryRaw("updated_at > ?", lastWeek)
+	// - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
 	WithQueryRaw(query any, args ...any) Database[M]
 
 	// WithTimeRange applies a time range filter to the query based on the specified column name.
@@ -168,12 +176,14 @@ type DatabaseOption[M Model] interface {
 	// WithExpand, for "foreign key".
 	WithExpand(expand []string, order ...string) Database[M]
 
-	// WithPurge
+	// WithPurge tells the database manipulator to delete resource in database permanently.
 	WithPurge(...bool) Database[M]
-	// WithCache
+	// WithCache tells the database manipulator to retrieve resource from cache.
 	WithCache(...bool) Database[M]
-	// WithOmit
+	// WithOmit omit specific columns when create/update.
 	WithOmit(...string) Database[M]
+	// WithoutHook tells the database manipulator not invoke model hooks.
+	WithoutHook() Database[M]
 }
 
 // Model interface.
@@ -226,6 +236,7 @@ type Service[M Model] interface {
 	Export(*ServiceContext, ...M) ([]byte, error)
 
 	Filter(*ServiceContext, M) M
+	FilterRaw(*ServiceContext) string
 
 	Logger
 }

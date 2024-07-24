@@ -11,5 +11,6 @@ func RequestID() gin.HandlerFunc {
 		id := util.RequestID()
 		c.Set(types.REQUEST_ID, id)
 		c.Header("X-Request-ID", id)
+		c.Next()
 	}
 }

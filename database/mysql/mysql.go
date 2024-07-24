@@ -9,6 +9,7 @@ https://blog.csdn.net/LeoForBest/article/details/133607878	Casbin权限管理实
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
@@ -20,6 +21,8 @@ import (
 )
 
 var Default *gorm.DB
+
+var dbmap = make(map[string]*gorm.DB)
 
 func Init() (err error) {
 	dsnDefault := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
@@ -36,6 +39,7 @@ func Init() (err error) {
 		return err
 	}
 
+	// create table automatically in default database.
 	for _, m := range model.Tables {
 		if len(m.GetTableName()) > 0 {
 			if err = Default.Table(m.GetTableName()).AutoMigrate(m); err != nil {
@@ -47,14 +51,47 @@ func Init() (err error) {
 			}
 		}
 	}
+
+	// create table automatically with custom database.
+	for _, v := range model.TablesWithDB {
+		handler := Default
+		if val, exists := dbmap[strings.ToLower(v.DBName)]; exists {
+			// fmt.Println("----- create table: exists", v.DBName)
+			handler = val
+		}
+		m := v.Table
+		if len(m.GetTableName()) > 0 {
+			if err = handler.Table(m.GetTableName()).AutoMigrate(m); err != nil {
+				return
+			}
+		} else {
+			if err = handler.AutoMigrate(m); err != nil {
+				return
+			}
+		}
+	}
+
 	// create the table records that must be pre-exists before database curds.
 	for _, r := range model.Records {
+		handler := Default
+		if val, exists := dbmap[strings.ToLower(r.DBName)]; exists {
+			// fmt.Println("----- create record: exists", r.DBName)
+			handler = val
+		}
+
 		// FIXME: 如何 preload, 来递归创建表数据
 		// for i := range r.Expands {
 		// 	DB = DB.Preload(r.Expands[i])
 		// }
-		if err = Default.Model(r.Table).Save(r.Rows).Error; err != nil {
-			return err
+
+		if len((r.Table.GetTableName())) > 0 {
+			if err = handler.Table(r.Table.GetTableName()).Save(r.Rows).Error; err != nil {
+				return err
+			}
+		} else {
+			if err = handler.Model(r.Table).Save(r.Rows).Error; err != nil {
+				return err
+			}
 		}
 	}
 	// set default database to 'Default'.

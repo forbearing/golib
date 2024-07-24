@@ -37,6 +37,8 @@ var (
 	DB               *gorm.DB
 	defaultLimit     = 1000
 	defaultBatchSize = 1000
+
+	defaultDeleteBatchSize = 10000
 )
 
 // func Init() (err error) {
@@ -71,6 +73,7 @@ type database[M types.Model] struct {
 	enableCache bool   // using cache or not, only works 'List', 'Get', 'Count' method.
 	tableName   string // support multiple custom table name, always used with the `WithDB` method.
 	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
+	noHook      bool   // disable model hook.
 
 	shouldAutoMigrate bool
 }
@@ -84,6 +87,7 @@ func (db *database[M]) reset() {
 	db.enableCache = false
 	db.tableName = ""
 	db.batchSize = 0
+	db.noHook = false
 	db.shouldAutoMigrate = false
 	db.db = DB.WithContext(context.Background())
 }
@@ -343,6 +347,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 
 // StructFieldToMap extracts the field tags from a struct and writes them into a map.
 // This map can then be used to build SQL query conditions.
+// FIXME: if the field type is boolean or ineger, disable the fuzzy matching.
 func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) {
 	if q == nil {
 		q = make(map[string]string)
@@ -358,13 +363,25 @@ func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		case reflect.Struct:
 			// All `model.XXX` extends the basic model named `Base`,
 			if typ.Field(i).Name == "Base" {
+				if !val.Field(i).FieldByName("CreatedBy").IsZero() {
+					// Not overwrite the "CreatedBy" value set in types.Model.
+					// The "CreatedBy" value set in types.Model has higher priority than base model.
+					if _, loaded := q["created_by"]; !loaded {
+						q["created_by"] = val.Field(i).FieldByName("CreatedBy").Interface().(string)
+					}
+				}
+				if !val.Field(i).FieldByName("UpdatedBy").IsZero() {
+					// Not overwrite the "UpdatedBy" value set in types.Model.
+					// The "UpdatedBy" value set in types.Model has higher priority than base model.
+					if _, loaded := q["updated_by"]; !loaded {
+						q["updated_by"] = val.Field(i).FieldByName("UpdatedBy").Interface().(string)
+					}
+				}
 				if !val.Field(i).FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
 						q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
-						// q["created_by"] = val.Field(i).FieldByName("CreatedBy").Interface().(string)
-						// q["updated_by"] = val.Field(i).FieldByName("UpdatedBy").Interface().(string)
 					}
 				}
 			} else {
@@ -675,6 +692,14 @@ func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithoutHook will disable all model hooks.
+func (db *database[M]) WithoutHook() types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.noHook = true
+	return db
+}
+
 // Create one or multiple objects in database.
 // It will update the "created_at" and "updated_at" field.
 // Examples:
@@ -705,7 +730,7 @@ func (db *database[M]) Create(objs ...M) error {
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: CreateBefore.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].CreateBefore(); err != nil {
 				return err
 			}
@@ -761,7 +786,7 @@ func (db *database[M]) Create(objs ...M) error {
 	}
 	// Invoke model hook: CreateAfter.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].CreateAfter(); err != nil {
 				return err
 			}
@@ -774,6 +799,7 @@ func (db *database[M]) Create(objs ...M) error {
 // Examples:
 // - database.XXX().Delete(&model.XXX{ID: id}) // delete record with primary key
 // - database.XXX().WithQuery(req).Delete(req) // delete record with where condiions.
+// FIXME: is delete should use defaultLimit or defaultBatchSize?
 func (db *database[M]) Delete(objs ...M) error {
 	if err := db.prepare(); err != nil {
 		return err
@@ -801,7 +827,7 @@ func (db *database[M]) Delete(objs ...M) error {
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: DeleteBefore.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].DeleteBefore(); err != nil {
 				return nil
 			}
@@ -819,7 +845,7 @@ func (db *database[M]) Delete(objs ...M) error {
 		// 	return err
 		// }
 		//
-		batchSize := defaultBatchSize
+		batchSize := defaultDeleteBatchSize
 		if db.batchSize > 0 {
 			batchSize = db.batchSize
 		}
@@ -840,7 +866,7 @@ func (db *database[M]) Delete(objs ...M) error {
 		// 	return err
 		// }
 		//
-		batchSize := defaultBatchSize
+		batchSize := defaultDeleteBatchSize
 		if db.batchSize > 0 {
 			batchSize = db.batchSize
 		}
@@ -856,7 +882,7 @@ func (db *database[M]) Delete(objs ...M) error {
 	}
 	// Invoke model hook: DeleteAfter.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].DeleteAfter(); err != nil {
 				return err
 			}
@@ -901,7 +927,7 @@ func (db *database[M]) Update(objs ...M) error {
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: UpdateBefore.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].UpdateBefore(); err != nil {
 				return err
 			}
@@ -938,7 +964,7 @@ func (db *database[M]) Update(objs ...M) error {
 	}
 	// Invoke model hook: UpdateAfter.
 	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) {
+		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
 			if err := objs[i].UpdateAfter(); err != nil {
 				return err
 			}
@@ -1078,7 +1104,7 @@ QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: ListBefore.
 	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) {
+		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
 			if err = (*dest)[i].ListBefore(); err != nil {
 				return err
 			}
@@ -1095,7 +1121,7 @@ QUERY:
 	}
 	// Invoke model hook: ListAfter()
 	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) {
+		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
 			if err = (*dest)[i].ListAfter(); err != nil {
 				return err
 			}
@@ -1218,7 +1244,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetBefore(); err != nil {
 			return err
 		}
@@ -1233,7 +1259,7 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetAfter(); err != nil {
 			return err
 		}
@@ -1428,7 +1454,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetBefore(); err != nil {
 			return err
 		}
@@ -1443,7 +1469,7 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetAfter(); err != nil {
 			return err
 		}
@@ -1555,7 +1581,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetBefore(); err != nil {
 			return err
 		}
@@ -1570,7 +1596,7 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetAfter(); err != nil {
 			return err
 		}
@@ -1682,7 +1708,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetBefore(); err != nil {
 			return err
 		}
@@ -1697,7 +1723,7 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) {
+	if !reflect.DeepEqual(empty, dest) && !db.noHook {
 		if err = dest.GetAfter(); err != nil {
 			return err
 		}

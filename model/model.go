@@ -25,8 +25,14 @@ var (
 	//
 	// Records is the table records that should created automatically when app bootstraping.
 	Records []*Record = make([]*Record, 0)
+
 	// Tables is the database table that should created automatically when app bootstraping.
 	Tables []types.Model
+
+	TablesWithDB []struct {
+		Table  types.Model
+		DBName string
+	}
 
 	// Routes is a map slice that element is map[string][]Verb
 	// The map key is the route path, eg: '/asset' or 'asset'
@@ -50,6 +56,7 @@ type Record struct {
 	Table   types.Model
 	Rows    any
 	Expands []string
+	DBName  string
 }
 
 // Register table with records and it will be created in database before any curd..
@@ -61,6 +68,22 @@ func Register[M types.Model](records ...M) {
 	Tables = append(Tables, table)
 	if len(records) != 0 {
 		Records = append(Records, &Record{Table: table, Rows: records, Expands: table.Expands()})
+	}
+}
+
+// RegisterTo same as Register but with custom database instances.
+// dbname should always lowercase.
+func RegisterTo[M types.Model](dbname string, records ...M) {
+	mu.Lock()
+	defer mu.Unlock()
+	// table := *new(M)
+	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
+	TablesWithDB = append(TablesWithDB, struct {
+		Table  types.Model
+		DBName string
+	}{table, dbname})
+	if len(records) != 0 {
+		Records = append(Records, &Record{Table: table, Rows: records, Expands: table.Expands(), DBName: dbname})
 	}
 }
 
@@ -113,8 +136,8 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy      string    `json:"created_by,omitempty" schema:"-"`
-	UpdatedBy      string    `json:"updated_by,omitempty" schema:"-"`
+	CreatedBy      string    `json:"created_by,omitempty" schema:"created_by"`
+	UpdatedBy      string    `json:"updated_by,omitempty" schema:"updated_by"`
 	CreatedAt      time.Time `json:"created_at,omitempty" schema:"-"`
 	UpdatedAt      time.Time `json:"updated_at,omitempty" schema:"-"`
 	Remark         *string   `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
@@ -155,6 +178,8 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	// 	return nil
 	// }
 	enc.AddString("id", b.ID)
+	enc.AddString("created_by", b.CreatedBy)
+	enc.AddString("updated_by", b.UpdatedBy)
 	enc.AddUint("page", b.Page)
 	enc.AddUint("size", b.Size)
 	// enc.AddString("remark", util.Depointer(b.Remark))
@@ -258,5 +283,5 @@ func (gs *GormStrings) Scan(value any) error {
 
 func (gs GormStrings) Value() (driver.Value, error) {
 	// It will return "", if gs is nil or empty string.
-	return strings.Join(gs, ","), nil
+	return strings.Trim(strings.Join(gs, ","), ","), nil
 }

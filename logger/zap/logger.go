@@ -2,7 +2,6 @@ package zap
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/forbearing/golib/types"
@@ -11,6 +10,8 @@ import (
 )
 
 // Logger implements types.Logger interface.
+// https://github.com/moul/zapgorm2 may be the alternative choice.
+// eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
 type Logger struct {
 	zlog *zap.Logger
 	slog *zap.SugaredLogger
@@ -50,6 +51,8 @@ func (l *Logger) With(key string, val string) types.Logger {
 }
 
 // GormLogger implements gorm logger.Interface
+// https://github.com/moul/zapgorm2 may be the alternative choice.
+// eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
 type GormLogger struct {
 	l *Logger
 }
@@ -58,21 +61,25 @@ var _ gorml.Interface = (*GormLogger)(nil)
 
 func (g *GormLogger) LogMode(gorml.LogLevel) gorml.Interface { return g }
 func (g *GormLogger) Info(_ context.Context, str string, args ...any) {
-	g.l.Info(fmt.Sprintf(str, args...))
+	g.l.Infow(str, args)
 }
+
 func (g *GormLogger) Warn(_ context.Context, str string, args ...any) {
-	g.l.Warn(fmt.Sprintf(str, args...))
+	g.l.Warnw(str, args)
 }
+
 func (g *GormLogger) Error(_ context.Context, str string, args ...any) {
-	g.l.Error(fmt.Sprintf(str, args...))
+	g.l.Errorw(str, args)
 }
+
 func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 	if err != nil {
-		g.l.Error(fmt.Sprintf("%s [%.3fms] %s rows:%v error:%v", "query", float64(elapsed.Nanoseconds())/1e6, sql, rows, err))
-
+		// g.l.Error(fmt.Sprintf("%s [%.3fms] %s rows:%v error:%v", "query", float64(elapsed.Nanoseconds())/1e6, sql, rows, err))
+		g.l.Errorz(sql, zap.Int64("rows", rows), zap.String("elapsed", elapsed.String()), zap.Error(err))
 	} else {
-		g.l.Info(fmt.Sprintf("%s [%.3fms] %s rows:%v", "query", float64(elapsed.Nanoseconds())/1e6, sql, rows))
+		// g.l.Info(fmt.Sprintf("%s [%.3fms] %s rows:%v", "query", float64(elapsed.Nanoseconds())/1e6, sql, rows))
+		g.l.Infow(sql, zap.Int64("rows", rows), zap.String("elapsed", elapsed.String()))
 	}
 }

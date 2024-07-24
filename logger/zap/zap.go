@@ -3,6 +3,7 @@ package zap
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/forbearing/golib/config"
@@ -154,7 +155,7 @@ func NewSugared(filename ...string) *zap.SugaredLogger {
 
 // newLogWriter
 func newLogWriter(_ ...option) zapcore.WriteSyncer {
-	switch logFile {
+	switch strings.TrimSpace(logFile) {
 	case "/dev/stdout":
 		return zapcore.AddSync(os.Stdout)
 	case "/dev/stderr":
@@ -163,7 +164,7 @@ func newLogWriter(_ ...option) zapcore.WriteSyncer {
 		return zapcore.AddSync(os.Stdout)
 	default:
 		return zapcore.AddSync(&lumberjack.Logger{
-			Filename:   logFile,
+			Filename:   filepath.Join(config.App.LogDir, logFile),
 			MaxAge:     logMaxAge,
 			MaxSize:    logMaxSize,
 			MaxBackups: logMaxBackups,

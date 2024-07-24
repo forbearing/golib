@@ -43,21 +43,19 @@ func Register[S types.Service[M], M types.Model](s ...S) {
 
 func Init() error {
 	// Init all service types.Logger
-	{
-		for _, s := range serviceMap {
-			typ := reflect.TypeOf(s).Elem()
-			val := reflect.ValueOf(s).Elem()
-			for i := 0; i < typ.NumField(); i++ {
-				switch strings.ToLower(typ.Field(i).Name) {
-				case "logger": // service object has itself types.Logger
-					if val.Field(i).IsZero() {
-						val.Field(i).Set(reflect.ValueOf(logger.Service))
-					}
-				case "base": // service object's types.Logger extends from 'base' struct.
-					fieldLogger := val.Field(i).FieldByName("Logger")
-					if fieldLogger.IsZero() {
-						fieldLogger.Set(reflect.ValueOf(logger.Service))
-					}
+	for _, s := range serviceMap {
+		typ := reflect.TypeOf(s).Elem()
+		val := reflect.ValueOf(s).Elem()
+		for i := 0; i < typ.NumField(); i++ {
+			switch strings.ToLower(typ.Field(i).Name) {
+			case "logger": // service object has itself types.Logger
+				if val.Field(i).IsZero() {
+					val.Field(i).Set(reflect.ValueOf(logger.Service))
+				}
+			case "base": // service object's types.Logger extends from 'base' struct.
+				fieldLogger := val.Field(i).FieldByName("Logger")
+				if fieldLogger.IsZero() {
+					fieldLogger.Set(reflect.ValueOf(logger.Service))
 				}
 			}
 		}
@@ -125,3 +123,4 @@ func (Base[M]) GetAfter(*types.ServiceContext, ...M) error            { return n
 func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error)  { return make([]M, 0), nil }
 func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)    { return make([]byte, 0), nil }
 func (Base[M]) Filter(_ *types.ServiceContext, m M) M                 { return m }
+func (Base[M]) FilterRaw(_ *types.ServiceContext) string              { return "" }

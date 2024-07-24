@@ -60,4 +60,6 @@ const (
 	PHASE_GET_BEFORE            Phase = "get_before"
 	PHASE_GET_AFTER             Phase = "get_after"
 	PHASE_FILTER                Phase = "filter"
+	PHASE_IMPORT                Phase = "import"
+	PHASE_EXPORT                Phase = "export"
 )
