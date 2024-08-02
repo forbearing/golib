@@ -514,7 +514,10 @@ func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
 // - WithOrder("name desc")
 // - WithOrder("created_at")
 // - WithOrder("updated_at desc")
-// NOTE: you cannot using the mysql keyword, such as: "order", "limit".
+// multiple keyw order, eg:
+// - "field1, field2 desc, field3 asc"
+// - "created_at desc, id desc"
+// NOTE: you can using the mysql keyword, such as: "order", "limit".
 func (db *database[M]) WithOrder(order string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()

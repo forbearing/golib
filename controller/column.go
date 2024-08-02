@@ -9,6 +9,7 @@ import (
 	. "github.com/forbearing/golib/response"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type column struct{}
@@ -166,8 +167,8 @@ func (cs *column) Get(c *gin.Context) {
 	}
 }
 
-func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string) {
-	columnRes, err := queryColumnsWithQuery(tableName, columns, c.Request.URL.Query())
+func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string, db ...*gorm.DB) {
+	columnRes, err := queryColumnsWithQuery(tableName, columns, c.Request.URL.Query(), db...)
 	if err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -176,125 +177,125 @@ func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string)
 	ResponseJSON(c, CodeSuccess, columnRes)
 }
 
-func (cs *column) Asset(c *gin.Context) {
-	columnRes, err := queryColumnsWithQuery("assets", columnAsset, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnRes)
-}
-
-func (cs *column) Distribute(c *gin.Context) {
-	columnRes, err := queryColumnsWithQuery("distributes", columnDistribute, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnRes)
-}
-
-func (cs *column) Back(c *gin.Context) {
-	columnRes, err := queryColumnsWithQuery("backs", columnBack, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnRes)
-}
-
-func (cs *column) Change(c *gin.Context) {
-	columnRes, err := queryColumnsWithQuery("changes", columnChange, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnRes)
-}
-
-func (cs *column) Check(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("checks", columnCheck, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) Software(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("softwares", columnSoftware, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) SoftwarePurchased(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("software_purchaseds", columnSoftwrarePurchased, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) SoftwarePurchasedAssignment(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("software_purchased_assignments", columnSoftwrarePurchasedAssignment, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) SoftwareReport(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("software_reports", columnSoftwareReport, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) SoftwareCatalog(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("software_catalogs", columnSoftwareCatalog, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) FeishuApproval(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("feishu_approvals", columnFeishuApproval, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
-
-func (cs *column) FeishuEventApproval(c *gin.Context) {
-	columnsRes, err := queryColumnsWithQuery("feishu_event_approvals", columnFeishuEventApproval, c.Request.URL.Query())
-	if err != nil {
-		zap.S().Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
-	ResponseJSON(c, CodeSuccess, columnsRes)
-}
+// func (cs *column) Asset(c *gin.Context) {
+// 	columnRes, err := queryColumnsWithQuery("assets", columnAsset, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnRes)
+// }
+//
+// func (cs *column) Distribute(c *gin.Context) {
+// 	columnRes, err := queryColumnsWithQuery("distributes", columnDistribute, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnRes)
+// }
+//
+// func (cs *column) Back(c *gin.Context) {
+// 	columnRes, err := queryColumnsWithQuery("backs", columnBack, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnRes)
+// }
+//
+// func (cs *column) Change(c *gin.Context) {
+// 	columnRes, err := queryColumnsWithQuery("changes", columnChange, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnRes)
+// }
+//
+// func (cs *column) Check(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("checks", columnCheck, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) Software(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("softwares", columnSoftware, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) SoftwarePurchased(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("software_purchaseds", columnSoftwrarePurchased, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) SoftwarePurchasedAssignment(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("software_purchased_assignments", columnSoftwrarePurchasedAssignment, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) SoftwareReport(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("software_reports", columnSoftwareReport, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) SoftwareCatalog(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("software_catalogs", columnSoftwareCatalog, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) FeishuApproval(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("feishu_approvals", columnFeishuApproval, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
+//
+// func (cs *column) FeishuEventApproval(c *gin.Context) {
+// 	columnsRes, err := queryColumnsWithQuery("feishu_event_approvals", columnFeishuEventApproval, c.Request.URL.Query())
+// 	if err != nil {
+// 		zap.S().Error(err)
+// 		ResponseJSON(c, CodeFailure)
+// 		return
+// 	}
+// 	ResponseJSON(c, CodeSuccess, columnsRes)
+// }
 
 // queryColumns 只查询字段有多少种
 //
@@ -307,11 +308,17 @@ func (cs *column) FeishuEventApproval(c *gin.Context) {
 // | XS                 |
 // | ZJ                 |
 // +--------------------+
-func queryColumns(table string, columns []string) (map[string][]string, error) {
+func queryColumns(table string, columns []string, db ...*gorm.DB) (map[string][]string, error) {
+	_db := mysql.Default
+	if len(db) > 0 {
+		if db[0] != nil {
+			_db = db[0]
+		}
+	}
 	cr := make(map[string][]string)
-	sql := `SELECT %s FROM %s WHERE deleted_at IS NULL GROUP BY %s`
+	sql := "SELECT `%s` FROM `%s` WHERE `%s` IS NOT NULL AND `deleted_at` IS NULL GROUP BY `%s`"
 	for _, column := range columns {
-		rows, err := mysql.Default.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
+		rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column, column)).Rows()
 		if err != nil {
 			zap.S().Error(err)
 			return nil, err
@@ -334,9 +341,9 @@ func queryColumns(table string, columns []string) (map[string][]string, error) {
 	return cr, nil
 }
 
-func queryColumnsWithQuery(table string, columns []string, query map[string][]string) (map[string][]string, error) {
+func queryColumnsWithQuery(table string, columns []string, query map[string][]string, db ...*gorm.DB) (map[string][]string, error) {
 	cr := make(map[string][]string)
-	sql := `SELECT %s FROM %s WHERE deleted_at IS NULL %s GROUP BY %s`
+	sql := "SELECT `%s` FROM `%s` WHERE `%s` IS NOT NULL AND `deleted_at` IS NULL %s GROUP BY `%s`"
 
 	var queryBuilder strings.Builder
 	for k, v := range query { // v eg: [process,package,]
@@ -373,10 +380,16 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 		}
 	}
 
+	_db := mysql.Default
+	if len(db) > 0 {
+		if db[0] != nil {
+			_db = db[0]
+		}
+	}
 	for _, column := range columns {
-		statement := fmt.Sprintf(sql, column, table, queryBuilder.String(), column)
-		// fmt.Println("---------------------", statement)
-		rows, err := mysql.Default.Raw(statement).Rows()
+		statement := fmt.Sprintf(sql, column, table, column, queryBuilder.String(), column)
+		// fmt.Println("--------------------- statement: ", statement)
+		rows, err := _db.Raw(statement).Rows()
 		if err != nil {
 			zap.S().Error(err)
 			return nil, err
@@ -428,11 +441,17 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 // | od-095e7e716c0a8262b3dad7888eb4776b |               42 |
 // | od-7e8d4fb875bed78400bc5bbca88eed0c |                1 |
 // +-------------------------------------+------------------+
-func queryColumnsAndCount(table string, columns []string) (columnResult, error) {
+func queryColumnsAndCount(table string, columns []string, db ...*gorm.DB) (columnResult, error) {
+	_db := mysql.Default
+	if len(db) > 0 {
+		if db[0] != nil {
+			_db = db[0]
+		}
+	}
 	cr := make(map[string][]result)
-	sql := `SELECT %s, count(*) as count FROM %s where deleted_at IS NULL GROUP BY %s `
+	sql := "SELECT `%s`, count(*) as count FROM `%s` where `deleted_at` IS NULL GROUP BY `%s`"
 	for _, column := range columns {
-		rows, err := mysql.Default.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
+		rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
 		if err != nil {
 			zap.S().Error(err)
 			return nil, err
