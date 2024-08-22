@@ -53,7 +53,7 @@ func Init() (err error) {
 	viper.SetDefault("server.token_expire_duration", "24h")
 
 	viper.SetDefault("logger.log_dir", "./logs")
-	viper.SetDefault("logger.log_file", "./logs/server.log")
+	viper.SetDefault("logger.log_file", "server.log")
 	viper.SetDefault("logger.log_level", "info")
 	viper.SetDefault("logger.log_format", "json")
 	viper.SetDefault("logger.log_encoder", "json")
