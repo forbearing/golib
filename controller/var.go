@@ -15,6 +15,7 @@ const (
 	QUERY_LIMIT       = types.QUERY_LIMIT
 	QUERY_EXPAND      = types.QUERY_EXPAND
 	QUERY_DEPTH       = types.QUERY_DEPTH
+	QUERY_OR          = types.QUERY_OR
 	QUERY_FUZZY       = types.QUERY_FUZZY
 	QUERY_SORTBY      = types.QUERY_SORTBY
 	QUERY_COLUMN_NAME = types.QUERY_COLUMN_NAME

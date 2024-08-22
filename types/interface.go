@@ -55,24 +55,23 @@ type Logger interface {
 // Database interface.
 type Database[M Model] interface {
 	// Create one or multiple record.
-	// Pass T to create one record,
+	// Pass M to create one record,
 	// Pass []M to create multiple record.
 	// It will update the "created_at" and "updated_at" field.
 	Create(objs ...M) error
 	// Delete one or multiple record.
-	// Pass T to delete one record.
+	// Pass M to delete one record.
 	// Pass []M to delete multiple record.
 	Delete(objs ...M) error
 	// Update one or multiple record, if record doesn't exist, it will be created.
-	// Pass T to update one record.
+	// Pass M to update one record.
 	// Pass []M to update multiple record.
 	// It will just update the "updated_at" field.
 	Update(objs ...M) error
 	// UpdateById only update one record with specific id.
 	// its not invoke model hook.
 	UpdateById(id any, key string, value any) error
-
-	// List all record and write to dest.
+	// List all records and write to dest.
 	List(dest *[]M, cache ...*[]byte) error
 	// Get one record with specific id and write to dest.
 	Get(dest M, id string, cache ...*[]byte) error
@@ -103,8 +102,15 @@ type DatabaseOption[M Model] interface {
 	WithDebug() Database[M]
 
 	// WithQuery is where condition.
-	// database.WithQuery(xxx).List(xxx) equal to database.Find(xxx).
 	WithQuery(query M, fuzzyMatch ...bool) Database[M]
+
+	// WithAnd with AND query condition(default).
+	// It must be called before WithQuery.
+	WithAnd(...bool) Database[M]
+
+	// WithAnd with OR query condition.
+	// It must be called before WithQuery.
+	WithOr(...bool) Database[M]
 
 	// WithQueryRaw is where condition.
 	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.

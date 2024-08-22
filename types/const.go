@@ -22,6 +22,7 @@ const (
 	QUERY_LIMIT       = "limit"
 	QUERY_EXPAND      = "_expand"
 	QUERY_DEPTH       = "_depth"
+	QUERY_OR          = "_or"
 	QUERY_FUZZY       = "_fuzzy"
 	QUERY_SORTBY      = "_sortby"
 	QUERY_COLUMN_NAME = "_column_name"

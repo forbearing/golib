@@ -8,6 +8,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +31,7 @@ func Init() error {
 	router.GET("/ping", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "pong")
 	})
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	API = router.Group("/api")
 	API.Use(

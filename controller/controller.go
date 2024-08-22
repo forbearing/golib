@@ -640,6 +640,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
 
 		var err error
+		var or bool
 		var fuzzy bool
 		var expands []string
 		nocache := true // default disable cache.
@@ -650,6 +651,9 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
 				nocache = _nocache
 			}
+		}
+		if orStr, ok := c.GetQuery(QUERY_OR); ok {
+			or, _ = strconv.ParseBool(orStr)
 		}
 		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
 			fuzzy, _ = strconv.ParseBool(fuzzyStr)
@@ -717,6 +721,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		cached := false
 		if err = handler().
 			WithScope(page, size).
+			WithOr(or).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
@@ -741,6 +746,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		total := new(int64)
 		if err := handler().
 			// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
+			WithOr(or).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
@@ -1017,10 +1023,14 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		log.Info("query parameter: ", m)
 
 		var err error
+		var or bool
 		var fuzzy bool
 		var depth int = 1
 		var expands []string
 		data := make([]M, 0)
+		if orStr, ok := c.GetQuery(QUERY_OR); ok {
+			or, _ = strconv.ParseBool(orStr)
+		}
 		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
 			fuzzy, _ = strconv.ParseBool(fuzzyStr)
 		}
@@ -1087,6 +1097,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		if err = handler().
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
 			WithLimit(limit).
+			WithOr(or).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).

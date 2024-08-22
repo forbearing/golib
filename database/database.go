@@ -13,6 +13,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database/cache"
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/types"
 
 	"github.com/stoewer/go-strcase"
@@ -74,6 +75,7 @@ type database[M types.Model] struct {
 	tableName   string // support multiple custom table name, always used with the `WithDB` method.
 	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
 	noHook      bool   // disable model hook.
+	orQuery     bool   // or query
 
 	shouldAutoMigrate bool
 }
@@ -88,6 +90,7 @@ func (db *database[M]) reset() {
 	db.tableName = ""
 	db.batchSize = 0
 	db.noHook = false
+	db.orQuery = false
 	db.shouldAutoMigrate = false
 	db.db = DB.WithContext(context.Background())
 }
@@ -150,6 +153,30 @@ func (db *database[M]) WithDebug() types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.db = db.db.Debug()
+	return db
+}
+
+// WithAnd with AND query condition(default).
+// It must be called before WithQuery.
+func (db *database[M]) WithAnd(flag ...bool) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.orQuery = false
+	if len(flag) > 0 {
+		db.orQuery = flag[0]
+	}
+	return db
+}
+
+// WithAnd with OR query condition.
+// It must be called before WithQuery.
+func (db *database[M]) WithOr(flag ...bool) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.orQuery = true
+	if len(flag) > 0 {
+		db.orQuery = flag[0]
+	}
 	return db
 }
 
@@ -315,9 +342,19 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 					regexpVal = regexpVal + "|.*" + regexp.QuoteMeta(item) + ".*"
 				}
 				regexpVal = strings.TrimPrefix(regexpVal, "|")
-				db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+				// db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+				if db.orQuery {
+					db.db = db.db.Or(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+				} else {
+					db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+				}
 			} else { // If the query string has only one value, using LIKE
-				db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+				// db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+				if db.orQuery {
+					db.db = db.db.Or(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+				} else {
+					db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+				}
 			}
 		}
 	} else {
@@ -339,7 +376,12 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 			if len(strings.Join(items, "")) == 0 {
 				continue
 			}
-			db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
+			// db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
+			if db.orQuery {
+				db.db = db.db.Or(fmt.Sprintf("`%s` IN (?)", k), items)
+			} else {
+				db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
+			}
 		}
 	}
 	return db
@@ -1032,8 +1074,10 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
 	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+		metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*dest = _dest
 		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil
@@ -1169,8 +1213,10 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
 	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1300,8 +1346,10 @@ func (db *database[M]) Count(count *int64) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
 	if _cache, exists = cache.Cache[M]().GetInt(key); !exists && len(_cache) == 0 {
+		metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*count = _cache[0]
 		logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
 		return
@@ -1382,8 +1430,10 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
 	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1509,8 +1559,10 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
 	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1636,8 +1688,10 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
 	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
+		metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
+		metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
