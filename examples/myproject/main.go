@@ -10,6 +10,7 @@ import (
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/minio"
 	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
@@ -23,6 +24,7 @@ func main() {
 		config.Init,
 		zap.Init,
 		logrus.Init,
+		metrics.Init,
 		cache.Init,
 		mysql.Init,
 		redis.Init,
