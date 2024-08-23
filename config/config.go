@@ -48,6 +48,29 @@ func Init() (err error) {
 		viper.AddConfigPath(path)
 	}
 
+	SetDefaultValue()
+	if err = viper.ReadInConfig(); err != nil {
+		return
+	}
+	if err = viper.Unmarshal(App); err != nil {
+		return
+	}
+
+	if App.RedisConfig.Expiration < time.Minute || App.RedisConfig.Expiration > 24*time.Hour {
+		App.RedisConfig.Expiration = 8 * time.Hour
+	}
+	switch App.Mode {
+	case ModeProd:
+		App.Domain = "https://prod.example.com"
+	case ModeStg:
+		App.Domain = "https://stg.example.com"
+	case ModeDev:
+		App.Domain = "http://192.168.1.1:5173"
+	}
+	return nil
+}
+
+func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.token_expire_duration", "24h")
@@ -78,26 +101,6 @@ func Init() (err error) {
 
 	viper.SetDefault("minio.use_ssl", false)
 	viper.SetDefault("s3.use_ssl", false)
-
-	if err = viper.ReadInConfig(); err != nil {
-		return
-	}
-	if err = viper.Unmarshal(App); err != nil {
-		return
-	}
-
-	if App.RedisConfig.Expiration < time.Minute || App.RedisConfig.Expiration > 24*time.Hour {
-		App.RedisConfig.Expiration = 8 * time.Hour
-	}
-	switch App.Mode {
-	case ModeProd:
-		App.Domain = "https://prod.example.com"
-	case ModeStg:
-		App.Domain = "https://stg.example.com"
-	case ModeDev:
-		App.Domain = "http://192.168.1.1:5173"
-	}
-	return nil
 }
 
 // SetConfigFile set the config file path.
