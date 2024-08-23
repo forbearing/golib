@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
@@ -17,11 +19,13 @@ import (
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
 	. "github.com/forbearing/golib/util"
+	"github.com/spf13/viper"
 )
 
 func main() {
 	bootstrap.Register(
 		config.Init,
+		InitConfig,
 		zap.Init,
 		logrus.Init,
 		metrics.Init,
@@ -38,6 +42,10 @@ func main() {
 
 	RunOrDie(bootstrap.Init)
 
+	fmt.Println("custom config mqtt addr:", AppConf.MqttConfig.Addr)
+	fmt.Println("custom config mqtt username:", AppConf.MqttConfig.Username)
+	fmt.Println("custom config mqtt password:", AppConf.MqttConfig.Password)
+
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
 	router.API.DELETE("/category/:id", controller.Delete[*model.Category])
@@ -51,4 +59,36 @@ func main() {
 	router.API.POST("/category/import", controller.Import[*model.Category])
 
 	RunOrDie(bootstrap.Go)
+}
+
+var AppConf = new(Config)
+
+func InitConfig() (err error) {
+	config.SetDefaultValue()
+	if err = viper.ReadInConfig(); err != nil {
+		return
+	}
+	if err = viper.Unmarshal(AppConf); err != nil {
+		return
+	}
+	return nil
+}
+
+type Config struct {
+	MqttConfig            `json:"mqtt" mapstructure:"mqtt" init:"mqtt" yaml:"mqtt"`
+	config.ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	config.MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
+	config.RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	config.MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
+	config.S3Config       `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
+	config.LoggerConfig   `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
+	config.LdapConfig     `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
+	config.InfluxdbConfig `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
+	config.FeishuConfig   `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+}
+
+type MqttConfig struct {
+	Addr     string `json:"addr" mapstructure:"addr" init:"addr" yaml:"addr"`
+	Username string `json:"username" mapstructure:"username" init:"username" yaml:"username"`
+	Password string `json:"password" mapstructure:"password" init:"password" yaml:"password"`
 }
