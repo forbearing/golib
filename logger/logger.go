@@ -7,56 +7,46 @@ import (
 	gorml "gorm.io/gorm/logger"
 )
 
-// Global is the application global logger.
-var Global types.Logger
-
-// Internal is the application internal logger.
-var Internal types.Logger
-
-// Controller is a logger for controller layer.
-var Controller types.Logger
-
-// Service is a logger for service layer.
-var Service types.Logger
-
-// Database is a logger for database.
-var Database types.Logger
-
-// Cache is a logger for cache.
-var Cache types.Logger
-
-// Redis is a logger for redis.
-var Redis types.Logger
-
-// Task is a logger for task.
-var Task types.Logger
-
-// Visitor logging system and application runtime state.
-var Visitor types.Logger
-
-// Cronjob logging cronjob log.
-var Cronjob types.Logger
-
-// Job logging job log.
-var Job types.Logger
-
-// Gin is a logger for gin framework.
+var (
+	Global     types.Logger
+	Internal   types.Logger
+	Controller types.Logger
+	Service    types.Logger
+	Database   types.Logger
+	Cache      types.Logger
+	Redis      types.Logger
+	Task       types.Logger
+	Visitor    types.Logger
+	Cronjob    types.Logger
+	Job        types.Logger
+)
 var Gin *zap.Logger
+var (
+	Gorm         gorml.Interface
+	GormDLP      gorml.Interface
+	GormSOC      gorml.Interface
+	GormSocAgent gorml.Interface
+	GormSoftware gorml.Interface
+	GormCulture  gorml.Interface
+)
 
-// Gorm is a logger for gorm.
-var Gorm gorml.Interface
-
-// GormDLP is a logger for gorm
-var GormDLP gorml.Interface
-
-// GormSOC is a logger for gorm
-var GormSOC gorml.Interface
-
-// GormSocAgent is a logger for gorm.
-var GormSocAgent gorml.Interface
-
-// GormSoftware is a logger for gorm
-var GormSoftware gorml.Interface
-
-// GormCulture is a logger for gorm
-var GormCulture gorml.Interface
+func Debug(args ...any)                       { Global.Debug(args...) }
+func Info(args ...any)                        { Global.Info(args...) }
+func Warn(args ...any)                        { Global.Warn(args...) }
+func Error(args ...any)                       { Global.Error(args...) }
+func Fatal(args ...any)                       { Global.Fatal(args...) }
+func Debugf(format string, args ...any)       { Global.Debugf(format, args...) }
+func Infof(format string, args ...any)        { Global.Infof(format, args...) }
+func Warnf(format string, args ...any)        { Global.Warnf(format, args...) }
+func Errorf(format string, args ...any)       { Global.Errorf(format, args...) }
+func Fatalf(format string, args ...any)       { Global.Fatalf(format, args...) }
+func Debugw(msg string, keysAndValues ...any) { Global.Debugw(msg, keysAndValues...) }
+func Infow(msg string, keysAndValues ...any)  { Global.Infow(msg, keysAndValues...) }
+func Warnw(msg string, keysAndValues ...any)  { Global.Warnw(msg, keysAndValues...) }
+func Errorw(msg string, keysAndValues ...any) { Global.Errorw(msg, keysAndValues...) }
+func Fatalw(msg string, keysAndValues ...any) { Global.Fatalw(msg, keysAndValues...) }
+func Debugz(msg string, fields ...zap.Field)  { Global.Debugz(msg, fields...) }
+func Infoz(msg string, fields ...zap.Field)   { Global.Infoz(msg, fields...) }
+func Warnz(msg string, feilds ...zap.Field)   { Global.Warnz(msg, feilds...) }
+func Errorz(msg string, fields ...zap.Field)  { Global.Errorz(msg, fields...) }
+func Fatalz(msg string, fields ...zap.Field)  { Global.Fatalz(msg, fields...) }
