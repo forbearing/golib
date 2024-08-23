@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
@@ -10,6 +8,7 @@ import (
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/examples/myproject/model"
+	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
@@ -42,9 +41,10 @@ func main() {
 
 	RunOrDie(bootstrap.Init)
 
-	fmt.Println("custom config mqtt addr:", AppConf.MqttConfig.Addr)
-	fmt.Println("custom config mqtt username:", AppConf.MqttConfig.Username)
-	fmt.Println("custom config mqtt password:", AppConf.MqttConfig.Password)
+	logger.Infow("successfully initialized",
+		"addr", AppConf.MqttConfig.Addr, "username",
+		AppConf.MqttConfig.Username, "password",
+		AppConf.MqttConfig.Password)
 
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
