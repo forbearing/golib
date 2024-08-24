@@ -9,12 +9,11 @@ import (
 
 const (
 	APP_NAME         = "myproject"
+	NoneExpireToken  = `fake_token`
+	NoneExpireUser   = "admin"
+	NoneExpirePass   = "admin"
 	BaseAuthUsername = "admin"
 	BaseAuthPassword = "admin"
-
-	NoneExpireToken = `fake_token`
-	NoneExpireUser  = "admin"
-	NoneExpirePass  = "admin"
 )
 
 var (
@@ -75,6 +74,12 @@ func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.token_expire_duration", "24h")
+
+	viper.SetDefault("auth.none_expire_token", NoneExpireToken)
+	viper.SetDefault("auth.none_expire_user", NoneExpireUser)
+	viper.SetDefault("auth.none_expire_pass", NoneExpirePass)
+	viper.SetDefault("auth.base_auth_username", BaseAuthUsername)
+	viper.SetDefault("auth.base_auth_password", BaseAuthPassword)
 
 	viper.SetDefault("logger.log_dir", "./logs")
 	viper.SetDefault("logger.log_file", "server.log")
@@ -144,6 +149,7 @@ func Save(filename string) error {
 
 type Config struct {
 	ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
 	MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
@@ -152,6 +158,14 @@ type Config struct {
 	LdapConfig     `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
 	InfluxdbConfig `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
 	FeishuConfig   `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+}
+
+type AuthConfig struct {
+	BaseAuthUsername string `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
+	BaseAuthPassword string `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
+	NoneExpireToken  string `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
+	NoneExpireUser   string `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
+	NoneExpirePass   string `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
 }
 
 type ServerConfig struct {

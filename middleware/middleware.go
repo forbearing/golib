@@ -146,7 +146,7 @@ func RateLimiter() gin.HandlerFunc {
 
 func BaseAuth() gin.HandlerFunc {
 	return gin.BasicAuth(gin.Accounts{
-		config.BaseAuthUsername: config.BaseAuthPassword,
+		config.App.AuthConfig.BaseAuthUsername: config.App.AuthConfig.BaseAuthPassword,
 	})
 }
 

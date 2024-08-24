@@ -21,12 +21,13 @@ type Claims struct {
 
 // GenToken
 func GenToken(userId string, username string) (string, error) {
-	if username == config.NoneExpireUser {
-		return config.NoneExpireToken, nil
+	if username == config.App.AuthConfig.NoneExpireUser {
+		return config.App.AuthConfig.NoneExpireToken, nil
 	}
 
 	// 创建一个我们自己声明的 claims
-	c := Claims{userId, username,
+	c := Claims{
+		userId, username,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(config.App.TokenExpireDuration).Unix(), // 过期时间
 			Issuer:    issuer,                                                // 签发人
@@ -40,7 +41,7 @@ func GenToken(userId string, username string) (string, error) {
 
 // ParseToken
 func ParseToken(tokenStr string) (*Claims, error) {
-	if tokenStr == config.NoneExpireToken {
+	if tokenStr == config.App.AuthConfig.NoneExpireToken {
 		return &Claims{
 			UserId: "root",
 			// 这里必须写成 root 或者 admin, 但是 admin 需要作为普通管理使用,所以这里使用 root
