@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -28,10 +29,11 @@ func Init() error {
 		middleware.Cors(),
 		middleware.RateLimiter(),
 	)
-	router.GET("/ping", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "pong")
-	})
+	router.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/-/healthz", controller.Probe.Healthz)
+	router.GET("/-/readyz", controller.Probe.Readyz)
+	router.GET("/-/pageid", controller.PageID)
 
 	API = router.Group("/api")
 	API.Use(
