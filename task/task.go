@@ -27,10 +27,7 @@ type task struct {
 }
 
 func Init() error {
-	Register("runtime visitor", 60*time.Second, visitor)
-	// Register("fetch software", 1*time.Hour, fetchPackagesFromSoc)
-	// Register("fetch software", 1*time.Hour, fetchProcessesFromSoc)
-	// Register("sync ubuntu software to remote", 24*time.Hour, syncUbuntuSoftwareToRemote)
+	Register(visitor, 60*time.Second, "runtime visitor")
 
 	for i := range tasks {
 		t := tasks[i]
@@ -79,7 +76,7 @@ func Init() error {
 	return nil
 }
 
-func Register(name string, interval time.Duration, fn func() error) {
+func Register(fn func() error, interval time.Duration, name string) {
 	mu.Lock()
 	defer mu.Unlock()
 	ctx, cancel := context.WithCancel(context.Background())
