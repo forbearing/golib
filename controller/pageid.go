@@ -3,7 +3,7 @@ package controller
 import (
 	"time"
 
-	. "asset-system/pkg/response"
+	. "github.com/forbearing/golib/response"
 
 	"github.com/gin-gonic/gin"
 )

@@ -70,6 +70,7 @@ func Init() (err error) {
 	return nil
 }
 
+// SetDefaultValue will set config default value
 func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
