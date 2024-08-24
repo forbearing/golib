@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
@@ -10,7 +12,7 @@ import (
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/logger/logrus"
-	"github.com/forbearing/golib/logger/zap"
+	pkgzap "github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/minio"
 	"github.com/forbearing/golib/rbac"
@@ -19,13 +21,20 @@ import (
 	"github.com/forbearing/golib/task"
 	. "github.com/forbearing/golib/util"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func main() {
+	// 1.Prepare
+	config.SetConfigFile("./config.ini")
+	config.SetConfigName("config")
+	config.SetConfigType("ini")
+
+	// 2.Register initializer.
 	bootstrap.Register(
 		config.Init,
 		InitConfig,
-		zap.Init,
+		pkgzap.Init,
 		logrus.Init,
 		metrics.Init,
 		cache.Init,
@@ -34,18 +43,28 @@ func main() {
 		rbac.Init,
 		service.Init,
 		minio.Init,
-		task.Init,
 		router.Init,
+		task.Init,
 	)
 	bootstrap.RegisterGo(router.Run)
 
+	// 3.Add tasks.
+	task.Register(SayHello, 1*time.Second, "say hello")
+	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
+
+	// 3.Initialize
 	RunOrDie(bootstrap.Init)
 
-	logger.Infow("successfully initialized",
+	zap.S().Infow("successfully initialized",
+		"addr", AppConf.MqttConfig.Addr, "username",
+		AppConf.MqttConfig.Username, "password",
+		AppConf.MqttConfig.Password)
+	logger.Global.Infow("successfully initialized",
 		"addr", AppConf.MqttConfig.Addr, "username",
 		AppConf.MqttConfig.Username, "password",
 		AppConf.MqttConfig.Password)
 
+	// 4.setup apis.
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
 	router.API.DELETE("/category/:id", controller.Delete[*model.Category])
@@ -58,6 +77,7 @@ func main() {
 	router.API.GET("/category/export", controller.Export[*model.Category])
 	router.API.POST("/category/import", controller.Import[*model.Category])
 
+	// 5.Run server.
 	RunOrDie(bootstrap.Go)
 }
 
