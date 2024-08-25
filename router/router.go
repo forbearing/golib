@@ -14,30 +14,30 @@ import (
 )
 
 var (
-	router *gin.Engine
-	API    *gin.RouterGroup
+	Base *gin.Engine
+	API  *gin.RouterGroup
 )
 
 func Init() error {
 	gin.SetMode(gin.ReleaseMode)
-	router = gin.New()
+	Base = gin.New()
 
-	router.Use(
+	Base.Use(
 		middleware.RequestID(),
-		middleware.Logger("./logs/api.log"),
-		middleware.Recovery("./logs/recovery.log"),
+		middleware.Logger("api.log"),
+		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
 		middleware.RateLimiter(),
 	)
-	router.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	router.GET("/-/healthz", controller.Probe.Healthz)
-	router.GET("/-/readyz", controller.Probe.Readyz)
-	router.GET("/-/pageid", controller.PageID)
+	Base.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
+	Base.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	Base.GET("/-/healthz", controller.Probe.Healthz)
+	Base.GET("/-/readyz", controller.Probe.Readyz)
+	Base.GET("/-/pageid", controller.PageID)
 
-	API = router.Group("/api")
+	API = Base.Group("/api")
 	API.Use(
-		middleware.JwtAuth(),
+		// middleware.JwtAuth(),
 		// middleware.Authz(),
 		middleware.Gzip(),
 	)
@@ -47,9 +47,8 @@ func Init() error {
 func Run() error {
 	addr := net.JoinHostPort(config.App.ServerConfig.Listen, strconv.Itoa(config.App.ServerConfig.Port))
 	zap.S().Infow("starting server", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
-	// for _, r := range router.Routes() {
-	// 	// zap.S().Infof("%v %v", r.Method, r.Path)
-	// 	zap.S().Infow("", "method", r.Method, "path", r.Path)
-	// }
-	return router.Run(addr)
+	for _, r := range Base.Routes() {
+		zap.S().Debugw("", "method", r.Method, "path", r.Path)
+	}
+	return Base.Run(addr)
 }
