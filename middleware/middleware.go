@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger"
 	pkgzap "github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/model"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types"
@@ -36,6 +38,9 @@ func Logger(filename ...string) gin.HandlerFunc {
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
 		c.Next()
+
+		metrics.HttpRequestsTotal.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Inc()
+		metrics.HttpRequestDuration.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Observe(time.Since(start).Seconds())
 
 		fields := []zapcore.Field{
 			zap.Int("status", c.Writer.Status()),
