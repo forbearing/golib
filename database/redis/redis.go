@@ -99,7 +99,7 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 
 // SetSession wrapped Set function to set session data to redis, only for session.
 func SetSession(sessionId string, data []byte) error {
-	return Set(fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId), data, config.App.ServerConfig.TokenExpireDuration)
+	return Set(fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId), data, config.App.AuthConfig.TokenExpireDuration)
 }
 
 // Get will get raw cache([]byte) from redis.
@@ -256,7 +256,6 @@ func (b modelMarshaler[M]) MarshalBinary() ([]byte, error) {
 func (b *modelMarshaler[M]) UnmarshalJSON(data []byte) error {
 	if reflect.DeepEqual(b.Model, *new(M)) {
 		b.Model = reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
-
 	}
 	if err := json.Unmarshal(data, &b.Model); err != nil {
 		zap.S().Error(err)

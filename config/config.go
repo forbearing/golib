@@ -9,11 +9,11 @@ import (
 
 const (
 	APP_NAME         = "myproject"
-	NoneExpireToken  = `fake_token`
-	NoneExpireUser   = "admin"
-	NoneExpirePass   = "admin"
-	BaseAuthUsername = "admin"
-	BaseAuthPassword = "admin"
+	noneExpireToken  = `fake_token`
+	noneExpireUser   = "admin"
+	noneExpirePass   = "admin"
+	baseAuthUsername = "admin"
+	baseAuthPassword = "admin"
 )
 
 var (
@@ -73,13 +73,13 @@ func Init() (err error) {
 func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
-	viper.SetDefault("server.token_expire_duration", "24h")
 
-	viper.SetDefault("auth.none_expire_token", NoneExpireToken)
-	viper.SetDefault("auth.none_expire_user", NoneExpireUser)
-	viper.SetDefault("auth.none_expire_pass", NoneExpirePass)
-	viper.SetDefault("auth.base_auth_username", BaseAuthUsername)
-	viper.SetDefault("auth.base_auth_password", BaseAuthPassword)
+	viper.SetDefault("auth.none_expire_token", noneExpireToken)
+	viper.SetDefault("auth.none_expire_user", noneExpireUser)
+	viper.SetDefault("auth.none_expire_pass", noneExpirePass)
+	viper.SetDefault("auth.base_auth_username", baseAuthUsername)
+	viper.SetDefault("auth.base_auth_password", baseAuthPassword)
+	viper.SetDefault("auth.token_expire_duration", "24h")
 
 	viper.SetDefault("logger.log_dir", "./logs")
 	viper.SetDefault("logger.log_file", "server.log")
@@ -160,20 +160,20 @@ type Config struct {
 	FeishuConfig   `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 }
 
-type AuthConfig struct {
-	BaseAuthUsername string `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
-	BaseAuthPassword string `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
-	NoneExpireToken  string `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
-	NoneExpireUser   string `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
-	NoneExpirePass   string `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
+type ServerConfig struct {
+	Domain string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
+	Mode   Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
+	Listen string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
+	Port   int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 }
 
-type ServerConfig struct {
-	Domain              string        `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
-	Mode                Mode          `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
-	Listen              string        `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
-	Port                int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+type AuthConfig struct {
+	NoneExpireToken     string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
+	NoneExpireUser      string        `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
+	NoneExpirePass      string        `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
 	TokenExpireDuration time.Duration `json:"token_expire_duration" mapstructure:"token_expire_duration" ini:"token_expire_duration" yaml:"token_expire_duration"`
+	BaseAuthUsername    string        `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
+	BaseAuthPassword    string        `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
 }
 
 // LoggerConfig represents section "logger" for client-side or server-side configuration,
