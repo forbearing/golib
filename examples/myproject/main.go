@@ -14,6 +14,7 @@ import (
 	"github.com/forbearing/golib/logger/logrus"
 	pkgzap "github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
+	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/minio"
 	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
@@ -65,6 +66,11 @@ func main() {
 		AppConf.MqttConfig.Password)
 
 	// 4.setup apis.
+	// without auth
+	router.API.GET("/noauth/category", controller.List[*model.Category])
+	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
+	router.API.Use(middleware.JwtAuth())
+	// with auth
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
 	router.API.DELETE("/category/:id", controller.Delete[*model.Category])
