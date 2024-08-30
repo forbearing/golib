@@ -82,7 +82,7 @@ func SetDefaultValue() {
 	viper.SetDefault("auth.token_expire_duration", "24h")
 
 	viper.SetDefault("logger.log_dir", "./logs")
-	viper.SetDefault("logger.log_file", "server.log")
+	viper.SetDefault("logger.log_file", "access.log")
 	viper.SetDefault("logger.log_level", "info")
 	viper.SetDefault("logger.log_format", "json")
 	viper.SetDefault("logger.log_encoder", "json")
