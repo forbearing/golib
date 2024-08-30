@@ -20,12 +20,6 @@ var (
 	Cronjob    types.Logger
 	Job        types.Logger
 
-	Gin *zap.Logger
-
-	Gorm         gorml.Interface
-	GormDLP      gorml.Interface
-	GormSOC      gorml.Interface
-	GormSocAgent gorml.Interface
-	GormSoftware gorml.Interface
-	GormCulture  gorml.Interface
+	Gin  *zap.Logger
+	Gorm gorml.Interface
 )

@@ -53,12 +53,7 @@ func Init() error {
 	logger.Cronjob = New("cronjob.log")
 	logger.Job = New("job.log")
 	logger.Gin = NewGin()
-	logger.Gorm = NewGorm("gorm_asset.log")
-	logger.GormDLP = NewGorm("gorm_dlp.log")
-	logger.GormSOC = NewGorm("gorm_soc.log")
-	logger.GormSocAgent = NewGorm("gorm_socagent.log")
-	logger.GormSoftware = NewGorm("gorm_software.log")
-	logger.GormCulture = NewGorm("gorm_culture.log")
+	logger.Gorm = NewGorm("gorm.log")
 
 	return nil
 }
