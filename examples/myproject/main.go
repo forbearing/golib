@@ -69,7 +69,7 @@ func main() {
 	// without auth
 	router.API.GET("/noauth/category", controller.List[*model.Category])
 	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
-	router.API.Use(middleware.JwtAuth())
+	router.API.Use(middleware.JwtAuth(), middleware.RateLimiter())
 	// with auth
 	router.API.POST("/category", controller.Create[*model.Category])
 	router.API.DELETE("/category", controller.Delete[*model.Category])
