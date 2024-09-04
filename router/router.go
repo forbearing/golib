@@ -27,7 +27,7 @@ func Init() error {
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
-		middleware.RateLimiter(),
+		// middleware.RateLimiter(),
 	)
 	Base.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
 	Base.GET("/metrics", gin.WrapH(promhttp.Handler()))
