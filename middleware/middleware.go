@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/didip/tollbooth/v7"
 	"github.com/didip/tollbooth/v7/limiter"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
@@ -194,24 +193,24 @@ func Gzip() gin.HandlerFunc {
 	return gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/download"}), gzip.WithExcludedExtensions([]string{".pdf", ".mp4"}))
 }
 
-func RateLimit() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		lmt, exists := ratelimitMap.Get(c.ClientIP())
-		if !exists {
-			// This setting means:
-			// create a 1 request/second limiter and
-			// every token bucket in it will expire 1 hour after it was initially set.
-			lmt = tollbooth.NewLimiter(2, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
-			lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"}).
-				SetMethods([]string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete})
-		}
-
-		if err := tollbooth.LimitByRequest(lmt, c.Writer, c.Request); err != nil {
-			ResponseJSON(c, CodeTooManyRequests)
-			logger.Global.Debug(err)
-			c.Abort()
-		} else {
-			c.Next()
-		}
-	}
-}
+// func RateLimit() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		lmt, exists := ratelimitMap.Get(c.ClientIP())
+// 		if !exists {
+// 			// This setting means:
+// 			// create a 1 request/second limiter and
+// 			// every token bucket in it will expire 1 hour after it was initially set.
+// 			lmt = tollbooth.NewLimiter(2, &limiter.ExpirableOptions{DefaultExpirationTTL: time.Hour})
+// 			lmt.SetIPLookups([]string{"RemoteAddr", "X-Forwarded-For", "X-Real-IP"}).
+// 				SetMethods([]string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete})
+// 		}
+//
+// 		if err := tollbooth.LimitByRequest(lmt, c.Writer, c.Request); err != nil {
+// 			ResponseJSON(c, CodeTooManyRequests)
+// 			logger.Global.Debug(err)
+// 			c.Abort()
+// 		} else {
+// 			c.Next()
+// 		}
+// 	}
+// }
