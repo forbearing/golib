@@ -53,7 +53,7 @@ func main() {
 	task.Register(SayHello, 1*time.Second, "say hello")
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 
-	// 3.Initialize
+	// 4.Initialize
 	RunOrDie(bootstrap.Init)
 
 	zap.S().Infow("successfully initialized",
@@ -65,7 +65,7 @@ func main() {
 		AppConf.MqttConfig.Username, "password",
 		AppConf.MqttConfig.Password)
 
-	// 4.setup apis.
+	// 5.setup apis.
 	// without auth
 	router.API.GET("/noauth/category", controller.List[*model.Category])
 	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
@@ -83,7 +83,7 @@ func main() {
 	router.API.GET("/category/export", controller.Export[*model.Category])
 	router.API.POST("/category/import", controller.Import[*model.Category])
 
-	// 5.Run server.
+	// 6.Run server.
 	RunOrDie(bootstrap.Go)
 }
 
