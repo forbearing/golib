@@ -2,7 +2,7 @@
 
 Golang library
 
-## Examples
+## Full Example
 
 ```go
 package main
