@@ -435,3 +435,59 @@ type Hooker interface {
 }
 ```
 
+### Cache
+
+```go
+type Cache[M Model] interface {
+	Set(key string, values ...M)
+	SetInt(key string, values ...int64)
+	SetBool(key string, values ...bool)
+	SetFloat(key string, values ...float64)
+	SetString(key string, values ...string)
+	SetAny(key string, value any)
+
+	Get(key string) ([]M, bool)
+	GetInt(key string) ([]int64, bool)
+	GetBool(key string) ([]bool, bool)
+	GetFloat(key string) ([]float64, bool)
+	GetString(key string) ([]string, bool)
+	GetAny(key string) (any, bool)
+
+	GetAll() map[string][]M
+	GetAllInt() map[string][]int64
+	GetAllBool() map[string][]bool
+	GetAllFloat() map[string][]float64
+	GetAllString() map[string][]string
+	GetAllAny() map[string]any
+
+	Peek(key string) ([]M, bool)
+	PeekInt(key string) ([]int64, bool)
+	PeekBool(key string) ([]bool, bool)
+	PeekString(key string) ([]string, bool)
+	PeekFloat(key string) ([]float64, bool)
+	PeekAny(key string) (any, bool)
+
+	Remove(key string)
+	RemoveInt(key string)
+	RemoveBool(key string)
+	RemoveFloat(key string)
+	RemoveString(key string)
+	RemoveAny(key string)
+
+	Exists(key string) bool
+	ExistsInt(key string) bool
+	ExistsBool(key string) bool
+	ExistsFloat(key string) bool
+	ExistsString(key string) bool
+	ExistsAny(key string) bool
+
+	Keys() []string
+	KeysInt() []string
+	KeysBool() []string
+	KeysFloat() []string
+	KeysString() []string
+	KeysAny() []string
+	Flush()
+}
+```
+
