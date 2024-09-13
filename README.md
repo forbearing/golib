@@ -207,7 +207,7 @@ func SayGoodbye() error {
 }
 ```
 
-## Backend CURD
+## Datatabase operation
 
 ### Create
 
