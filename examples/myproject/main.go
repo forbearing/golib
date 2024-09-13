@@ -26,12 +26,7 @@ import (
 )
 
 func main() {
-	// 1.Prepare
-	config.SetConfigFile("./config.ini")
-	config.SetConfigName("config")
-	config.SetConfigType("ini")
-
-	// 2.Register initializer.
+	// 1.Register initializer.
 	bootstrap.Register(
 		config.Init,
 		InitConfig,
@@ -49,23 +44,23 @@ func main() {
 	)
 	bootstrap.RegisterGo(router.Run)
 
-	// 3.Add tasks.
+	// 2.Prepare
+	// Setup configuration.
+	config.SetConfigFile("./config.ini")
+	config.SetConfigName("config")
+	config.SetConfigType("ini")
+	// Add tasks.
 	task.Register(SayHello, 1*time.Second, "say hello")
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 
-	// 4.Initialize
+	// 3.Initialize.
 	RunOrDie(bootstrap.Init)
 
-	zap.S().Infow("successfully initialized",
-		"addr", AppConf.MqttConfig.Addr, "username",
-		AppConf.MqttConfig.Username, "password",
-		AppConf.MqttConfig.Password)
-	logger.Global.Infow("successfully initialized",
-		"addr", AppConf.MqttConfig.Addr, "username",
-		AppConf.MqttConfig.Username, "password",
-		AppConf.MqttConfig.Password)
+	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
+	logger.Controller.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
+	logger.Service.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 
-	// 5.setup apis.
+	// 4.setup apis.
 	// without auth
 	router.API.GET("/noauth/category", controller.List[*model.Category])
 	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
@@ -83,7 +78,7 @@ func main() {
 	router.API.GET("/category/export", controller.Export[*model.Category])
 	router.API.POST("/category/import", controller.Import[*model.Category])
 
-	// 6.Run server.
+	// 5.Run server.
 	RunOrDie(bootstrap.Go)
 }
 
