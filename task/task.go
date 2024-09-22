@@ -44,12 +44,13 @@ func Init() error {
 			continue
 		}
 		go func() {
+			begin := time.Now()
 			logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 			if err := t.fn(); err != nil {
-				logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
+				logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
 				return
 			} else {
-				logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String())
+				logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
 			}
 
 			ticker := time.NewTicker(t.interval)
@@ -59,12 +60,13 @@ func Init() error {
 				case <-t.ctx.Done():
 					return
 				case <-ticker.C:
+					begin = time.Now()
 					logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 					if err := t.fn(); err != nil {
-						logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
+						logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
 						// return
 					} else {
-						logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String())
+						logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
 						// return
 					}
 				}
