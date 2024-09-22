@@ -32,24 +32,24 @@ func Init() error {
 	for i := range tasks {
 		t := tasks[i]
 		if t == nil {
-			logger.Visitor.Warnw("task is nil, skip", "name", t.name, "interval", t.interval.String())
+			logger.Task.Warnw("task is nil, skip", "name", t.name, "interval", t.interval.String())
 			continue
 		}
 		if t.interval < time.Second {
-			logger.Visitor.Warnw("task interval less than 1 second, skip", "name", t.name, "interval", t.interval.String())
+			logger.Task.Warnw("task interval less than 1 second, skip", "name", t.name, "interval", t.interval.String())
 			continue
 		}
 		if t.fn == nil {
-			logger.Visitor.Warnw("task function is nil, skip", "name", t.name, "interval", t.interval.String())
+			logger.Task.Warnw("task function is nil, skip", "name", t.name, "interval", t.interval.String())
 			continue
 		}
 		go func() {
-			logger.Visitor.Infow("starting task", "name", t.name, "interval", t.interval.String())
+			logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 			if err := t.fn(); err != nil {
-				logger.Visitor.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
+				logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
 				return
 			} else {
-				logger.Visitor.Infow("finished task", "name", t.name, "interval", t.interval.String())
+				logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String())
 			}
 
 			ticker := time.NewTicker(t.interval)
@@ -59,12 +59,12 @@ func Init() error {
 				case <-t.ctx.Done():
 					return
 				case <-ticker.C:
-					logger.Visitor.Infow("starting task", "name", t.name, "interval", t.interval.String())
+					logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 					if err := t.fn(); err != nil {
-						logger.Visitor.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
+						logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String())
 						// return
 					} else {
-						logger.Visitor.Infow("finished task", "name", t.name, "interval", t.interval.String())
+						logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String())
 						// return
 					}
 				}
