@@ -806,7 +806,7 @@ func (db *database[M]) Create(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err := db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
@@ -899,7 +899,7 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+			if err := db.db.Session(&gorm.Session{}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 		}
@@ -920,7 +920,7 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Table(tableName).Delete(objs[i:end]).Error; err != nil {
+			if err := db.db.Session(&gorm.Session{}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 		}
