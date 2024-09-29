@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
