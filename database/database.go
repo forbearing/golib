@@ -1002,7 +1002,7 @@ func (db *database[M]) Update(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err := db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
 		}
@@ -1393,7 +1393,7 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Model(*new(M)).Count(count).Error; err != nil {
+	if err = db.db.Table(tableName).Model(*new(M)).Limit(-1).Count(count).Error; err != nil {
 		logger.Database.Error(err)
 		return err
 	}
