@@ -747,7 +747,6 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		total := new(int64)
 		nototalStr, _ := c.GetQuery(QUERY_NOTOTAL)
 		nototal, _ = strconv.ParseBool(nototalStr)
-		fmt.Println("----- nototal:", nototal)
 		if !nototal {
 			if err := handler().
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
