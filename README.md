@@ -70,6 +70,9 @@ func main() {
 	logger.Service.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 
 	// 4.setup apis.
+	// use Base router.
+	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
+	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 	// without auth
 	router.API.GET("/noauth/category", controller.List[*model.Category])
 	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
