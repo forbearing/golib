@@ -31,6 +31,7 @@ const (
 	QUERY_NOCACHE     = "_nocache"
 	QUERY_TYPE        = "type"
 	QUERY_FILENAME    = "filename"
+	QUERY_NOTOTAL     = "_nototal"
 
 	PARAM_ID   = "id"
 	PARAM_FILE = "file"

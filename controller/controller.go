@@ -643,7 +643,8 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		var or bool
 		var fuzzy bool
 		var expands []string
-		nocache := true // default disable cache.
+		var nototal bool // default enable total.
+		nocache := true  // default disable cache.
 		depth := 1
 		data := make([]M, 0)
 		if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
@@ -744,18 +745,23 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			return
 		}
 		total := new(int64)
-		if err := handler().
-			// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
-			WithOr(or).
-			WithQuery(svc.Filter(svcCtx, m), fuzzy).
-			WithQueryRaw(svc.FilterRaw(svcCtx)).
-			WithExclude(m.Excludes()).
-			WithTimeRange(columnName, startTime, endTime).
-			WithCache(!nocache).
-			Count(total); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure)
-			return
+		nototalStr, _ := c.GetQuery(QUERY_NOTOTAL)
+		nototal, _ = strconv.ParseBool(nototalStr)
+		fmt.Println("----- nototal:", nototal)
+		if !nototal {
+			if err := handler().
+				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
+				WithOr(or).
+				WithQuery(svc.Filter(svcCtx, m), fuzzy).
+				WithQueryRaw(svc.FilterRaw(svcCtx)).
+				WithExclude(m.Excludes()).
+				WithTimeRange(columnName, startTime, endTime).
+				WithCache(!nocache).
+				Count(total); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
 		}
 		// // 4.record operation log to database.
 		// var tableName string
@@ -781,10 +787,16 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		if cached {
 			ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
 		} else {
-			ResponseJSON(c, CodeSuccess, gin.H{
-				"items": data,
-				"total": *total,
-			})
+			if !nototal {
+				ResponseJSON(c, CodeSuccess, gin.H{
+					"items": data,
+					"total": *total,
+				})
+			} else {
+				ResponseJSON(c, CodeSuccess, gin.H{
+					"items": data,
+				})
+			}
 		}
 	}
 }
