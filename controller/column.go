@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/forbearing/golib/database/mysql"
 	. "github.com/forbearing/golib/response"
@@ -317,26 +318,37 @@ func queryColumns(table string, columns []string, db ...*gorm.DB) (map[string][]
 	}
 	cr := make(map[string][]string)
 	sql := "SELECT `%s` FROM `%s` WHERE `%s` IS NOT NULL AND `deleted_at` IS NULL GROUP BY `%s`"
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	for _, column := range columns {
-		rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column, column)).Rows()
-		if err != nil {
-			zap.S().Error(err)
-			return nil, err
-		}
-		results := make([]string, 0)
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				return nil, err
+		go func() {
+			defer wg.Done()
+			rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column, column)).Rows()
+			if err != nil {
+				zap.S().Error(err)
+				return
 			}
-			// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
-			// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
-			if len(name) == 0 {
-				continue
+			results := make([]string, 0)
+			for rows.Next() {
+				var name string
+				if err := rows.Scan(&name); err != nil {
+					zap.S().Error(err)
+					return
+				}
+				// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
+				// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
+				if len(name) == 0 {
+					zap.S().Warnf("empty name for column: %s", column)
+					continue
+				}
+				results = append(results, name)
 			}
-			results = append(results, name)
-		}
-		cr[column] = results
+
+			mu.Lock()
+			defer mu.Unlock()
+			cr[column] = results
+		}()
 	}
 	return cr, nil
 }
@@ -386,29 +398,42 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 			_db = db[0]
 		}
 	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	wg.Add(len(columns))
 	for _, column := range columns {
-		statement := fmt.Sprintf(sql, column, table, column, queryBuilder.String(), column)
-		// fmt.Println("--------------------- statement: ", statement)
-		rows, err := _db.Raw(statement).Rows()
-		if err != nil {
-			zap.S().Error(err)
-			return nil, err
-		}
-		results := make([]string, 0)
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				return nil, err
+		go func() {
+			defer wg.Done()
+			statement := fmt.Sprintf(sql, column, table, column, queryBuilder.String(), column)
+			// fmt.Println("--------------------- statement: ", statement)
+			rows, err := _db.Raw(statement).Rows()
+			if err != nil {
+				zap.S().Error(err)
+				return
 			}
-			// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
-			// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
-			if len(name) == 0 {
-				continue
+			results := make([]string, 0)
+			for rows.Next() {
+				var name string
+				if err := rows.Scan(&name); err != nil {
+					zap.S().Error(err)
+					return
+				}
+				// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
+				// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
+				if len(name) == 0 {
+					zap.S().Warnf("empty name for column: %s", column)
+					continue
+				}
+				results = append(results, name)
 			}
-			results = append(results, name)
-		}
-		cr[column] = results
+
+			mu.Lock()
+			defer mu.Unlock()
+			cr[column] = results
+		}()
 	}
+	wg.Wait()
 	return cr, nil
 }
 
@@ -450,23 +475,38 @@ func queryColumnsAndCount(table string, columns []string, db ...*gorm.DB) (colum
 	}
 	cr := make(map[string][]result)
 	sql := "SELECT `%s`, count(*) as count FROM `%s` where `deleted_at` IS NULL GROUP BY `%s`"
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	for _, column := range columns {
-		rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
-		if err != nil {
-			zap.S().Error(err)
-			return nil, err
-		}
-		results := make([]result, 0)
-		for rows.Next() {
-			var name string
-			var count uint
-			if err := rows.Scan(&name, &count); err != nil {
-				return nil, err
+		go func() {
+			defer wg.Done()
+			rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
+			if err != nil {
+				zap.S().Error(err)
+				return
 			}
-			results = append(results, result{name, count})
-		}
-		cr[column] = results
+			results := make([]result, 0)
+			for rows.Next() {
+				var name string
+				var count uint
+				if err := rows.Scan(&name, &count); err != nil {
+					zap.S().Error(err)
+					return
+				}
+				// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
+				// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
+				if len(name) == 0 {
+					zap.S().Warnf("empty name for column: %s", column)
+					continue
+				}
+				results = append(results, result{name, count})
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			cr[column] = results
+		}()
 	}
+	wg.Wait()
 	return cr, nil
 }
 
