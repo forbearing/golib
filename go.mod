@@ -1,6 +1,8 @@
 module github.com/forbearing/golib
 
-go 1.20
+go 1.21
+
+toolchain go1.23.0
 
 require (
 	github.com/allegro/bigcache v1.2.1
