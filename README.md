@@ -108,7 +108,7 @@ func InitConfig() (err error) {
 }
 
 type Config struct {
-	MqttConfig            `json:"mqtt" mapstructure:"mqtt" init:"mqtt" yaml:"mqtt"`
+	MqttConfig            `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
 	config.ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	config.MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	config.RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
@@ -121,9 +121,9 @@ type Config struct {
 }
 
 type MqttConfig struct {
-	Addr     string `json:"addr" mapstructure:"addr" init:"addr" yaml:"addr"`
-	Username string `json:"username" mapstructure:"username" init:"username" yaml:"username"`
-	Password string `json:"password" mapstructure:"password" init:"password" yaml:"password"`
+	Addr     string `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
+	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 }
 ```
 
