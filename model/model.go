@@ -137,10 +137,10 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy      string    `json:"created_by,omitempty" schema:"created_by"`
-	UpdatedBy      string    `json:"updated_by,omitempty" schema:"updated_by"`
+	CreatedBy      string    `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
+	UpdatedBy      string    `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
 	CreatedAt      time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
-	UpdatedAt      time.Time `json:"updated_at,omitempty" schema:"-"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
 	Remark         *string   `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
 	Order          *uint     `json:"order,omitempty" schema:"-"`
 	Error          string    `json:"error,omitempty" schema:"-"`
