@@ -73,7 +73,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "create").
+			With(types.PHASE, string(types.PHASE_CREATE)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -177,7 +177,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "delete").
+			With(types.PHASE, string(types.PHASE_DELETE)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -300,7 +300,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "update").
+			With(types.PHASE, string(types.PHASE_UPDATE)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -402,7 +402,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "update_partial").
+			With(types.PHASE, string(types.PHASE_UPDATE_PARTIAL)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -607,7 +607,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "list").
+			With(types.PHASE, string(types.PHASE_LIST)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -826,7 +826,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "get").
+			With(types.PHASE, string(types.PHASE_GET)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -999,7 +999,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "export").
+			With(types.PHASE, string(types.PHASE_EXPORT)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
@@ -1171,7 +1171,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.
-			With(types.PHASE, "import").
+			With(types.PHASE, string(types.PHASE_IMPORT)).
 			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
 			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
 			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
