@@ -192,8 +192,6 @@ func (c *Category) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 ```
 
-
-
 ### task.go
 
 ```go
@@ -288,8 +286,6 @@ router.API.GET("/category/export", controller.Export[*model.Category])
 router.API.POST("/category/import", controller.Import[*model.Category])
 ```
 
-
-
 ## Interface
 
 ### Logger
@@ -334,8 +330,6 @@ type Logger interface {
 }
 ```
 
-
-
 ### Database
 
 ```go
@@ -376,8 +370,6 @@ type DatabaseOption[M Model] interface {
 	WithoutHook() Database[M]
 }
 ```
-
-
 
 ### Modal,Service
 
@@ -494,3 +486,7 @@ type Cache[M Model] interface {
 }
 ```
 
+## TODO
+
+- [ ] database support postgresql
+- [ ] database support sqlite and make it's default.
