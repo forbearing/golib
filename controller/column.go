@@ -322,13 +322,19 @@ func queryColumns(table string, columns []string, db ...*gorm.DB) (map[string][]
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	for _, column := range columns {
-		go func() {
+		go func(column string) {
 			defer wg.Done()
-			rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column, column)).Rows()
+			statement := fmt.Sprintf(sql, column, table, column, column)
+			rows, err := _db.Raw(statement).Rows()
 			if err != nil {
 				zap.S().Error(err)
 				return
 			}
+			if rows == nil {
+				zap.S().Warnw(fmt.Sprintf("rows is nil for column %s", column), "sql", statement)
+				return
+			}
+			defer rows.Close()
 			results := make([]string, 0)
 			for rows.Next() {
 				var name string
@@ -346,9 +352,9 @@ func queryColumns(table string, columns []string, db ...*gorm.DB) (map[string][]
 			}
 
 			mu.Lock()
-			defer mu.Unlock()
 			cr[column] = results
-		}()
+			mu.Unlock()
+		}(column)
 	}
 	return cr, nil
 }
@@ -403,7 +409,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 	var mu sync.Mutex
 	wg.Add(len(columns))
 	for _, column := range columns {
-		go func() {
+		go func(column string) {
 			defer wg.Done()
 			statement := fmt.Sprintf(sql, column, table, column, queryBuilder.String(), column)
 			// fmt.Println("--------------------- statement: ", statement)
@@ -412,6 +418,11 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 				zap.S().Error(err)
 				return
 			}
+			if rows == nil {
+				zap.S().Warnw(fmt.Sprintf("rows is nil for column %s", column), "sql", statement)
+				return
+			}
+			defer rows.Close()
 			results := make([]string, 0)
 			for rows.Next() {
 				var name string
@@ -429,9 +440,9 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 			}
 
 			mu.Lock()
-			defer mu.Unlock()
 			cr[column] = results
-		}()
+			mu.Unlock()
+		}(column)
 	}
 	wg.Wait()
 	return cr, nil
@@ -478,13 +489,19 @@ func queryColumnsAndCount(table string, columns []string, db ...*gorm.DB) (colum
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	for _, column := range columns {
-		go func() {
+		go func(column string) {
 			defer wg.Done()
-			rows, err := _db.Raw(fmt.Sprintf(sql, column, table, column)).Rows()
+			statement := fmt.Sprintf(sql, column, table, column)
+			rows, err := _db.Raw(statement).Rows()
 			if err != nil {
 				zap.S().Error(err)
 				return
 			}
+			if rows == nil {
+				zap.S().Warnw(fmt.Sprintf("rows is nil for column %s", column), "sql", statement)
+				return
+			}
+			defer rows.Close()
 			results := make([]result, 0)
 			for rows.Next() {
 				var name string
@@ -502,9 +519,9 @@ func queryColumnsAndCount(table string, columns []string, db ...*gorm.DB) (colum
 				results = append(results, result{name, count})
 			}
 			mu.Lock()
-			defer mu.Unlock()
 			cr[column] = results
-		}()
+			mu.Unlock()
+		}(column)
 	}
 	wg.Wait()
 	return cr, nil
