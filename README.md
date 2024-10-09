@@ -490,3 +490,5 @@ type Cache[M Model] interface {
 
 - [ ] database support postgresql
 - [ ] database support sqlite and make it's default.
+- [ ] dateparse parse anytime \_start_time, \_end_time
+- [ ] limit recursive query/update in Hook.
