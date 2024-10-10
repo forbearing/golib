@@ -95,6 +95,15 @@ func SetDefaultValue() {
 	viper.SetDefault("sqlite.is_memory", false)
 	viper.SetDefault("sqlite.enable", true)
 
+	viper.SetDefault("postgres.host", "127.0.0.1")
+	viper.SetDefault("postgres.port", 5432)
+	viper.SetDefault("postgres.database", "postgres")
+	viper.SetDefault("postgres.username", "postgres")
+	viper.SetDefault("postgres.password", "")
+	viper.SetDefault("postgres.sslmode", "disable")
+	viper.SetDefault("postgres.timezone", "UTC")
+	viper.SetDefault("postgres.enable", true)
+
 	viper.SetDefault("mysql.host", "127.0.0.1")
 	viper.SetDefault("mysql.port", 3306)
 	viper.SetDefault("mysql.database", "mydb")
@@ -156,6 +165,7 @@ type Config struct {
 	ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
 	SqliteConfig   `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
+	PostgreConfig  `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
@@ -228,6 +238,17 @@ type SqliteConfig struct {
 	Path     string `json:"path" mapstructure:"path" ini:"path" yaml:"path"`
 	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
 	IsMemory bool   `json:"is_memory" mapstructure:"is_memory" ini:"is_memory" yaml:"is_memory"`
+	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type PostgreConfig struct {
+	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port     uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	SSLMode  string `json:"sslmode" mapstructure:"sslmode" ini:"sslmode" yaml:"sslmode"`
+	TimeZone string `json:"timezone" mapstructure:"timezone" ini:"timezone" yaml:"timezone"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
