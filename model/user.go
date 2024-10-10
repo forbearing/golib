@@ -24,7 +24,7 @@ type User struct {
 	Mobile       string `json:"mobile,omitempty"`
 	Nickname     string `json:"nickname,omitempty"`
 	Introduction string `json:"introduction,omitempty"`
-	Status       uint   `json:"status,omitempty" gorm:"type:tinyint(1);default:1;comment:status(0: disabled, 1: enable)"`
+	Status       uint   `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
 	// State 员工状态
 	// 1 在职
 	// 2 离职
