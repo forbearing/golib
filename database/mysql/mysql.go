@@ -1,12 +1,5 @@
 package mysql
 
-/*
-https://www.cnblogs.com/bfmq/p/17494295.html
-https://casbin.org/zh/docs/supported-models
-https://blog.csdn.net/LeoForBest/article/details/133610889	Casbin权限管理实现
-https://blog.csdn.net/LeoForBest/article/details/133607878	Casbin权限管理实现
-*/
-
 import (
 	"fmt"
 
@@ -28,7 +21,7 @@ func Init() (err error) {
 		return
 	}
 
-	dsnDefault := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
 		config.App.MySQLConfig.Username,
 		config.App.MySQLConfig.Password,
 		config.App.MySQLConfig.Host,
@@ -36,8 +29,8 @@ func Init() (err error) {
 		config.App.MySQLConfig.Database,
 		config.App.MySQLConfig.Charset,
 	)
-	zap.S().Infow("database info", "host", config.App.MySQLConfig.Host, "port", config.App.MySQLConfig.Port, "database", config.App.MySQLConfig.Database)
-	if Default, err = gorm.Open(mysql.Open(dsnDefault), &gorm.Config{Logger: logger.Gorm}); err != nil {
+	zap.S().Infow("database mysql", "host", config.App.MySQLConfig.Host, "port", config.App.MySQLConfig.Port, "database", config.App.MySQLConfig.Database)
+	if Default, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
 		zap.S().Error(err)
 		return err
 	}
