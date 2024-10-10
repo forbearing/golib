@@ -9,6 +9,8 @@ import (
 )
 
 // InitDatabase will create the table and table records that predefined in model package.
+// NOTE:The version of gorm.io/driver/postgres lower than v1.5.4 have some issues.
+// more details see: https://github.com/go-gorm/gorm/issues/6886
 func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 	// create table automatically in default database.
 	for _, m := range model.Tables {
