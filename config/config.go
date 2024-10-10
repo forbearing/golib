@@ -90,6 +90,11 @@ func SetDefaultValue() {
 	viper.SetDefault("logger.log_max_size", 50)
 	viper.SetDefault("logger.log_max_backups", 1)
 
+	viper.SetDefault("sqlite.path", "./data.db")
+	viper.SetDefault("sqlite.database", "main")
+	viper.SetDefault("sqlite.is_memory", false)
+	viper.SetDefault("sqlite.enable", true)
+
 	viper.SetDefault("mysql.host", "127.0.0.1")
 	viper.SetDefault("mysql.port", 3306)
 	viper.SetDefault("mysql.database", "mydb")
@@ -150,6 +155,7 @@ func Save(filename string) error {
 type Config struct {
 	ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	SqliteConfig   `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
 	MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
@@ -216,6 +222,13 @@ type LoggerConfig struct {
 	// LogMaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
 	LogMaxBackups uint `json:"log_max_backups" ini:"log_max_backups" yaml:"log_max_backups" mapstructure:"log_max_backups"`
+}
+
+type SqliteConfig struct {
+	Path     string `json:"path" mapstructure:"path" ini:"path" yaml:"path"`
+	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	IsMemory bool   `json:"is_memory" mapstructure:"is_memory" ini:"is_memory" yaml:"is_memory"`
+	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type MySQLConfig struct {
