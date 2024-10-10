@@ -155,7 +155,7 @@ func init() {
 
 type Category struct {
 	Name     string     `json:"name,omitempty" gorm:"unique" schema:"name"`
-	Status   *uint      `json:"status,omitempty" gorm:"type:tinyint(1);comment:status(0: disabled, 1: enable)" schema:"status"`
+	Status   *uint      `json:"status,omitempty" gorm:"type:smallint;comment:status(0: disabled, 1: enabled)" schema:"status"`
 	ParentId string     `json:"parent_id,omitempty" gorm:"size:191" schema:"parent_id"`
 	Children []Category `json:"children,omitempty" gorm:"foreignKey:ParentId"`
 	Parent   *Category  `json:"parent,omitempty" gorm:"foreignKey:ParentId;references:ID"`
