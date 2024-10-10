@@ -8,8 +8,8 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/database/cache"
+	"github.com/forbearing/golib/database/postgres"
 	"github.com/forbearing/golib/database/redis"
-	"github.com/forbearing/golib/database/sqlite"
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/logger/logrus"
@@ -36,7 +36,9 @@ func main() {
 		logrus.Init,
 		metrics.Init,
 		cache.Init,
-		sqlite.Init,
+		// mysql.Init,
+		// sqlite.Init,
+		postgres.Init,
 		redis.Init,
 		rbac.Init,
 		service.Init,
