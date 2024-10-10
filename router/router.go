@@ -2,7 +2,6 @@ package router
 
 import (
 	"net"
-	"net/http"
 	"strconv"
 
 	"github.com/forbearing/golib/config"
@@ -29,7 +28,6 @@ func Init() error {
 		middleware.Cors(),
 		// middleware.RateLimiter(),
 	)
-	Base.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
 	Base.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	Base.GET("/-/healthz", controller.Probe.Healthz)
 	Base.GET("/-/readyz", controller.Probe.Readyz)
