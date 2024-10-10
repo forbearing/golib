@@ -23,7 +23,7 @@ func Init() (err error) {
 	if config.App.SqliteConfig.IsMemory {
 		dsn = "file::memory:?cache=shared" // Ignore file based database if IsMemory is true.
 	}
-	zap.S().Infow("database info", "path", config.App.SqliteConfig.Path, "database", config.App.SqliteConfig.Database, "is_memory", config.App.SqliteConfig.IsMemory)
+	zap.S().Infow("database sqlite", "path", config.App.SqliteConfig.Path, "database", config.App.SqliteConfig.Database, "is_memory", config.App.SqliteConfig.IsMemory)
 	if Default, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
 		zap.S().Error(err)
 		return err
