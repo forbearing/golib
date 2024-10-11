@@ -17,10 +17,11 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-ping/ping v1.1.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/gorilla/schema v1.2.1
 	github.com/h2non/filetype v1.1.3
 	github.com/minio/minio-go/v7 v7.0.67
+	github.com/mssola/useragent v1.0.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.6
