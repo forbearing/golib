@@ -32,6 +32,7 @@ const (
 	QUERY_TYPE        = "type"
 	QUERY_FILENAME    = "filename"
 	QUERY_NOTOTAL     = "_nototal"
+	QUERY_INDEX       = "_index"
 
 	PARAM_ID   = "id"
 	PARAM_FILE = "file"

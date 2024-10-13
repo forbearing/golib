@@ -19,6 +19,7 @@ import (
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/hints"
 )
 
 // references:
@@ -155,6 +156,17 @@ func (db *database[M]) WithOr(flag ...bool) types.Database[M] {
 	if len(flag) > 0 {
 		db.orQuery = flag[0]
 	}
+	return db
+}
+
+// WithIndex use specific index to query.
+func (db *database[M]) WithIndex(index string) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if len(strings.TrimSpace(index)) == 0 {
+		return db
+	}
+	db.db = db.db.Clauses(hints.UseIndex(strings.TrimSpace(index)))
 	return db
 }
 

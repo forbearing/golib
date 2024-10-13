@@ -25,6 +25,7 @@ const (
 	QUERY_NOTOTAL     = types.QUERY_NOTOTAL
 	QUERY_TYPE        = types.QUERY_TYPE
 	QUERY_FILENAME    = types.QUERY_FILENAME
+	QUERY_INDEX       = types.QUERY_INDEX
 
 	PARAM_ID   = types.PARAM_ID
 	PARAM_FILE = types.PARAM_FILE

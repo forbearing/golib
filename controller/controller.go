@@ -620,6 +620,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			size, _ = strconv.Atoi(sizeStr)
 		}
 		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+		index, _ := c.GetQuery(QUERY_INDEX)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
@@ -723,6 +724,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		if err = handler().
 			WithScope(page, size).
 			WithOr(or).
+			WithIndex(index).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
@@ -751,6 +753,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			if err := handler().
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 				WithOr(or).
+				WithIndex(index).
 				WithQuery(svc.Filter(svcCtx, m), fuzzy).
 				WithQueryRaw(svc.FilterRaw(svcCtx)).
 				WithExclude(m.Excludes()).
@@ -1015,6 +1018,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			limit, _ = strconv.Atoi(limitStr)
 		}
 		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
+		index, _ := c.GetQuery(QUERY_INDEX)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
@@ -1109,6 +1113,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
 			WithLimit(limit).
 			WithOr(or).
+			WithIndex(index).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).

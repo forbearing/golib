@@ -140,6 +140,9 @@ type DatabaseOption[M Model] interface {
 	// default select all fields.
 	WithSelect(columns ...string) Database[M]
 
+	// WithIndex use specific index to query.
+	WithIndex(index string) Database[M]
+
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]
 
