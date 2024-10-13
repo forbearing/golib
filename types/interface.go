@@ -104,14 +104,6 @@ type DatabaseOption[M Model] interface {
 	// WithQuery is where condition.
 	WithQuery(query M, fuzzyMatch ...bool) Database[M]
 
-	// WithAnd with AND query condition(default).
-	// It must be called before WithQuery.
-	WithAnd(...bool) Database[M]
-
-	// WithAnd with OR query condition.
-	// It must be called before WithQuery.
-	WithOr(...bool) Database[M]
-
 	// WithQueryRaw is where condition.
 	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.
 	// Examples:
@@ -124,6 +116,14 @@ type DatabaseOption[M Model] interface {
 	// - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
 	WithQueryRaw(query any, args ...any) Database[M]
 
+	// WithAnd with AND query condition(default).
+	// It must be called before WithQuery.
+	WithAnd(...bool) Database[M]
+
+	// WithAnd with OR query condition.
+	// It must be called before WithQuery.
+	WithOr(...bool) Database[M]
+
 	// WithTimeRange applies a time range filter to the query based on the specified column name.
 	// It restricts the results to records where the column's value falls within the specified start and end times.
 	// This method is designed to be used in a chainable manner, allowing for the construction of complex queries.
@@ -135,6 +135,10 @@ type DatabaseOption[M Model] interface {
 	//
 	// Returns: A modified Database instance that includes the time range filter in its query conditions.
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
+
+	// WithSelect specify fields that you want when querying, creating, updating
+	// default select all fields.
+	WithSelect(columns ...string) Database[M]
 
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]

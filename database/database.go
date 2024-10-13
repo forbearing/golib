@@ -500,17 +500,6 @@ func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 	}
 }
 
-// WithTimeRange
-func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, endTime time.Time) types.Database[M] {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	if len(columnName) == 0 || startTime.IsZero() || endTime.IsZero() {
-		return db
-	}
-	db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
-	return db
-}
-
 // WithQueryRaw
 // Examples:
 // - WithQueryRaw("name = ?", "hybfkuf")
@@ -524,6 +513,26 @@ func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.db = db.db.Where(query, args...)
+	return db
+}
+
+// WithTimeRange
+func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, endTime time.Time) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if len(columnName) == 0 || startTime.IsZero() || endTime.IsZero() {
+		return db
+	}
+	db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
+	return db
+}
+
+// WithSelect specify fields that you want when querying, creating, updating
+// default select all fields.
+func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.db = db.db.Select(columns)
 	return db
 }
 
@@ -1771,6 +1780,7 @@ QUERY:
 	// 			logger.Database.Error(err)
 	// 		}
 	// 	}()
+
 	//
 	// }
 	if db.enableCache {
