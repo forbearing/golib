@@ -38,6 +38,8 @@ type User struct {
 	NumWrong   int      `json:"num_wrong,omitempty" gorm:"comment:the number of input password wrong"`
 
 	Token           string   `json:"token,omitempty" gorm:"-"`
+	AccessToken     string   `json:"access_token,omitempty" gorm:"-"`
+	RefreshToken    string   `json:"refresh_token,omitempty" gorm:"-"`
 	SessionId       string   `json:"session_id,omitempty" gorm:"-"`
 	TokenExpiration GormTime `json:"token_expiration,omitempty"`
 

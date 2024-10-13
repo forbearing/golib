@@ -46,16 +46,18 @@ func (*user) Login(c *gin.Context) {
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
-	token, err := jwt.GenToken(u.ID, req.Username)
+	aToken, rToken, err := jwt.GenTokens(u.ID, req.Username)
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	u.Token = token
+	u.Token = aToken
+	u.AccessToken = aToken
+	u.RefreshToken = rToken
 	u.SessionId = util.UUID()
 	fmt.Println("SessionId: ", u.SessionId)
 	u.TokenExpiration = model.GormTime(time.Now().Add(config.App.TokenExpireDuration))
-	writeLocalSessionAndCookie(c, token, u)
+	writeLocalSessionAndCookie(c, aToken, rToken, u)
 	ResponseJSON(c, CodeSuccess, u)
 }
 
