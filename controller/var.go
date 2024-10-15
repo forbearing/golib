@@ -26,6 +26,7 @@ const (
 	QUERY_TYPE        = types.QUERY_TYPE
 	QUERY_FILENAME    = types.QUERY_FILENAME
 	QUERY_INDEX       = types.QUERY_INDEX
+	QUERY_SELECT      = types.QUERY_SELECT
 
 	PARAM_ID   = types.PARAM_ID
 	PARAM_FILE = types.PARAM_FILE

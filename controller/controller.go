@@ -621,6 +621,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		}
 		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
 		index, _ := c.GetQuery(QUERY_INDEX)
+		selects, _ := c.GetQuery(QUERY_SELECT)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
@@ -725,6 +726,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			WithScope(page, size).
 			WithOr(or).
 			WithIndex(index).
+			WithSelect(strings.Split(selects, ",")...).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
@@ -752,6 +754,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		if !nototal {
 			if err := handler().
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
+				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
 				WithIndex(index).
 				WithQuery(svc.Filter(svcCtx, m), fuzzy).
@@ -838,6 +841,8 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			ResponseJSON(c, CodeNotFoundRouteID)
 			return
 		}
+		index, _ := c.GetQuery(QUERY_INDEX)
+		selects, _ := c.GetQuery(QUERY_SELECT)
 
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
@@ -913,7 +918,12 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// 2.Get resource from database.
 		cache := make([]byte, 0)
 		cached := false
-		if err = handler().WithExpand(expands).WithCache(!nocache).Get(m, c.Param(PARAM_ID), &cache); err != nil {
+		if err = handler().
+			WithIndex(index).
+			WithSelect(strings.Split(selects, ",")...).
+			WithExpand(expands).
+			WithCache(!nocache).
+			Get(m, c.Param(PARAM_ID), &cache); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -1019,6 +1029,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
 		index, _ := c.GetQuery(QUERY_INDEX)
+		selects, _ := c.GetQuery(QUERY_SELECT)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
@@ -1114,6 +1125,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			WithLimit(limit).
 			WithOr(or).
 			WithIndex(index).
+			WithSelect(strings.Split(selects, ",")...).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
