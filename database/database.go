@@ -36,11 +36,19 @@ var (
 )
 
 var (
-	DB               *gorm.DB
-	defaultLimit     = 1000
-	defaultBatchSize = 1000
+	DB *gorm.DB
 
+	defaultLimit           = 1000
+	defaultBatchSize       = 1000
 	defaultDeleteBatchSize = 10000
+	defaultsColumns        = []string{
+		"id",
+		"created_by",
+		"updated_by",
+		"created_at",
+		"updated_at",
+		"deleted_at",
+	}
 )
 
 // database inplement types.Database[T types.Model] interface.
@@ -541,10 +549,22 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 
 // WithSelect specify fields that you want when querying, creating, updating
 // default select all fields.
+// WARNING: Using WithSelect may result in the removal of certain fields from table records
+// if there are multiple hooks in the service and model layers. Use with caution.
 func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Select(columns)
+	_columns := make([]string, 0)
+	for i := range columns {
+		col := strings.TrimSpace(columns[i])
+		if len(col) > 0 && !contains(defaultsColumns, col) {
+			_columns = append(_columns, col)
+		}
+	}
+	if len(_columns) == 0 {
+		return db
+	}
+	db.db = db.db.Select(append(_columns, defaultsColumns...))
 	return db
 }
 
@@ -1877,4 +1897,13 @@ func boolToInt(b bool) int {
 	} else {
 		return 0
 	}
+}
+
+func contains(slice []string, item string) bool {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+	_, ok := set[item]
+	return ok
 }
