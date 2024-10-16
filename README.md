@@ -2,6 +2,8 @@
 
 🚀 Golang Lightning Backend Framework
 
+文档正在快马加鞭补充中
+
 ## Full Example
 
 ### main.go
