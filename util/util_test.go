@@ -87,3 +87,17 @@ func TestPing(t *testing.T) {
 		assert.Equal(t, isOnline, false)
 	}
 }
+
+func TestContains(t *testing.T) {
+	slice := []string{"a", "b", "c"}
+	assert.True(t, Contains(slice, "a"))
+	assert.True(t, Contains(slice, "b"))
+	assert.True(t, Contains(slice, "c"))
+	assert.False(t, Contains(slice, "d"))
+
+	slice2 := []int{1, 2, 3}
+	assert.True(t, Contains(slice2, 1))
+	assert.True(t, Contains(slice2, 2))
+	assert.True(t, Contains(slice2, 3))
+	assert.False(t, Contains(slice2, 4))
+}
