@@ -223,3 +223,13 @@ func Ping(ip string, timeout time.Duration) (bool, error) {
 	}
 	return pinger.Statistics().PacketsSent == pinger.Statistics().PacketsRecv, nil
 }
+
+// Contains check T in slice.
+func Contains[T comparable](slice []T, elem T) bool {
+	for i := range slice {
+		if slice[i] == elem {
+			return true
+		}
+	}
+	return false
+}
