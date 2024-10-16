@@ -158,6 +158,60 @@ func SayGoodbye() error {
 }
 ```
 
+
+
+## config example
+
+```ini
+[server]
+mode = dev
+port = 8002
+# token_expire_duration = 12h
+
+[auth]
+none_expire_token = "-"
+
+[logger]
+log_level = info
+log_file = ""
+# log_format = "console"
+
+[sqlite]
+path = "/tmp/data.db"
+; is_memory = true
+
+[postgres]
+port = 15432
+username = "postgres"
+password = "admin"
+
+[mysql]
+database = mydb
+password = random_password
+
+[redis]
+host = localhost
+port = 6379
+password = random_password
+enable = false
+# expiration = 10m
+
+[minio]
+endpoint = localhost:9000
+access_key = my_access_key
+secret_key = my_secret_key 
+region = shjd-oss
+bucket = asset
+use_ssl = false
+
+[mqtt]
+addr = tcp://localhost:1883
+username = myuser
+password = mypass
+```
+
+
+
 ## Datatabase operation
 
 ### Create
