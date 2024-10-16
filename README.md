@@ -12,26 +12,18 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
-	"github.com/forbearing/golib/database/cache"
-	"github.com/forbearing/golib/database/mysql"
-	"github.com/forbearing/golib/database/redis"
-	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/logger/logrus"
-	pkgzap "github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/middleware"
-	"github.com/forbearing/golib/minio"
-	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
-	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
 	. "github.com/forbearing/golib/util"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -88,6 +80,7 @@ func main() {
 	// Run server.
 	RunOrDie(router.Run)
 }
+
 
 var AppConf = new(Config)
 
