@@ -307,7 +307,7 @@ type DatabaseOption[M Model] interface {
 	WithAnd(...bool) Database[M]
 	WithOr(...bool) Database[M]
 	WithQueryRaw(query any, args ...any) Database[M]
-  WithSelect(columns ...string) Database[M]
+    WithSelect(columns ...string) Database[M]
 	WithIndex(index string) Database[M]
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
 	WithBatchSize(size int) Database[M]
