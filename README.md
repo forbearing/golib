@@ -1,6 +1,6 @@
 ## Description
 
-Golang library
+🚀 Golang Lightning Backend Framework
 
 ## Full Example
 
