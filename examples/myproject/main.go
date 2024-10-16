@@ -86,6 +86,9 @@ func InitConfig() (err error) {
 type Config struct {
 	MqttConfig            `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
 	config.ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	config.AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	config.SqliteConfig   `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
+	config.PostgreConfig  `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	config.MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	config.RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	config.MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
