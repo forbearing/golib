@@ -35,25 +35,7 @@ import (
 )
 
 func main() {
-	// 1.Register initializer.
-	bootstrap.Register(
-		config.Init,
-		InitConfig,
-		pkgzap.Init,
-		logrus.Init,
-		metrics.Init,
-		cache.Init,
-		mysql.Init,
-		redis.Init,
-		rbac.Init,
-		service.Init,
-		minio.Init,
-		router.Init,
-		task.Init,
-	)
-	bootstrap.RegisterGo(router.Run)
-
-	// 2.Prepare
+	// Prepare
 	// Setup configuration.
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
@@ -61,37 +43,48 @@ func main() {
 	// Add tasks.
 	task.Register(SayHello, 1*time.Second, "say hello")
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
-
-	// 3.Initialize.
-	RunOrDie(bootstrap.Init)
+	RunOrDie(bootstrap.Bootstrap)
 
 	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 	logger.Controller.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 	logger.Service.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 
-	// 4.setup apis.
 	// use Base router.
 	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
-	// without auth
-	router.API.GET("/noauth/category", controller.List[*model.Category])
-	router.API.GET("/noauth/category/:id", controller.Get[*model.Category])
-	router.API.Use(middleware.JwtAuth(), middleware.RateLimiter())
-	// with auth
-	router.API.POST("/category", controller.Create[*model.Category])
-	router.API.DELETE("/category", controller.Delete[*model.Category])
-	router.API.DELETE("/category/:id", controller.Delete[*model.Category])
-	router.API.PUT("/category", controller.Update[*model.Category])
-	router.API.PUT("/category/:id", controller.Update[*model.Category])
-	router.API.PATCH("/category", controller.UpdatePartial[*model.Category])
-	router.API.PATCH("/category/:id", controller.UpdatePartial[*model.Category])
-	router.API.GET("/category", controller.List[*model.Category])
-	router.API.GET("/category/:id", controller.Get[*model.Category])
-	router.API.GET("/category/export", controller.Export[*model.Category])
-	router.API.POST("/category/import", controller.Import[*model.Category])
 
-	// 5.Run server.
-	RunOrDie(bootstrap.Go)
+	// without auth
+	router.API.GET("/noauth/user", controller.List[*User])
+	router.API.GET("/noauth/user/:id", controller.Get[*User])
+	router.API.Use(middleware.JwtAuth(), middleware.RateLimiter())
+
+	// with auth
+	router.API.POST("/user", controller.Create[*User])
+	router.API.DELETE("/user", controller.Delete[*User])
+	router.API.DELETE("/user/:id", controller.Delete[*User])
+	router.API.PUT("/user", controller.Update[*User])
+	router.API.PUT("/user/:id", controller.Update[*User])
+	router.API.PATCH("/user", controller.UpdatePartial[*User])
+	router.API.PATCH("/user/:id", controller.UpdatePartial[*User])
+	router.API.GET("/user", controller.List[*User])
+	router.API.GET("/user/:id", controller.Get[*User])
+	router.API.GET("/user/export", controller.Export[*User])
+	router.API.POST("/user/import", controller.Import[*User])
+
+	router.API.POST("/group", controller.Create[*Group])
+	router.API.DELETE("/group", controller.Delete[*Group])
+	router.API.DELETE("/group/:id", controller.Delete[*Group])
+	router.API.PUT("/group", controller.Update[*Group])
+	router.API.PUT("/group/:id", controller.Update[*Group])
+	router.API.PATCH("/group", controller.UpdatePartial[*Group])
+	router.API.PATCH("/group/:id", controller.UpdatePartial[*Group])
+	router.API.GET("/group", controller.List[*Group])
+	router.API.GET("/group/:id", controller.Get[*Group])
+	router.API.GET("/group/export", controller.Export[*Group])
+	router.API.POST("/group/import", controller.Import[*Group])
+
+	// Run server.
+	RunOrDie(router.Run)
 }
 
 var AppConf = new(Config)
@@ -127,68 +120,30 @@ type MqttConfig struct {
 }
 ```
 
-### model/category.go
+### model.go
 
 ```go
-package model
+package main
 
-import (
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/util"
-	"go.uber.org/zap/zapcore"
-)
-
-var (
-	// 根分类, 不会展示出来 所有的一级分类的 parentId 都是这个根分类.
-	// 数据库初始化时, 会自动创建这个记录
-	categoryRoot = &Category{Name: RootName, Status: util.Pointer(uint(0)), ParentId: RootId, Base: model.Base{ID: RootId}}
-	// 未知分类, 导入数据时,如果发现 parentId 为空,将将其 parentId 指向这个未知分类
-	// 数据库初始化时, 会自动创建这个记录
-	categoryUnknown = &Category{Name: UnknownName, Status: util.Pointer(uint(0)), ParentId: UnknownId, Base: model.Base{ID: UnknownId}}
-	categoryNone    = &Category{Name: NoneName, Status: util.Pointer(uint(0)), ParentId: RootId, Base: model.Base{ID: NoneId}}
-)
+import "github.com/forbearing/golib/model"
 
 func init() {
-	model.Register[*Category](categoryRoot, categoryUnknown, categoryNone)
-	model.RegisterRoutes[*Category]("category")
+	model.Register[*User]()
+	model.Register[*Group]()
 }
 
-type Category struct {
-	Name     string     `json:"name,omitempty" gorm:"unique" schema:"name"`
-	Status   *uint      `json:"status,omitempty" gorm:"type:smallint;comment:status(0: disabled, 1: enabled)" schema:"status"`
-	ParentId string     `json:"parent_id,omitempty" gorm:"size:191" schema:"parent_id"`
-	Children []Category `json:"children,omitempty" gorm:"foreignKey:ParentId"`
-	Parent   *Category  `json:"parent,omitempty" gorm:"foreignKey:ParentId;references:ID"`
+type User struct {
+	Name   string `json:"name,omitempty" schema:"name" gorm:"unique" binding:"required"`
+	Email  string `json:"email,omitempty" schema:"email" gorm:"unique" binding:"required"`
+	Avatar string `json:"avatar,omitempty" schema:"avatar"`
 
 	model.Base
 }
 
-func (*Category) Expands() []string {
-	return []string{"Children", "Parent"}
-}
-func (*Category) Excludes() map[string][]any {
-	return map[string][]any{KeyName: {RootName, UnknownName, NoneName}}
-}
-func (c *Category) CreateBefore() error {
-	if len(c.ParentId) == 0 {
-		c.ParentId = RootId
-	}
-	return nil
-}
-func (c *Category) UpdateBefore() error {
-	return c.CreateBefore()
-}
+type Group struct {
+	Name string `json:"name,omitempty" schema:"name" gorm:"unique" binding:"required"`
 
-func (c *Category) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if c == nil {
-		return nil
-	}
-	enc.AddString("id", c.ID)
-	enc.AddString("name", c.Name)
-	enc.AddUint("status", util.Depointer(c.Status))
-	enc.AddString("parent_id", c.ParentId)
-	enc.AddObject("base", &c.Base)
-	return nil
+	model.Base
 }
 ```
 
@@ -357,6 +312,8 @@ type DatabaseOption[M Model] interface {
 	WithAnd(...bool) Database[M]
 	WithOr(...bool) Database[M]
 	WithQueryRaw(query any, args ...any) Database[M]
+  WithSelect(columns ...string) Database[M]
+	WithIndex(index string) Database[M]
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
 	WithBatchSize(size int) Database[M]
 	WithScope(page, size int) Database[M]
