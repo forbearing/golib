@@ -519,4 +519,5 @@ type Cache[M Model] interface {
 - [ ] limit recursive query/update in Hook.
 - [ ] config support toml
 - [ ] Join
-- [ ] WithSelect
+- [x] WithSelect, WithIndex
+- [ ] frontend
