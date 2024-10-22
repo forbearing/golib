@@ -47,6 +47,7 @@ func Init() error {
 	logger.Service = New("service.log")
 	logger.Database = New("database.log")
 	logger.Cache = New("cache.log")
+	logger.Elastic = New("elastic.log")
 	logger.Redis = New("redis.log")
 	logger.Task = New("task.log")
 	logger.Visitor = New("visitor.log")
