@@ -4,6 +4,7 @@
 *.nosync
 *.bak
 *.log
+*.local
 
 logs
 bin
