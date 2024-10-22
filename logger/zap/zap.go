@@ -53,7 +53,7 @@ func Init() error {
 	logger.Visitor = New("visitor.log")
 	logger.Cronjob = New("cronjob.log")
 	logger.Job = New("job.log")
-	logger.Gin = NewGin()
+	logger.Gin = NewGin("access.log")
 	logger.Gorm = NewGorm("gorm.log")
 
 	return nil
