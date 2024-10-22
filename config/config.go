@@ -112,6 +112,9 @@ func SetDefaultValue() {
 	viper.SetDefault("mysql.charset", "utf8mb4")
 	viper.SetDefault("mysql.enable", true)
 
+	viper.SetDefault("elasticsearch.hosts", "http://127.0.0.1:9200")
+	viper.SetDefault("elasticsearch.enable", false)
+
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.db", 0)
@@ -162,18 +165,19 @@ func Save(filename string) error {
 }
 
 type Config struct {
-	ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
-	AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
-	SqliteConfig   `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
-	PostgreConfig  `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
-	MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
-	RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
-	MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
-	S3Config       `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
-	LoggerConfig   `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
-	LdapConfig     `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
-	InfluxdbConfig `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
-	FeishuConfig   `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+	ServerConfig        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	AuthConfig          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	SqliteConfig        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
+	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
+	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
+	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
+	RedisConfig         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	MinioConfig         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
+	S3Config            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
+	LoggerConfig        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
+	LdapConfig          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
+	InfluxdbConfig      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
+	FeishuConfig        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 }
 
 type ServerConfig struct {
@@ -250,6 +254,17 @@ type PostgreConfig struct {
 	SSLMode  string `json:"sslmode" mapstructure:"sslmode" ini:"sslmode" yaml:"sslmode"`
 	TimeZone string `json:"timezone" mapstructure:"timezone" ini:"timezone" yaml:"timezone"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type ElasticsearchConfig struct {
+	Hosts                  string `json:"hosts" mapstructure:"hosts" ini:"hosts" yaml:"hosts"`
+	Username               string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password               string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	CloudID                string `json:"cloud_id" mapstructure:"cloud_id" ini:"cloud_id" yaml:"cloud_id"`
+	APIKey                 string `json:"api_key" mapstructure:"api_key" ini:"api_key" yaml:"api_key"`
+	ServiceToken           string `json:"service_token" mapstructure:"service_token" ini:"service_token" yaml:"service_token"`
+	CertificateFingerprint string `json:"certificate_fingerprint" mapstructure:"certificate_fingerprint" ini:"certificate_fingerprint" yaml:"certificate_fingerprint"`
+	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type MySQLConfig struct {
