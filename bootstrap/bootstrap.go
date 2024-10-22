@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/database/postgres"
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/database/sqlite"
+	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
@@ -61,6 +62,7 @@ func Bootstrap() error {
 		// mysql.Init,
 		// sqlite.Init,
 		postgres.Init,
+		elastic.Init,
 		redis.Init,
 		rbac.Init,
 		service.Init,
