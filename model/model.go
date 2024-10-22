@@ -159,6 +159,7 @@ type Base struct {
 	EndTime    string  `json:"-" gorm:"-" schema:"_end_time"`    // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
 	Or         *bool   `json:"-" gorm:"-" schema:"_or"`          // query parameter: eg: "_or=true"
 	Index      string  `json:"-" gorm:"-" schema:"_index"`       // Query parameter: eg: "_index=name"
+	Select     string  `json:"-" gorm:"-" schema:"_select"`      // Query parameter: eg: "_select=field1,field2"
 
 	gorm.Model `json:"-"`
 }
