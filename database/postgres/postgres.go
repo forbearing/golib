@@ -30,14 +30,6 @@ func Init() (err error) {
 		config.App.PostgreConfig.SSLMode,
 		config.App.PostgreConfig.TimeZone,
 	)
-	zap.S().Infow("database postgres",
-		"host", config.App.PostgreConfig.Host,
-		"port", config.App.PostgreConfig.Port,
-		"database", config.App.PostgreConfig.Database,
-		"username", config.App.PostgreConfig.Username,
-		"sslmode", config.App.PostgreConfig.SSLMode,
-		"timezone", config.App.PostgreConfig.TimeZone,
-	)
 	if Default, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
 		zap.S().Error(err)
 		return err
@@ -46,6 +38,14 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
+	zap.S().Infow("successfully connect to postgres",
+		"host", config.App.PostgreConfig.Host,
+		"port", config.App.PostgreConfig.Port,
+		"database", config.App.PostgreConfig.Database,
+		"username", config.App.PostgreConfig.Username,
+		"sslmode", config.App.PostgreConfig.SSLMode,
+		"timezone", config.App.PostgreConfig.TimeZone,
+	)
 	return nil
 }
 

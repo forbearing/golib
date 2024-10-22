@@ -29,13 +29,16 @@ func Init() (err error) {
 		config.App.MySQLConfig.Database,
 		config.App.MySQLConfig.Charset,
 	)
-	zap.S().Infow("database mysql", "host", config.App.MySQLConfig.Host, "port", config.App.MySQLConfig.Port, "database", config.App.MySQLConfig.Database)
 	if Default, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
 		zap.S().Error(err)
 		return err
 	}
-
-	return helper.InitDatabase(Default, dbmap)
+	if err := helper.InitDatabase(Default, dbmap); err != nil {
+		zap.S().Error(err)
+		return err
+	}
+	zap.S().Infow("successfully connect to mysql", "host", config.App.MySQLConfig.Host, "port", config.App.MySQLConfig.Port, "database", config.App.MySQLConfig.Database)
+	return nil
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }

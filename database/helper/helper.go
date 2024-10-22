@@ -49,7 +49,6 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 		if val, exists := dbmap[strings.ToLower(r.DBName)]; exists {
 			handler = val
 		}
-
 		if len((r.Table.GetTableName())) > 0 {
 			if err = handler.Table(r.Table.GetTableName()).Save(r.Rows).Error; err != nil {
 				return err
