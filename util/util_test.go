@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -100,4 +101,17 @@ func TestContains(t *testing.T) {
 	assert.True(t, Contains(slice2, 2))
 	assert.True(t, Contains(slice2, 3))
 	assert.False(t, Contains(slice2, 4))
+}
+
+func TestFileExists(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "test")
+	defer os.RemoveAll(tmpFile.Name())
+	defer tmpFile.Close()
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, true, FileExists("/tmp"))
+	assert.Equal(t, true, FileExists("/tmp/"))
+	assert.Equal(t, true, FileExists(tmpFile.Name()))
+	assert.Equal(t, false, FileExists(tmpFile.Name()+"---"))
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/rs/xid"
 	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/ksuid"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 // UUID is a generic uuid generator.
@@ -224,6 +226,14 @@ func Ping(ip string, timeout time.Duration) (bool, error) {
 	return pinger.Statistics().PacketsSent == pinger.Statistics().PacketsRecv, nil
 }
 
+// NoError call fn and always return nil.
+func NoError(fn func() error) error {
+	if err := fn(); err != nil {
+		zap.S().Warn(err)
+	}
+	return nil
+}
+
 // Contains check T in slice.
 func Contains[T comparable](slice []T, elem T) bool {
 	for i := range slice {
@@ -232,4 +242,25 @@ func Contains[T comparable](slice []T, elem T) bool {
 		}
 	}
 	return false
+}
+
+// CombineError combine error from fns.
+func CombineError(fns ...func() error) error {
+	errs := make([]error, len(fns))
+	for i := range fns {
+		if fns[i] == nil {
+			continue
+		}
+		errs[i] = fns[i]()
+	}
+	return multierr.Combine(errs...)
+}
+
+// FileExists check file exists.
+func FileExists(filename string) bool {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return false
+	} else {
+		return err == nil
+	}
 }
