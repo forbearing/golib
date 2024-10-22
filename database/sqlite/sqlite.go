@@ -27,12 +27,8 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
-	if err := helper.InitDatabase(Default, dbmap); err != nil {
-		zap.S().Error(err)
-		return err
-	}
 	zap.S().Infow("successfully connect to sqlite", "path", config.App.SqliteConfig.Path, "database", config.App.SqliteConfig.Database, "is_memory", config.App.SqliteConfig.IsMemory)
-	return nil
+	return helper.InitDatabase(Default, dbmap)
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }

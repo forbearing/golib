@@ -33,12 +33,8 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
-	if err := helper.InitDatabase(Default, dbmap); err != nil {
-		zap.S().Error(err)
-		return err
-	}
 	zap.S().Infow("successfully connect to mysql", "host", config.App.MySQLConfig.Host, "port", config.App.MySQLConfig.Port, "database", config.App.MySQLConfig.Database)
-	return nil
+	return helper.InitDatabase(Default, dbmap)
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }

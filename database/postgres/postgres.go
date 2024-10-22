@@ -34,10 +34,6 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
-	if err = helper.InitDatabase(Default, dbmap); err != nil {
-		zap.S().Error(err)
-		return err
-	}
 	zap.S().Infow("successfully connect to postgres",
 		"host", config.App.PostgreConfig.Host,
 		"port", config.App.PostgreConfig.Port,
@@ -46,7 +42,7 @@ func Init() (err error) {
 		"sslmode", config.App.PostgreConfig.SSLMode,
 		"timezone", config.App.PostgreConfig.TimeZone,
 	)
-	return nil
+	return helper.InitDatabase(Default, dbmap)
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }
