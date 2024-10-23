@@ -178,20 +178,11 @@ func (b *Base) SetID(id ...string)         { SetID(b, id...) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	// if b == nil {
-	// 	return nil
-	// }
 	enc.AddString("id", b.ID)
 	enc.AddString("created_by", b.CreatedBy)
 	enc.AddString("updated_by", b.UpdatedBy)
 	enc.AddUint("page", b.Page)
 	enc.AddUint("size", b.Size)
-	// enc.AddString("remark", util.Depointer(b.Remark))
-	// enc.AddString("create_by", b.CreatedBy)
-	// enc.AddString("updated_by", b.UpdatedBy)
-	// enc.AddTime("created_at", b.CreatedAt)
-	// enc.AddTime("updated_at", b.UpdatedAt)
-	// enc.AddString("error", b.Error)
 	return nil
 }
 
