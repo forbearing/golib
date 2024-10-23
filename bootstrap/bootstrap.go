@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
+	"github.com/forbearing/golib/cmap"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database/cache"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/database/postgres"
 	"github.com/forbearing/golib/database/redis"
@@ -10,6 +10,7 @@ import (
 	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/lru"
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/minio"
 	"github.com/forbearing/golib/rbac"
@@ -24,7 +25,7 @@ var keys = []string{
 	util.GetFunctionName(zap.Init),
 	util.GetFunctionName(logrus.Init),
 	util.GetFunctionName(metrics.Init),
-	util.GetFunctionName(cache.Init),
+	util.GetFunctionName(cmap.Init),
 	util.GetFunctionName(sqlite.Init),
 	util.GetFunctionName(postgres.Init),
 	util.GetFunctionName(mysql.Init),
@@ -58,7 +59,8 @@ func Bootstrap() error {
 		zap.Init,
 		logrus.Init,
 		metrics.Init,
-		cache.Init,
+		lru.Init,
+		cmap.Init,
 		// mysql.Init,
 		// sqlite.Init,
 		postgres.Init,
