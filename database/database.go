@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database/cache"
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/metrics"
+	"github.com/forbearing/golib/lru"
 	"github.com/forbearing/golib/types"
 
 	"github.com/stoewer/go-strcase"
@@ -777,7 +776,9 @@ func (db *database[M]) Create(objs ...M) error {
 		return nil
 	}
 
-	defer cache.Cache[M]().Flush()
+	if db.enableCache {
+		defer lru.Cache[[]M]().Flush()
+	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
 	// 		go func() {
@@ -843,10 +844,16 @@ func (db *database[M]) Create(objs ...M) error {
 		} else {
 			_db = DB
 		}
+		createdAt := time.Now()
 		// if err := _db.Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
-		if err := _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
+		if err := _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
 			return err
 		}
+		objs[i].SetCreatedAt(createdAt)
+		if db.enableCache {
+			lru.Cache[M]().Set(objs[i].GetID(), objs[i])
+		}
+
 	}
 	// Invoke model hook: CreateAfter.
 	for i := range objs {
@@ -873,7 +880,9 @@ func (db *database[M]) Delete(objs ...M) error {
 		return nil
 	}
 
-	defer cache.Cache[M]().Flush()
+	if db.enableCache {
+		defer lru.Cache[[]M]().Flush()
+	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
 	// 		// TODO:only delete cache of all list statement and cache for current get statements.
@@ -921,6 +930,9 @@ func (db *database[M]) Delete(objs ...M) error {
 			if err := db.db.Session(&gorm.Session{}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
+			if db.enableCache {
+				lru.Cache[M]().Remove(objs[i].GetID())
+			}
 		}
 	} else {
 		// Delete() method just update field "delete_at" to currrent time.
@@ -941,6 +953,9 @@ func (db *database[M]) Delete(objs ...M) error {
 			}
 			if err := db.db.Session(&gorm.Session{}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
+			}
+			if db.enableCache {
+				lru.Cache[M]().Remove(objs[i].GetID())
 			}
 		}
 	}
@@ -974,7 +989,9 @@ func (db *database[M]) Update(objs ...M) error {
 		return nil
 	}
 
-	defer cache.Cache[M]().Flush()
+	if db.enableCache {
+		defer lru.Cache[[]M]().Flush()
+	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
 	// 		go func() {
@@ -1025,6 +1042,11 @@ func (db *database[M]) Update(objs ...M) error {
 			zap.S().Error(err)
 			return err
 		}
+		if db.enableCache {
+			for j := range objs[i:end] {
+				lru.Cache[M]().Set(objs[j].GetID(), objs[j])
+			}
+		}
 	}
 	// Invoke model hook: UpdateAfter.
 	for i := range objs {
@@ -1039,13 +1061,15 @@ func (db *database[M]) Update(objs ...M) error {
 
 // UpdateById only update one record with specific id.
 // its not invoke model hook.
-func (db *database[M]) UpdateById(id any, key string, val any) error {
+func (db *database[M]) UpdateById(id string, key string, val any) error {
 	if err := db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
 
-	defer cache.Cache[M]().Flush()
+	if db.enableCache {
+		defer lru.Cache[[]M]().Flush()
+	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
 	// 		go func() {
@@ -1065,7 +1089,13 @@ func (db *database[M]) UpdateById(id any, key string, val any) error {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	return db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error
+	if err := db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
+		return err
+	}
+	if db.enableCache {
+		lru.Cache[M]().Remove(id)
+	}
+	return nil
 }
 
 // List find all record if not run WithQuery(query).
@@ -1092,11 +1122,11 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists {
-		metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _dest, exists = lru.Cache[[]M]().Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*dest = _dest
 		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil
@@ -1204,7 +1234,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().Set(key, *dest...)
+		lru.Cache[[]M]().Set(key, *dest)
 	}
 
 	return nil
@@ -1225,17 +1255,17 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _dest []M
+	var _dest M
 	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
-		metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _dest, exists = lru.Cache[M]().Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1243,7 +1273,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		if !val.Elem().CanAddr() {
 			return ErrNotAddressableModel
 		}
-		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
 		logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil
 	}
@@ -1343,7 +1373,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().Set(key, dest)
+		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
@@ -1358,18 +1388,18 @@ func (db *database[M]) Count(count *int64) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _cache []int64
+	var _cache int64
 	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, exists = cache.Cache[M]().GetInt(key); !exists && len(_cache) == 0 {
-		metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _cache, exists = lru.Int64.Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
-		*count = _cache[0]
+		// metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		*count = _cache
 		logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
 		return
 	}
@@ -1427,7 +1457,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().SetInt(key, *count)
+		lru.Int64.Set(key, *count)
 
 	}
 	return nil
@@ -1442,17 +1472,17 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _dest []M
+	var _dest M
 	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
-		metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _dest, exists = lru.Cache[M]().Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1460,7 +1490,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		if !val.Elem().CanAddr() {
 			return ErrNotAddressableModel
 		}
-		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
 		logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
@@ -1557,7 +1587,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().Set(key, dest)
+		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
@@ -1571,17 +1601,17 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _dest []M
+	var _dest M
 	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
-		metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _dest, exists = lru.Cache[M]().Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1589,7 +1619,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		if !val.Elem().CanAddr() {
 			return ErrNotAddressableModel
 		}
-		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
 		logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
@@ -1686,7 +1716,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().Set(key, dest)
+		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
@@ -1700,17 +1730,17 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _dest []M
+	var _dest M
 	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists || len(_dest) == 0 {
-		metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+	if _dest, exists = lru.Cache[M]().Get(key); !exists {
+		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
-		metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Ptr {
 			return ErrNotPtrStruct
@@ -1718,7 +1748,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		if !val.Elem().CanAddr() {
 			return ErrNotAddressableModel
 		}
-		val.Elem().Set(reflect.ValueOf(_dest[0]).Elem()) // the type of M is pointer to struct.
+		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
 		logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
@@ -1817,7 +1847,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Database.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
-		cache.Cache[M]().Set(key, dest)
+		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
