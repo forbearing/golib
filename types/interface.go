@@ -45,7 +45,22 @@ type ZapLogger interface {
 }
 
 type Logger interface {
-	With(key, value string) Logger
+	// With one or multiple fields.
+	// Examples:
+	//
+	// log := logger.Controller.
+	//	With(types.PHASE, string(types.PHASE_UPDATE)).
+	//	With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+	//	With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+	//	With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+	//
+	// log := logger.Controller.With(
+	//	types.PHASE, string(types.PHASE_DELETE),
+	//	types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+	//	types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+	//	types.REQUEST_ID, c.GetString(types.REQUEST_ID),
+	//	)
+	With(fields ...string) Logger
 
 	StandardLogger
 	StructuredLogger

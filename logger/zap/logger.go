@@ -6,6 +6,7 @@ import (
 
 	"github.com/forbearing/golib/types"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
 )
 
@@ -43,10 +44,37 @@ func (l *Logger) Warnz(msg string, fields ...zap.Field)  { l.zlog.Warn(msg, fiel
 func (l *Logger) Errorz(msg string, fields ...zap.Field) { l.zlog.Error(msg, fields...) }
 func (l *Logger) Fatalz(msg string, fields ...zap.Field) { l.zlog.Fatal(msg, fields...) }
 
-func (l *Logger) With(key string, val string) types.Logger {
+// With one or multiple fields.
+// Examples:
+//
+// log := logger.Controller.
+//
+//	With(types.PHASE, string(types.PHASE_UPDATE)).
+//	With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
+//	With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
+//	With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+//
+// log := logger.Controller.With(
+//
+//	types.PHASE, string(types.PHASE_DELETE),
+//	types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+//	types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+//	types.REQUEST_ID, c.GetString(types.REQUEST_ID),
+//	)
+func (l *Logger) With(fields ...string) types.Logger {
+	if len(fields)%2 != 0 {
+		fields = append(fields, "")
+	}
+	var zapFields []zapcore.Field
+	var sugaredFields []any
+	for i := 0; i < len(fields); i += 2 {
+		key, val := fields[i], fields[i+1]
+		zapFields = append(zapFields, zap.String(key, val))
+		sugaredFields = append(sugaredFields, key, val)
+	}
 	clone := new(Logger)
-	clone.zlog = l.zlog.With(zap.String(key, val))
-	clone.slog = l.slog.With(zap.String(key, val))
+	clone.zlog = l.zlog.With(zapFields...)
+	clone.slog = l.slog.With(sugaredFields...)
 	return clone
 }
 
