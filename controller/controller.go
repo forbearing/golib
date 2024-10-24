@@ -72,11 +72,11 @@ func Create[M types.Model](c *gin.Context) {
 func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_CREATE)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_CREATE),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -176,11 +176,11 @@ func Delete[M types.Model](c *gin.Context) {
 func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_DELETE)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_DELETE),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
@@ -299,11 +299,11 @@ func Update[M types.Model](c *gin.Context) {
 func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_UPDATE)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_UPDATE),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -401,11 +401,11 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_UPDATE_PARTIAL)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_UPDATE_PARTIAL),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -606,11 +606,11 @@ func List[M types.Model](c *gin.Context) {
 func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_LIST)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_LIST),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		var page, size int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -831,11 +831,11 @@ func Get[M types.Model](c *gin.Context) {
 func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_GET)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_GET),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		if len(c.Param(PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
@@ -1011,11 +1011,11 @@ func Export[M types.Model](c *gin.Context) {
 func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_EXPORT)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_EXPORT),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		var page, size, limit int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -1187,11 +1187,11 @@ func Import[M types.Model](c *gin.Context) {
 func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.
-			With(types.PHASE, string(types.PHASE_IMPORT)).
-			With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-			With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-			With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+		log := logger.Controller.With(
+			types.PHASE, string(types.PHASE_IMPORT),
+			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
+			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
+			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
 		// NOTE:字段为 file 必须和前端协商好.
 
 		file, err := c.FormFile("file")
