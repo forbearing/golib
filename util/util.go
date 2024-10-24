@@ -135,10 +135,10 @@ func StringAny(x any) string {
 	}
 
 	switch v := x.(type) {
-	case []byte:
-		return *(*string)(unsafe.Pointer(&v))
 	case string:
 		return v
+	case []byte:
+		return *(*string)(unsafe.Pointer(&v))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("%d", x)
 	default:
