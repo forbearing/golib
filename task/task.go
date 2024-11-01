@@ -44,6 +44,11 @@ func Init() error {
 			continue
 		}
 		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					logger.Task.Errorw(fmt.Sprintf("task panic: %s", err), "name", t.name, "interval", t.interval.String())
+				}
+			}()
 			begin := time.Now()
 			logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 			if err := t.fn(); err != nil {
