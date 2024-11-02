@@ -17,6 +17,10 @@ import (
 var Client mqtt.Client
 
 func Init() error {
+	if !config.App.MqttConfig.Enable {
+		return nil
+	}
+
 	timeout := 10 * time.Second
 	logger.Mqtt.Infow("connecting mqtt broker", "addr", config.App.MqttConfig.Addr)
 	connectAddress := config.App.MqttConfig.Addr
@@ -42,7 +46,7 @@ func Init() error {
 	if token := Client.Connect(); token.WaitTimeout(timeout) && token.Error() != nil {
 		return token.Error()
 	}
-	logger.Mqtt.Infow("successfully connected mqtt broker", "addr", config.App.MqttConfig.Addr)
+	logger.Mqtt.Infow("successfully connect to mqtt broker", "addr", config.App.MqttConfig.Addr)
 
 	go func() {
 		// 检查 Client 是否处理连接状态，如果已经断开了，则尝试重连
