@@ -83,6 +83,7 @@ func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.db", DBSqlite)
+	viper.SetDefault("enable_rbac", false)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
 	viper.SetDefault("auth.none_expire_user", noneExpireUser)
@@ -122,15 +123,20 @@ func SetDefaultValue() {
 	viper.SetDefault("mysql.charset", "utf8mb4")
 	viper.SetDefault("mysql.enable", true)
 
-	viper.SetDefault("elasticsearch.hosts", "http://127.0.0.1:9200")
-	viper.SetDefault("elasticsearch.enable", false)
-
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.namespace", "myproject")
 	viper.SetDefault("redis.expiration", "8h")
+
 	viper.SetDefault("redis.enable", false)
+	viper.SetDefault("elasticsearch.enable", false)
+	viper.SetDefault("minio.enable", false)
+	viper.SetDefault("s3.enable", false)
+	viper.SetDefault("ldap.enable", false)
+	viper.SetDefault("influxdb.enable", false)
+	viper.SetDefault("mqtt.enable", false)
+	viper.SetDefault("feishu.enable", false)
 
 	viper.SetDefault("minio.use_ssl", false)
 	viper.SetDefault("s3.use_ssl", false)
@@ -192,11 +198,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Domain string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
-	Mode   Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
-	Listen string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
-	Port   int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	DB     DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
+	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
+	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
+	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
 
 type AuthConfig struct {
@@ -297,8 +304,8 @@ type RedisConfig struct {
 	PoolSize   int           `json:"pool_size" mapstructure:"pool_size"`
 	Protocol   uint          `json:"protocol" mapstructure:"protocol" ini:"protocol" yaml:"protocol"`
 	Namespace  string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
-	Enable     bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 	Expiration time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
+	Enable     bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type FeishuConfig struct {
@@ -306,6 +313,7 @@ type FeishuConfig struct {
 	AppSecret    string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
 	MsgAppID     string `json:"msg_app_id" mapstructure:"msg_app_id" ini:"msg_app_id" yaml:"msg_app_id"`
 	MsgAppSecret string `json:"msg_app_secret" mapstructure:"msg_app_secret" ini:"msg_app_secret" yaml:"msg_app_secret"`
+	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 // LdapConfig
@@ -326,6 +334,7 @@ type LdapConfig struct {
 	BindPassword string `json:"bind_password" mapstructure:"bind_password" ini:"bind_password" yaml:"bind_password"`
 	BaseDN       string `json:"base_dn" mapstructure:"base_dn" ini:"base_dn" yaml:"base_dn"`
 	SearchFilter string `json:"search_filter" mapstructure:"search_filter" ini:"search_filter" yaml:"search_filter"`
+	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 // InfluxdbConfig is the configuration of influxdb.
@@ -348,6 +357,7 @@ type InfluxdbConfig struct {
 	AdminOrg      string        `json:"admin_org" mapstructure:"admin_org" ini:"admin_org" yaml:"admin_org"`
 	Bucket        string        `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
 	WriteInterval time.Duration `json:"write_interval" mapstructure:"write_interval" ini:"write_interval" yaml:"write_interval"`
+	Enable        bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type MinioConfig struct {
@@ -357,6 +367,7 @@ type MinioConfig struct {
 	SecretKey string `json:"secret_key" mapstructure:"secret_key" ini:"secret_key" yaml:"secret_key"`
 	Bucket    string `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
 	UseSsl    bool   `json:"use_ssl" mapstructure:"use_ssl" ini:"use_ssl" yaml:"use_ssl"`
+	Enable    bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type S3Config struct {
@@ -366,10 +377,12 @@ type S3Config struct {
 	SecretAccessKey string `json:"secret_access_key" mapstructure:"secret_access_key" ini:"secret_access_key" yaml:"secret_access_key"`
 	Bucket          string `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
 	UseSsl          bool   `json:"use_ssl" mapstructure:"use_ssl" ini:"use_ssl" yaml:"use_ssl"`
+	Enable          bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type MqttConfig struct {
 	Addr     string `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
 	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
 	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
