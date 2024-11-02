@@ -67,10 +67,10 @@ func Bootstrap() error {
 		mysql.Init,
 		elastic.Init,
 		redis.Init,
+		minio.Init,
 		mqtt.Init,
 		rbac.Init,
 		service.Init,
-		minio.Init,
 		router.Init,
 		task.Init,
 	)
