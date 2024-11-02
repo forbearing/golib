@@ -20,6 +20,7 @@ var (
 	Visitor    types.Logger
 	Cronjob    types.Logger
 	Job        types.Logger
+	Mqtt       types.Logger
 
 	Gin  *zap.Logger
 	Gorm gorml.Interface
