@@ -12,11 +12,17 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var once sync.Once
-var cli *minio.Client
-var ctx = context.Background()
+var (
+	once sync.Once
+	cli  *minio.Client
+	ctx  = context.Background()
+)
 
 func Init() (err error) {
+	if !config.App.MinioConfig.Enable {
+		return nil
+	}
+
 	once.Do(func() {
 		endpoint := config.App.MinioConfig.Endpoint
 		accessKey := config.App.MinioConfig.AccessKey
