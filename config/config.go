@@ -178,6 +178,7 @@ type Config struct {
 	LdapConfig          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
 	InfluxdbConfig      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
 	FeishuConfig        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+	MqttConfig          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
 }
 
 type ServerConfig struct {
@@ -354,4 +355,10 @@ type S3Config struct {
 	SecretAccessKey string `json:"secret_access_key" mapstructure:"secret_access_key" ini:"secret_access_key" yaml:"secret_access_key"`
 	Bucket          string `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
 	UseSsl          bool   `json:"use_ssl" mapstructure:"use_ssl" ini:"use_ssl" yaml:"use_ssl"`
+}
+
+type MqttConfig struct {
+	Addr     string `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
+	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 }
