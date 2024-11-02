@@ -15,7 +15,7 @@ var (
 )
 
 func Init() (err error) {
-	if !config.App.SqliteConfig.Enable {
+	if !config.App.SqliteConfig.Enable || config.App.ServerConfig.DB != config.DBSqlite {
 		return
 	}
 

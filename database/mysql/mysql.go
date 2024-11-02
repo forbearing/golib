@@ -17,7 +17,7 @@ var (
 )
 
 func Init() (err error) {
-	if !config.App.MySQLConfig.Enable {
+	if !config.App.MySQLConfig.Enable || config.App.ServerConfig.DB != config.DBMySQL {
 		return
 	}
 

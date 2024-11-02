@@ -17,7 +17,7 @@ var (
 )
 
 func Init() (err error) {
-	if !config.App.PostgreConfig.Enable {
+	if !config.App.PostgreConfig.Enable || config.App.ServerConfig.DB != config.DBPostgre {
 		return
 	}
 
