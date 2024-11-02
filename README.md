@@ -185,14 +185,17 @@ func SayGoodbye() error {
 [server]
 mode = dev
 port = 8002
-# token_expire_duration = 12h
+; token_expire_duration = 12h
+; db = "sqlite"
+db = "postgres"
+; db = "mysql"
 
 [auth]
 none_expire_token = "-"
 
 [logger]
-log_level = info
-log_file = ""
+; log_level = info
+; log_file = ""
 # log_format = "console"
 
 [sqlite]
@@ -207,6 +210,12 @@ password = "admin"
 [mysql]
 database = mydb
 password = random_password
+
+[elasticsearch]
+hosts = 'http://localhost:9200'
+username = "elastic"
+password = "changeme"
+enable = true
 
 [redis]
 host = localhost
