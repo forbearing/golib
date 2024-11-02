@@ -102,7 +102,8 @@ func SplitByDoublePipe(data []byte, atEOF bool) (advance int, token []byte, err 
 // RunOrDie will panic when error encountered.
 func RunOrDie(fn func() error) {
 	if err := fn(); err != nil {
-		panic(err)
+		name := GetFunctionName(fn)
+		HandleErr(fmt.Errorf("%s error: %w", name, err))
 	}
 }
 
