@@ -26,12 +26,21 @@ var (
 	mu          sync.Mutex
 )
 
-type Mode string
+type (
+	Mode string
+	DB   string
+)
 
 const (
 	ModeProd = "prod"
 	ModeStg  = "stg"
 	ModeDev  = "dev"
+)
+
+const (
+	DBSqlite  = "sqlite"
+	DBPostgre = "postgres"
+	DBMySQL   = "mysql"
 )
 
 func Init() (err error) {
@@ -73,6 +82,7 @@ func Init() (err error) {
 func SetDefaultValue() {
 	viper.SetDefault("server.mode", ModeProd)
 	viper.SetDefault("server.port", 9000)
+	viper.SetDefault("server.db", DBSqlite)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
 	viper.SetDefault("auth.none_expire_user", noneExpireUser)
@@ -119,8 +129,8 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.namespace", "myproject")
-	viper.SetDefault("redis.enable", false)
 	viper.SetDefault("redis.expiration", "8h")
+	viper.SetDefault("redis.enable", false)
 
 	viper.SetDefault("minio.use_ssl", false)
 	viper.SetDefault("s3.use_ssl", false)
@@ -186,6 +196,7 @@ type ServerConfig struct {
 	Mode   Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
 	Listen string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
 	Port   int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	DB     DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
 }
 
 type AuthConfig struct {
