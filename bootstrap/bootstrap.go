@@ -13,6 +13,7 @@ import (
 	"github.com/forbearing/golib/lru"
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/minio"
+	"github.com/forbearing/golib/mqtt"
 	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
@@ -66,6 +67,7 @@ func Bootstrap() error {
 		postgres.Init,
 		elastic.Init,
 		redis.Init,
+		mqtt.Init,
 		rbac.Init,
 		service.Init,
 		minio.Init,
