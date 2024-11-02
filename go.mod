@@ -10,6 +10,7 @@ require (
 	github.com/casbin/gorm-adapter/v3 v3.20.0
 	github.com/cloverstd/tcping v0.1.1
 	github.com/didip/tollbooth/v7 v7.0.1
+	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/elastic/go-elasticsearch/v8 v8.15.0
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gertd/go-pluralize v0.2.1
@@ -38,7 +39,7 @@ require (
 	github.com/sunshineplan/imgconv v1.1.9
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.27.0
 	golang.org/x/time v0.5.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/mysql v1.5.7
@@ -76,6 +77,7 @@ require (
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hhrutter/lzw v1.0.0 // indirect
 	github.com/hhrutter/tiff v1.0.1 // indirect
