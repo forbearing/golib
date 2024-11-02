@@ -62,6 +62,14 @@ func (l *Logger) Fatalz(msg string, fields ...zap.Field) { l.zlog.Fatal(msg, fie
 //	types.REQUEST_ID, c.GetString(types.REQUEST_ID),
 //	)
 func (l *Logger) With(fields ...string) types.Logger {
+	if len(fields) == 0 {
+		return l
+	}
+	if len(fields) == 1 {
+		if len(fields[0]) == 0 {
+			return l
+		}
+	}
 	if len(fields)%2 != 0 {
 		fields = append(fields, "")
 	}
