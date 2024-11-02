@@ -10,8 +10,9 @@ import (
 	"github.com/forbearing/golib/types"
 )
 
-const root = "root"
-const huyubiao = "胡虞彪"
+const (
+	root = "root"
+)
 
 // role 其实也是 group, 只需要通过 AddGroupingPolicy 将用户加进组来就行.
 // 加进组其实就是赋予权限或角色.
@@ -65,6 +66,10 @@ var RBAC = new(rbac)
 // https://blog.csdn.net/LeoForBest/article/details/133610889
 // https://juejin.cn/post/7269563694676819968
 func Init() (err error) {
+	if !config.App.ServerConfig.EnableRBAC {
+		return nil
+	}
+
 	// casbin.NewEnforcer("model.conf", "policy.csv") 从文件中加载策略
 	if RBAC.adapter, err = gormadapter.NewAdapterByDB(database.DB); err != nil {
 		return
