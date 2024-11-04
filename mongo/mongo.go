@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.uber.org/zap"
 )
 
 var (
@@ -47,16 +47,16 @@ func Init() (err error) {
 	}
 	client, err = mongo.Connect(options.Client().
 		ApplyURI(uri).
-		SetMaxPoolSize(config.App.MaxPoolSize).
-		SetMinPoolSize(config.App.MinPoolSize).
-		SetConnectTimeout(config.App.ConnectTimeout),
+		SetMaxPoolSize(config.App.MongoConfig.MaxPoolSize).
+		SetMinPoolSize(config.App.MongoConfig.MinPoolSize).
+		SetConnectTimeout(config.App.MongoConfig.ConnectTimeout),
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err = client.Ping(ctx, readpref.Primary()); err != nil {
 		return fmt.Errorf("ping mongodb failed: %w", err)
 	}
-	logger.Mongo.Infow("successfully connect to mongodb",
+	zap.S().Infow("successfully connect to mongodb",
 		"host", config.App.MongoConfig.Host,
 		"port", config.App.MongoConfig.Port,
 		"database", config.App.MongoConfig.Database,
