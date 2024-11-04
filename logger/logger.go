@@ -14,8 +14,9 @@ var (
 	Service    types.Logger
 	Database   types.Logger
 	Cache      types.Logger
-	Elastic    types.Logger
 	Redis      types.Logger
+	Elastic    types.Logger
+	Mongo      types.Logger
 	Task       types.Logger
 	Visitor    types.Logger
 	Cronjob    types.Logger
