@@ -128,9 +128,17 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.namespace", "myproject")
 	viper.SetDefault("redis.expiration", "8h")
-
 	viper.SetDefault("redis.enable", false)
+
+	viper.SetDefault("elasticsearch.host", "127.0.0.1")
+	viper.SetDefault("elasticsearch.port", 9200)
 	viper.SetDefault("elasticsearch.enable", false)
+
+	viper.SetDefault("mongo.host", "127.0.0.1")
+	viper.SetDefault("mongo.port", 27017)
+	viper.SetDefault("mongo.enable", false)
+	viper.SetDefault("mongo.auth_source", "admin")
+
 	viper.SetDefault("minio.enable", false)
 	viper.SetDefault("s3.enable", false)
 	viper.SetDefault("ldap.enable", false)
@@ -186,8 +194,9 @@ type Config struct {
 	SqliteConfig        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
 	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
-	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
 	RedisConfig         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
+	MongoConfig         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
 	MinioConfig         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
 	S3Config            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
 	LoggerConfig        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
@@ -385,4 +394,17 @@ type MqttConfig struct {
 	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
 	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type MongoConfig struct {
+	Host           string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port           int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Username       string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password       string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Database       string        `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	AuthSource     string        `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
+	MaxPoolSize    uint64        `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
+	MinPoolSize    uint64        `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
+	ConnectTimeout time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	Enable         bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
