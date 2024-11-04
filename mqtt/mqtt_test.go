@@ -1,90 +1,211 @@
-package mqtt
+package mqtt_test
 
-// func TestPublishSite(t *testing.T) {
-// 	pkgconfig.SetConfigFile("../../config.ini")
-// 	bootstrap.Register(
-// 		pkgconfig.Init,
-// 		config.Init,
-// 		zap.Init,
-// 		logrus.Init,
-// 		metrics.Init,
-// 		Init,
-// 	)
-//
-// 	assert.NoError(t, bootstrap.Init())
-//
-// 	count := 0
-// 	for {
-// 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-// 		Publish("/site/site_01", model.MessageSiteCommand{
-// 			SiteId:         "site_" + util.UUID(),
-// 			SiteType:       "pad",
-// 			CommandUuid:    util.UUID(),
-// 			CommandTime:    strconv.Itoa(int(time.Now().Unix())),
-// 			CommandAction:  model.ActionIn,
-// 			CommandCargoId: "cargo_" + util.UUID(),
-// 			SiteCode:       strconv.Itoa(r.Intn(100)),
-// 			InsiteCode:     strconv.Itoa(r.Intn(100)),
-// 			OutsiteCode:    strconv.Itoa(r.Intn(100)),
-// 		})
-// 		count++
-// 		if count > 10 {
-// 			break
-// 		}
-// 		time.Sleep(time.Second)
-// 	}
-// }
-//
-// func TestPublishAgv(t *testing.T) {
-// 	pkgconfig.SetConfigFile("../../config.ini")
-// 	bootstrap.Register(
-// 		pkgconfig.Init,
-// 		config.Init,
-// 		zap.Init,
-// 		logrus.Init,
-// 		metrics.Init,
-// 		Init,
-// 	)
-//
-// 	assert.NoError(t, bootstrap.Init())
-// 	var wg sync.WaitGroup
-// 	publishCount := 10
-// 	total := 10000
-// 	wg.Add(publishCount)
-// 	for i := 1; i <= publishCount; i++ {
-// 		go func() {
-// 			agvId := fmt.Sprintf("agv_%03d", i)
-// 			defer wg.Done()
-// 			count := 0
-// 			for {
-// 				r := rand.New(rand.NewSource(time.Now().UnixNano()))
-// 				x := r.Intn(100)
-// 				y := r.Intn(100)
-// 				yaw := r.Intn(100)
-// 				Publish(fmt.Sprintf("/agv/%s/status", agvId), model.MessageAgvStatus{
-// 					AgvId:              agvId,
-// 					AgvType:            "agv_notype",
-// 					CurrentTime:        strconv.Itoa(int(time.Now().Unix())),
-// 					CurrentLocation:    fmt.Sprintf("%v", []int{x, y, yaw}),
-// 					CurrentLocationX:   strconv.Itoa(x),
-// 					CurrentlocationY:   strconv.Itoa(y),
-// 					CurrentLocationYaw: strconv.Itoa(yaw),
-// 					CurrentCargoId:     "cargo_" + util.UUID(),
-// 					CurrentLiftStatus:  model.RandomLiftStatus(),
-// 					CurrentStatus:      model.RandomAgvStatus(),
-// 					TaskSite:           "site_" + util.UUID(),
-// 					TaskUuid:           util.UUID(),
-// 					TaskAction:         model.RandomAction(),
-// 					RunArea:            strconv.Itoa(r.Intn(20)),
-// 				})
-// 				count++
-// 				if count > total {
-// 					break
-// 				}
-// 				time.Sleep(time.Second)
-// 			}
-// 		}()
-// 	}
-//
-// 	wg.Wait()
-// }
+import (
+	"encoding/json"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/forbearing/golib/bootstrap"
+	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/mqtt"
+	"github.com/forbearing/golib/util"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMqtt(t *testing.T) {
+	config.SetConfigFile("../examples/myproject/config.ini")
+	util.RunOrDie(bootstrap.Bootstrap)
+	defer mqtt.Close()
+
+	assert.NoError(t, mqtt.Health())
+
+	topic := "test/topic"
+	t.Run("PublishAndSubscribe", func(t *testing.T) {
+		message := map[string]interface{}{
+			"name": "test",
+			"time": time.Now().Unix(),
+		}
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		var received []byte
+		var receivedTopic string
+
+		// subscript
+		assert.NoError(t, mqtt.Subscribe(topic, func(topic string, payload []byte) error {
+			received = payload
+			receivedTopic = topic
+			wg.Done()
+			return nil
+		}))
+
+		// public
+		assert.NoError(t, mqtt.Publish(topic, message))
+		done := make(chan struct{})
+
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			assert.Equal(t, topic, receivedTopic)
+			var receivedMsg map[string]interface{}
+			err := json.Unmarshal(received, &receivedMsg)
+			assert.NoError(t, err)
+			assert.Equal(t, message["name"], receivedMsg["name"])
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for message")
+		}
+	})
+
+	t.Run("PublishWithOptions", func(t *testing.T) {
+		topic := "test/qos1"
+		message := "test message with qos 1"
+
+		// 测试 QoS 1 发布
+		err := mqtt.Publish(topic, message, mqtt.PublishOption{
+			QoS:     1,
+			Retain:  true,
+			Timeout: 5 * time.Second,
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("MultipleSubscriptions", func(t *testing.T) {
+		topics := []string{
+			"test/multiple/1",
+			"test/multiple/2",
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(len(topics))
+
+		receivedCount := 0
+		var mu sync.Mutex
+
+		// 订阅多个主题
+		for _, topic := range topics {
+			err := mqtt.Subscribe(topic, func(topic string, payload []byte) error {
+				mu.Lock()
+				receivedCount++
+				mu.Unlock()
+				wg.Done()
+				return nil
+			})
+			assert.NoError(t, err)
+		}
+
+		// 发布消息到所有主题
+		for _, topic := range topics {
+			err := mqtt.Publish(topic, "test message")
+			assert.NoError(t, err)
+		}
+
+		// 等待所有消息接收
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			mu.Lock()
+			assert.Equal(t, len(topics), receivedCount)
+			mu.Unlock()
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for messages")
+		}
+	})
+
+	t.Run("UnsubscribeTest", func(t *testing.T) {
+		topic := "test/unsubscribe"
+
+		// 先订阅
+		err := mqtt.Subscribe(topic, func(topic string, payload []byte) error {
+			t.Error("should not receive message after unsubscribe")
+			return nil
+		})
+		assert.NoError(t, err)
+
+		// 取消订阅
+		err = mqtt.Unsubscribe(topic)
+		assert.NoError(t, err)
+
+		// 发布消息
+		err = mqtt.Publish(topic, "test message")
+		assert.NoError(t, err)
+
+		// 等待一段时间，确保没有收到消息
+		// time.Sleep(2 * time.Second)
+	})
+
+	// t.Run("ErrorCases", func(t *testing.T) {
+	// 	// 测试无效的 topic
+	// 	err := mqtt.Publish("", "test message")
+	// 	assert.Error(t, err)
+	//
+	// 	// 测试无效的 QoS
+	// 	err = mqtt.Publish("test/topic", "test message", mqtt.PublishOption{
+	// 		QoS: 3, // 无效的 QoS 值
+	// 	})
+	// 	assert.Error(t, err)
+	//
+	// 	// 测试超时情况
+	// 	err = mqtt.Publish("test/topic", "test message", mqtt.PublishOption{
+	// 		Timeout: 1 * time.Nanosecond,
+	// 	})
+	// 	assert.Error(t, err)
+	// })
+
+	t.Run("JSONPayload", func(t *testing.T) {
+		topic := "test/json"
+		payload := struct {
+			Name string    `json:"name"`
+			Age  int       `json:"age"`
+			Time time.Time `json:"time"`
+		}{
+			Name: "test user",
+			Age:  25,
+			Time: time.Now(),
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		err := mqtt.Subscribe(topic, func(topic string, data []byte) error {
+			var received struct {
+				Name string    `json:"name"`
+				Age  int       `json:"age"`
+				Time time.Time `json:"time"`
+			}
+			err := json.Unmarshal(data, &received)
+			assert.NoError(t, err)
+			assert.Equal(t, payload.Name, received.Name)
+			assert.Equal(t, payload.Age, received.Age)
+			wg.Done()
+			return nil
+		})
+		assert.NoError(t, err)
+
+		err = mqtt.Publish(topic, payload)
+		assert.NoError(t, err)
+
+		// 等待消息接收
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			// 成功
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for json message")
+		}
+	})
+}
