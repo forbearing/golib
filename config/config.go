@@ -139,11 +139,17 @@ func SetDefaultValue() {
 	viper.SetDefault("mongo.enable", false)
 	viper.SetDefault("mongo.auth_source", "admin")
 
+	viper.SetDefault("mqtt.addr", "127.0.0.1:1883")
+	viper.SetDefault("mqtt.keepalive", 1*time.Minute)
+	viper.SetDefault("mqtt.auto_reconnect", true)
+	viper.SetDefault("mqtt.connect_timeout", 10*time.Second)
+	viper.SetDefault("mqtt.clean_session", true)
+	viper.SetDefault("mqtt.enable", false)
+
 	viper.SetDefault("minio.enable", false)
 	viper.SetDefault("s3.enable", false)
 	viper.SetDefault("ldap.enable", false)
 	viper.SetDefault("influxdb.enable", false)
-	viper.SetDefault("mqtt.enable", false)
 	viper.SetDefault("feishu.enable", false)
 
 	viper.SetDefault("minio.use_ssl", false)
@@ -284,17 +290,6 @@ type PostgreConfig struct {
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type ElasticsearchConfig struct {
-	Hosts                  string `json:"hosts" mapstructure:"hosts" ini:"hosts" yaml:"hosts"`
-	Username               string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password               string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	CloudID                string `json:"cloud_id" mapstructure:"cloud_id" ini:"cloud_id" yaml:"cloud_id"`
-	APIKey                 string `json:"api_key" mapstructure:"api_key" ini:"api_key" yaml:"api_key"`
-	ServiceToken           string `json:"service_token" mapstructure:"service_token" ini:"service_token" yaml:"service_token"`
-	CertificateFingerprint string `json:"certificate_fingerprint" mapstructure:"certificate_fingerprint" ini:"certificate_fingerprint" yaml:"certificate_fingerprint"`
-	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
-}
-
 type MySQLConfig struct {
 	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port     uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
@@ -315,6 +310,29 @@ type RedisConfig struct {
 	Namespace  string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
 	Expiration time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
 	Enable     bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type ElasticsearchConfig struct {
+	Hosts                  string `json:"hosts" mapstructure:"hosts" ini:"hosts" yaml:"hosts"`
+	Username               string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password               string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	CloudID                string `json:"cloud_id" mapstructure:"cloud_id" ini:"cloud_id" yaml:"cloud_id"`
+	APIKey                 string `json:"api_key" mapstructure:"api_key" ini:"api_key" yaml:"api_key"`
+	ServiceToken           string `json:"service_token" mapstructure:"service_token" ini:"service_token" yaml:"service_token"`
+	CertificateFingerprint string `json:"certificate_fingerprint" mapstructure:"certificate_fingerprint" ini:"certificate_fingerprint" yaml:"certificate_fingerprint"`
+	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+type MongoConfig struct {
+	Host           string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port           int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Username       string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password       string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Database       string        `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	AuthSource     string        `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
+	MaxPoolSize    uint64        `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
+	MinPoolSize    uint64        `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
+	ConnectTimeout time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	Enable         bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type FeishuConfig struct {
@@ -390,21 +408,17 @@ type S3Config struct {
 }
 
 type MqttConfig struct {
-	Addr     string `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
-	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
-}
-
-type MongoConfig struct {
-	Host           string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
-	Port           int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	Username       string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password       string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	Database       string        `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
-	AuthSource     string        `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
-	MaxPoolSize    uint64        `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
-	MinPoolSize    uint64        `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
-	ConnectTimeout time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
-	Enable         bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+	Addr               string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
+	Username           string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password           string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	ClientPrefix       string        `json:"client_prefix" mapstructure:"client_prefix" ini:"client_prefix" yaml:"client_prefix"`
+	ConnectTimeout     time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	Keepalive          time.Duration `json:"keepalive" mapstructure:"keepalive" ini:"keepalive" yaml:"keepalive"`
+	CleanSession       bool          `json:"clean_session" mapstructure:"clean_session" ini:"clean_session" yaml:"clean_session"`
+	AutoReconnect      bool          `json:"auto_reconnect" mapstructure:"auto_reconnect" ini:"auto_reconnect" yaml:"auto_reconnect"`
+	UseTLS             bool          `json:"use_tls" mapstructure:"use_tls" ini:"use_tls" yaml:"use_tls"`
+	CertFile           string        `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string        `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	InsecureSkipVerify bool          `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+	Enable             bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
