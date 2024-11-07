@@ -100,6 +100,9 @@ type Database[M Model] interface {
 	Count(*int64) error
 	// Cleanup delete all records that column 'deleted_at' is not null.
 	Cleanup() error
+	// Health checks the database connectivity and basic operations.
+	// It returns nil if the database is healthy, otherwise returns an error.
+	Health() error
 
 	DatabaseOption[M]
 }
@@ -157,6 +160,13 @@ type DatabaseOption[M Model] interface {
 
 	// WithIndex use specific index to query.
 	WithIndex(index string) Database[M]
+
+	// WithTransaction executes operations within a transaction.
+	WithTransaction(tx any) Database[M]
+
+	// WithLock adds locking clause to SELECT statement.
+	// It must be used within a transaction (WithTransaction).
+	WithLock(mode ...string) Database[M]
 
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]
