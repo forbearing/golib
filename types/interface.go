@@ -158,11 +158,21 @@ type DatabaseOption[M Model] interface {
 	// default select all fields.
 	WithSelect(columns ...string) Database[M]
 
+	// WithSelectRaw
+	WithSelectRaw(query any, args ...any) Database[M]
+
 	// WithIndex use specific index to query.
 	WithIndex(index string) Database[M]
 
 	// WithTransaction executes operations within a transaction.
 	WithTransaction(tx any) Database[M]
+
+	// WithJoinRaw
+	WithJoinRaw(query string, args ...any) Database[M]
+
+	// TODO:
+	// WithGroup(name string) Database[M]
+	// WithHaving(query any, args ...any) Database[M]
 
 	// WithLock adds locking clause to SELECT statement.
 	// It must be used within a transaction (WithTransaction).
