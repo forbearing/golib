@@ -17,11 +17,11 @@ var (
 	Redis      types.Logger
 	Elastic    types.Logger
 	Mongo      types.Logger
+	Mqtt       types.Logger
 	Task       types.Logger
 	Visitor    types.Logger
 	Cronjob    types.Logger
 	Job        types.Logger
-	Mqtt       types.Logger
 
 	Gin  *zap.Logger
 	Gorm gorml.Interface

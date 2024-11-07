@@ -50,11 +50,11 @@ func Init() error {
 	logger.Redis = New("redis.log")
 	logger.Elastic = New("elastic.log")
 	logger.Mongo = New("mongo.log")
+	logger.Mqtt = New("mqtt.log")
 	logger.Task = New("task.log")
 	logger.Visitor = New("visitor.log")
 	logger.Cronjob = New("cronjob.log")
 	logger.Job = New("job.log")
-	logger.Mqtt = New("mqtt.log")
 	logger.Gin = NewGin("access.log")
 	logger.Gorm = NewGorm("gorm.log")
 
