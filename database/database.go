@@ -18,6 +18,7 @@ import (
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/hints"
 )
 
@@ -52,16 +53,18 @@ var (
 
 // database inplement types.Database[T types.Model] interface.
 type database[M types.Model] struct {
-	mu sync.Mutex
-	db *gorm.DB
+	mu  sync.Mutex
+	db  *gorm.DB
+	ctx context.Context
 
 	// options
-	enablePurge bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
-	enableCache bool   // using cache or not, only works 'List', 'Get', 'Count' method.
-	tableName   string // support multiple custom table name, always used with the `WithDB` method.
-	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
-	noHook      bool   // disable model hook.
-	orQuery     bool   // or query
+	enablePurge   bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
+	enableCache   bool   // using cache or not, only works 'List', 'Get', 'Count' method.
+	tableName     string // support multiple custom table name, always used with the `WithDB` method.
+	batchSize     int    // batch size for bulk operations. affects Create, Update, Delete.
+	noHook        bool   // disable model hook.
+	orQuery       bool   // or query
+	inTransaction bool   // in transaction
 
 	shouldAutoMigrate bool
 }
@@ -69,6 +72,9 @@ type database[M types.Model] struct {
 // reset will reset the database interface to default value.
 // Dont forget to call this method in all functions except option functions that prefixed with 'With*'.
 func (db *database[M]) reset() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	// default not delete resource permanently.
 	// call option method 'WithPurge' to set enablePurge to true.
 	db.enablePurge = false
@@ -77,6 +83,7 @@ func (db *database[M]) reset() {
 	db.batchSize = 0
 	db.noHook = false
 	db.orQuery = false
+	db.inTransaction = false
 	db.shouldAutoMigrate = false
 	db.db = DB.WithContext(context.Background())
 }
@@ -97,13 +104,19 @@ func (db *database[M]) prepare() error {
 // eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithDB(x any) types.Database[M] {
 	var empty *gorm.DB
-	// if x is nil or empty gorm instance, return the default database.
 	if x == nil || x == new(gorm.DB) || x == empty {
 		return db
 	}
-	// if x type is not *gorm.DB, return the default database manipulator.
+	// v := reflect.ValueOf(x)
+	// if v.Kind() != reflect.Ptr {
+	// 	return db
+	// }
+	// if v.IsNil() {
+	// 	return db
+	// }
 	_db, ok := x.(*gorm.DB)
 	if !ok {
+		logger.Database.Warnw("invalid database type, expect *gorm.DB")
 		return db
 	}
 	db.mu.Lock()
@@ -130,6 +143,7 @@ func (db *database[M]) WithTable(name string) types.Database[M] {
 func (db *database[M]) WithBatchSize(size int) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	// db.db = db.db.Session(&gorm.Session{CreateBatchSize: db.batchSize})
 	db.batchSize = size
 	return db
 }
@@ -567,6 +581,250 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithTransaction executes operations within a transaction.
+// It's typically used with DB.Transaction():
+// NOTE:
+// 1. If tx is provided, disable GORM's default transaction
+// 2. If tx is nil, use default behavior
+//
+// Example:
+//
+//	err := DB.Transaction(func(tx *gorm.DB) error {
+//	    return Database[*Order]().
+//	        WithTransaction(tx).
+//	        WithLock().
+//	        Get(&order, orderID)
+//	})
+func (db *database[M]) WithTransaction(tx any) types.Database[M] {
+	var empty *gorm.DB
+	if tx == nil || tx == new(gorm.DB) || tx == empty {
+		return db
+	}
+	// v := reflect.ValueOf(x)
+	// if v.Kind() != reflect.Ptr {
+	// 	return db
+	// }
+	// if v.IsNil() {
+	// 	return db
+	// }
+	_tx, ok := tx.(*gorm.DB)
+	if !ok {
+		logger.Database.Warnw("invalid database type, expect *gorm.DB")
+		return db
+	}
+
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.inTransaction = true
+	db.db = _tx.Session(&gorm.Session{SkipDefaultTransaction: true})
+	return db
+}
+
+// WithLock adds locking clause to SELECT statement.
+// It must be used within a transaction (WithTransaction).
+//
+// Lock modes:
+//   - "UPDATE" (default): SELECT ... FOR UPDATE
+//   - "SHARE": SELECT ... FOR SHARE
+//   - "UPDATE_NOWAIT": SELECT ... FOR UPDATE NOWAIT
+//   - "SHARE_NOWAIT": SELECT ... FOR SHARE NOWAIT
+//   - "UPDATE_SKIP_LOCKED": SELECT ... FOR UPDATE SKIP LOCKED
+//   - "SHARE_SKIP_LOCKED": SELECT ... FOR SHARE SKIP LOCKED
+//
+// Example:
+//
+//	DB.Transaction(func(tx *gorm.DB) error {
+//	    // Default FOR UPDATE lock
+//	    err := Database[*Order]().
+//	        WithTx(tx).
+//	        WithLock().
+//	        Get(&order, orderID)
+//
+//	    // FOR UPDATE NOWAIT
+//	    err = Database[*Order]().
+//	        WithTx(tx).
+//	        WithLock("UPDATE_NOWAIT").
+//	        Get(&order, orderID)
+//	})
+func (db *database[M]) WithLock(mode ...string) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if !db.inTransaction {
+		logger.Database.Warnw("WithLock must be used within a transaction")
+		return db
+	}
+	fmt.Println("----- db.inTransaction", db.inTransaction)
+
+	strength := "UPDATE"
+	options := ""
+	if len(mode) > 0 {
+		switch strings.ToUpper(mode[0]) {
+		case "SHARE":
+			strength = "SHARE"
+		case "UPDATE_NOWAIT":
+			strength = "UPDATE"
+			options = "NOWAIT"
+		case "SHARE_NOWAIT":
+			strength = "SHARE"
+			options = "NOWAIT"
+		case "UPDATE_SKIP_LOCKED":
+			strength = "UPDATE"
+			options = "SKIP LOCKED"
+		case "SHARE_SKIP_LOCKED":
+			strength = "SHARE"
+			options = "SKIP LOCKED"
+		}
+	}
+
+	db.db = db.db.Clauses(clause.Locking{
+		Strength: strength,
+		Options:  options,
+	})
+	return db
+}
+
+// WithJoin adds JOIN clause to query.
+//
+// Basic Join:
+//
+//	db.WithJoin("JOIN users ON users.id = orders.user_id")
+//
+// Left Join with conditions:
+//
+//	db.WithJoin("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1)
+//
+// Multiple Joins:
+//
+//	db.WithJoin("LEFT JOIN users ON users.id = orders.user_id").
+//	    WithJoin("LEFT JOIN products ON products.id = orders.product_id")
+//
+// Join with Select:
+//
+//	db.WithSelect("orders.*, users.name").
+//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id")
+//
+// Complex Examples:
+//
+// 1. Query order with user info:
+//
+//	type Order struct {
+//	    ID     string `gorm:"primarykey"`
+//	    UserID string
+//	    Amount float64
+//	    User   User   `gorm:"foreignKey:UserID"`
+//	}
+//
+//	type User struct {
+//	    ID    string `gorm:"primarykey"`
+//	    Name  string
+//	    Email string
+//	}
+//
+//	var orders []Order
+//	err := Database[*Order]().
+//	    WithSelect("orders.*, users.name as user_name").
+//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id").
+//	    List(&orders)
+//
+// 2. Multi-table join query:
+//
+//	var details []OrderDetail
+//	err := Database[*OrderDetail]().
+//	    WithSelect("order_details.*, orders.amount, products.name as product_name").
+//	    WithJoin("LEFT JOIN orders ON orders.id = order_details.order_id").
+//	    WithJoin("LEFT JOIN products ON products.id = order_details.product_id").
+//	    List(&details)
+//
+// 3. Query orders with active users:
+//
+//	var orders []Order
+//	err := Database[*Order]().
+//	    WithSelect("orders.*, users.name").
+//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1).
+//	    List(&orders)
+//
+// 4. Complex query with multiple conditions:
+//
+//	var orders []Order
+//	err := Database[*Order]().
+//	    WithSelect("orders.*, users.name, products.name as product_name").
+//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id").
+//	    WithJoin("LEFT JOIN order_details ON order_details.order_id = orders.id").
+//	    WithJoin("LEFT JOIN products ON products.id = order_details.product_id").
+//	    WithTimeRange("orders.created_at", startTime, endTime).
+//	    WithOrder("orders.created_at DESC").
+//	    WithScope(page, size).
+//	    List(&orders)
+func (db *database[M]) WithJoin(query string, args ...any) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	query = strings.TrimSpace(query)
+	if len(query) == 0 {
+		return db
+	}
+
+	upperQuery := strings.ToUpper(query)
+	if !strings.Contains(upperQuery, "JOIN") || !strings.Contains(upperQuery, "ON") {
+		logger.Database.Warn("invalid join clause, must contain JOIN and ON",
+			"query", query,
+			"table", reflect.TypeOf(*new(M)).Elem().Name(),
+		)
+		return db
+	}
+
+	db.db = db.db.Joins(query, args...)
+	return db
+}
+
+// WithGroup adds GROUP BY clause to SELECT statement.
+// For example:
+//
+//	// Basic group by
+//	db.WithGroup("user_id")
+//
+//	// Group by multiple columns
+//	db.WithGroup("user_id, order_status")
+//
+//	// Common usage with aggregate functions
+//	db.WithSelect("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
+//	   WithGroup("user_id")
+//
+// Note: WithGroup is typically used with aggregate functions (COUNT, SUM, AVG, etc.)
+// and should be combined with WithSelect to specify the grouped fields.
+func (db *database[M]) WithGroup(name string) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	name = strings.TrimSpace(name)
+	if len(name) > 0 {
+		db.db = db.db.Group(name)
+	}
+	return db
+}
+
+// WithHaving adds HAVING clause to filter grouped records.
+// HAVING clause is used to filter groups, similar to WHERE but operates on grouped records.
+// For example:
+//
+//	// Basic having clause
+//	db.WithHaving("COUNT(*) > ?", 5)
+//
+//	// With aggregate functions
+//	db.WithSelect("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
+//	   WithGroup("user_id").
+//	   WithHaving("SUM(amount) > ?", 1000)
+//
+//	// Multiple conditions
+//	db.WithHaving("COUNT(*) > ? AND SUM(amount) > ?", 5, 1000)
+//
+// Note: WithHaving must be used with GROUP BY clause and aggregate functions.
+func (db *database[M]) WithHaving(query any, args ...any) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.db = db.db.Having(query, args...)
+	return db
+}
+
 // WithOrder
 // reference: https://www.cnblogs.com/Braveliu/p/10654091.html
 // For example:
@@ -767,11 +1025,13 @@ func (db *database[M]) WithoutHook() types.Database[M] {
 // It will update the "created_at" and "updated_at" field.
 // Examples:
 // - database.XXX().Create(&model.XXX{ID: id, Field1: field1, Field2: field2})
-func (db *database[M]) Create(objs ...M) error {
-	if err := db.prepare(); err != nil {
+func (db *database[M]) Create(objs ...M) (err error) {
+	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Create")
+	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
@@ -784,9 +1044,9 @@ func (db *database[M]) Create(objs ...M) error {
 	// 		go func() {
 	// 			begin := time.Now()
 	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "create")
-	// 			defer logger.Database.Infow("remove cache after create", "cost", time.Since(begin).String(), "prefix", prefix)
-	// 			if err := redis.RemovePrefix(prefix); err != nil {
-	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "create")
+	// 			defer logger.Cache.Infow("remove cache after create", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err = redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Cache.Errorw("failed to remove cache keys", err, "action", "create")
 	// 			}
 	// 		}()
 	// 	}()
@@ -796,7 +1056,7 @@ func (db *database[M]) Create(objs ...M) error {
 	// Invoke model hook: CreateBefore.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].CreateBefore(); err != nil {
+			if err = objs[i].CreateBefore(); err != nil {
 				return err
 			}
 		}
@@ -807,8 +1067,8 @@ func (db *database[M]) Create(objs ...M) error {
 		}
 	}
 
-	// if err := db.db.Save(objs).Error; err != nil {
-	// if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
+	// if err = db.db.Save(objs).Error; err != nil {
+	// if err = db.db.Table(db.tableName).Save(objs).Error; err != nil {
 	// 	return err
 	// }
 	//
@@ -826,7 +1086,7 @@ func (db *database[M]) Create(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
@@ -845,20 +1105,20 @@ func (db *database[M]) Create(objs ...M) error {
 			_db = DB
 		}
 		createdAt := time.Now()
-		// if err := _db.Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
-		if err := _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
+		// if err = _db.Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
+		if err = _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
 			return err
 		}
 		objs[i].SetCreatedAt(createdAt)
 		if db.enableCache {
-			lru.Cache[M]().Set(objs[i].GetID(), objs[i])
+			lru.Cache[M]().Remove(objs[i].GetID())
 		}
 
 	}
 	// Invoke model hook: CreateAfter.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].CreateAfter(); err != nil {
+			if err = objs[i].CreateAfter(); err != nil {
 				return err
 			}
 		}
@@ -871,11 +1131,13 @@ func (db *database[M]) Create(objs ...M) error {
 // - database.XXX().Delete(&model.XXX{ID: id}) // delete record with primary key
 // - database.XXX().WithQuery(req).Delete(req) // delete record with where condiions.
 // FIXME: is delete should use defaultLimit or defaultBatchSize?
-func (db *database[M]) Delete(objs ...M) error {
-	if err := db.prepare(); err != nil {
+func (db *database[M]) Delete(objs ...M) (err error) {
+	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Delete")
+	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
@@ -889,9 +1151,9 @@ func (db *database[M]) Delete(objs ...M) error {
 	// 		go func() {
 	// 			begin := time.Now()
 	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "delete")
-	// 			defer logger.Database.Infow("remove cache after delete", "cost", time.Since(begin).String(), "prefix", prefix)
-	// 			if err := redis.RemovePrefix(prefix); err != nil {
-	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "delete")
+	// 			defer logger.Cache.Infow("remove cache after delete", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err = redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Cache.Errorw("failed to remove cache keys", err, "action", "delete")
 	// 			}
 	// 		}()
 	// 	}()
@@ -901,8 +1163,8 @@ func (db *database[M]) Delete(objs ...M) error {
 	// Invoke model hook: DeleteBefore.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].DeleteBefore(); err != nil {
-				return nil
+			if err = objs[i].DeleteBefore(); err != nil {
+				return err
 			}
 		}
 	}
@@ -913,8 +1175,8 @@ func (db *database[M]) Delete(objs ...M) error {
 	}
 	if db.enablePurge {
 		// delete permanently.
-		// if err := db.db.Unscoped().Delete(objs).Error; err != nil {
-		// if err := db.db.Table(db.tableName).Unscoped().Delete(objs).Error; err != nil {
+		// if err = db.db.Unscoped().Delete(objs).Error; err != nil {
+		// if err = db.db.Table(db.tableName).Unscoped().Delete(objs).Error; err != nil {
 		// 	return err
 		// }
 		//
@@ -927,7 +1189,7 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Session(&gorm.Session{}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+			if err = db.db.Session(&gorm.Session{}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -937,8 +1199,8 @@ func (db *database[M]) Delete(objs ...M) error {
 	} else {
 		// Delete() method just update field "delete_at" to currrent time.
 		// DO NOT FORGET update the "created_at" field when create/update if record already exists.
-		// if err := db.db.Delete(objs).Error; err != nil {
-		// if err := db.db.Table(db.tableName).Delete(objs).Error; err != nil {
+		// if err = db.db.Delete(objs).Error; err != nil {
+		// if err = db.db.Table(db.tableName).Delete(objs).Error; err != nil {
 		// 	return err
 		// }
 		//
@@ -951,7 +1213,7 @@ func (db *database[M]) Delete(objs ...M) error {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err := db.db.Session(&gorm.Session{}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
+			if err = db.db.Session(&gorm.Session{}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -962,7 +1224,7 @@ func (db *database[M]) Delete(objs ...M) error {
 	// Invoke model hook: DeleteAfter.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].DeleteAfter(); err != nil {
+			if err = objs[i].DeleteAfter(); err != nil {
 				return err
 			}
 		}
@@ -980,11 +1242,13 @@ func (db *database[M]) Delete(objs ...M) error {
 //     doSomething(objs)
 //     database.XXX().Update(obj)
 //     database.XXX().Update(objs)
-func (db *database[M]) Update(objs ...M) error {
-	if err := db.prepare(); err != nil {
+func (db *database[M]) Update(objs ...M) (err error) {
+	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Update")
+	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
@@ -997,9 +1261,9 @@ func (db *database[M]) Update(objs ...M) error {
 	// 		go func() {
 	// 			begin := time.Now()
 	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update")
-	// 			defer logger.Database.Infow("remove cache after update", "cost", time.Since(begin).String(), "prefix", prefix)
-	// 			if err := redis.RemovePrefix(prefix); err != nil {
-	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
+	// 			defer logger.Cache.Infow("remove cache after update", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err = redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Cache.Errorw("failed to remove cache keys", err, "action", "update")
 	// 			}
 	// 		}()
 	// 	}()
@@ -1009,7 +1273,7 @@ func (db *database[M]) Update(objs ...M) error {
 	// Invoke model hook: UpdateBefore.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].UpdateBefore(); err != nil {
+			if err = objs[i].UpdateBefore(); err != nil {
 				return err
 			}
 		}
@@ -1019,8 +1283,8 @@ func (db *database[M]) Update(objs ...M) error {
 			objs[i].SetID() // set id when id is empty
 		}
 	}
-	// if err := db.db.Save(objs).Error; err != nil {
-	// if err := db.db.Table(db.tableName).Save(objs).Error; err != nil {
+	// if err = db.db.Save(objs).Error; err != nil {
+	// if err = db.db.Table(db.tableName).Save(objs).Error; err != nil {
 	// 	return err
 	// }
 	//
@@ -1038,20 +1302,20 @@ func (db *database[M]) Update(objs ...M) error {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err := db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
 		}
 		if db.enableCache {
 			for j := range objs[i:end] {
-				lru.Cache[M]().Set(objs[j].GetID(), objs[j])
+				lru.Cache[M]().Remove(objs[j].GetID())
 			}
 		}
 	}
 	// Invoke model hook: UpdateAfter.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err := objs[i].UpdateAfter(); err != nil {
+			if err = objs[i].UpdateAfter(); err != nil {
 				return err
 			}
 		}
@@ -1061,11 +1325,13 @@ func (db *database[M]) Update(objs ...M) error {
 
 // UpdateById only update one record with specific id.
 // its not invoke model hook.
-func (db *database[M]) UpdateById(id string, key string, val any) error {
-	if err := db.prepare(); err != nil {
+func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
+	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("UpdateById")
+	defer done(err)
 
 	if db.enableCache {
 		defer lru.Cache[[]M]().Flush()
@@ -1075,9 +1341,9 @@ func (db *database[M]) UpdateById(id string, key string, val any) error {
 	// 		go func() {
 	// 			begin := time.Now()
 	// 			prefix, _ := buildCacheKey(db.db.Model(*new(M)).Session(&gorm.Session{DryRun: true}).Statement, "update_by_id")
-	// 			defer logger.Database.Infow("remove cache after update_by_id", "cost", time.Since(begin).String(), "prefix", prefix)
-	// 			if err := redis.RemovePrefix(prefix); err != nil {
-	// 				logger.Database.Errorw("failed to remove cache keys", err, "action", "update")
+	// 			defer logger.Cache.Infow("remove cache after update_by_id", "cost", time.Since(begin).String(), "prefix", prefix)
+	// 			if err = redis.RemovePrefix(prefix); err != nil {
+	// 				logger.Cache.Errorw("failed to remove cache keys", err, "action", "update")
 	// 			}
 	// 		}()
 	// 	}()
@@ -1089,7 +1355,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) error {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err := db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
+	if err = db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
 		return err
 	}
 	if db.enableCache {
@@ -1110,6 +1376,8 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("List")
+	defer done(err)
 	if dest == nil {
 		return nil
 	}
@@ -1128,7 +1396,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*dest = _dest
-		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil
 	}
 
@@ -1167,7 +1435,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotSetSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_dest))
-	// 		logger.Database.Infow("list and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("list and decode from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// } else {
@@ -1183,12 +1451,12 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotSetSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_cache))
-	// 		logger.Database.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("list from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// }
 	// if !errors.Is(err, redis.ErrKeyNotExists) {
-	// 	logger.Database.Error(err)
+	// 	logger.Cache.Error(err)
 	// 	return err
 	// }
 	// // Not Found cache and continue.
@@ -1225,15 +1493,15 @@ QUERY:
 	}
 	// Cache the result.
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.SetML[M](key, *dest); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Database.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("list from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Cache[[]M]().Set(key, *dest)
 	}
 
@@ -1252,6 +1520,8 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Get")
+	defer done(err)
 
 	begin := time.Now()
 	var key string
@@ -1274,7 +1544,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil
 	}
 
@@ -1312,7 +1582,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableModel
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-	// 		logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// } else {
@@ -1326,12 +1596,12 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_cache))
-	// 		logger.Database.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("get from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// }
 	// if err != redis.ErrKeyNotExists {
-	// 	logger.Database.Error(err)
+	// 	logger.Cache.Error(err)
 	// 	return err
 	// }
 	// // Not Found cache, continue query database.
@@ -1364,15 +1634,15 @@ QUERY:
 	}
 	// // Cache the result.
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.SetM[M](key, dest); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Database.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("get from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
@@ -1385,6 +1655,8 @@ func (db *database[M]) Count(count *int64) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Count")
+	defer done(err)
 
 	begin := time.Now()
 	var key string
@@ -1400,7 +1672,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*count = _cache
-		logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
 		return
 	}
 
@@ -1423,11 +1695,11 @@ func (db *database[M]) Count(count *int64) (err error) {
 	// _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
 	// if _cache, err = redis.GetInt(key); err == nil {
 	// 	*count = _cache
-	// 	logger.Database.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("count from cache", "cost", time.Since(begin).String(), "key", key)
 	// 	return
 	// }
 	// if !errors.Is(err, redis.ErrKeyNotExists) {
-	// 	logger.Database.Error(err)
+	// 	logger.Cache.Error(err)
 	// 	return err
 	// }
 	// // NOT FOUND cache, continue query.
@@ -1443,20 +1715,20 @@ QUERY:
 		tableName = db.tableName
 	}
 	if err = db.db.Table(tableName).Model(*new(M)).Limit(-1).Count(count).Error; err != nil {
-		logger.Database.Error(err)
+		logger.Cache.Error(err)
 		return err
 	}
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.Set(key, *count); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 	//
 	// }
 	if db.enableCache {
-		logger.Database.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("count from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Int64.Set(key, *count)
 
 	}
@@ -1469,6 +1741,8 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("First")
+	defer done(err)
 
 	begin := time.Now()
 	var key string
@@ -1491,7 +1765,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -1526,7 +1800,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableModel
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-	// 		logger.Database.Infow("first and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("first and decode from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// } else {
@@ -1540,11 +1814,11 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_cache))
-	// 		logger.Database.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("first from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// 	if err != redis.ErrKeyNotExists {
-	// 		logger.Database.Error(err)
+	// 		logger.Cache.Error(err)
 	// 		return err
 	// 	}
 	// }
@@ -1578,15 +1852,15 @@ QUERY:
 	}
 	// // Cache the result.
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.SetM[M](key, dest); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Database.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("first from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
@@ -1598,6 +1872,8 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Last")
+	defer done(err)
 
 	begin := time.Now()
 	var key string
@@ -1620,7 +1896,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -1655,7 +1931,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableModel
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-	// 		logger.Database.Infow("last and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("last and decode from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// } else {
@@ -1669,12 +1945,12 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_cache))
-	// 		logger.Database.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("last from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// }
 	// if err != redis.ErrKeyNotExists {
-	// 	logger.Database.Error(err)
+	// 	logger.Cache.Error(err)
 	// 	return err
 	// }
 	// // Not Found cache, continue query database.
@@ -1707,15 +1983,15 @@ QUERY:
 	}
 	// // Cache the result.
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.SetM[M](key, dest); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Database.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("last from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
@@ -1727,6 +2003,8 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Take")
+	defer done(err)
 
 	begin := time.Now()
 	var key string
@@ -1749,7 +2027,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -1784,7 +2062,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableModel
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-	// 		logger.Database.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("get and decode from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// } else {
@@ -1798,12 +2076,12 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 			return ErrNotAddressableSlice
 	// 		}
 	// 		val.Elem().Set(reflect.ValueOf(_cache))
-	// 		logger.Database.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
+	// 		logger.Cache.Infow("take from cache", "cost", time.Since(begin).String(), "key", key)
 	// 		return nil // Found cache and return.
 	// 	}
 	// }
 	// if err != redis.ErrKeyNotExists {
-	// 	logger.Database.Error(err)
+	// 	logger.Cache.Error(err)
 	// 	return err
 	// }
 	// // Not Found cache, continue query database.
@@ -1836,28 +2114,31 @@ QUERY:
 	}
 	// // Cache the result.
 	// if db.enableCache && config.App.RedisConfig.Enable {
-	// 	logger.Database.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
+	// 	logger.Cache.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
 	// 	go func() {
 	// 		if err = redis.SetM[M](key, dest); err != nil {
-	// 			logger.Database.Error(err)
+	// 			logger.Cache.Error(err)
 	// 		}
 	// 	}()
 
 	//
 	// }
 	if db.enableCache {
-		logger.Database.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
+		logger.Cache.Infow("take from database", "cost", time.Since(begin).String(), "key", key)
 		lru.Cache[M]().Set(key, dest)
 	}
 	return nil
 }
 
 // Cleanup delete all records that column 'deleted_at' is not null.
-func (db *database[M]) Cleanup() error {
-	if err := db.prepare(); err != nil {
+func (db *database[M]) Cleanup() (err error) {
+	if err = db.prepare(); err != nil {
 		return err
 	}
 	defer db.reset()
+	done := db.trace("Cleanup")
+	defer done(err)
+
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 	typ := reflect.TypeOf(*new(M)).Elem()
 	tableName := reflect.New(typ).Interface().(M).GetTableName()
@@ -1867,22 +2148,107 @@ func (db *database[M]) Cleanup() error {
 	return db.db.Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 }
 
+// Health checks the database connectivity and basic operations.
+// It returns nil if the database is healthy, otherwise returns an error.
+func (db *database[M]) Health() error {
+	if err := db.prepare(); err != nil {
+		return err
+	}
+	defer db.reset()
+
+	begin := time.Now()
+
+	// 1.check database connection
+	if err := db.db.Exec("SELECT 1").Error; err != nil {
+		logger.Database.Errorw("database connection check failed",
+			"error", err,
+			"cost", time.Since(begin).String(),
+		)
+		return fmt.Errorf("database connection check failed: %w", err)
+	}
+
+	// 2.check database connection pool
+	sqlDB, err := db.db.DB()
+	if err != nil {
+		logger.Database.Errorw("get sql.DB instance failed",
+			"error", err,
+			"cost", time.Since(begin).String(),
+		)
+		return fmt.Errorf("get sql.DB instance failed: %w", err)
+	}
+
+	// check database connection pool config
+	stats := sqlDB.Stats()
+	if stats.OpenConnections >= stats.MaxOpenConnections {
+		logger.Database.Warnw("database connection pool is full",
+			"open", stats.OpenConnections,
+			"max", stats.MaxOpenConnections,
+			"in_use", stats.InUse,
+			"idle", stats.Idle,
+			"cost", time.Since(begin).String(),
+		)
+	}
+
+	// 3.check database response time
+	if err := sqlDB.PingContext(db.ctx); err != nil {
+		logger.Database.Errorw("database ping failed",
+			"error", err,
+			"cost", time.Since(begin).String(),
+		)
+		return fmt.Errorf("database ping failed: %w", err)
+	}
+
+	logger.Database.Infow("database health check passed",
+		"open_connections", stats.OpenConnections,
+		"in_use_connections", stats.InUse,
+		"idle_connections", stats.Idle,
+		"max_open_connections", stats.MaxOpenConnections,
+		"cost", time.Since(begin).String(),
+	)
+
+	return nil
+}
+
 // Database implement interface types.Database, its default database manipulator.
 // Database[M] returns a generic database manipulator with the `curd` capabilities.
 func Database[M types.Model](ctx ...context.Context) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")
 	}
-	c := context.TODO()
+	c := context.Background()
 	if len(ctx) > 0 {
 		if ctx[0] != nil {
 			c = ctx[0]
 		}
 	}
 	if strings.ToLower(config.App.LogLevel) == "debug" {
-		return &database[M]{db: DB.WithContext(c).Debug().Limit(defaultLimit)}
+		return &database[M]{db: DB.WithContext(c).Debug().Limit(defaultLimit), ctx: c}
 	}
-	return &database[M]{db: DB.WithContext(c).Limit(defaultLimit)}
+	return &database[M]{db: DB.WithContext(c).Limit(defaultLimit), ctx: c}
+}
+
+// trace returns timing function for database operations.
+// It logs operation name, table name and elapsed time when done function is called.
+//
+// NOTE: trace function must be called after `defer db.reset()`.
+func (db *database[M]) trace(op string) func(error) {
+	begin := time.Now()
+	return func(err error) {
+		if err != nil {
+			logger.Database.Errorw(op,
+				"table", reflect.TypeOf(*new(M)).Elem().Name(),
+				"cost", time.Since(begin).String(),
+				"cache_enabled", db.enableCache,
+				"error", err,
+			)
+		} else {
+			logger.Database.Infow(op,
+				"table", reflect.TypeOf(*new(M)).Elem().Name(),
+				"cost", time.Since(begin).String(),
+				"cache_enabled", db.enableCache,
+			)
+		}
+	}
 }
 
 // // User returns a generic database manipulator with the `curd` capabilities
