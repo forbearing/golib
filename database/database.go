@@ -581,6 +581,14 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithSelectRaw
+func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.db = db.db.Select(query, args...)
+	return db
+}
+
 // WithTransaction executes operations within a transaction.
 // It's typically used with DB.Transaction():
 // NOTE:
@@ -683,25 +691,25 @@ func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 	return db
 }
 
-// WithJoin adds JOIN clause to query.
+// WithJoinRaw adds JOIN clause to query.
 //
 // Basic Join:
 //
-//	db.WithJoin("JOIN users ON users.id = orders.user_id")
+//	db.WithJoinRaw("JOIN users ON users.id = orders.user_id")
 //
 // Left Join with conditions:
 //
-//	db.WithJoin("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1)
+//	db.WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1)
 //
 // Multiple Joins:
 //
-//	db.WithJoin("LEFT JOIN users ON users.id = orders.user_id").
-//	    WithJoin("LEFT JOIN products ON products.id = orders.product_id")
+//	db.WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id").
+//	    WithJoinRaw("LEFT JOIN products ON products.id = orders.product_id")
 //
 // Join with Select:
 //
-//	db.WithSelect("orders.*, users.name").
-//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id")
+//	db.WithSelectRaw("orders.*, users.name").
+//	    WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id")
 //
 // Complex Examples:
 //
@@ -722,40 +730,40 @@ func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 //
 //	var orders []Order
 //	err := Database[*Order]().
-//	    WithSelect("orders.*, users.name as user_name").
-//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id").
+//	    WithSelectRaw("orders.*, users.name as user_name").
+//	    WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id").
 //	    List(&orders)
 //
 // 2. Multi-table join query:
 //
 //	var details []OrderDetail
 //	err := Database[*OrderDetail]().
-//	    WithSelect("order_details.*, orders.amount, products.name as product_name").
-//	    WithJoin("LEFT JOIN orders ON orders.id = order_details.order_id").
-//	    WithJoin("LEFT JOIN products ON products.id = order_details.product_id").
+//	    WithSelectRaw("order_details.*, orders.amount, products.name as product_name").
+//	    WithJoinRaw("LEFT JOIN orders ON orders.id = order_details.order_id").
+//	    WithJoinRaw("LEFT JOIN products ON products.id = order_details.product_id").
 //	    List(&details)
 //
 // 3. Query orders with active users:
 //
 //	var orders []Order
 //	err := Database[*Order]().
-//	    WithSelect("orders.*, users.name").
-//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1).
+//	    WithSelectRaw("orders.*, users.name").
+//	    WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id AND users.active = ?", 1).
 //	    List(&orders)
 //
 // 4. Complex query with multiple conditions:
 //
 //	var orders []Order
 //	err := Database[*Order]().
-//	    WithSelect("orders.*, users.name, products.name as product_name").
-//	    WithJoin("LEFT JOIN users ON users.id = orders.user_id").
-//	    WithJoin("LEFT JOIN order_details ON order_details.order_id = orders.id").
-//	    WithJoin("LEFT JOIN products ON products.id = order_details.product_id").
+//	    WithSelectRaw("orders.*, users.name, products.name as product_name").
+//	    WithJoinRaw("LEFT JOIN users ON users.id = orders.user_id").
+//	    WithJoinRaw("LEFT JOIN order_details ON order_details.order_id = orders.id").
+//	    WithJoinRaw("LEFT JOIN products ON products.id = order_details.product_id").
 //	    WithTimeRange("orders.created_at", startTime, endTime).
 //	    WithOrder("orders.created_at DESC").
 //	    WithScope(page, size).
 //	    List(&orders)
-func (db *database[M]) WithJoin(query string, args ...any) types.Database[M] {
+func (db *database[M]) WithJoinRaw(query string, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -787,11 +795,11 @@ func (db *database[M]) WithJoin(query string, args ...any) types.Database[M] {
 //	db.WithGroup("user_id, order_status")
 //
 //	// Common usage with aggregate functions
-//	db.WithSelect("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
+//	db.WithSelectRaw("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
 //	   WithGroup("user_id")
 //
 // Note: WithGroup is typically used with aggregate functions (COUNT, SUM, AVG, etc.)
-// and should be combined with WithSelect to specify the grouped fields.
+// and should be combined with WithSelectRaw to specify the grouped fields.
 func (db *database[M]) WithGroup(name string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -810,7 +818,7 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 //	db.WithHaving("COUNT(*) > ?", 5)
 //
 //	// With aggregate functions
-//	db.WithSelect("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
+//	db.WithSelectRaw("user_id, COUNT(*) as order_count, SUM(amount) as total_amount").
 //	   WithGroup("user_id").
 //	   WithHaving("SUM(amount) > ?", 1000)
 //
