@@ -6,6 +6,7 @@ toolchain go1.23.0
 
 require (
 	github.com/allegro/bigcache v1.2.1
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/casbin/casbin/v2 v2.82.0
 	github.com/casbin/gorm-adapter/v3 v3.20.0
 	github.com/cloverstd/tcping v0.1.1
@@ -37,6 +38,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0
 	github.com/stretchr/testify v1.9.0
 	github.com/sunshineplan/imgconv v1.1.9
+	go.mongodb.org/mongo-driver/v2 v2.0.0-beta2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.27.0
@@ -126,7 +128,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.mongodb.org/mongo-driver/v2 v2.0.0-beta2 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
