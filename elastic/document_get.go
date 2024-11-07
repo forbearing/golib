@@ -1,78 +1,84 @@
 package elastic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/forbearing/golib/logger"
 )
 
-// Get retrieves a document from Elasticsearch by its ID.
-//
-// This function sends a GET request to Elasticsearch to fetch a document
-// with the specified ID from the given index.
-//
-// Parameters:
-//   - indexName: The name of the index containing the document.
-//   - id: The unique identifier of the document to retrieve.
-//
-// Returns:
-//   - map[string]any: The _source content of the retrieved document.
-//   - error: An error object which will be non-nil if any error occurs during the process.
-//
-// The function handles the following scenarios:
-//  1. Successfully retrieves the document and returns its _source content.
-//  2. Returns an error if the document is not found.
-//  3. Returns an error for any Elasticsearch query execution issues.
-//  4. Returns an error if there are problems parsing the response.
-//
-// Usage example:
-//
-//	doc, err := Get("my_index", "doc123")
-//	if err != nil {
-//	    log.Fatalf("Failed to get document: %v", err)
-//	}
-//	fmt.Printf("Retrieved document: %v\n", doc)
-//
-// Note: This function assumes that the Elasticsearch client is properly configured and connected.
-func (*document) Get(indexName string, id string) (map[string]any, error) {
+type GetRequest struct {
+	Source []string // 指定返回的字段
+}
+
+type GetResult struct {
+	ID     string         `json:"_id"`
+	Found  bool           `json:"found"`
+	Source map[string]any `json:"_source,omitempty"`
+}
+
+// Get retrieves a document from elasticsearch by index name and id
+func (*document) Get(ctx context.Context, indexName string, id string, req *GetRequest) (*GetResult, error) {
 	if err := _check(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("elasticsearch client check: %w", err)
+	}
+	if indexName == "" || id == "" {
+		return nil, fmt.Errorf("invalid parameters: indexName or id is empty")
+	}
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
 	begin := time.Now()
+	logger := logger.Elastic.With("index", indexName, "id", id)
 	defer func() {
-		logger.Elastic.Infow("get document", "index", indexName, "id", id, "cost", time.Since(begin).String())
+		logger.Infow("get document completed", "cost", time.Since(begin).String())
 	}()
 
-	// 执行 Get 请求
-	res, err := client.Get(indexName, id)
+	opts := []func(*esapi.GetRequest){client.Get.WithContext(ctx)}
+	if req != nil {
+		if len(req.Source) > 0 {
+			opts = append(opts, client.Get.WithSourceIncludes(req.Source...))
+		}
+	}
+
+	res, err := client.Get(indexName, id, opts...)
 	if err != nil {
-		err = fmt.Errorf("error getting document: %s", err)
-		logger.Elastic.Error(err)
-		return nil, err
+		logger.Errorw("failed to get document", "error", err)
+		return nil, fmt.Errorf("failed to get document: %w", err)
 	}
 	defer res.Body.Close()
 
-	// 检查响应状态
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		logger.Errorw("failed to read response body", "error", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return &GetResult{
+			ID:    id,
+			Found: false,
+		}, nil
+	}
 	if res.IsError() {
-		err = fmt.Errorf("error getting document, status: %s", res.Status())
-		logger.Elastic.Error(err)
-		return nil, err
+		logger.Errorw("elasticsearch error response",
+			"status", res.Status(),
+			"body", string(body),
+		)
+		return nil, fmt.Errorf("elasticsearch error [%s]: %s", res.Status(), string(body))
 	}
-
-	// 解析响应体
-	var result map[string]any
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		err = fmt.Errorf("error parsing the response body: %s", err)
-		logger.Elastic.Error(err)
-		return nil, err
+	var result GetResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		logger.Errorw("failed to decode response",
+			"error", err,
+			"body", string(body),
+		)
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-
-	// 返回文档源数据
-	if source, found := result["_source"].(map[string]any); found {
-		return source, nil
-	}
-	return nil, fmt.Errorf("_source not found in the response")
+	return &result, nil
 }

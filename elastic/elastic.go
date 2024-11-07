@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"go.uber.org/zap"
@@ -79,6 +80,7 @@ func _ensureConnection() {
 	}
 }
 
+// _check will check the client and return an error if it's nil or invalid.
 func _check() error {
 	if client == nil || client == new(elasticsearch.Client) {
 		return errors.New("elasticsearch client is nil")
@@ -178,6 +180,18 @@ func SearchTimestamp(index string, size ...int) ([]byte, error) {
 type Pagination struct {
 	Page int // page number
 	Size int // page size
+}
+
+func handleError(fn func() (*esapi.Response, error), format string) error {
+	res, err := fn()
+	if err != nil {
+		return fmt.Errorf(format, err.Error())
+	}
+	defer res.Body.Close()
+	if res.IsError() {
+		return fmt.Errorf(format, res.String())
+	}
+	return nil
 }
 
 /*

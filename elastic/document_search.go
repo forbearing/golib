@@ -5,265 +5,185 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"strconv"
+	"time"
+
+	"github.com/forbearing/golib/logger"
 )
 
-// Search performs a simple Search on a single field.
-//
-// Parameters:
-//   - indexName: The name of the index to Search.
-//   - field: The field to Search in.
-//   - value: The value to Search for.
-//
-// Returns:
-//   - []map[string]any: A slice of documents matching the Search criteria.
-//   - error: An error object which will be non-nil if any error occurs during the process.
-func (*document) Search(indexName, field, value string, pagination ...*Pagination) ([]map[string]any, int64, error) {
-	if err := _check(); err != nil {
-		return nil, 0, err
-	}
+const (
+	DefaultTimeFormat = "strict_date_optional_time||epoch_millis"
+	DefaultTimeField  = "created_at"
+	DefaultSortOrder  = "desc"
+)
 
-	from, size := _paginationValue(pagination...)
-	query := map[string]any{
-		"query": map[string]any{
-			"match": map[string]any{
-				field: value,
-			},
-		},
-	}
-
-	return _searchWithPagination(indexName, query, from, size)
+// SearchRequest represents the search parameters
+type SearchRequest struct {
+	Query       map[string]any   `json:"query,omitempty"`
+	From        int              `json:"from,omitempty"`
+	Size        int              `json:"size,omitempty"`
+	Sort        []map[string]any `json:"sort,omitempty"`
+	Source      []string         `json:"_source,omitempty"`
+	SearchAfter []any            `json:"search_after,omitempty"`
 }
 
-// SearchMulti performs a search across multiple fields.
-//
-// Parameters:
-//   - indexName: The name of the index to search.
-//   - queries: A map where keys are field names and values are search terms.
-//
-// Returns:
-//   - []map[string]any: A slice of documents matching the search criteria.
-//   - error: An error object which will be non-nil if any error occurs during the process.
-func (*document) SearchMulti(indexName string, queries map[string]string, pagination ...*Pagination) ([]map[string]any, int64, error) {
-	if err := _check(); err != nil {
-		return nil, 0, err
-	}
-
-	from, size := _paginationValue(pagination...)
-	shouldClauses := make([]map[string]any, 0, len(queries))
-	for field, value := range queries {
-		shouldClauses = append(shouldClauses, map[string]any{
-			"match": map[string]any{
-				field: value,
-			},
-		})
-	}
-	query := map[string]any{
-		"query": map[string]any{
-			"bool": map[string]any{
-				"should": shouldClauses,
-			},
-		},
-	}
-
-	return _searchWithPagination(indexName, query, from, size)
+// SearchResult represents the search response
+type SearchResult struct {
+	Total    int64       `json:"total"`
+	MaxScore *float64    `json:"max_score,omitempty"`
+	Hits     []SearchHit `json:"hits"`
 }
 
-// SearchRange performs a range query and returns paginated results.
-//
-// Parameters:
-//   - indexName: The name of the Elasticsearch index to search.
-//   - field: The name of the field to perform the range query on.
-//   - gte: The value for "greater than or equal to". Can be any type. If nil, no lower bound is set.
-//   - lte: The value for "less than or equal to". Can be any type. If nil, no upper bound is set.
-//   - pagination: Optional pagination parameters. If provided, should be a pointer to a Pagination struct.
-//     If not provided or nil, default pagination settings will be used (page 1, 1000 items per page).
-//
-// Returns:
-//   - []map[string]any: A slice containing the query results, where each result is a map.
-//   - int64: The total number of documents matching the query criteria.
-//   - error: An error if one occurred, otherwise nil.
-//
-// Description:
-//
-//	This function executes a range query on the specified Elasticsearch index. It allows users to specify
-//	a field and a range of values for that field (greater than or equal to and/or less than or equal to).
-//	The function supports pagination, which can be controlled via the optional Pagination parameter.
-//	If no pagination parameter is provided, default settings will be used.
-//
-// Example:
-//
-//	results, total, err := SearchRange("my_index", "age", 18, 30, &Pagination{Page: 1, Size: 20})
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	fmt.Printf("Found %d results, total %d matches\n", len(results), total)
-//
-// NOTE:
-//   - If both gte and lte are nil, it will return all non-null values for the specified field.
-//   - This function uses the From/Size pagination method, which may have performance issues for large datasets.
-//   - if field type is time/date, format must be RFC3339
-func (*document) SearchRange(indexName, field string, gte, lte any, pagination ...*Pagination) ([]map[string]any, int64, error) {
-	if err := _check(); err != nil {
-		return nil, 0, err
-	}
+// SearchHit represents a single hit in search results
+type SearchHit struct {
+	ID     string         `json:"_id"`
+	Score  *float64       `json:"_score,omitempty"`
+	Source map[string]any `json:"_source"`
+}
 
-	from, size := _paginationValue(pagination...)
-	rangeQuery := make(map[string]any)
-	if gte != nil {
-		rangeQuery["gte"] = gte
+// Search performs a search operation on the specified index
+// default size is 10
+func (*document) Search(ctx context.Context, indexName string, req *SearchRequest) (*SearchResult, error) {
+	if err := _check(); err != nil {
+		return nil, fmt.Errorf("elasticsearch client check: %w", err)
 	}
-	if lte != nil {
-		rangeQuery["lte"] = lte
+	if indexName == "" {
+		return nil, fmt.Errorf("index name cannot be empty")
 	}
-	query := map[string]any{
-		"query": map[string]any{
-			"range": map[string]any{
-				field: rangeQuery,
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	// Set default values if not provided
+	if req.Size <= 0 {
+		req.Size = 10
+	}
+	if req.From < 0 {
+		req.From = 0
+	}
+	// SearchAfter require Sort to be set.
+	if len(req.Sort) == 0 {
+		req.Sort = []map[string]any{
+			{
+				"_doc": map[string]any{ // 使用 _doc 作为第二排序字段
+					"order": "asc",
+				},
 			},
-		},
-	}
-
-	return _searchWithPagination(indexName, query, from, size)
-}
-
-// SearchRaw performs a raw Elasticsearch query and returns paginated results.
-//
-// Parameters:
-//   - indexName: The name of the Elasticsearch index to search.
-//   - query: A map[string]any representing the raw Elasticsearch query.
-//   - pagination: Optional pagination parameters. If provided, should be a pointer to a Pagination struct.
-//     If not provided or nil, default pagination settings will be used (page 1, 1000 items per page).
-//
-// Returns:
-//   - []map[string]any: A slice containing the query results, where each result is a map.
-//   - int64: The total number of documents matching the query criteria.
-//   - error: An error if one occurred, otherwise nil.
-//
-// Description:
-//
-//	This function executes a raw Elasticsearch query on the specified index. It allows users to provide
-//	any valid Elasticsearch query structure. The function supports pagination, which can be controlled
-//	via the optional Pagination parameter. If no pagination parameter is provided, default settings will be used.
-//
-// Example:
-//
-//	query := map[string]any{
-//	    "query": map[string]any{
-//	        "match": map[string]any{
-//	            "title": "elasticsearch",
-//	        },
-//	    },
-//	}
-//	results, total, err := SearchRaw("my_index", query, &Pagination{Page: 1, Size: 20})
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	fmt.Printf("Found %d results, total %d matches\n", len(results), total)
-//
-// NOTE:
-//   - This function uses the From/Size pagination method, which may have performance issues for large datasets.
-//   - The provided query should be a valid Elasticsearch query structure.
-func (*document) SearchRaw(indexName string, query map[string]any, pagination ...*Pagination) ([]map[string]any, int64, error) {
-	if err := _check(); err != nil {
-		return nil, 0, err
-	}
-	from, size := _paginationValue(pagination...)
-	return _searchWithPagination(indexName, query, from, size)
-}
-
-func _paginationValue(pagination ...*Pagination) (from int, size int) {
-	pageSize := 1000
-	pageNum := 1
-	from = (pageNum - 1) * pageSize
-	if len(pagination) > 0 {
-		if pagination[0] != nil {
-			pageSize = pagination[0].Size
-			pageNum = pagination[0].Page
-			from = (pageNum - 1) * pageSize
 		}
 	}
-	return from, pageSize
-}
 
-// _search is a helper function to execute the _search request.
-func _search(indexName string, query map[string]any) ([]map[string]any, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(query); err != nil {
-		return nil, fmt.Errorf("error encoding query: %w", err)
+	begin := time.Now()
+	logger := logger.Elastic.With(
+		"index", indexName,
+		"from", strconv.Itoa(req.From),
+		"size", strconv.Itoa(req.Size),
+	)
+	defer func() {
+		logger.Infow("search completed", "cost", time.Since(begin).String())
+	}()
+
+	// Convert request to JSON
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal search request: %w", err)
 	}
 
+	// Perform search request
 	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
+		client.Search.WithContext(ctx),
 		client.Search.WithIndex(indexName),
-		client.Search.WithBody(&buf),
-		client.Search.WithTrackTotalHits(true),
-		client.Search.WithPretty(),
+		client.Search.WithBody(bytes.NewReader(body)),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error executing search: %w", err)
+		logger.Errorw("failed to execute search", "error", err)
+		return nil, fmt.Errorf("failed to execute search: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, fmt.Errorf("search request failed: %s", res.Status())
+		body, _ := io.ReadAll(res.Body)
+		logger.Errorw("elasticsearch error response",
+			"status", res.Status(),
+			"body", string(body),
+		)
+		return nil, fmt.Errorf("elasticsearch error [%s]: %s", res.Status(), string(body))
 	}
-
-	var result map[string]any
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("error parsing the response body: %w", err)
+	var esRes map[string]any
+	if err := json.NewDecoder(res.Body).Decode(&esRes); err != nil {
+		logger.Errorw("failed to decode response", "error", err)
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-
-	hits, _ := result["hits"].(map[string]any)["hits"].([]any)
-	docs := make([]map[string]any, len(hits))
-
-	for i, hit := range hits {
-		source, _ := hit.(map[string]any)["_source"].(map[string]any)
-		docs[i] = source
-	}
-
-	return docs, nil
+	return parseSearchResult(esRes)
 }
 
-// _searchWithPagination is a helper function to execute the _search request.
-func _searchWithPagination(indexName string, query map[string]any, from, size int) ([]map[string]any, int64, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(query); err != nil {
-		return nil, 0, fmt.Errorf("error encoding query: %w", err)
-	}
-
-	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
-		client.Search.WithIndex(indexName),
-		client.Search.WithBody(&buf),
-		client.Search.WithTrackTotalHits(true),
-		client.Search.WithFrom(from),
-		client.Search.WithSize(size),
-		client.Search.WithPretty(),
+// parseSearchResult
+// 辅助函数：解析搜索结果
+func parseSearchResult(esRes map[string]any) (*SearchResult, error) {
+	var (
+		ok       bool
+		id       string
+		err      error
+		total    int64
+		maxScore float64
+		hits     map[string]any
+		hitMap   map[string]any
+		source   map[string]any
+		hitsList []any
 	)
-	if err != nil {
-		return nil, 0, fmt.Errorf("error executing search: %w", err)
+
+	// Extract hits with type assertion safety
+	if hits, ok = esRes["hits"].(map[string]any); !ok {
+		return nil, fmt.Errorf("invalid response format: hits not found or invalid type")
 	}
-	defer res.Body.Close()
+	// Process search result with safe type assertions
+	if total, err = extractTotal(hits); err != nil {
+		return nil, fmt.Errorf("failed to extract total: %w", err)
+	}
+	result := &SearchResult{Total: total}
+	// Safely extract max_score
+	if maxScore, ok = hits["max_score"].(float64); ok {
+		result.MaxScore = &maxScore
+	}
+	// Process hits with safe type assertions
+	if hitsList, ok = hits["hits"].([]any); !ok {
+		return nil, fmt.Errorf("invalid response format: hits list not found or invalid type")
+	}
+	result.Hits = make([]SearchHit, len(hitsList))
 
-	if res.IsError() {
-		return nil, 0, fmt.Errorf("search request failed: %s", res.Status())
+	for i, hit := range hitsList {
+		if hitMap, ok = hit.(map[string]any); !ok {
+			return nil, fmt.Errorf("invalid hit format at index %d", i)
+		}
+		if id, ok = hitMap["_id"].(string); !ok {
+			return nil, fmt.Errorf("invalid or missing _id at index %d", i)
+		}
+		if source, ok = hitMap["_source"].(map[string]any); !ok {
+			return nil, fmt.Errorf("invalid or missing _source at index %d", i)
+		}
+		var score *float64
+		if scoreVal, ok := hitMap["_score"].(float64); ok {
+			score = &scoreVal
+		}
+		result.Hits[i] = SearchHit{
+			ID:     id,
+			Source: source,
+			Score:  score,
+		}
+	}
+	return result, nil
+}
+
+// 辅助函数：安全地提取总数
+func extractTotal(hits map[string]any) (int64, error) {
+	total, ok := hits["total"].(map[string]any)
+	if !ok {
+		return 0, fmt.Errorf("invalid total format")
 	}
 
-	var result map[string]any
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, 0, fmt.Errorf("error parsing the response body: %w", err)
+	value, ok := total["value"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("invalid total value format")
 	}
 
-	hitsMap, _ := result["hits"].(map[string]any)
-	hits, _ := hitsMap["hits"].([]any)
-	totalHits, _ := hitsMap["total"].(map[string]any)["value"].(float64)
-
-	docs := make([]map[string]any, len(hits))
-
-	for i, hit := range hits {
-		source, _ := hit.(map[string]any)["_source"].(map[string]any)
-		docs[i] = source
-	}
-
-	return docs, int64(totalHits), nil
+	return int64(value), nil
 }
