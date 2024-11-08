@@ -223,7 +223,7 @@ func RemovePrefix(prefix string) error {
 
 // modelMarshaler
 // MarshalBinary, UnmarshalBinary 的 receiver 不能是指针, 否则 redis 会报错:
-// redis: can't marshal redis.modelMarshaler[*asset-system/model.FeishuUser] (implement encoding.BinaryMarshaler)
+// redis: can't marshal redis.modelMarshaler[*myproject/model.FeishuUser] (implement encoding.BinaryMarshaler)
 //
 // MarshalJSON, UnmarshalJSON 的 receiver 必须是指针, 否则 panic
 type modelMarshaler[M types.Model] struct {
