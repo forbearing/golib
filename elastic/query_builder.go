@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+const (
+	defaultSize       = 10
+	defaultFrom       = 0
+	defaultTimeFormat = "strict_date_optional_time||epoch_millis"
+
+	Asc  Order = "asc"
+	Desc Order = "desc"
+)
+
+type Order string
+
 // QueryBuilder 用于构建 Elasticsearch 查询
 // 支持 must, must_not, should, filter 等查询条件
 // 支持分页、排序、字段过滤和 search_after
@@ -22,17 +33,6 @@ type QueryBuilder struct {
 	minimumShouldMatch any
 }
 
-type Order string
-
-const (
-	defaultSize       = 10
-	defaultFrom       = 0
-	defaultTimeFormat = "strict_date_optional_time||epoch_millis"
-
-	Asc  Order = "asc"
-	Desc Order = "desc"
-)
-
 // NewQueryBuilder 创建一个新的查询构建器
 // 默认 size=10, from=0
 func NewQueryBuilder() *QueryBuilder {
@@ -42,14 +42,16 @@ func NewQueryBuilder() *QueryBuilder {
 	}
 }
 
-// 基础查询方法
-// Must, MustNot, Should, Filter
-//
-// 便捷方法：常用查询条件
-// Term, Match, Range
-//
-// 分页和排序
-// Size, From, Sort
+// QueryBuilder 添加新方法
+func (qb *QueryBuilder) Bool(fn func(builder *QueryBuilder)) *QueryBuilder {
+	nestedBuilder := NewQueryBuilder()
+	fn(nestedBuilder)
+	query := nestedBuilder.BuildQuery()
+	if query != nil { // 只有在query不为nil时才添加
+		qb.Must(query)
+	}
+	return qb
+}
 
 func (qb *QueryBuilder) Must(query map[string]any) *QueryBuilder {
 	qb.must = append(qb.must, query)
@@ -63,6 +65,11 @@ func (qb *QueryBuilder) MustNot(query map[string]any) *QueryBuilder {
 
 func (qb *QueryBuilder) Should(query map[string]any) *QueryBuilder {
 	qb.should = append(qb.should, query)
+	return qb
+}
+
+func (qb *QueryBuilder) MinimumShouldMatch(minimum any) *QueryBuilder {
+	qb.minimumShouldMatch = minimum
 	return qb
 }
 
@@ -217,11 +224,6 @@ func (qb *QueryBuilder) Sort(field string, order Order) *QueryBuilder {
 	return qb
 }
 
-func (qb *QueryBuilder) MinimumShouldMatch(minimum any) *QueryBuilder {
-	qb.minimumShouldMatch = minimum
-	return qb
-}
-
 func (qb *QueryBuilder) Validate() error {
 	if qb.size < 0 {
 		return fmt.Errorf("size cannot be negative")
@@ -298,18 +300,12 @@ func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 	}, nil
 }
 
-// Clear 清除所有查询条件
-func (qb *QueryBuilder) Clear() *QueryBuilder {
-	qb.must = nil
-	qb.mustNot = nil
-	qb.should = nil
-	qb.filter = nil
-	qb.size = defaultSize
-	qb.from = defaultFrom
-	qb.sort = nil
-	qb.source = nil
-	qb.searchAfter = nil
-	return qb
+func (qb *QueryBuilder) BuildQuery() map[string]any {
+	req, err := qb.Build()
+	if err != nil || req.Query == nil {
+		return nil // 构建失败返回 nil
+	}
+	return req.Query
 }
 
 func (qb *QueryBuilder) String() string {
@@ -324,85 +320,4 @@ func (qb *QueryBuilder) String() string {
 	}
 
 	return string(bytes)
-}
-
-// Clone 创建查询构建器的副本
-// Clone 创建查询构建器的副本
-func (qb *QueryBuilder) Clone() *QueryBuilder {
-	clone := &QueryBuilder{
-		size:        qb.size,
-		from:        qb.from,
-		searchAfter: qb.searchAfter, // 注意：这里可能也需要深拷贝，取决于具体类型
-	}
-	// 使用深度复制
-	if len(qb.must) > 0 {
-		clone.must = deepCopyMapSlice(qb.must)
-	}
-	if len(qb.mustNot) > 0 {
-		clone.mustNot = deepCopyMapSlice(qb.mustNot)
-	}
-	if len(qb.should) > 0 {
-		clone.should = deepCopyMapSlice(qb.should)
-	}
-	if len(qb.filter) > 0 {
-		clone.filter = deepCopyMapSlice(qb.filter)
-	}
-	if len(qb.sort) > 0 {
-		clone.sort = deepCopyMapSlice(qb.sort)
-	}
-	if len(qb.source) > 0 {
-		// source 是 []string，直接复制即可
-		clone.source = make([]string, len(qb.source))
-		copy(clone.source, qb.source)
-	}
-
-	return clone
-}
-
-// Clone 应该深度复制 map 结构，而不是简单的 copy
-func deepCopyMapSlice(src []map[string]any) []map[string]any {
-	if src == nil {
-		return nil
-	}
-	dst := make([]map[string]any, len(src))
-	for i, m := range src {
-		dst[i] = deepCopyMap(m)
-	}
-	return dst
-}
-
-func deepCopyMap(src map[string]any) map[string]any {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]any, len(src))
-	for k, v := range src {
-		switch val := v.(type) {
-		case map[string]any:
-			dst[k] = deepCopyMap(val)
-		case []any:
-			dst[k] = deepCopySlice(val)
-		default:
-			dst[k] = val
-		}
-	}
-	return dst
-}
-
-func deepCopySlice(src []any) []any {
-	if src == nil {
-		return nil
-	}
-	dst := make([]any, len(src))
-	for i, v := range src {
-		switch val := v.(type) {
-		case map[string]any:
-			dst[i] = deepCopyMap(val)
-		case []any:
-			dst[i] = deepCopySlice(val)
-		default:
-			dst[i] = val
-		}
-	}
-	return dst
 }

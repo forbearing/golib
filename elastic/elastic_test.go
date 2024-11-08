@@ -170,6 +170,7 @@ func TestDocumentSearch(t *testing.T) {
 			req.SearchAfter = []any{lastHit.Source["created_at"]}
 			// 如果是按照ID进行排序，则传入ID值
 			// 如果是安装 created_at 进行排序，则传入 created_at 值
+
 			resp, err = elastic.Document.Search(context.Background(), Index, req)
 			assert.NoError(t, err)
 			for i := range resp.Hits {
@@ -200,6 +201,7 @@ func TestDocumentSearchNormal(t *testing.T) {
 	}
 
 	// 执行搜索
+
 	result, err := elastic.Document.Search(context.TODO(), Index, req)
 	assert.NoError(t, err)
 	// 打印搜索结果
@@ -251,6 +253,7 @@ func TestDocumentSearchTimeRange(t *testing.T) {
 		Sort("created_at", elastic.Desc)
 	req2, err := query.Build()
 	assert.NoError(t, err)
+
 	result2, err := elastic.Document.Search(context.TODO(), Index, req2)
 	assert.NoError(t, err)
 	for _, hit := range result2.Hits {
@@ -288,6 +291,7 @@ func TestDocumentSearchAfter(t *testing.T) {
 	}
 
 	// 执行搜索
+
 	result, err := elastic.Document.Search(context.TODO(), Index, req)
 	assert.NoError(t, err)
 	for _, hit := range result.Hits {
@@ -307,5 +311,66 @@ func TestDocumentSearchAfter(t *testing.T) {
 	assert.NoError(t, err)
 	for _, hit := range result2.Hits {
 		fmt.Println(hit)
+	}
+}
+
+func TestDocumentBoolQueryBuilder(t *testing.T) {
+	userId := "7336820045630406684"
+	peerUserId := "7156029937089069057"
+	{
+
+		query := elastic.NewQueryBuilder().
+			// 基础条件（and 部分）
+			Term("chat_type.keyword", "direct").
+			Term("type.keyword", "message_send").
+			// 嵌套的 or 条件
+			Bool(func(bq *elastic.QueryBuilder) {
+				// 第一组条件 (message_user_id: A and message_peer_user_id: B)
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				// 第二组条件 (message_user_id: B and message_peer_user_id: A)
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserId).Term("message_peer_user_id.keyword", userId).BuildQuery())
+				// 设置 should 至少匹配一个条件
+				bq.MinimumShouldMatch(1)
+			}).Size(1000)
+
+		if _, err := query.Build(); err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(query.String())
+	}
+
+	{
+
+		query := elastic.NewQueryBuilder().
+			Term("chat_type.keyword", "direct").
+			Bool(func(bq *elastic.QueryBuilder) {
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_send").BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_recv").BuildQuery())
+				bq.MinimumShouldMatch(1)
+			}).
+			Bool(func(bq *elastic.QueryBuilder) {
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserId).Term("message_peer_user_id.keyword", userId).BuildQuery())
+				bq.MinimumShouldMatch(1)
+			})
+
+		if _, err := query.Build(); err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(query.String())
+	}
+
+	{
+		query := elastic.NewQueryBuilder().
+			Term("chat_type.keyword", "direct").
+			Bool(func(bq *elastic.QueryBuilder) {
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_send").Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_recv").Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				bq.MinimumShouldMatch(1)
+			})
+		if _, err := query.Build(); err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(query.String())
 	}
 }
