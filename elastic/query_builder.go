@@ -17,9 +17,9 @@ const (
 
 type Order string
 
-// QueryBuilder 用于构建 Elasticsearch 查询
-// 支持 must, must_not, should, filter 等查询条件
-// 支持分页、排序、字段过滤和 search_after
+// QueryBuilder helps build Elasticsearch queries.
+// It supports must, must_not, should, filter clauses,
+// pagination, sorting, field filtering and search_after.
 type QueryBuilder struct {
 	must               []map[string]any
 	mustNot            []map[string]any
@@ -33,8 +33,7 @@ type QueryBuilder struct {
 	minimumShouldMatch any
 }
 
-// NewQueryBuilder 创建一个新的查询构建器
-// 默认 size=10, from=0
+// NewQueryBuilder creates a new query builder with default size=10 and from=0
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{
 		size: defaultSize,
@@ -42,8 +41,8 @@ func NewQueryBuilder() *QueryBuilder {
 	}
 }
 
-// QueryBuilder 添加新方法
-func (qb *QueryBuilder) Bool(fn func(builder *QueryBuilder)) *QueryBuilder {
+// Bool adds a nested bool query
+func (qb *QueryBuilder) Bool(fn func(qb *QueryBuilder)) *QueryBuilder {
 	nestedBuilder := NewQueryBuilder()
 	fn(nestedBuilder)
 	query := nestedBuilder.BuildQuery()
@@ -53,31 +52,37 @@ func (qb *QueryBuilder) Bool(fn func(builder *QueryBuilder)) *QueryBuilder {
 	return qb
 }
 
+// Must adds a must clause to the bool query
 func (qb *QueryBuilder) Must(query map[string]any) *QueryBuilder {
 	qb.must = append(qb.must, query)
 	return qb
 }
 
+// MustNot adds a must_not clause to the bool query
 func (qb *QueryBuilder) MustNot(query map[string]any) *QueryBuilder {
 	qb.mustNot = append(qb.mustNot, query)
 	return qb
 }
 
+// Should adds a should clause to the bool query
 func (qb *QueryBuilder) Should(query map[string]any) *QueryBuilder {
 	qb.should = append(qb.should, query)
 	return qb
 }
 
+// MinimumShouldMatch sets minimum_should_match for should clauses
 func (qb *QueryBuilder) MinimumShouldMatch(minimum any) *QueryBuilder {
 	qb.minimumShouldMatch = minimum
 	return qb
 }
 
+// Filter adds a filter clause to the bool query
 func (qb *QueryBuilder) Filter(query map[string]any) *QueryBuilder {
 	qb.filter = append(qb.filter, query)
 	return qb
 }
 
+// Term adds a term query to must clauses
 func (qb *QueryBuilder) Term(field string, value any) *QueryBuilder {
 	return qb.Must(map[string]any{
 		"term": map[string]any{
@@ -86,6 +91,7 @@ func (qb *QueryBuilder) Term(field string, value any) *QueryBuilder {
 	})
 }
 
+// TermNot adds a term query to must_not clauses
 func (qb *QueryBuilder) TermNot(field string, value any) *QueryBuilder {
 	return qb.MustNot(map[string]any{
 		"term": map[string]any{
@@ -94,6 +100,7 @@ func (qb *QueryBuilder) TermNot(field string, value any) *QueryBuilder {
 	})
 }
 
+// TermShould adds a term query to should clauses
 func (qb *QueryBuilder) TermShould(field string, value any) *QueryBuilder {
 	return qb.Should(map[string]any{
 		"term": map[string]any{
@@ -102,6 +109,7 @@ func (qb *QueryBuilder) TermShould(field string, value any) *QueryBuilder {
 	})
 }
 
+// Match adds a match query to must clauses
 func (qb *QueryBuilder) Match(field string, value any) *QueryBuilder {
 	return qb.Must(map[string]any{
 		"match": map[string]any{
@@ -110,6 +118,7 @@ func (qb *QueryBuilder) Match(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchNot adds a match query to must_not clauses
 func (qb *QueryBuilder) MatchNot(field string, value any) *QueryBuilder {
 	return qb.MustNot(map[string]any{
 		"match": map[string]any{
@@ -118,6 +127,7 @@ func (qb *QueryBuilder) MatchNot(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchShould adds a match query to should clauses
 func (qb *QueryBuilder) MatchShould(field string, value any) *QueryBuilder {
 	return qb.Should(map[string]any{
 		"match": map[string]any{
@@ -126,6 +136,7 @@ func (qb *QueryBuilder) MatchShould(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchPhrase adds a match_phrase query to must clauses
 func (qb *QueryBuilder) MatchPhrase(field string, value any) *QueryBuilder {
 	return qb.Must(map[string]any{
 		"match_phrase": map[string]any{
@@ -134,6 +145,7 @@ func (qb *QueryBuilder) MatchPhrase(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchPhraseNot adds a match_phrase query to must_not clauses
 func (qb *QueryBuilder) MatchPhraseNot(field string, value any) *QueryBuilder {
 	return qb.MustNot(map[string]any{
 		"match_phrase": map[string]any{
@@ -142,6 +154,7 @@ func (qb *QueryBuilder) MatchPhraseNot(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchPhraseShould adds a match_phrase query to should clauses
 func (qb *QueryBuilder) MatchPhraseShould(field string, value any) *QueryBuilder {
 	return qb.Should(map[string]any{
 		"match_phrase": map[string]any{
@@ -150,13 +163,14 @@ func (qb *QueryBuilder) MatchPhraseShould(field string, value any) *QueryBuilder
 	})
 }
 
-// MatchAll 添加匹配所有文档的查询
+// MatchAll adds a match_all query
 func (qb *QueryBuilder) MatchAll() *QueryBuilder {
 	return qb.Must(map[string]any{
 		"match_all": map[string]any{},
 	})
 }
 
+// Range adds a range query to filter clauses
 func (qb *QueryBuilder) Range(field string, ranges map[string]any) *QueryBuilder {
 	return qb.Filter(map[string]any{
 		"range": map[string]any{
@@ -165,6 +179,7 @@ func (qb *QueryBuilder) Range(field string, ranges map[string]any) *QueryBuilder
 	})
 }
 
+// Exists adds an exists query to must clauses
 func (qb *QueryBuilder) Exists(field string) *QueryBuilder {
 	return qb.Must(map[string]any{
 		"exists": map[string]any{
@@ -173,6 +188,7 @@ func (qb *QueryBuilder) Exists(field string) *QueryBuilder {
 	})
 }
 
+// TimeRange adds a time range query with RFC3339 format
 func (qb *QueryBuilder) TimeRange(field string, start, end time.Time) *QueryBuilder {
 	return qb.Range(field, map[string]any{
 		"gte":    start.Format(time.RFC3339),
@@ -181,6 +197,7 @@ func (qb *QueryBuilder) TimeRange(field string, start, end time.Time) *QueryBuil
 	})
 }
 
+// TimeGte adds a time range query with greater than or equal condition
 func (qb *QueryBuilder) TimeGte(field string, tm time.Time) *QueryBuilder {
 	return qb.Range(field, map[string]any{
 		"gte":    tm.Format(time.RFC3339),
@@ -188,6 +205,7 @@ func (qb *QueryBuilder) TimeGte(field string, tm time.Time) *QueryBuilder {
 	})
 }
 
+// TimeLte adds a time range query with less than or equal condition
 func (qb *QueryBuilder) TimeLte(field string, tm time.Time) *QueryBuilder {
 	return qb.Range(field, map[string]any{
 		"lte":    tm.Format(time.RFC3339),
@@ -195,6 +213,7 @@ func (qb *QueryBuilder) TimeLte(field string, tm time.Time) *QueryBuilder {
 	})
 }
 
+// Size sets the size parameter, must be positive
 func (qb *QueryBuilder) Size(size int) *QueryBuilder {
 	if size > 0 {
 		qb.size = size
@@ -202,6 +221,7 @@ func (qb *QueryBuilder) Size(size int) *QueryBuilder {
 	return qb
 }
 
+// From sets the from parameter, must be non-negative
 func (qb *QueryBuilder) From(from int) *QueryBuilder {
 	if from >= 0 {
 		qb.from = from
@@ -209,6 +229,7 @@ func (qb *QueryBuilder) From(from int) *QueryBuilder {
 	return qb
 }
 
+// Sort adds a sort condition
 func (qb *QueryBuilder) Sort(field string, order Order) *QueryBuilder {
 	if field == "" {
 		return qb
@@ -224,6 +245,7 @@ func (qb *QueryBuilder) Sort(field string, order Order) *QueryBuilder {
 	return qb
 }
 
+// Validate checks if the query parameters are valid
 func (qb *QueryBuilder) Validate() error {
 	if qb.size < 0 {
 		return fmt.Errorf("size cannot be negative")
@@ -240,20 +262,22 @@ func (qb *QueryBuilder) Validate() error {
 	return nil
 }
 
-// Source 设置返回字段
-// 不设置则返回全部字段
-// 设置空数组则不返回任何字段
+// Source sets the _source field filtering
+// if fields is empty, all fields will be returned
+// if fields is not empty, only the specified fields will be returned
+// if fields is nil or empty array, no fields will be returned
 func (qb *QueryBuilder) Source(fields ...string) *QueryBuilder {
 	qb.source = fields
 	return qb
 }
 
-// SearchAfter 设置 search_after 值
+// SearchAfter sets the search_after parameter for deep pagination
 func (qb *QueryBuilder) SearchAfter(value ...any) *QueryBuilder {
 	qb.searchAfter = value
 	return qb
 }
 
+// Build creates a SearchRequest with validation
 func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 	if err := qb.Validate(); err != nil {
 		return nil, err
@@ -300,14 +324,22 @@ func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 	}, nil
 }
 
+// BuildForce creates a SearchRequest without validation
+func (qb *QueryBuilder) BuildForce() *SearchRequest {
+	req, _ := qb.Build()
+	return req
+}
+
+// BuildQuery creates the query part of SearchRequest
 func (qb *QueryBuilder) BuildQuery() map[string]any {
 	req, err := qb.Build()
 	if err != nil || req.Query == nil {
-		return nil // 构建失败返回 nil
+		return nil
 	}
 	return req.Query
 }
 
+// String returns the JSON representation of the query
 func (qb *QueryBuilder) String() string {
 	req, err := qb.Build()
 	if err != nil {
