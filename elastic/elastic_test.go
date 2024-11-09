@@ -2,7 +2,9 @@ package elastic_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -373,4 +375,86 @@ func TestDocumentBoolQueryBuilder(t *testing.T) {
 		}
 		fmt.Println(query.String())
 	}
+}
+
+func TestDocumentSearchAsc(t *testing.T) {
+	dateStr := "2024-10-29T10:34:35.991+08:00" // message_text: "abcdefg"
+	date, _ := dateparse.ParseAny(dateStr)
+	fmt.Println("date:", date)
+
+	query := elastic.NewQueryBuilder().
+		Size(2).
+		Source("message_text", "created_at").
+		Sort("created_at", elastic.Asc).
+		TermNot("message_text.keyword", "").
+		Term("type.keyword", "message_send").
+		SearchAfter(date)
+
+	res, err := elastic.Document.Search(context.Background(), Index, query.BuildForce())
+	assert.NoError(t, err)
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(res)
+}
+
+func TestDocumentSearchDesc(t *testing.T) {
+	dateStr := "2024-10-29T10:34:35.991+08:00" // message_text: "abcdefg"
+	date, _ := dateparse.ParseAny(dateStr)
+	fmt.Println("date:", date)
+
+	query := elastic.NewQueryBuilder().
+		Size(2).
+		Source("message_text", "created_at").
+		Sort("created_at", elastic.Desc).
+		TermNot("message_text.keyword", "").
+		Term("type.keyword", "message_send").
+		SearchAfter(date)
+
+	res, err := elastic.Document.Search(context.Background(), Index, query.BuildForce())
+	assert.NoError(t, err)
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(res)
+}
+
+func TestDocumentSearchNext(t *testing.T) {
+	dateStr := "2024-10-29T10:34:35.991+08:00"
+	date, _ := dateparse.ParseAny(dateStr)
+	fmt.Println("date:", date)
+
+	query := elastic.NewQueryBuilder().
+		Size(2).
+		Source("message_text", "created_at").
+		Sort("created_at", elastic.Desc).
+		TermNot("message_text.keyword", "").
+		Term("type.keyword", "message_send").
+		SearchAfter(date)
+
+	// fmt.Println(query)
+	res, err := elastic.Document.SearchNext(context.Background(), Index, query.BuildForce(), 3)
+	assert.NoError(t, err)
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(res)
+}
+
+func TestDocumentSearchPrev(t *testing.T) {
+	dateStr := "2024-10-29T10:34:35.991+08:00"
+	date, _ := dateparse.ParseAny(dateStr)
+	fmt.Println("date:", date)
+
+	query := elastic.NewQueryBuilder().
+		Size(2).
+		Source("message_text", "created_at").
+		Sort("created_at", elastic.Desc).
+		TermNot("message_text.keyword", "").
+		Term("type.keyword", "message_send").
+		SearchAfter(date)
+
+	fmt.Println(query)
+	res, err := elastic.Document.SearchPrev(context.Background(), Index, query.BuildForce(), 4)
+	assert.NoError(t, err)
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(res)
 }
