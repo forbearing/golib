@@ -12,13 +12,9 @@ import (
 	"github.com/forbearing/golib/logger"
 )
 
-const (
-	DefaultTimeFormat = "strict_date_optional_time||epoch_millis"
-	DefaultTimeField  = "created_at"
-	DefaultSortOrder  = "desc"
-)
-
-// SearchRequest represents the search parameters
+// SearchRequest represents an Elasticsearch search query.
+// It includes query conditions, pagination, sorting, field filtering and search_after for deep pagination.
+// You can use QueryBuilder to create a SearchRequest.
 type SearchRequest struct {
 	Query       map[string]any   `json:"query,omitempty"`
 	From        int              `json:"from,omitempty"`
@@ -28,18 +24,72 @@ type SearchRequest struct {
 	SearchAfter []any            `json:"search_after,omitempty"`
 }
 
-// SearchResult represents the search response
+// SearchResult represents an Elasticsearch search response.
+// It contains total hits count, max score and hits array.
 type SearchResult struct {
 	Total    int64       `json:"total"`
 	MaxScore *float64    `json:"max_score,omitempty"`
 	Hits     []SearchHit `json:"hits"`
 }
 
-// SearchHit represents a single hit in search results
+// SearchHit represents a single document in search results.
+// It contains document ID, relevance score and source fields.
 type SearchHit struct {
 	ID     string         `json:"_id"`
 	Score  *float64       `json:"_score,omitempty"`
 	Source map[string]any `json:"_source"`
+}
+
+// SearchPrev searches for N previous hits before the current search_after position.
+// It will:
+// 1. Reverse all sort orders (asc -> desc, desc -> asc)
+// 2. Execute the search with the reversed sort orders
+// 3. Reverse the result hits to maintain the original order
+// Note: This will override the size parameter in QueryBuilder.
+func (d *document) SearchPrev(ctx context.Context, indexName string, req *SearchRequest, size int) (*SearchResult, error) {
+	// Reverse all sort orders
+	for _, sort := range req.Sort {
+		for _, value := range sort {
+			if orderMap, ok := value.(map[string]any); ok {
+				if order, ok := orderMap["order"].(string); ok {
+					if order == "asc" {
+						orderMap["order"] = "desc"
+					} else {
+						orderMap["order"] = "asc"
+					}
+				}
+				if order, ok := orderMap["order"].(Order); ok {
+					if order == Asc {
+						orderMap["order"] = Desc
+					} else {
+						orderMap["order"] = Asc
+					}
+				}
+			}
+		}
+	}
+	// Set pagination parameters
+	req.From = 0
+	req.Size = size
+	result, err := d.Search(ctx, indexName, req)
+	if err != nil {
+		return nil, err
+	}
+	// Reverse result order
+	for i, j := 0, len(result.Hits)-1; i < j; i, j = i+1, j-1 {
+		result.Hits[i], result.Hits[j] = result.Hits[j], result.Hits[i]
+	}
+
+	return result, nil
+}
+
+// SearchNext searches for N next hits after the current search_after position.
+// It performs a forward search using the current sort orders.
+// Note: This will override the size parameter in QueryBuilder.
+func (d *document) SearchNext(ctx context.Context, indexName string, req *SearchRequest, size int) (*SearchResult, error) {
+	req.Size = size
+	req.From = 0
+	return d.Search(ctx, indexName, req)
 }
 
 // Search performs a search operation on the specified index
@@ -116,8 +166,11 @@ func (*document) Search(ctx context.Context, indexName string, req *SearchReques
 	return parseSearchResult(esRes)
 }
 
-// parseSearchResult
-// 辅助函数：解析搜索结果
+// parseSearchResult parses Elasticsearch response into SearchResult.
+// It safely extracts and validates:
+// - total hits count
+// - max score
+// - hits array with their IDs, sources and scores
 func parseSearchResult(esRes map[string]any) (*SearchResult, error) {
 	var (
 		ok       bool
@@ -173,17 +226,16 @@ func parseSearchResult(esRes map[string]any) (*SearchResult, error) {
 	return result, nil
 }
 
-// 辅助函数：安全地提取总数
+// extractTotal safely extracts the total hits count from Elasticsearch response.
+// It handles the nested structure: hits.total.value
 func extractTotal(hits map[string]any) (int64, error) {
 	total, ok := hits["total"].(map[string]any)
 	if !ok {
 		return 0, fmt.Errorf("invalid total format")
 	}
-
 	value, ok := total["value"].(float64)
 	if !ok {
 		return 0, fmt.Errorf("invalid total value format")
 	}
-
 	return int64(value), nil
 }
