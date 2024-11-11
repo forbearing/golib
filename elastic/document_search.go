@@ -22,14 +22,16 @@ type SearchRequest struct {
 	Sort        []map[string]any `json:"sort,omitempty"`
 	Source      []string         `json:"_source,omitempty"`
 	SearchAfter []any            `json:"search_after,omitempty"`
+	Aggs        map[string]any   `json:"aggs,omitempty"`
 }
 
 // SearchResult represents an Elasticsearch search response.
-// It contains total hits count, max score and hits array.
+// It contains total hits count, max score, hits array and aggregations.
 type SearchResult struct {
-	Total    int64       `json:"total"`
-	MaxScore *float64    `json:"max_score,omitempty"`
-	Hits     []SearchHit `json:"hits"`
+	Total        int64                         `json:"total"`
+	MaxScore     *float64                      `json:"max_score,omitempty"`
+	Hits         []SearchHit                   `json:"hits"`
+	Aggregations map[string]*AggregationResult `json:"aggregations,omitempty"`
 }
 
 // SearchHit represents a single document in search results.
@@ -38,6 +40,14 @@ type SearchHit struct {
 	ID     string         `json:"_id"`
 	Score  *float64       `json:"_score,omitempty"`
 	Source map[string]any `json:"_source"`
+}
+
+// AggregationResult represents the result of an aggregation.
+// It can contain single value metrics (min, max, avg, sum) or bucket results (terms).
+type AggregationResult struct {
+	Value    any              `json:"value,omitempty"`     // For metric aggregations
+	DocCount int64            `json:"doc_count,omitempty"` // Document count
+	Buckets  []map[string]any `json:"buckets,omitempty"`   // For bucket aggregations
 }
 
 // SearchPrev searches for N previous hits before the current search_after position.
@@ -171,6 +181,7 @@ func (*document) Search(ctx context.Context, indexName string, req *SearchReques
 // - total hits count
 // - max score
 // - hits array with their IDs, sources and scores
+// - aggregation results
 func parseSearchResult(esRes map[string]any) (*SearchResult, error) {
 	var (
 		ok       bool
@@ -221,6 +232,40 @@ func parseSearchResult(esRes map[string]any) (*SearchResult, error) {
 			ID:     id,
 			Source: source,
 			Score:  score,
+		}
+	}
+
+	// Parse aggregations if present
+	if aggs, ok := esRes["aggregations"].(map[string]any); ok {
+		result.Aggregations = make(map[string]*AggregationResult)
+		for name, value := range aggs {
+			aggResult := &AggregationResult{}
+
+			if aggMap, ok := value.(map[string]any); ok {
+				// Parse buckets for bucket aggregations
+				if buckets, ok := aggMap["buckets"].([]any); ok {
+					aggResult.Buckets = make([]map[string]any, len(buckets))
+					for i, bucket := range buckets {
+						if bucketMap, ok := bucket.(map[string]any); ok {
+							aggResult.Buckets[i] = bucketMap
+						}
+					}
+				}
+
+				// Parse value for metric aggregations
+				if value, exists := aggMap["value"]; exists {
+					aggResult.Value = value
+				}
+
+				// Parse doc_count
+				if docCount, exists := aggMap["doc_count"]; exists {
+					if count, ok := docCount.(float64); ok {
+						aggResult.DocCount = int64(count)
+					}
+				}
+			}
+
+			result.Aggregations[name] = aggResult
 		}
 	}
 	return result, nil
