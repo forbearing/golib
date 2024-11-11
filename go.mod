@@ -24,6 +24,7 @@ require (
 	github.com/gorilla/schema v1.2.1
 	github.com/h2non/filetype v1.1.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/jinzhu/copier v0.4.0
 	github.com/minio/minio-go/v7 v7.0.67
 	github.com/mssola/useragent v1.0.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
