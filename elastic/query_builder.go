@@ -263,7 +263,7 @@ func (qb *QueryBuilder) TimeRangeLte(field string, tm time.Time) *QueryBuilder {
 
 // Size sets the size parameter, must be positive
 func (qb *QueryBuilder) Size(size int) *QueryBuilder {
-	if size > 0 {
+	if size >= 0 {
 		qb.size = size
 	}
 	return qb

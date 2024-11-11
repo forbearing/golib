@@ -115,7 +115,8 @@ func (*document) Search(ctx context.Context, indexName string, req *SearchReques
 		ctx = context.Background()
 	}
 	// Set default values if not provided
-	if req.Size <= 0 {
+	// NOTE: size will be 0 if `aggs` is set
+	if req.Size < 0 {
 		req.Size = 10
 	}
 	if req.From < 0 {
