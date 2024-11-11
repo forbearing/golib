@@ -13,6 +13,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -453,6 +454,64 @@ func TestDocumentSearchPrev(t *testing.T) {
 
 	fmt.Println(query)
 	res, err := elastic.Document.SearchPrev(context.Background(), Index, query.BuildForce(), 4)
+	assert.NoError(t, err)
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	enc.Encode(res)
+}
+
+func TestDocumentQueryBuilderMatchPharseOptions(t *testing.T) {
+	query := elastic.NewQueryBuilder().
+		Size(2).
+		Source("message_text", "created_at").
+		Sort("created_at", elastic.Desc).
+		TermNot("message_text.keyword", "").
+		Bool(func(qb *elastic.QueryBuilder) {
+			qb.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_send").BuildQuery())
+			qb.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_recv").BuildQuery())
+			qb.MinimumShouldMatch(1)
+		}).
+		MatchPhraseOptions("message_text", elastic.MatchPhraseOptions{
+			Query: "hello",
+			Slop:  util.Pointer(1),
+		})
+	fmt.Println(query.String())
+	res, err := elastic.Document.Search(context.Background(), Index, query.BuildForce())
+	assert.NoError(t, err)
+	_ = res
+	// enc := json.NewEncoder(os.Stdout)
+	// enc.SetIndent("", "  ")
+	// enc.Encode(res)
+}
+
+func TestDocumentQueryBuilderAggs(t *testing.T) {
+	now := time.Now()
+	query := elastic.NewQueryBuilder().
+		Size(0).
+		TimeRange("created_at", now.Add(-24*time.Hour*365), now).
+		TermNot("message_chat_name.keyword", "").
+		AggsTerm("unique_message_chat_name", "message_chat_name.keyword", 1000)
+	query2 := elastic.NewQueryBuilder().
+		Size(0).
+		TimeRange("created_at", now.Add(-24*time.Hour*365), now).
+		TermNot("message_chat_name.keyword", "").
+		AggsTerm("unique_message_chat_name", "message_chat_name.keyword", 1000, "_count", "asc")
+	query3 := elastic.NewQueryBuilder().
+		Size(0).
+		TimeRange("created_at", now.Add(-24*time.Hour*365), now).
+		TermNot("message_user_name.keyword", "").
+		AggsTerm("unique_message_user_name", "message_user_name.keyword", 1000, "_count", "asc")
+	query4 := elastic.NewQueryBuilder().
+		Size(0).
+		TimeRange("created_at", now.Add(-24*time.Hour*365), now).
+		TermNot("message_peer_user_name.keyword", "").
+		AggsTerm("unique_message_peer_user_name", "message_peer_user_name.keyword", 1000, "_count", "asc")
+
+	fmt.Println(query.String())
+	fmt.Println(query2.String())
+	fmt.Println(query3.String())
+	fmt.Println(query4.String())
+	res, err := elastic.Document.Search(context.Background(), Index, query4.BuildForce())
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
