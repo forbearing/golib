@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/jinzhu/copier"
 )
 
 const (
@@ -31,6 +33,25 @@ type QueryBuilder struct {
 	source             []string
 	searchAfter        []any
 	minimumShouldMatch any
+
+	aggs map[string]any
+}
+
+// MatchPhraseOptions represents options for match_phrase query
+type MatchPhraseOptions struct {
+	Query          any      `json:"query"`
+	Slop           *int     `json:"slop,omitempty"`
+	Analyzer       string   `json:"analyzer,omitempty"`
+	ZeroTermsQuery string   `json:"zero_terms_query,omitempty"`
+	MaxExpansions  *int     `json:"max_expansions,omitempty"`
+	Boost          *float64 `json:"boost,omitempty"`
+}
+
+// AggregationOptions represents options for aggregation query
+type AggregationOptions struct {
+	Field string            `json:"field"`
+	Size  *int              `json:"size,omitempty"`
+	Order map[string]string `json:"order,omitempty"`
 }
 
 // NewQueryBuilder creates a new query builder with default size=10 and from=0
@@ -109,6 +130,13 @@ func (qb *QueryBuilder) TermShould(field string, value any) *QueryBuilder {
 	})
 }
 
+// MatchAll adds a match_all query
+func (qb *QueryBuilder) MatchAll() *QueryBuilder {
+	return qb.Must(map[string]any{
+		"match_all": map[string]any{},
+	})
+}
+
 // Match adds a match query to must clauses
 func (qb *QueryBuilder) Match(field string, value any) *QueryBuilder {
 	return qb.Must(map[string]any{
@@ -163,10 +191,30 @@ func (qb *QueryBuilder) MatchPhraseShould(field string, value any) *QueryBuilder
 	})
 }
 
-// MatchAll adds a match_all query
-func (qb *QueryBuilder) MatchAll() *QueryBuilder {
+// MatchPhraseOptions adds a match_phrase query with options to must clauses
+func (qb *QueryBuilder) MatchPhraseOptions(field string, opts MatchPhraseOptions) *QueryBuilder {
 	return qb.Must(map[string]any{
-		"match_all": map[string]any{},
+		"match_phrase": map[string]any{
+			field: opts,
+		},
+	})
+}
+
+// MatchPhraseOptionsNot adds a match_phrase query with options to must_not clauses
+func (qb *QueryBuilder) MatchPhraseOptionsNot(field string, opts MatchPhraseOptions) *QueryBuilder {
+	return qb.MustNot(map[string]any{
+		"match_phrase": map[string]any{
+			field: opts,
+		},
+	})
+}
+
+// MatchPhraseOptionsShould adds a match_phrase query with options to should clauses
+func (qb *QueryBuilder) MatchPhraseOptionsShould(field string, opts MatchPhraseOptions) *QueryBuilder {
+	return qb.Should(map[string]any{
+		"match_phrase": map[string]any{
+			field: opts,
+		},
 	})
 }
 
@@ -197,16 +245,16 @@ func (qb *QueryBuilder) TimeRange(field string, start, end time.Time) *QueryBuil
 	})
 }
 
-// TimeGte adds a time range query with greater than or equal condition
-func (qb *QueryBuilder) TimeGte(field string, tm time.Time) *QueryBuilder {
+// TimeRangeGte adds a time range query with greater than or equal condition
+func (qb *QueryBuilder) TimeRangeGte(field string, tm time.Time) *QueryBuilder {
 	return qb.Range(field, map[string]any{
 		"gte":    tm.Format(time.RFC3339),
 		"format": defaultTimeFormat,
 	})
 }
 
-// TimeLte adds a time range query with less than or equal condition
-func (qb *QueryBuilder) TimeLte(field string, tm time.Time) *QueryBuilder {
+// TimeRangeLte adds a time range query with less than or equal condition
+func (qb *QueryBuilder) TimeRangeLte(field string, tm time.Time) *QueryBuilder {
 	return qb.Range(field, map[string]any{
 		"lte":    tm.Format(time.RFC3339),
 		"format": defaultTimeFormat,
@@ -229,7 +277,24 @@ func (qb *QueryBuilder) From(from int) *QueryBuilder {
 	return qb
 }
 
+// Source sets the _source field filtering
+// if fields is empty, all fields will be returned
+// if fields is not empty, only the specified fields will be returned
+// if fields is nil or empty array, no fields will be returned
+func (qb *QueryBuilder) Source(fields ...string) *QueryBuilder {
+	qb.source = fields
+	return qb
+}
+
+// SearchAfter sets the search_after parameter for deep pagination
+// SearchAfter always used with Sort.
+func (qb *QueryBuilder) SearchAfter(value ...any) *QueryBuilder {
+	qb.searchAfter = value
+	return qb
+}
+
 // Sort adds a sort condition
+// Sort always used with SearchAfter.
 func (qb *QueryBuilder) Sort(field string, order Order) *QueryBuilder {
 	if field == "" {
 		return qb
@@ -243,6 +308,89 @@ func (qb *QueryBuilder) Sort(field string, order Order) *QueryBuilder {
 		},
 	})
 	return qb
+}
+
+// Aggs adds a custom aggregation
+func (qb *QueryBuilder) Aggs(name string, agg map[string]any) *QueryBuilder {
+	if qb.aggs == nil {
+		qb.aggs = make(map[string]any)
+	}
+	qb.aggs[name] = agg
+	return qb
+}
+
+// AggsTerm adds a terms aggregation
+// AggsTerm adds a terms aggregation.
+// orderBy accepts two parameters: field and order.
+// field can be "_count" or "_key",
+// order can be "asc" or "desc"
+func (qb *QueryBuilder) AggsTerm(name string, field string, size int, orderBy ...string) *QueryBuilder {
+	opts := AggregationOptions{
+		Field: field,
+		Size:  &size,
+	}
+	if len(orderBy) >= 2 {
+		opts.Order = map[string]string{
+			orderBy[0]: orderBy[1],
+		}
+	}
+	return qb.Aggs(name, map[string]any{
+		"terms": opts,
+	})
+}
+
+// AggsCardinality adds a cardinality aggregation
+func (qb *QueryBuilder) AggsCardinality(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"cardinality": AggregationOptions{
+			Field: field,
+		},
+	})
+}
+
+// AggsStats adds a stats aggregation
+func (qb *QueryBuilder) AggsStats(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"stats": AggregationOptions{
+			Field: field,
+		},
+	})
+}
+
+// AggsMin adds a min aggregation
+func (qb *QueryBuilder) AggsMin(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"min": AggregationOptions{
+			Field: field,
+		},
+	})
+}
+
+// AggsMax adds a max aggregation
+func (qb *QueryBuilder) AggsMax(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"max": AggregationOptions{
+			Field: field,
+		},
+	})
+}
+
+// AggsAvg adds an avg aggregation
+func (qb *QueryBuilder) AggsAvg(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"avg": AggregationOptions{
+			Field: field,
+		},
+	})
+}
+
+// AggsSum adds a sum aggregation
+func (qb *QueryBuilder) AggsSum(name string, field string) *QueryBuilder {
+	return qb.Aggs(name, map[string]any{
+		"sum": AggregationOptions{
+			Field: field,
+		},
+	})
 }
 
 // Validate checks if the query parameters are valid
@@ -262,21 +410,6 @@ func (qb *QueryBuilder) Validate() error {
 	return nil
 }
 
-// Source sets the _source field filtering
-// if fields is empty, all fields will be returned
-// if fields is not empty, only the specified fields will be returned
-// if fields is nil or empty array, no fields will be returned
-func (qb *QueryBuilder) Source(fields ...string) *QueryBuilder {
-	qb.source = fields
-	return qb
-}
-
-// SearchAfter sets the search_after parameter for deep pagination
-func (qb *QueryBuilder) SearchAfter(value ...any) *QueryBuilder {
-	qb.searchAfter = value
-	return qb
-}
-
 // Build creates a SearchRequest with validation
 func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 	if err := qb.Validate(); err != nil {
@@ -294,6 +427,7 @@ func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 			Sort:        qb.sort,
 			Source:      qb.source,
 			SearchAfter: qb.searchAfter,
+			Aggs:        qb.aggs,
 		}, nil
 	}
 
@@ -321,6 +455,7 @@ func (qb *QueryBuilder) Build() (*SearchRequest, error) {
 		Sort:        qb.sort,
 		Source:      qb.source,
 		SearchAfter: qb.searchAfter,
+		Aggs:        qb.aggs,
 	}, nil
 }
 
@@ -337,6 +472,13 @@ func (qb *QueryBuilder) BuildQuery() map[string]any {
 		return nil
 	}
 	return req.Query
+}
+
+// Clone creates a deep copy of the QueryBuilder
+func (qb *QueryBuilder) Clone() *QueryBuilder {
+	clone := new(QueryBuilder)
+	copier.Copy(clone, qb)
+	return clone
 }
 
 // String returns the JSON representation of the query
