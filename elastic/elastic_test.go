@@ -506,12 +506,20 @@ func TestDocumentQueryBuilderAggs(t *testing.T) {
 		TimeRange("created_at", now.Add(-24*time.Hour*365), now).
 		TermNot("message_peer_user_name.keyword", "").
 		AggsTerm("unique_message_peer_user_name", "message_peer_user_name.keyword", 1000, "_count", "asc")
+	query5 := elastic.NewQueryBuilder().
+		Size(0).
+		TermNot("message_chat_name.keyword", "").
+		TermNot("message_user_name.keyword", "").
+		TermNot("message_peer_user_name.keyword", "").
+		AggsTerm("unique_user_name", "message_user_name.keyword", 10000).
+		AggsTerm("unique_peer_user_name", "message_peer_user_name.keyword", 10000)
 
 	fmt.Println(query.String())
 	fmt.Println(query2.String())
 	fmt.Println(query3.String())
 	fmt.Println(query4.String())
-	res, err := elastic.Document.Search(context.Background(), Index, query4.BuildForce())
+	fmt.Println(query5.String())
+	res, err := elastic.Document.Search(context.Background(), Index, query5.BuildForce())
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
