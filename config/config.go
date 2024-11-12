@@ -98,7 +98,7 @@ func SetDefaultValue() {
 	viper.SetDefault("logger.log_format", "json")
 	viper.SetDefault("logger.log_encoder", "json")
 	viper.SetDefault("logger.log_max_age", 30)
-	viper.SetDefault("logger.log_max_size", 50)
+	viper.SetDefault("logger.log_max_size", 100)
 	viper.SetDefault("logger.log_max_backups", 1)
 
 	viper.SetDefault("sqlite.path", "./data.db")
