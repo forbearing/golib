@@ -661,7 +661,6 @@ func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 		logger.Database.Warnw("WithLock must be used within a transaction")
 		return db
 	}
-	fmt.Println("----- db.inTransaction", db.inTransaction)
 
 	strength := "UPDATE"
 	options := ""
