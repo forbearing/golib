@@ -53,7 +53,6 @@ func Init() error {
 			logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 			if err := t.fn(); err != nil {
 				logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
-				return
 			} else {
 				logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
 			}
