@@ -567,15 +567,15 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+	if len(columns) == 0 {
+		return db
+	}
 	_columns := make([]string, 0)
 	for i := range columns {
 		col := strings.TrimSpace(columns[i])
 		if len(col) > 0 && !contains(defaultsColumns, col) {
 			_columns = append(_columns, col)
 		}
-	}
-	if len(_columns) == 0 {
-		return db
 	}
 	db.db = db.db.Select(append(_columns, defaultsColumns...))
 	return db
