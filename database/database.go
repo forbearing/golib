@@ -577,6 +577,9 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 			_columns = append(_columns, col)
 		}
 	}
+	if len(_columns) == 0 {
+		return db
+	}
 	db.db = db.db.Select(append(_columns, defaultsColumns...))
 	return db
 }
