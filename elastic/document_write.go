@@ -12,7 +12,7 @@ import (
 	"github.com/forbearing/golib/types"
 )
 
-func (*document) BulkIndex(indexName string, docs ...types.ESDocumenter) error {
+func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ESDocumenter) error {
 	var (
 		buf  bytes.Buffer
 		raw  map[string]any
