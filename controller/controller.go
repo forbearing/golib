@@ -849,6 +849,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
 		m := reflect.New(typ).Interface().(M)
+		m.SetID(c.Param(PARAM_ID)) // `GetBefore` hook need id.
 
 		var err error
 		var expands []string
