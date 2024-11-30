@@ -65,6 +65,7 @@ type database[M types.Model] struct {
 	noHook        bool   // disable model hook.
 	orQuery       bool   // or query
 	inTransaction bool   // in transaction
+	tryRun        bool   // try run
 
 	shouldAutoMigrate bool
 }
@@ -85,6 +86,7 @@ func (db *database[M]) reset() {
 	db.orQuery = false
 	db.inTransaction = false
 	db.shouldAutoMigrate = false
+	db.tryRun = false
 	db.db = DB.WithContext(context.Background())
 }
 
@@ -1023,6 +1025,19 @@ func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithTryRun only executes model hooks without performing actual database operations.
+// Also logs the SQL statements that would have been executed.
+func (db *database[M]) WithTryRun(enable ...bool) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	db.tryRun = true
+	if len(enable) > 0 {
+		db.tryRun = enable[0]
+	}
+	return db
+}
+
 // WithoutHook will disable all model hooks.
 func (db *database[M]) WithoutHook() types.Database[M] {
 	db.mu.Lock()
@@ -1096,7 +1111,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err = db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
@@ -1199,7 +1214,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err = db.db.Session(&gorm.Session{}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -1223,7 +1238,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 			if end > len(objs) {
 				end = len(objs)
 			}
-			if err = db.db.Session(&gorm.Session{}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
+			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -1312,7 +1327,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		if end > len(objs) {
 			end = len(objs)
 		}
-		if err = db.db.Session(&gorm.Session{}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
 		}
@@ -1365,7 +1380,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
+	if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
 		return err
 	}
 	if db.enableCache {
@@ -2155,7 +2170,7 @@ func (db *database[M]) Cleanup() (err error) {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	return db.db.Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
+	return db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 }
 
 // Health checks the database connectivity and basic operations.
@@ -2249,6 +2264,7 @@ func (db *database[M]) trace(op string) func(error) {
 				"table", reflect.TypeOf(*new(M)).Elem().Name(),
 				"cost", time.Since(begin).String(),
 				"cache_enabled", db.enableCache,
+				"try_run", db.tryRun,
 				"error", err,
 			)
 		} else {
@@ -2256,6 +2272,7 @@ func (db *database[M]) trace(op string) func(error) {
 				"table", reflect.TypeOf(*new(M)).Elem().Name(),
 				"cost", time.Since(begin).String(),
 				"cache_enabled", db.enableCache,
+				"try_run", db.tryRun,
 			)
 		}
 	}

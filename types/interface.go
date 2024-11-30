@@ -230,6 +230,9 @@ type DatabaseOption[M Model] interface {
 	WithCache(...bool) Database[M]
 	// WithOmit omit specific columns when create/update.
 	WithOmit(...string) Database[M]
+	// WithTryRun only executes model hooks without performing actual database operations.
+	// Also logs the SQL statements that would have been executed.
+	WithTryRun(...bool) Database[M]
 	// WithoutHook tells the database manipulator not invoke model hooks.
 	WithoutHook() Database[M]
 }
