@@ -137,14 +137,14 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy      string    `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
-	UpdatedBy      string    `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
-	CreatedAt      time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
-	UpdatedAt      time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
-	Remark         *string   `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order          *uint     `json:"order,omitempty" schema:"-"`
-	Error          string    `json:"error,omitempty" schema:"-"`
-	InternalRemark string    `json:"internal_remark,omitempty" schema:"-"` // 内部系统的备注
+	CreatedBy      string     `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
+	UpdatedBy      string     `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
+	CreatedAt      *time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
+	Remark         *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
+	Order          *uint      `json:"order,omitempty" schema:"-"`
+	Error          string     `json:"error,omitempty" schema:"-"`
+	InternalRemark string     `json:"internal_remark,omitempty" schema:"-"` // 内部系统的备注
 
 	// Query parameter
 	Page       uint    `json:"-" gorm:"-" schema:"page"`         // Query parameter, eg: "page=2"
@@ -167,12 +167,12 @@ type Base struct {
 func (b *Base) GetTableName() string       { return "" }
 func (b *Base) GetCreatedBy() string       { return b.CreatedBy }
 func (b *Base) GetUpdatedBy() string       { return b.UpdatedBy }
-func (b *Base) GetCreatedAt() time.Time    { return b.CreatedAt }
-func (b *Base) GetUpdatedAt() time.Time    { return b.UpdatedAt }
+func (b *Base) GetCreatedAt() time.Time    { return util.Deref(b.CreatedAt) }
+func (b *Base) GetUpdatedAt() time.Time    { return util.Deref(b.UpdatedAt) }
 func (b *Base) SetCreatedBy(s string)      { b.CreatedBy = s }
 func (b *Base) SetUpdatedBy(s string)      { b.UpdatedBy = s }
-func (b *Base) SetCreatedAt(t time.Time)   { b.CreatedAt = t }
-func (b *Base) SetUpdatedAt(t time.Time)   { b.UpdatedAt = t }
+func (b *Base) SetCreatedAt(t time.Time)   { b.CreatedAt = &t }
+func (b *Base) SetUpdatedAt(t time.Time)   { b.UpdatedAt = &t }
 func (b *Base) GetID() string              { return b.ID }
 func (b *Base) SetID(id ...string)         { SetID(b, id...) }
 func (b *Base) Expands() []string          { return nil }
