@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"reflect"
@@ -264,4 +265,19 @@ func FileExists(filename string) bool {
 	} else {
 		return err == nil
 	}
+}
+
+// Round returns a rounded version of x with a specified precision.
+//
+// The precision parameter specifies the number of decimal places to round to.
+// Round uses the "round half away from zero" rule to break ties.
+//
+// Examples:
+//
+//	Round(3.14159, 2) returns 3.14
+//	Round(3.14159, 1) returns 3.1
+//	Round(-3.14159, 1) returns -3.1
+func Round[T float32 | float64](value T, precision uint) T {
+	ratio := math.Pow(10, float64(precision))
+	return T(math.Round(float64(value)*ratio) / ratio)
 }
