@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/forbearing/golib/database/mysql"
+	"github.com/forbearing/golib/database"
 	. "github.com/forbearing/golib/response"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -190,7 +190,7 @@ func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string,
 // | ZJ                 |
 // +--------------------+
 func queryColumns(table string, columns []string, db ...*gorm.DB) (map[string][]string, error) {
-	_db := mysql.Default
+	_db := database.DB
 	if len(db) > 0 {
 		if db[0] != nil {
 			_db = db[0]
@@ -278,7 +278,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 		}
 	}
 
-	_db := mysql.Default
+	_db := database.DB
 	if len(db) > 0 {
 		if db[0] != nil {
 			_db = db[0]
@@ -358,7 +358,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 // | od-7e8d4fb875bed78400bc5bbca88eed0c |                1 |
 // +-------------------------------------+------------------+
 func queryColumnsAndCount(table string, columns []string, db ...*gorm.DB) (columnResult, error) {
-	_db := mysql.Default
+	_db := database.DB
 	if len(db) > 0 {
 		if db[0] != nil {
 			_db = db[0]
