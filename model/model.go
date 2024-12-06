@@ -137,14 +137,13 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id"`
 
-	CreatedBy      string     `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
-	UpdatedBy      string     `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
-	CreatedAt      *time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
-	UpdatedAt      *time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
-	Remark         *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order          *uint      `json:"order,omitempty" schema:"-"`
-	Error          string     `json:"error,omitempty" schema:"-"`
-	InternalRemark string     `json:"internal_remark,omitempty" schema:"-"` // 内部系统的备注
+	CreatedBy string     `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
+	UpdatedBy string     `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
+	CreatedAt *time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
+	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
+	Order     *uint      `json:"order,omitempty" schema:"-"`
+	Error     string     `json:"error,omitempty" schema:"-"`
 
 	// Query parameter
 	Page       uint    `json:"-" gorm:"-" schema:"page"`         // Query parameter, eg: "page=2"
@@ -271,7 +270,7 @@ func (gs *GormStrings) Scan(value any) error {
 		_v = strings.Trim(_v, ",")
 		*gs = strings.Split(_v, ",")
 	default:
-		return errors.New("unsupported data type for GormStrings")
+		return errors.New("unsupported type for GormStrings, expected []byte or string")
 	}
 	return nil
 }
@@ -301,7 +300,7 @@ func (g *GormScanner) Scan(value any) (err error) {
 	case []byte:
 		err = json.Unmarshal(v, g.Object)
 	default:
-		err = errors.New("unsupported type")
+		err = errors.New("unsupported type, expected string or []byte")
 	}
 	return err
 }
