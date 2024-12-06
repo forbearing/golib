@@ -14,31 +14,30 @@ import (
 
 	tcping "github.com/cloverstd/tcping/ping"
 	"github.com/go-ping/ping"
+	"github.com/google/uuid"
 	"github.com/rs/xid"
-	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
-// UUID is a generic uuid generator.
-func UUID(name ...string) string {
-	var _name string
-	if len(name) > 0 {
-		_name = name[0]
+func UUID(prefix ...string) string {
+	var id uuid.UUID
+	if v7, err := uuid.NewV7(); err == nil {
+		id = v7
+	} else {
+		id = uuid.New()
 	}
-	if len(_name) == 0 {
-		_name = uuid.NewV4().String()
+	if len(prefix) > 0 {
+		if len(prefix[0]) > 0 {
+			return fmt.Sprintf("%s%s", prefix[0], id.String())
+		}
 	}
-	return uuid.NewV5(uuid.NewV4(), _name).String()
+	return id.String()
 }
+
 func RequestID() string { return xid.New().String() }
 
-// // LightUUID used in logger request id.
-// // It will use uuid.NewV4() instead of uuid.NewV5() which have less cpu cost.
-// func LightUUID() string { return uuid.NewV4().String() }
-
-// IndexedUUID generate indexable uuid.
 func IndexedUUID() string { return ksuid.New().String() }
 
 // Pointer will return a pointer to T with given value.
