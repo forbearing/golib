@@ -23,20 +23,16 @@ type SysInfo struct {
 }
 
 func (si *SysInfo) CreateBefore() error {
-	if len(si.Node.MachineID) == 0 {
-		return errors.New("machine id is empty")
+	if len(si.ID) == 0 {
+		if len(si.Node.MachineID) == 0 {
+			return errors.New("machine id is empty")
+		}
+		si.ID = si.Node.MachineID
 	}
-	si.ID = si.Node.MachineID
 	return nil
 }
 
-func (si *SysInfo) UpdateBefore() error {
-	if len(si.Node.MachineID) == 0 {
-		return errors.New("machine id is empty")
-	}
-	si.ID = si.Node.MachineID
-	return nil
-}
+func (si *SysInfo) UpdateBefore() error { return si.CreateBefore() }
 
 type Node struct {
 	Hostname   string `json:"hostname,omitempty"`
