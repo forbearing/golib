@@ -5,6 +5,7 @@ import "github.com/forbearing/golib/model"
 func init() {
 	model.Register[*User]()
 	model.Register[*Group]()
+	model.Register[*model.SysInfo]()
 }
 
 type User struct {
