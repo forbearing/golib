@@ -1,6 +1,8 @@
 package database_test
 
 import (
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -91,18 +93,41 @@ var orders = []*Order{
 	// user09 和 user10 暂时没有订单
 }
 
+var (
+	configPath    = "/tmp/config.ini"
+	configContent = `
+[server]
+mode = dev
+port = 8002
+db = "mysql"
+
+[mysql]
+database = test
+password = qQk5zXWHfj4LD2Nxm9vF3YpBZt8a6JhUTdsS7RgyruGCAEebVP
+
+[logger]
+log_dir = "/tmp/golib/logs"
+`
+)
+
 var RunOrDie = util.RunOrDie
 
 func init() {
-	// Register table and table records that should automatically created in database.
-	model.Register(users...)
-	model.Register(orders...)
+	// // Register table and table records that should automatically created in database.
+	// model.Register(users...)
+	// model.Register(orders...)
+	model.Register[*User]()
+	model.Register[*Order]()
 
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		panic(err)
+	}
 	// Bootstrap all initializers.
-	config.SetConfigFile("../examples/myproject/config.ini")
+	config.SetConfigFile(configPath)
 	RunOrDie(bootstrap.Bootstrap)
 }
 
+// TestWithJoin, 测试 WithJoin 之前请开启 model.Register
 func TestWithJoin(t *testing.T) {
 	tests := []struct {
 		name string
@@ -169,4 +194,23 @@ func testJoinHighValueOrders(t *testing.T) {
 	// for _, order := range results {
 	// 	fmt.Println(order.ID, order.Amount, order.UserName)
 	// }
+}
+
+func TestWithTransaction(t *testing.T) {
+	count := 10
+	users := make([]*User, 0)
+	for i := 1; i <= count; i++ {
+		users = append(users, &User{
+			Base: model.Base{ID: strconv.Itoa(i)},
+			Name: "user" + strconv.Itoa(i),
+		})
+	}
+
+	var err error = database.Database[*User]().WithLimit(-1).Update(users...)
+	assert.NoError(t, err)
+
+	// var err error = mysql.Default.Transaction(func(tx *gorm.DB) error {
+	// 	return database.Database[*User]().WithTransaction(tx).WithLock().WithLimit(-1).Update(users...)
+	// })
+	assert.NoError(t, err)
 }
