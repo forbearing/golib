@@ -66,6 +66,8 @@ func main() {
 	router.API.GET("/group/export", controller.Export[*Group])
 	router.API.POST("/group/import", controller.Import[*Group])
 
+	router.API.GET("/debug/debug", Debug.Debug)
+
 	// Run server.
 	RunOrDie(router.Run)
 }
