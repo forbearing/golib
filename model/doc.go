@@ -30,4 +30,25 @@ rbac
 	Group -> Policy: 给角色组设置策略(group 就是 role)
 	Group <- User: 向角色组中添加和删除用户
 
+
+// - Model 层的 Hooker 比 Service 层的 Hooker 用的更多.
+// - Model 层的 ListAfter 可能是只查询最顶层的 Menu,并不能拿到所有的 Menu
+// - Model 层的 DeleteBefore/DeleteAfter 前端传递过来的很可能只是一个 ID, 其他字段为空
+//   如果要通过检查改资源的其他字段来进行操作,需要先通过数据库 Get 到该资源.
+// - Modal, ListAfter 如果检查字段并更新当前资源, 则会出发 UpdateBefore,UpdateAfter hook, 小心循环调用
+// - Modal.UpdateXXX 可能是 UpdatePartial, 所有很多字段都是空的, 需要先 Get 一下
+//   因为你不能保证前端使用的是 PUT(全量更新) 还是 PATCH(部分更新), 最好还是自己从数据库立main Get 一下.
+// - Model.GetBefore 时，如果要使用 GetBefore hook，需要在 new 完之后，把 ID值设置上，
+//   例如：user := new(User) user.ID = "myid", 要不然一个空空的 user 是无法出发有效的 hook 的。
+
+
+
+使用 service 层而不是 model 层的情况
+- service 层有前端的一些信息: model 拿不到
+- service 的 expandFields 的效率比 model 块
+  model 每次只能展开一个, service 层可以一次性展开所有
+
+使用 model 层而不是 service 层的情况
+- ListAfter 来设置某个字段时, 如果做了权限控制,则没有权限的人是看不到这些资源的,也无法触发 ListAfter 钩子
+
 */
