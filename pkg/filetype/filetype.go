@@ -162,8 +162,10 @@ func GetFiletypeAndMime(s string) (Filetype, Mime) {
 	return FiletypeUnknow, MimeUnknow
 }
 
-type Filetype string
-type Mime string
+type (
+	Filetype string
+	Mime     string
+)
 
 const (
 	// Filetype for documents.

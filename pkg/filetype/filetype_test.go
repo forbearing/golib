@@ -76,7 +76,6 @@ var (
 )
 
 func TestDetectFiletype(t *testing.T) {
-
 	// Documents
 	for _, file := range documentFiles {
 		filetype, mime := Detect(file)
