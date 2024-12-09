@@ -1,7 +1,7 @@
-package cache
+package bigcache
 
 import (
-	"car-proxy/pkg/internal/json"
+	"encoding/json"
 	"reflect"
 )
 
@@ -44,6 +44,7 @@ func (c *SessionStore) Set(key string, entry any) error {
 	}
 	return c.cache.Set(key, data)
 }
+
 func (c *SessionStore) Close() (err error) {
 	once.Do(func() {
 		err = sessionCache.Close()

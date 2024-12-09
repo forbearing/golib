@@ -1,4 +1,4 @@
-package cache
+package bigcache
 
 import (
 	"encoding/json"
@@ -104,6 +104,7 @@ func (c *Cache) Set(key string, entry any) error {
 	}
 	return c.cache.Set(key, data)
 }
+
 func (c *Cache) Close() (err error) {
 	once.Do(func() {
 		err = globalCache.Close()

@@ -1,4 +1,4 @@
-package cache
+package bigcache
 
 import (
 	"reflect"
@@ -90,7 +90,7 @@ func TestCacheStruct(t *testing.T) {
 func TestCacheString(t *testing.T) {
 	assert.NoError(t, Init())
 
-	var s = "val3"
+	s := "val3"
 	testCasesString := []struct {
 		name string
 		key  string
@@ -101,7 +101,7 @@ func TestCacheString(t *testing.T) {
 		{"str1", "str1", &s},
 	}
 
-	//cache := New(new(string))
+	// cache := New(new(string))
 	cache := New(&s)
 	for _, tc := range testCasesString {
 		t.Run(tc.name, func(t *testing.T) {
