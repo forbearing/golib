@@ -1,13 +1,13 @@
-package wrapper
+package httpwrapper
 
 import (
 	"bytes"
-	"car-proxy/pkg/internal"
-	"car-proxy/pkg/internal/json"
+	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 
+	"github.com/forbearing/golib/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func testWrappedRequest(t *testing.T, req *http.Request, body []byte) {
 	data, err := json.Marshal(reqWrapper)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
-	t.Log(internal.String(data))
+	t.Log(util.StringAny(data))
 
 	reqWrapper = new(WrappedRequest)
 	err = json.Unmarshal(data, reqWrapper)
@@ -55,12 +55,13 @@ func TestWrappedResponse(t *testing.T) {
 		testWrappedResponse(t, resp, body)
 	}
 }
+
 func testWrappedResponse(t *testing.T, resp *http.Response, body []byte) {
 	respWrapper := &WrappedResponse{Response: resp}
 	data, err := json.Marshal(respWrapper)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
-	//t.Log(internal.String(data))
+	// t.Log(internal.String(data))
 
 	respWrapper = new(WrappedResponse)
 	err = json.Unmarshal(data, respWrapper)
