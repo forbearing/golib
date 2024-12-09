@@ -1,4 +1,4 @@
-package main
+package sizedbufferpool
 
 import "bytes"
 

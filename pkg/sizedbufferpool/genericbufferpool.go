@@ -1,3 +1,7 @@
+package sizedbufferpool
+
+import "bytes"
+
 // GenericBufferPool abstracts buffer pool implementations.
 type GenericBufferPool interface {
 	Get() *bytes.Buffer
