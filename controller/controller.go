@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/filetype"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/pkg/filetype"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
