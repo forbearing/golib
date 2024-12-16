@@ -2,9 +2,11 @@ package helper
 
 import (
 	"strings"
+	"time"
 
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -12,6 +14,7 @@ import (
 // NOTE:The version of gorm.io/driver/postgres lower than v1.5.4 have some issues.
 // more details see: https://github.com/go-gorm/gorm/issues/6886
 func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
+	begin := time.Now()
 	// create table automatically in default database.
 	for _, m := range model.Tables {
 		if len(m.GetTableName()) > 0 {
@@ -24,7 +27,6 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			}
 		}
 	}
-
 	// create table automatically with custom database.
 	for _, v := range model.TablesWithDB {
 		handler := db
@@ -42,7 +44,9 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			}
 		}
 	}
+	zap.S().Infow("database create table", "cost", time.Since(begin).String())
 
+	begin = time.Now()
 	// create the table records that must be pre-exists before database curds.
 	for _, r := range model.Records {
 		handler := db
@@ -59,6 +63,8 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			}
 		}
 	}
+	zap.S().Infow("database create table records", "cost", time.Since(begin).String())
+
 	// set default database to 'Default'.
 	database.DB = db
 
