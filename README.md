@@ -1,5 +1,7 @@
 ## Description
 
+🚀 Golang Lightning Backend Framework
+
 ## Examples
 
 1.   [basic usage example](./examples/simple)
