@@ -2,6 +2,8 @@
 
 🚀 Golang Lightning Backend Framework
 
+WARNING: Library under active development - expect significant API changes.
+
 ## Examples
 
 1.   [basic usage example](./examples/simple)
