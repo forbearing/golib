@@ -1,67 +1,34 @@
 ## Description
 
-🚀 Golang Lightning Backend Framework
-
-文档正在快马加鞭补充中
-
-
-
-## 文档
-
-### 1.路由使用
-
-### 2.controller 使用
-
-### 4.model 使用
-
-### 4.service 使用
-
-### 4.数据库操作
-
-
-
 ## Examples
 
-[simple](./examples/simple)
-
-
+1.   [basic usage example](./examples/simple)
+2.   [simple project](./examples/myproject)
 
 ## Datatabase operation
 
 ### Create
 
 ```go
-if err := database.Database[M].WithExpand(req.Expands()).Create(req); err != nil {
-  log.Error(err)
-  ResponseJSON(c, CodeFailure)
-  return
-}
+database.Database[M].WithExpand(req.Expands()).Create(req)
 ```
 
 ### Delete
 
 ```go
-if err := database.Database[M].WithExpand(req.Expands()).Create(req); err != nil {
-  log.Error(err)
-  ResponseJSON(c, CodeFailure)
-  return
-}
+database.Database[M].WithExpand(req.Expands()).Create(req)
 ```
 
 ### Update/update_partial
 
 ```go
-if err := database.Database[M].Update(req); err != nil {
-  log.Error(err)
-  ResponseJSON(c, CodeFailure)
-  return
-}
+database.Database[M].Update(req)
 ```
 
 ### List
 
 ```go
-if err = database.Database[M].
+database.Database[M].
   WithScope(page, size).
   WithOr(or).
   WithQuery(svc.Filter(svcCtx, m), fuzzy).
@@ -71,21 +38,13 @@ if err = database.Database[M].
   WithOrder(sortBy).
   WithTimeRange(columnName, startTime, endTime).
   WithCache(!nocache).
-  List(&data, &cache); err != nil {
-  log.Error(err)
-  ResponseJSON(c, CodeFailure)
-  return
-}
+  List(&data)
 ```
 
 ### Get
 
 ```go
-if err = database.Database[M].WithExpand(expands).WithCache(!nocache).Get(m, c.Param(PARAM_ID), &cache); err != nil {
-  log.Error(err)
-  ResponseJSON(c, CodeFailure)
-  return
-}
+database.Database[M].WithExpand(expands).WithCache(!nocache).Get(m, id)
 ```
 
 ## Router
@@ -130,7 +89,6 @@ type StructuredLogger interface {
 	Errorw(msg string, keysAndValues ...any)
 	Fatalw(msg string, keysAndValues ...any)
 }
-
 type ZapLogger interface {
 	Debugz(msg string, fields ...zap.Field)
 	Infoz(msg string, fields ...zap.Field)
@@ -140,7 +98,7 @@ type ZapLogger interface {
 }
 
 type Logger interface {
-	With(key, value string) Logger
+	With(fields ...string) Logger
 
 	StandardLogger
 	StructuredLogger
@@ -155,7 +113,7 @@ type Database[M Model] interface {
 	Create(objs ...M) error
 	Delete(objs ...M) error
 	Update(objs ...M) error
-	UpdateById(id any, key string, value any) error
+	UpdateById(id string, key string, value any) error
 	List(dest *[]M, cache ...*[]byte) error
 	Get(dest M, id string, cache ...*[]byte) error
 	First(dest M, cache ...*[]byte) error
@@ -163,6 +121,7 @@ type Database[M Model] interface {
 	Take(dest M, cache ...*[]byte) error
 	Count(*int64) error
 	Cleanup() error
+	Health() error
 
 	DatabaseOption[M]
 }
@@ -177,7 +136,11 @@ type DatabaseOption[M Model] interface {
 	WithOr(...bool) Database[M]
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
 	WithSelect(columns ...string) Database[M]
+	WithSelectRaw(query any, args ...any) Database[M]
 	WithIndex(index string) Database[M]
+	WithTransaction(tx any) Database[M]
+	WithJoinRaw(query string, args ...any) Database[M]
+	WithLock(mode ...string) Database[M]
 	WithBatchSize(size int) Database[M]
 	WithScope(page, size int) Database[M]
 	WithLimit(limit int) Database[M]
@@ -187,9 +150,9 @@ type DatabaseOption[M Model] interface {
 	WithPurge(...bool) Database[M]
 	WithCache(...bool) Database[M]
 	WithOmit(...string) Database[M]
+	WithTryRun(...bool) Database[M]
 	WithoutHook() Database[M]
 }
-
 ```
 
 ### Modal,Service
@@ -214,6 +177,25 @@ type Model interface {
 	Hooker
 }
 
+type Hooker interface {
+	CreateBefore() error
+	CreateAfter() error
+	DeleteBefore() error
+	DeleteAfter() error
+	UpdateBefore() error
+	UpdateAfter() error
+	UpdatePartialBefore() error
+	UpdatePartialAfter() error
+	ListBefore() error
+	ListAfter() error
+	GetBefore() error
+	GetAfter() error
+}
+```
+
+### Service
+
+```go
 type Service[M Model] interface {
 	CreateBefore(*ServiceContext, ...M) error
 	CreateAfter(*ServiceContext, ...M) error
@@ -234,22 +216,9 @@ type Service[M Model] interface {
 
 	Logger
 }
-
-type Hooker interface {
-	CreateBefore() error
-	CreateAfter() error
-	DeleteBefore() error
-	DeleteAfter() error
-	UpdateBefore() error
-	UpdateAfter() error
-	UpdatePartialBefore() error
-	UpdatePartialAfter() error
-	ListBefore() error
-	ListAfter() error
-	GetBefore() error
-	GetAfter() error
-}
 ```
+
+
 
 ### Cache
 
@@ -257,6 +226,7 @@ type Hooker interface {
 type Cache[T any] interface {
 	Set(key string, values T)
 	Get(key string) (T, bool)
+	Peek(key string) (T, bool)
 	Remove(key string)
 	Exists(key string) bool
 	Keys() []string
@@ -265,13 +235,24 @@ type Cache[T any] interface {
 }
 ```
 
+### ESDocumenter
+
+```go
+type ESDocumenter interface {
+	Document() map[string]any
+	GetID() string
+}
+```
+
+
+
+
+
+
+
 ## TODO
 
-- [x] database support postgresql
-- [x] database support sqlite
-- [ ] dateparse parse anytime \_start_time, \_end_time
-- [ ] limit recursive query/update in Hook.
-- [ ] config support toml
-- [ ] Join
-- [x] WithSelect, WithIndex
-- [ ] frontend
+- [ ] Use reflect caching to optimizeize performance
+- [ ] Configuration `config/config.go` supports multiple instances, including MySQL, PostgresSQL, Elastic, Elasticsearch, MongoDB, etc.
+- [ ] Add `ldap` package and integrate it into `boostrap.Boostrap`
+- [ ] Controler layer utilizes github.com/araddon/dateparse to handle arbitrary date time formats.
