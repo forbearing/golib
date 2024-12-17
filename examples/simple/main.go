@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	// Ensure config file `config.ini` exists in the current path.
-	// To use a different config file, call config.SetConfigPath to specify the path, e.g.:
+	// Verify existence of `config.ini` in the current directory. Empty configuration is permitted.
+	// To specify an alternative config file, use config.SetConfigPath, e.g.:
 	//
-	// config.SetConfigFile("config.ini")
+	// config.SetConfigFile("path/to/config.ini")
 
 	// Bootstrap all initializers
 	util.RunOrDie(bootstrap.Bootstrap)
