@@ -53,6 +53,6 @@ func (g *GormScanner) Value() (driver.Value, error) {
 	return util.BytesToString(data), nil
 }
 
-func GetTablename[M types.Model]() string {
+func GetTableName[M types.Model]() string {
 	return strcase.SnakeCase(pluralizeCli.Plural(reflect.TypeOf(*new(M)).Elem().Name()))
 }
