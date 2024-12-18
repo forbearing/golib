@@ -73,3 +73,22 @@ const (
 	PHASE_IMPORT                Phase = "import"
 	PHASE_EXPORT                Phase = "export"
 )
+
+// HTTPVerb represents the supported HTTP operations for a resource
+type HTTPVerb string
+
+const (
+	// Basic operations
+	Create        HTTPVerb = "create"         // POST /resource
+	Delete        HTTPVerb = "delete"         // DELETE /resource, DELETE /resource/:id
+	Update        HTTPVerb = "update"         // PUT /resource, PUT /resource/:id
+	UpdatePartial HTTPVerb = "update_partial" // PATCH /resource, PATCH /resource/:id
+	List          HTTPVerb = "list"           // GET /resource
+	Get           HTTPVerb = "get"            // GET /resource/:id
+	Export        HTTPVerb = "export"         // GET /resource/export
+	Import        HTTPVerb = "import"         // POST /resource/import
+
+	// Verb groups
+	Most HTTPVerb = "most" // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
+	All  HTTPVerb = "all"  // All operations including Import and Export
+)

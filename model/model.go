@@ -87,35 +87,16 @@ func RegisterTo[M types.Model](dbname string, records ...M) {
 	}
 }
 
-// Verb is router Verb
-type Verb string
-
-const (
-	VerbCreate        Verb = "create"
-	VerbDelete        Verb = "delete"
-	VerbUpdate        Verb = "update"
-	VerbUpdatePartial Verb = "update_partial"
-	VerbList          Verb = "list"
-	VerbGet           Verb = "get"
-	VerbExport        Verb = "export"
-	VerbImport        Verb = "import"
-
-	// VerbMost includes verbs: `create`, `delete`, `update`, `update_partial`, `list`, `get`
-	VerbMost Verb = "most"
-	// VerbAll includes VerbGeneral, VerbImport, VerbExport
-	VerbAll Verb = "all"
-)
-
 type route struct {
 	Model types.Model
 	Path  string
-	Verbs []Verb
+	Verbs []types.HTTPVerb
 }
 
 // RegisterRoutes register one route path with multiple api verbs.
 // call this function multiple to register multiple route path.
 // If route path is same, using latest register route path.
-func RegisterRoutes[M types.Model](path string, verbs ...Verb) {
+func RegisterRoutes[M types.Model](path string, verbs ...types.HTTPVerb) {
 	mu.Lock()
 	defer mu.Unlock()
 	if len(path) != 0 && len(verbs) != 0 {
