@@ -54,5 +54,5 @@ func (g *GormScanner) Value() (driver.Value, error) {
 }
 
 func GetTablename[M types.Model]() string {
-	return strcase.LowerCamelCase(pluralizeCli.Plural(reflect.TypeOf(*new(M)).Elem().Name()))
+	return strcase.SnakeCase(pluralizeCli.Plural(reflect.TypeOf(*new(M)).Elem().Name()))
 }
