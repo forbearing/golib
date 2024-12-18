@@ -15,7 +15,6 @@ const (
 
 func init() {
 	Register[*OperationLog]()
-	RegisterRoutes[*OperationLog]("log/operation", VerbList, VerbGet)
 }
 
 type OperationLog struct {
