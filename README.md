@@ -6,8 +6,8 @@ WARNING: Library under active development - expect significant API changes.
 
 ## Examples
 
-1.   [basic usage example](./examples/simple)
-2.   [simple project](./examples/myproject)
+1.  [basic usage example](./examples/simple)
+2.  [simple project](./examples/myproject)
 
 ## Datatabase operation
 
@@ -54,17 +54,24 @@ database.Database[M].WithExpand(expands).WithCache(!nocache).Get(m, id)
 ## Router
 
 ```go
-router.API.POST("/category", controller.Create[*model.Category])
-router.API.DELETE("/category", controller.Delete[*model.Category])
-router.API.DELETE("/category/:id", controller.Delete[*model.Category])
-router.API.PUT("/category", controller.Update[*model.Category])
-router.API.PUT("/category/:id", controller.Update[*model.Category])
-router.API.PATCH("/category", controller.UpdatePartial[*model.Category])
-router.API.PATCH("/category/:id", controller.UpdatePartial[*model.Category])
-router.API.GET("/category", controller.List[*model.Category])
-router.API.GET("/category/:id", controller.Get[*model.Category])
-router.API.GET("/category/export", controller.Export[*model.Category])
-router.API.POST("/category/import", controller.Import[*model.Category])
+asset := router.API.Group("/asset")
+router.Register[*model.Computer](asset, "/computer")
+router.Register[*model.Monitor](asset, "/monitor")
+router.Register[*model.Software](asset, "/software")
+router.Register[*model.NetworkEquipment](asset, "/network_equipment")
+router.Register[*model.Peripheral](asset, "/peripheral")
+router.Register[*model.Printer](asset, "/printer")
+router.Register[*model.Cartridge](asset, "/cartridge")
+router.Register[*model.Consumable](asset, "/consumable")
+router.Register[*model.Phone](asset, "/phone")
+router.Register[*model.Rack](asset, "/rack")
+router.Register[*model.Enclosure](asset, "/enclosure")
+router.Register[*model.PDU](asset, "/pdu")
+
+assistance := router.API.Group("/assistance")
+router.Register[*model.Ticket](assistance, "/ticket")
+router.Register[*model.Problem](assistance, "/problem")
+router.Register[*model.Change](assistance, "/change")
 ```
 
 ## Interface
@@ -222,8 +229,6 @@ type Service[M Model] interface {
 }
 ```
 
-
-
 ### Cache
 
 ```go
@@ -247,12 +252,6 @@ type ESDocumenter interface {
 	GetID() string
 }
 ```
-
-
-
-
-
-
 
 ## TODO
 
