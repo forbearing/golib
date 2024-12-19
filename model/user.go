@@ -1,12 +1,9 @@
 package model
 
 import (
+	"errors"
 	"strconv"
 )
-
-// func init() {
-// 	Register[*User]()
-// }
 
 type User struct {
 	Username     string `json:"username,omitempty" gorm:"unique" binding:"required"`
@@ -55,7 +52,7 @@ type User struct {
 func (u *User) CreateBefore() error {
 	if len(u.Mobile) != 0 {
 		if len(u.Mobile) != 11 {
-			return ErrMobileLength
+			return errors.New("mobile number length must be 11")
 		}
 		if _, err := strconv.Atoi(u.Mobile); err != nil {
 			return err
