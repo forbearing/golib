@@ -58,8 +58,36 @@ type Record struct {
 	Expands []string
 	DBName  string
 }
+type route struct {
+	Model types.Model
+	Path  string
+	Verbs []types.HTTPVerb
+}
 
-// Register table with records and it will be created in database before any curd..
+// Register associates the model with database table and will created automatically.
+// If records provided, they will be inserted when application bootstrapping.
+//
+// Parameters:
+//   - records: Optional initial records to be seeded into the table. Can be single or multiple records.
+//
+// Examples:
+//
+//	// Create table 'users' only
+//	Register[*model.User]()
+//
+//	// Create table 'users' and insert one record
+//	Register[*model.User](&model.User{ID: 1, Name: "admin"})
+//
+//	// Create table 'users' and insert a single user record
+//	Register[*model.User](user)
+//
+//	// Create table 'users' and insert multiple records
+//	Register[*model.User](users...)  // where users is []*model.User
+//
+// NOTE:
+//  1. Always call this function in init().
+//  2. Ensure the model pacakge is imported in main.go.
+//     The init() function will only executed if the file is imported directly or indirectly by main.go.
 func Register[M types.Model](records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -71,12 +99,12 @@ func Register[M types.Model](records ...M) {
 	}
 }
 
-// RegisterTo same as Register but with custom database instances.
-// dbname should always lowercase.
+// RegisterTo works identically to Register(), but registers the model on the specified database instance.
+// more details see: Register().
 func RegisterTo[M types.Model](dbname string, records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
-	// table := *new(M)
+	dbname = strings.ToLower(dbname)
 	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
 	TablesWithDB = append(TablesWithDB, struct {
 		Table  types.Model
@@ -87,21 +115,17 @@ func RegisterTo[M types.Model](dbname string, records ...M) {
 	}
 }
 
-type route struct {
-	Model types.Model
-	Path  string
-	Verbs []types.HTTPVerb
-}
-
 // RegisterRoutes register one route path with multiple api verbs.
 // call this function multiple to register multiple route path.
 // If route path is same, using latest register route path.
+//
+// Deprecated: use router.Register() instead. This function is a no-op.
 func RegisterRoutes[M types.Model](path string, verbs ...types.HTTPVerb) {
-	mu.Lock()
-	defer mu.Unlock()
-	if len(path) != 0 && len(verbs) != 0 {
-		Routes = append(Routes, route{Path: path, Verbs: verbs, Model: reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(types.Model)})
-	}
+	// mu.Lock()
+	// defer mu.Unlock()
+	// if len(path) != 0 && len(verbs) != 0 {
+	// 	Routes = append(Routes, route{Path: path, Verbs: verbs, Model: reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(types.Model)})
+	// }
 }
 
 var _ types.Model = (*Base)(nil)
