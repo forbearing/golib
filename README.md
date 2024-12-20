@@ -52,28 +52,12 @@ database.Database[M].
 database.Database[M].WithExpand(expands).WithCache(!nocache).Get(m, id)
 ```
 
-## Router
 
-```go
-asset := router.API.Group("/asset")
-router.Register[*model.Computer](asset, "/computer")
-router.Register[*model.Monitor](asset, "/monitor")
-router.Register[*model.Software](asset, "/software")
-router.Register[*model.NetworkEquipment](asset, "/network_equipment")
-router.Register[*model.Peripheral](asset, "/peripheral")
-router.Register[*model.Printer](asset, "/printer")
-router.Register[*model.Cartridge](asset, "/cartridge")
-router.Register[*model.Consumable](asset, "/consumable")
-router.Register[*model.Phone](asset, "/phone")
-router.Register[*model.Rack](asset, "/rack")
-router.Register[*model.Enclosure](asset, "/enclosure")
-router.Register[*model.PDU](asset, "/pdu")
 
-assistance := router.API.Group("/assistance")
-router.Register[*model.Ticket](assistance, "/ticket")
-router.Register[*model.Problem](assistance, "/problem")
-router.Register[*model.Change](assistance, "/change")
-```
+## Usage
+
+1.   [route usage](./examples/demo/main.go)
+2.   [model usage](./examples/demo/model/user.go)
 
 ## Interface
 
