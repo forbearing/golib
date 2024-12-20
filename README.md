@@ -6,9 +6,11 @@ WARNING: Library under active development - expect significant API changes.
 
 ## Examples
 
-1.  [basic usage example](./examples/simple)
+1.  [basic usage example](./examples/simple/main.go)
+
 2.  [example external project](https://github.com/forbearing/glpi)
-3.  [simple project](./examples/myproject)
+
+    
 
 ## Datatabase operation
 
