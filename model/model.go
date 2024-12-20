@@ -94,6 +94,12 @@ func Register[M types.Model](records ...M) {
 	// table := *new(M)
 	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
 	Tables = append(Tables, table)
+	// NOTE: it's necessary to set id before insert.
+	for i := range records {
+		if len(records[i].GetID()) == 0 {
+			records[i].SetID()
+		}
+	}
 	if len(records) != 0 {
 		Records = append(Records, &Record{Table: table, Rows: records, Expands: table.Expands()})
 	}
