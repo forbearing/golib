@@ -2,7 +2,7 @@ module demo
 
 go 1.23.4
 
-require github.com/forbearing/golib v0.0.67-0.20241220022128-a2641bf72cdd
+require github.com/forbearing/golib v0.0.67-0.20241220052721-b649c194c386
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect

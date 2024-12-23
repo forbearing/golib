@@ -1,11 +1,12 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/forbearing/golib/database"
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/util"
+	"github.com/pkg/errors"
 )
 
 const PREFIX = "golib"
@@ -86,7 +87,7 @@ func (u *User) CreateBefore() error {
 		return errors.New("user name is required")
 	}
 	if len(u.ID) == 0 {
-		u.ID = *u.Name
+		u.ID = Deref(u.Name)
 	}
 
 	return nil
@@ -97,6 +98,10 @@ func (u *User) CreateBefore() error {
 //
 // NOTE: database.Database().UpdateByID/Count operations do NOT triggle any hooks.
 func (*User) CreateAfter() error {
+	// ==============================
+	// Add your bussiness logic here.
+	// ==============================
+
 	fmt.Println("User CreateAfter")
 	return nil
 }
@@ -106,6 +111,10 @@ func (*User) CreateAfter() error {
 
 // NOTE: database.Database().UpdateByID/Count operations do NOT triggle any hooks.
 func (*User) UpdateBefore() error {
+	// ==============================
+	// Add your bussiness logic here.
+	// ==============================
+
 	fmt.Println("User UpdateBefore")
 	return nil
 }
@@ -115,6 +124,10 @@ func (*User) UpdateBefore() error {
 //
 // NOTE: database.Database().UpdateByID/Count operations do NOT triggle any hooks.
 func (*User) UpdateAfter() error {
+	// ==============================
+	// Add your bussiness logic here.
+	// ==============================
+
 	fmt.Println("User UpdateAfter")
 	return nil
 }
@@ -123,7 +136,11 @@ func (*User) UpdateAfter() error {
 // current hook only invoke by user calling database.Database().Delete
 //
 // NOTE: database.Database().UpdateByID/Count operations do NOT triggle any hooks.
-func (*User) DeleteBefore() error {
+func (u *User) DeleteBefore() error {
+	// ==============================
+	// Add your bussiness logic here.
+	// ==============================
+
 	fmt.Println("User DeleteBefore")
 	return nil
 }
@@ -132,7 +149,20 @@ func (*User) DeleteBefore() error {
 // current hook only invoke by user calling database.Database().Delete
 //
 // NOTE: database.Database().UpdateByID/Count operations do NOT triggle any hooks.
-func (*User) DeleteAfter() error {
+func (u *User) DeleteAfter() error {
+	// ==============================
+	// Add your bussiness logic here.
+	// ==============================
+
+	// examples: delete all debug logs associated with the current user
+	logs := make([]*Log, 0)
+	if err := database.Database[*Log]().WithLimit(-1).WithQuery(&Log{Level: LogLevelDebug, SourceID: u.ID}).List(&logs); err != nil {
+		return errors.Wrap(err, "failed to list logs")
+	}
+	if err := database.Database[*Log]().WithLimit(-1).WithPurge().Delete(logs...); err != nil {
+		return errors.Wrap(err, "failed to delete logs")
+	}
+
 	fmt.Println("User DeleteAfter")
 	return nil
 }

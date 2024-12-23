@@ -63,6 +63,8 @@ github.com/elastic/go-elasticsearch/v8 v8.17.0 h1:e9cWksE/Fr7urDRmGPGp47Nsp4/mvN
 github.com/elastic/go-elasticsearch/v8 v8.17.0/go.mod h1:lGMlgKIbYoRvay3xWBeKahAiJOgmFDsjZC39nmO3H64=
 github.com/forbearing/golib v0.0.67-0.20241220022128-a2641bf72cdd h1:AE6tmkMVsyXiOarEppVNipnpijZ9yl+yrSVjTb4ZfNk=
 github.com/forbearing/golib v0.0.67-0.20241220022128-a2641bf72cdd/go.mod h1:f6xDQe2kAfcGQxBXIFEHXCr+oe4czC99rdzhV7ObXvs=
+github.com/forbearing/golib v0.0.67-0.20241220052721-b649c194c386 h1:/JBzMT/2ORDLvL0dnnOxnp73h0vKR3m7Lq4pZxFGI98=
+github.com/forbearing/golib v0.0.67-0.20241220052721-b649c194c386/go.mod h1:f6xDQe2kAfcGQxBXIFEHXCr+oe4czC99rdzhV7ObXvs=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/8M=
