@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"demo/model"
+
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/util"
@@ -29,6 +31,7 @@ func main() {
 	// Set up your routes here, the routes are not required.
 	router.API.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.API.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
+	router.Register[*model.User](router.API, "user")
 
 	// Any router panic, exit, or error will cause program termination.
 	util.RunOrDie(router.Run)

@@ -1,9 +1,9 @@
-module simple
+module demo
 
 go 1.23.4
 
 require (
-	github.com/forbearing/golib v0.0.67-0.20241219151301-0a388c388115
+	github.com/forbearing/golib v0.0.67-0.20241220052721-b649c194c386
 	github.com/gin-gonic/gin v1.10.0
 )
 
