@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"time"
 
 	"demo/model"
@@ -17,10 +18,15 @@ type user struct{}
 var User = new(user)
 
 func (*user) List(c *gin.Context) {
-	// ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
+	user := new(model.User)
 	users := make([]*model.User, 0)
+	categories := make([]*model.Category, 0)
+
+	database.Database[*model.User]().List(&users)    // without context
+	database.Database[*model.User](ctx).List(&users) // with custom context.
 
 	// List all users without limit. -1 disable the limit, returns all users.
 	database.Database[*model.User]().WithLimit(-1).List(&users)
@@ -50,11 +56,10 @@ func (*user) List(c *gin.Context) {
 		Name:  util.ValueOf("admin"),
 		Email: util.ValueOf("admin@admin.admin"),
 	})
-	// default WithAnd.
 	database.Database[*model.User]().WithAnd().WithQuery(&model.User{
 		Name:  util.ValueOf("admin"),
 		Email: util.ValueOf("admin@admin.admin"),
-	})
+	}) // default WithAnd.
 
 	// List users with multiple field conditions
 	//
@@ -137,20 +142,65 @@ func (*user) List(c *gin.Context) {
 		return nil
 	})
 
-	// List users without triggering model's hooks
-	// its usefull to break recurive trigger model's hooks.
+	// List users without triggering model's hooks.
+	// It's useful to break recursive model hook triggers.
 	database.Database[*model.User]().WithoutHook().List(&users)
+
+	// List users from cache if exists, otherwise fetch from database.
+	database.Database[*model.User]().WithCache().List(&users)
+
+	// List all users but excluding those with names 'root' or 'admin'.
+	//
+	// SQL equivalent:
+	// SELECT * FROM users
+	// WHERE name NOT IN ('root', 'admin')
+	// LIMIT 1000
+	expands := map[string][]any{"name": {"root", "admin"}}
+	database.Database[*model.User]().WithExclude(expands).List(&users)
+
+	// List users with pagination, returns users from offset 1 with limit 20.//
+	//
+	// SQL equivalent:
+	// SELECT * FROM users
+	// LIMIT 20 OFFSET 1
+	database.Database[*model.User]().WithScope(1, 20).List(&users)
+
+	// List categories with expanded relationships for 'Children' and 'Parent'.
+	//
+	// Expands configuration:
+	// - Children: expands child categories
+	// - Parent: expands parent category
+	//
+	// Example JSON response:
+	// {
+	//   "id": "electronics",
+	//   "name": "Electronics",
+	//   "parent": {
+	//     "id": "root",
+	//     "name": "Root"
+	//   },
+	//   "children": [
+	//     {
+	//       "id": "phone",
+	//       "name": "Phones"
+	//     },
+	//     {
+	//       "id": "computer",
+	//       "name": "Computers"
+	//     }
+	//   ]
+	// }// The frontend will get the nested json data from backend.
+	database.Database[*model.Category]().WithExpand(new(model.Category).Expands()).List(&categories)
+
+	// Get the first user from database.
+	database.Database[*model.User]().First(user)
+	// Get the last user from database.
+	database.Database[*model.User]().Last(user)
+	// Get a random user from database.
+	database.Database[*model.User]().Take(user)
 
 	// =====================================================================
 	// Why choose database.Database().Create/Delete/Update/List/Get methods:
 	// beacause model's hooks only invoke in database.Database.
 	// =====================================================================
-}
-
-func (*user) Create(c *gin.Context) {
-	database.Database[*model.User]().WithTryRun()
-}
-
-func (*user) Delete(c *gin.Context) {
-	database.Database[*model.User]().WithPurge()
 }
