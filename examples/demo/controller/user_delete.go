@@ -44,6 +44,13 @@ func (*user) Delete(c *gin.Context) {
 	// Default delete only updates `deleted_at` field to current time.
 	database.Database[*model.User]().WithPurge().Delete(users...)
 
+	// Permanently delete the user records that `deleted_at` field is not null.
+	//
+	// SQL equivalent:
+	// DELETE FROM users
+	// WHERE deleted_at IS NOT NULL
+	database.Database[*model.User]().Cleanup()
+
 	// =====================================================================
 	// Why choose database.Database().Create/Delete/Update/List/Get methods:
 	// beacause model's hooks only invoke in database.Database.
