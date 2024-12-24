@@ -10,22 +10,25 @@ WARNING: Library under active development - expect significant API changes.
 
 2.  [example external project](https://github.com/forbearing/glpi)
 
-    
+
 
 ## Datatabase Usages
 
--   [Create]()
--   [Delete]()
--   [Update]()
+-   [Create](./examples/demo/controller/user_create.go)
+-   [Delete](./examples/demo/controller/user_delete.go)
+-   [Update](./examples/demo/controller/user_update.go)
 -   [List](./examples/demo/controller/user_list.go)
--   [Get]()
+-   [Get](./examples/demo/controller/user_get.go)
 
 
 
-## Usage
+## [Router Usage](./examples/demo/main.go)
 
-1.   [router usage](./examples/demo/main.go)
-2.   [model usage](./examples/demo/model/user.go)
+## [Model Usage](./examples/demo/model/user.go)
+
+## [controller Usage]()
+
+
 
 ## Interface
 
