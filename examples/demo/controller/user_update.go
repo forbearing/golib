@@ -40,8 +40,8 @@ func (u *user) Update(c *gin.Context) {
 	database.Database[*model.User]().WithoutHook().Update(users...)
 
 	// Update users with all fields but except 'email' and 'avatar'.
-	database.Database[*model.User]().WithOmit("email", "avatar").Create(user)
-	database.Database[*model.User]().WithOmit("email", "avatar").Create(users...)
+	database.Database[*model.User]().WithOmit("email", "avatar").Update(user)
+	database.Database[*model.User]().WithOmit("email", "avatar").Update(users...)
 
 	// Update Single User record.
 	// Only update `name` field.
