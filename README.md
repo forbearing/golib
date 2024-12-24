@@ -12,53 +12,19 @@ WARNING: Library under active development - expect significant API changes.
 
     
 
-## Datatabase operation
+## Datatabase Usages
 
-### Create
-
-```go
-database.Database[M].WithExpand(req.Expands()).Create(req)
-```
-
-### Delete
-
-```go
-database.Database[M].WithExpand(req.Expands()).Create(req)
-```
-
-### Update/update_partial
-
-```go
-database.Database[M].Update(req)
-```
-
-### List
-
-```go
-database.Database[M].
-  WithScope(page, size).
-  WithOr(or).
-  WithQuery(svc.Filter(svcCtx, m), fuzzy).
-  WithQueryRaw(svc.FilterRaw(svcCtx)).
-  WithExclude(m.Excludes()).
-  WithExpand(expands, sortBy).
-  WithOrder(sortBy).
-  WithTimeRange(columnName, startTime, endTime).
-  WithCache(!nocache).
-  List(&data)
-```
-
-### Get
-
-```go
-database.Database[M].WithExpand(expands).WithCache(!nocache).Get(m, id)
-```
+-   [Create]()
+-   [Delete]()
+-   [Update]()
+-   [List](./examples/demo/controller/user_list.go)
+-   [Get]()
 
 
 
 ## Usage
 
-1.   [route usage](./examples/demo/main.go)
+1.   [router usage](./examples/demo/main.go)
 2.   [model usage](./examples/demo/model/user.go)
 
 ## Interface
