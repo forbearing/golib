@@ -14,9 +14,9 @@ WARNING: Library under active development - expect significant API changes.
 
 ## Documents
 
--   [router usage](./examples/demo/main.go)
--   [controller usage]()
--   [model usage](./examples/demo/model/user.go)
+-   [Router usage](./examples/demo/main.go)
+-   [Controller usage]()
+-   [Model usage](./examples/demo/model/user.go)
 
 -   [Database Create](./examples/demo/controller/user_create.go)
 -   [Database Delete](./examples/demo/controller/user_delete.go)
