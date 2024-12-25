@@ -27,10 +27,10 @@ func main() {
 
 	// use middleware.
 	router.API.Use(
-		middleware.Gzip(),
+		middleware.RateLimiter(),
 
 		// middleware.JwtAuth(),
-		// middleware.RateLimiter(),
+		// middleware.Gzip(),
 
 		// // setup config.App.AuthConfig.BaseAuthUsername and config.App.AuthConfig.BaseAuthPassword before use this middleware
 		// middleware.BaseAuth(),
