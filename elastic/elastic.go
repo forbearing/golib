@@ -30,29 +30,25 @@ type (
 )
 
 var (
-	client  *elasticsearch.Client
-	cfg     elasticsearch.Config
-	timeout = 10 * time.Second
+	client   *elasticsearch.Client
+	esConfig elasticsearch.Config
+	timeout  = 10 * time.Second
 
 	Document = new(document)
 	Index    = new(index)
 )
 
+// Init initializes the global elasticsearch client.
+// It reads elasticsearch configuration from config.App.ElasticsearchConfig.
+// If elasticsearch not enabled, it returns nil.
+// The functions also starts a background goroutines to ensure connection health.
 func Init() (err error) {
-	if !config.App.ElasticsearchConfig.Enable {
+	cfg := config.App.ElasticsearchConfig
+	if !cfg.Enable {
 		return nil
 	}
-	cfg = elasticsearch.Config{
-		Addresses:              strings.Split(config.App.ElasticsearchConfig.Hosts, ","),
-		Username:               config.App.ElasticsearchConfig.Username,
-		Password:               config.App.ElasticsearchConfig.Password,
-		CloudID:                config.App.ElasticsearchConfig.CloudID,
-		APIKey:                 config.App.ElasticsearchConfig.APIKey,
-		ServiceToken:           config.App.ElasticsearchConfig.ServiceToken,
-		CertificateFingerprint: config.App.ElasticsearchConfig.CertificateFingerprint,
-		Transport:              &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	}
-	if client, err = elasticsearch.NewClient(cfg); err != nil {
+	esConfig = makeESConfig(cfg)
+	if client, err = elasticsearch.NewClient(esConfig); err != nil {
 		return err
 	}
 	ticker := time.NewTicker(timeout + 10*time.Second)
@@ -61,8 +57,26 @@ func Init() (err error) {
 			_ensureConnection()
 		}
 	}()
-	zap.S().Infow("successfully connect to elasticsearch", "hosts", config.App.ElasticsearchConfig.Hosts)
+	zap.S().Infow("successfully connect to elasticsearch", "hosts", cfg.Hosts)
 	return nil
+}
+
+// New creates a new elasticsearch client instance with the given configuration.
+func New(cfg config.ElasticsearchConfig) (*elasticsearch.Client, error) {
+	return elasticsearch.NewClient(makeESConfig(cfg))
+}
+
+func makeESConfig(cfg config.ElasticsearchConfig) elasticsearch.Config {
+	return elasticsearch.Config{
+		Addresses:              strings.Split(cfg.Hosts, ","),
+		Username:               cfg.Username,
+		Password:               cfg.Password,
+		CloudID:                cfg.CloudID,
+		APIKey:                 cfg.APIKey,
+		ServiceToken:           cfg.ServiceToken,
+		CertificateFingerprint: cfg.CertificateFingerprint,
+		Transport:              &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	}
 }
 
 // _ensureConnection checks the connection and reconnects if necessary
@@ -72,7 +86,7 @@ func _ensureConnection() {
 	defer cancel()
 	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
 		logger.Elastic.Warn("elasticsearch connection maybe broken, try to reconnect: %v", err)
-		if newClient, err := elasticsearch.NewClient(cfg); err != nil {
+		if newClient, err := elasticsearch.NewClient(esConfig); err != nil {
 			logger.Elastic.Error("reconnect to elasticsearch error: %v", err)
 		} else {
 			client = newClient
