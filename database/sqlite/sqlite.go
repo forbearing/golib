@@ -14,21 +14,38 @@ var (
 	dbmap   = make(map[string]*gorm.DB)
 )
 
+// Init initializes the default SQLite connection.
+// It checks if SQLite is enabled and selected as the default database.
+// If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
-	if !config.App.SqliteConfig.Enable || config.App.ServerConfig.DB != config.DBSqlite {
+	cfg := config.App.SqliteConfig
+	if !cfg.Enable || config.App.ServerConfig.DB != config.DBSqlite {
 		return
 	}
 
-	dsn := config.App.SqliteConfig.Path
-	if config.App.SqliteConfig.IsMemory {
-		dsn = "file::memory:?cache=shared" // Ignore file based database if IsMemory is true.
-	}
-	if Default, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
+	if Default, err = New(cfg); err != nil {
 		zap.S().Error(err)
 		return err
 	}
-	zap.S().Infow("successfully connect to sqlite", "path", config.App.SqliteConfig.Path, "database", config.App.SqliteConfig.Database, "is_memory", config.App.SqliteConfig.IsMemory)
+	zap.S().Infow("successfully connect to sqlite", "path", cfg.Path, "database", cfg.Database, "is_memory", cfg.IsMemory)
 	return helper.InitDatabase(Default, dbmap)
+}
+
+// New creates and returns a new SQLite database connection with the given configuration.
+// Returns (*gorm.DB, error) where error is non-nil if the connection fails.
+func New(cfg config.SqliteConfig) (*gorm.DB, error) {
+	return gorm.Open(sqlite.Open(makeDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
+}
+
+func makeDSN(cfg config.SqliteConfig) string {
+	dsn := cfg.Path
+	if cfg.IsMemory || len(cfg.Path) == 0 {
+		if len(cfg.Path) == 0 {
+			zap.S().Warn("sqlite path is empty, using in-memory database")
+		}
+		dsn = "file::memory:?cache=shared" // Ignore file based database if IsMemory is true.
+	}
+	return dsn
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }
