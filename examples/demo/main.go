@@ -6,7 +6,6 @@ import (
 	model_instance "demo/model/instance"
 
 	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
@@ -21,9 +20,9 @@ func main() {
 
 	util.RunOrDie(bootstrap.Bootstrap)
 
-	// set base auth config.
-	config.App.AuthConfig.BaseAuthUsername = "admin"
-	config.App.AuthConfig.BaseAuthPassword = "admin"
+	// // set base auth config.
+	// config.App.AuthConfig.BaseAuthUsername = "admin"
+	// config.App.AuthConfig.BaseAuthPassword = "admin"
 
 	// use middleware.
 	router.API.Use(
