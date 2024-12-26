@@ -15,14 +15,13 @@ WARNING: Library under active development - expect significant API changes.
 ## Documents
 
 -   [Router usage](./examples/demo/main.go)
--   [Controller usage](./controller/READMD.md)
 -   [Model usage](./examples/demo/model/user.go)
-
 -   [Database Create](./examples/demo/controller/user_create.go)
 -   [Database Delete](./examples/demo/controller/user_delete.go)
 -   [Database Update](./examples/demo/controller/user_update.go)
 -   [Database List](./examples/demo/controller/user_list.go)
 -   [Database Get](./examples/demo/controller/user_get.go)
+-   [Controller usage](./controller/READMD.md)
 
 
 
