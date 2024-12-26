@@ -19,8 +19,13 @@ var (
 	mu          sync.RWMutex
 )
 
+// Init initializes the global MongoDB client.
+// It reads MongoDB configuration from config.App.MongoConfig.
+// If MongoDB is not enabled, it returns nil.
+// The function is thread-safe and ensures the client is initialized only once.
 func Init() (err error) {
-	if !config.App.MongoConfig.Enable {
+	cfg := config.App.MongoConfig
+	if !cfg.Enable {
 		return nil
 	}
 
@@ -30,26 +35,12 @@ func Init() (err error) {
 		return nil
 	}
 
-	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
-		config.App.MongoConfig.Username,
-		config.App.MongoConfig.Password,
-		config.App.MongoConfig.Host,
-		config.App.MongoConfig.Port,
-		config.App.MongoConfig.Database,
-		config.App.MongoConfig.AuthSource,
-	)
-	if len(config.App.MongoConfig.Username) == 0 && len(config.App.MongoConfig.Password) == 0 {
-		uri = fmt.Sprintf("mongodb://%s:%d/%s",
-			config.App.MongoConfig.Host,
-			config.App.MongoConfig.Port,
-			config.App.MongoConfig.Database,
-		)
-	}
+	uri := makeURI(cfg)
 	client, err = mongo.Connect(options.Client().
 		ApplyURI(uri).
-		SetMaxPoolSize(config.App.MongoConfig.MaxPoolSize).
-		SetMinPoolSize(config.App.MongoConfig.MinPoolSize).
-		SetConnectTimeout(config.App.MongoConfig.ConnectTimeout),
+		SetMaxPoolSize(cfg.MaxPoolSize).
+		SetMinPoolSize(cfg.MinPoolSize).
+		SetConnectTimeout(cfg.ConnectTimeout),
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -57,13 +48,37 @@ func Init() (err error) {
 		return fmt.Errorf("ping mongodb failed: %w", err)
 	}
 	zap.S().Infow("successfully connect to mongodb",
-		"host", config.App.MongoConfig.Host,
-		"port", config.App.MongoConfig.Port,
-		"database", config.App.MongoConfig.Database,
+		"host", cfg.Host,
+		"port", cfg.Port,
+		"database", cfg.Database,
 	)
 
 	initialized = true
 	return err
+}
+
+// New returns a new MongoDB client instance with given configuration.
+// It's the caller's responsibility to close the client,
+// caller should always call Close() when it's no longer needed.
+func New(cfg config.MongoConfig) (*mongo.Client, error) {
+	uri := makeURI(cfg)
+	return mongo.Connect(options.Client().
+		ApplyURI(uri).
+		SetMaxPoolSize(cfg.MaxPoolSize).
+		SetMinPoolSize(cfg.MinPoolSize).
+		SetConnectTimeout(cfg.ConnectTimeout),
+	)
+}
+
+func makeURI(cfg config.MongoConfig) string {
+	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
+		cfg.Username, cfg.Password, cfg.Host, cfg.Port,
+		cfg.Database, cfg.AuthSource,
+	)
+	if len(cfg.Username) == 0 && len(cfg.Password) == 0 {
+		uri = fmt.Sprintf("mongodb://%s:%d/%s", cfg.Host, cfg.Port, cfg.Database)
+	}
+	return uri
 }
 
 // Client returns the MongoDB client instance
