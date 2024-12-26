@@ -191,6 +191,7 @@ func (*user) List(c *gin.Context) {
 	//   ]
 	// }// The frontend will get the nested json data from backend.
 	database.Database[*model.Category]().WithExpand(new(model.Category).Expands()).List(&categories)
+	database.Database[*model.Category]().WithExpand([]string{"Children"}).List(&categories)
 
 	// Get the first user from database.
 	database.Database[*model.User]().First(user)

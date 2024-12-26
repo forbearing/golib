@@ -7,6 +7,7 @@ import (
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/util"
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 )
 
 const PREFIX = "golib"
@@ -21,9 +22,9 @@ var (
 // - If boostrapped N times, total len(users) * N records will be inserted.
 // - This may result in unintended duplicate data.
 var users []*User = []*User{
-	{Name: ValueOf("user01"), Email: ValueOf("user01@example.com")},
-	{Name: ValueOf("user02"), Email: ValueOf("user02@example.com")},
-	{Name: ValueOf("user03"), Email: ValueOf("user03@example.com")},
+	{Name: ValueOf("user11"), Email: ValueOf("user11@example.com")},
+	{Name: ValueOf("user12"), Email: ValueOf("user12@example.com")},
+	{Name: ValueOf("user13"), Email: ValueOf("user13@example.com")},
 }
 
 // users with predefined ID, the ID will not be generated automatically.
@@ -60,11 +61,11 @@ func init() {
 type User struct {
 	pkgmodel.Base
 
-	Name     *string `json:"name,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Avatar   *string `json:"avatar,omitempty"`
-	Sunname  *string `json:"sunname,omitempty"`
-	Nickname *string `json:"nickname,omitempty"`
+	Name     *string `json:"name,omitempty" schema:"name"`
+	Email    *string `json:"email,omitempty" schema:"email"`
+	Avatar   *string `json:"avatar,omitempty" schema:"avatar"`
+	Sunname  *string `json:"sunname,omitempty" schema:"sunname"`
+	Nickname *string `json:"nickname,omitempty" schema:"nickname"`
 }
 
 // GetTableName specifiecs the table name of the `User` model.
@@ -164,5 +165,27 @@ func (u *User) DeleteAfter() error {
 	}
 
 	fmt.Println("User DeleteAfter")
+	return nil
+}
+
+func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if u == nil {
+		return nil
+	}
+	if len(Deref(u.Name)) > 0 {
+		enc.AddString("name", Deref(u.Name))
+	}
+	if len(Deref(u.Email)) > 0 {
+		enc.AddString("email", Deref(u.Email))
+	}
+	if len(Deref(u.Avatar)) > 0 {
+		enc.AddString("avatar", Deref(u.Avatar))
+	}
+	if len(Deref(u.Sunname)) > 0 {
+		enc.AddString("sunname", Deref(u.Sunname))
+	}
+	if len(Deref(u.Nickname)) > 0 {
+		enc.AddString("nickname", Deref(u.Nickname))
+	}
 	return nil
 }

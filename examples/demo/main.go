@@ -53,6 +53,7 @@ func main() {
 	// router.Register[*model.User](router.API, "/user")
 	// router.Register[*model.User](router.API, "user", types.Most)
 	router.Register[*model.User](router.API, "user")
+	router.Register[*model.Category](router.API, "category")
 
 	// Only register `Create` operation for the model `Group`.
 	// Generated endpoints:
