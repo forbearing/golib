@@ -16,33 +16,33 @@ var (
 	dbmap   = make(map[string]*gorm.DB)
 )
 
+// Init initializes the default PostgreSQL connection.
+// It checks if PostgreSQL is enabled and selected as the default database.
+// If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
-	if !config.App.PostgreConfig.Enable || config.App.ServerConfig.DB != config.DBPostgre {
+	cfg := config.App.PostgreConfig
+	if !cfg.Enable || config.App.ServerConfig.DB != config.DBPostgre {
 		return
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
-		config.App.PostgreConfig.Host,
-		config.App.PostgreConfig.Username,
-		config.App.PostgreConfig.Password,
-		config.App.PostgreConfig.Database,
-		config.App.PostgreConfig.Port,
-		config.App.PostgreConfig.SSLMode,
-		config.App.PostgreConfig.TimeZone,
-	)
-	if Default, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Gorm}); err != nil {
+	if Default, err = New(cfg); err != nil {
 		zap.S().Error(err)
 		return err
 	}
-	zap.S().Infow("successfully connect to postgres",
-		"host", config.App.PostgreConfig.Host,
-		"port", config.App.PostgreConfig.Port,
-		"database", config.App.PostgreConfig.Database,
-		"username", config.App.PostgreConfig.Username,
-		"sslmode", config.App.PostgreConfig.SSLMode,
-		"timezone", config.App.PostgreConfig.TimeZone,
-	)
+	zap.S().Infow("successfully connect to postgres", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database, "sslmode", cfg.SSLMode, "timezone", cfg.TimeZone)
 	return helper.InitDatabase(Default, dbmap)
+}
+
+// New creates and returns a new PostgreSQL database connection with the given configuration.
+// Returns (*gorm.DB, error) where error is non-nil if the connection fails.
+func New(cfg config.PostgreConfig) (*gorm.DB, error) {
+	return gorm.Open(postgres.Open(makeDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
+}
+
+func makeDSN(cfg config.PostgreConfig) string {
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
+		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, cfg.SSLMode, cfg.TimeZone,
+	)
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }
