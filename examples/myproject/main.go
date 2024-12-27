@@ -7,10 +7,12 @@ import (
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
+	"github.com/forbearing/golib/types"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -68,6 +70,21 @@ func main() {
 	router.Register[*User](router.API, "/user")
 	router.Register[*Group](router.API, "/group")
 	router.API.GET("/debug/debug", Debug.Debug)
+
+	cfg := config.MySQLConfig{}
+	cfg.Host = "127.0.0.1"
+	cfg.Port = 3306
+	cfg.Database = "golib"
+	cfg.Username = "golib"
+	cfg.Password = "golib"
+	cfg.Charset = "utf8mb4"
+	db, err := mysql.New(cfg)
+	if err != nil {
+		panic(err)
+	}
+	// It's your responsibility to ensure the table already exists.
+	router.RegisterWithConfig(&types.ControllerConfig[*User]{DB: db}, router.API, "/external/user")
+	router.RegisterWithConfig(&types.ControllerConfig[*Group]{DB: db}, router.API, "/external/group")
 
 	// Run server.
 	RunOrDie(router.Run)
