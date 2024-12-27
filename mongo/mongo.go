@@ -47,11 +47,7 @@ func Init() (err error) {
 	if err = client.Ping(ctx, readpref.Primary()); err != nil {
 		return fmt.Errorf("ping mongodb failed: %w", err)
 	}
-	zap.S().Infow("successfully connect to mongodb",
-		"host", cfg.Host,
-		"port", cfg.Port,
-		"database", cfg.Database,
-	)
+	zap.S().Infow("successfully connect to mongodb", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 
 	initialized = true
 	return err
