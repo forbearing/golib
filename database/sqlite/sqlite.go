@@ -34,10 +34,10 @@ func Init() (err error) {
 // New creates and returns a new SQLite database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
 func New(cfg config.SqliteConfig) (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open(makeDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
+	return gorm.Open(sqlite.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func makeDSN(cfg config.SqliteConfig) string {
+func buildDSN(cfg config.SqliteConfig) string {
 	dsn := cfg.Path
 	if cfg.IsMemory || len(cfg.Path) == 0 {
 		if len(cfg.Path) == 0 {
