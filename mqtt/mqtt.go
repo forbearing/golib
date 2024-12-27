@@ -13,6 +13,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -23,8 +24,9 @@ var (
 	clientId    string
 )
 
-func Init() error {
-	if !config.App.MqttConfig.Enable {
+func Init() (err error) {
+	cfg := config.App.MqttConfig
+	if !cfg.Enable {
 		return nil
 	}
 
@@ -34,40 +36,34 @@ func Init() error {
 		return nil
 	}
 
-	opts, err := createClientOptions()
-	if err != nil {
-		return fmt.Errorf("create mqtt options failed: %w", err)
+	if client, err = New(cfg); err != nil {
+		return errors.Wrap(err, "failed to create mqtt client")
 	}
-	client = mqtt.NewClient(opts)
 	if err := connect(client); err != nil {
-		return fmt.Errorf("connect to mqtt broker failed: %w", err)
+		return errors.Wrap(err, "failed to connect to mqtt broker")
 	}
+	zap.S().Infow("successfully connect to mqtt broker",
+		"addr", cfg.Addr,
+		"client_id", clientId,
+		"keepalive", config.App.Keepalive.String(),
+		"connection_timeout", cfg.ConnectTimeout.String(),
+		"clean_session", cfg.CleanSession,
+		"auto_reconnect", cfg.AutoReconnect,
+	)
 	go monitorConnection()
 	initialized = true
 	return nil
 }
 
-func connect(client mqtt.Client) error {
-	token := client.Connect()
-	if !token.WaitTimeout(config.App.MqttConfig.ConnectTimeout) {
-		return fmt.Errorf("connect timeout")
+func New(cfg config.MqttConfig) (mqtt.Client, error) {
+	opts, err := buildOptions(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build mqtt options")
 	}
-	if err := token.Error(); err != nil {
-		return err
-	}
-	zap.S().Infow("successfully connect to mqtt broker",
-		"addr", config.App.MqttConfig.Addr,
-		"client_id", clientId,
-		"keepalive", config.App.Keepalive.String(),
-		"connection_timeout", config.App.MqttConfig.ConnectTimeout.String(),
-		"clean_session", config.App.MqttConfig.CleanSession,
-		"auto_reconnect", config.App.MqttConfig.AutoReconnect,
-	)
-	return nil
+	return mqtt.NewClient(opts), nil
 }
 
-func createClientOptions() (*mqtt.ClientOptions, error) {
-	cfg := config.App.MqttConfig
+func buildOptions(cfg config.MqttConfig) (*mqtt.ClientOptions, error) {
 	clientId = fmt.Sprintf("%s-%d",
 		defaultIfEmpty(cfg.ClientPrefix, "mqtt-client"),
 		rand.New(rand.NewSource(time.Now().UnixNano())).Int(),
@@ -79,7 +75,6 @@ func createClientOptions() (*mqtt.ClientOptions, error) {
 		SetClientID(clientId).
 		SetProtocolVersion(5).
 		SetKeepAlive(cfg.Keepalive).
-		SetCleanSession(cfg.CleanSession).
 		SetConnectTimeout(cfg.ConnectTimeout).
 		SetCleanSession(cfg.CleanSession)
 	if cfg.Username != "" {
@@ -93,7 +88,7 @@ func createClientOptions() (*mqtt.ClientOptions, error) {
 		if len(cfg.CertFile) != 0 && len(cfg.KeyFile) != 0 {
 			cert, err := loadCertificate(cfg.CertFile, cfg.KeyFile)
 			if err != nil {
-				return nil, fmt.Errorf("load certificate failed: %w", err)
+				return nil, errors.Wrap(err, "failed to load mqtt certificate")
 			}
 			tlsConfig.Certificates = []tls.Certificate{cert}
 		}
@@ -109,11 +104,22 @@ func createClientOptions() (*mqtt.ClientOptions, error) {
 	return opts, nil
 }
 
+func connect(client mqtt.Client) error {
+	token := client.Connect()
+	if !token.WaitTimeout(config.App.MqttConfig.ConnectTimeout) {
+		return fmt.Errorf("connect timeout")
+	}
+	if err := token.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // loadCertificate loads TLS certificate
 func loadCertificate(certFile, keyFile string) (tls.Certificate, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return tls.Certificate{}, fmt.Errorf("load certificate failed: %w", err)
+		return tls.Certificate{}, errors.Wrap(err, "failed to load certificate")
 	}
 	return cert, nil
 }
@@ -203,7 +209,7 @@ func Close() error {
 func Publish(topic string, payload any, opts ...PublishOption) error {
 	c, err := Client()
 	if err != nil {
-		return fmt.Errorf("get mqtt client failed: %w", err)
+		return err
 	}
 	opt := DefaultPublishOption
 	if len(opts) > 0 {
@@ -220,7 +226,7 @@ func Publish(topic string, payload any, opts ...PublishOption) error {
 	default:
 		var err error
 		if data, err = json.Marshal(v); err != nil {
-			return fmt.Errorf("marshal payload failed: %w", err)
+			return errors.Wrap(err, "failed to marshal payload")
 		}
 	}
 
@@ -249,7 +255,7 @@ type MessageHandler func(topic string, payload []byte) error
 func Subscribe(topic string, handler MessageHandler, opts ...SubscribeOption) error {
 	c, err := Client()
 	if err != nil {
-		return fmt.Errorf("get mqtt client failed: %w", err)
+		return err
 	}
 	opt := DefaultSubscribeOption
 	if len(opts) > 0 {
@@ -293,7 +299,7 @@ func Subscribe(topic string, handler MessageHandler, opts ...SubscribeOption) er
 func Unsubscribe(topics ...string) error {
 	c, err := Client()
 	if err != nil {
-		return fmt.Errorf("get mqtt client failed: %w", err)
+		return err
 	}
 
 	token := c.Unsubscribe(topics...)
