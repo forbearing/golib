@@ -6,7 +6,9 @@ import (
 	model_instance "demo/model/instance"
 
 	"github.com/forbearing/golib/bootstrap"
+	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/types"
@@ -123,6 +125,23 @@ func main() {
 	router.Register[*model_instance.Cluster](instance, "cluster")         // route: /api/instance/cluster
 	router.Register[*model_instance.Database](instance, "database")       // route: /api/instance/database
 	router.Register[*model_instance.Certificate](instance, "certificate") // route: /api/instance/certificate
+
+	// With seperate mysql instance
+	cfg := config.MySQLConfig{}
+	cfg.Host = "127.0.0.1"
+	cfg.Port = 3306
+	cfg.Database = "test"
+	cfg.Username = "test"
+	cfg.Password = "test"
+	cfg.Charset = "utf8mb4"
+	db, err := mysql.New(cfg)
+	if err != nil {
+		panic(err)
+	}
+	// NOTE: It is your responsibility to ensure the table that map to model already exists.
+	external := router.API.Group("/external")
+	router.RegisterWithConfig(&types.ControllerConfig[*model.User]{DB: db, TableName: "users"}, external, "/user")
+	router.RegisterWithConfig(&types.ControllerConfig[*model.Category]{DB: db, TableName: "groups"}, external, "category")
 
 	util.RunOrDie(router.Run)
 }
