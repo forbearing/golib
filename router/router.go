@@ -53,7 +53,8 @@ func Run() error {
 	return Base.Run(addr)
 }
 
-// Register registers HTTP routes for a given model type with specified verbs.
+// Register registers HTTP routes for a given model type with specified verbs
+// using default controller configuration.
 // It supports common CRUD operations along with import/export functionality.
 //
 // Parameters:
@@ -63,27 +64,85 @@ func Run() error {
 //
 // Route patterns registered:
 //   - POST   /{path}         -> Create
-//   - DELETE /{path}         -> Delete (bulk)
-//   - DELETE /{path}/:id     -> Delete (single)
-//   - PUT    /{path}         -> Update (bulk)
-//   - PUT    /{path}/:id     -> Update (single)
-//   - PATCH  /{path}         -> UpdatePartial (bulk)
-//   - PATCH  /{path}/:id     -> UpdatePartial (single)
+//   - DELETE /{path}         -> Delete
+//   - DELETE /{path}/:id     -> Delete
+//   - PUT    /{path}         -> Update
+//   - PUT    /{path}/:id     -> Update
+//   - PATCH  /{path}         -> UpdatePartial
+//   - PATCH  /{path}/:id     -> UpdatePartial
 //   - GET    /{path}         -> List
 //   - GET    /{path}/:id     -> Get
 //   - POST   /{path}/import  -> Import
 //   - GET    /{path}/export  -> Export
-func Register[M types.Model](router gin.IRouter, path string, verbs ...types.HTTPVerb) {
-	path = strings.TrimSpace(path)
-	if len(path) == 0 {
+//
+// For custom controller configuration, use RegisterWithConfig instead.
+func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...types.HTTPVerb) {
+	rawPath = strings.TrimSpace(rawPath)
+	if len(rawPath) == 0 {
 		zap.S().Warn("empty path, skip register routes")
 		return
 	}
+	path := buildPath(rawPath)
+	verbMap := buildVerbMap(verbs...)
+
+	register[M](router, path, verbMap)
+}
+
+// RegisterWithConfig is same as Register, but with custom controller configuration.
+// The cfg parameter allow custom controller behavior.
+// more details see Register.
+func RegisterWithConfig[M types.Model](cfg *types.ControllerConfig[M], router gin.IRouter, rawPath string, verbs ...types.HTTPVerb) {
+	rawPath = strings.TrimSpace(rawPath)
+	if len(rawPath) == 0 {
+		zap.S().Warn("empty path, skip register routes")
+		return
+	}
+	path := buildPath(rawPath)
+	verbMap := buildVerbMap(verbs...)
+
+	register(router, path, verbMap, cfg)
+}
+
+func register[M types.Model](router gin.IRouter, path string, verbMap map[types.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
+	if verbMap[types.Create] {
+		router.POST(path, controller.CreateFactory(cfg...))
+	}
+	if verbMap[types.Delete] {
+		router.DELETE(path, controller.DeleteFactory(cfg...))
+		router.DELETE(path+"/:id", controller.DeleteFactory(cfg...))
+	}
+	if verbMap[types.Update] {
+		router.PUT(path, controller.UpdateFactory(cfg...))
+		router.PUT(path+"/:id", controller.UpdateFactory(cfg...))
+	}
+	if verbMap[types.UpdatePartial] {
+		router.PATCH(path, controller.UpdatePartialFactory(cfg...))
+		router.PATCH(path+"/:id", controller.UpdatePartialFactory(cfg...))
+	}
+	if verbMap[types.List] {
+		router.GET(path, controller.ListFactory(cfg...))
+	}
+	if verbMap[types.Get] {
+		router.GET(path+"/:id", controller.GetFactory(cfg...))
+	}
+	if verbMap[types.Import] {
+		router.POST(path+"/import", controller.ImportFactory(cfg...))
+	}
+	if verbMap[types.Export] {
+		router.GET(path+"/export", controller.ExportFactory(cfg...))
+	}
+}
+
+// buildPath normalizes the API path.
+func buildPath(path string) string {
 	path = strings.TrimPrefix(path, `/api/`) // remove path prefix: '/api/'
 	path = strings.TrimPrefix(path, "/")     // trim left "/"
 	path = strings.TrimSuffix(path, "/")     // trim right "/"
-	path = "/" + path
+	return "/" + path
+}
 
+// buildVerbMap creates a map of allowed HTTP verbs according to the specified verbs.
+func buildVerbMap(verbs ...types.HTTPVerb) map[types.HTTPVerb]bool {
 	verbMap := make(map[types.HTTPVerb]bool)
 
 	if len(verbs) == 0 {
@@ -106,32 +165,5 @@ func Register[M types.Model](router gin.IRouter, path string, verbs ...types.HTT
 		verbMap[types.List] = true
 		verbMap[types.Get] = true
 	}
-
-	if verbMap[types.Create] {
-		router.POST(path, controller.Create[M])
-	}
-	if verbMap[types.Delete] {
-		router.DELETE(path, controller.Delete[M])
-		router.DELETE(path+"/:id", controller.Delete[M])
-	}
-	if verbMap[types.Update] {
-		router.PUT(path, controller.Update[M])
-		router.PUT(path+"/:id", controller.Update[M])
-	}
-	if verbMap[types.UpdatePartial] {
-		router.PATCH(path, controller.UpdatePartial[M])
-		router.PATCH(path+"/:id", controller.UpdatePartial[M])
-	}
-	if verbMap[types.List] {
-		router.GET(path, controller.List[M])
-	}
-	if verbMap[types.Get] {
-		router.GET(path+"/:id", controller.Get[M])
-	}
-	if verbMap[types.Import] {
-		router.POST(path+"/import", controller.Import[M])
-	}
-	if verbMap[types.Export] {
-		router.GET(path+"/export", controller.Export[M])
-	}
+	return verbMap
 }
