@@ -10,6 +10,8 @@ import (
 	"github.com/forbearing/golib/util"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 var (
@@ -18,22 +20,34 @@ var (
 	ctx  = context.Background()
 )
 
+// Init initializes the MiniIO clients as a singleton.
+// It reads Minio configuration from config.App.MinioConfig
+// It returns nil if minio is not enabled.
 func Init() (err error) {
-	if !config.App.MinioConfig.Enable {
+	cfg := config.App.MinioConfig
+	if !cfg.Enable {
 		return nil
 	}
-
 	once.Do(func() {
-		endpoint := config.App.MinioConfig.Endpoint
-		accessKey := config.App.MinioConfig.AccessKey
-		secretKey := config.App.MinioConfig.SecretKey
-		useSsl := config.App.MinioConfig.UseSsl
-		cli, err = minio.New(endpoint, &minio.Options{
-			Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-			Secure: useSsl,
-		})
+		if cli, err = New(cfg); err != nil {
+			err = errors.Wrap(err, "failed to create minio client")
+			zap.S().Error(err)
+		}
 	})
+	zap.S().Infow("successfully connect to minio", "endpoint", cfg.Endpoint, "bucket", cfg.Bucket)
 	return
+}
+
+// New creates a new Minio client instance with the given configuration.
+func New(cfg config.MinioConfig) (*minio.Client, error) {
+	return minio.New(cfg.Endpoint, buildOptions(cfg))
+}
+
+func buildOptions(cfg config.MinioConfig) *minio.Options {
+	return &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: cfg.UseSsl,
+	}
 }
 
 func Put(reader io.Reader, size int64) (filename string, err error) {
