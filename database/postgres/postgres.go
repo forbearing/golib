@@ -36,10 +36,10 @@ func Init() (err error) {
 // New creates and returns a new PostgreSQL database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
 func New(cfg config.PostgreConfig) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(makeDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
+	return gorm.Open(postgres.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func makeDSN(cfg config.PostgreConfig) string {
+func buildDSN(cfg config.PostgreConfig) string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, cfg.SSLMode, cfg.TimeZone,
 	)
