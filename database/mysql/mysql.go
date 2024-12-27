@@ -36,10 +36,10 @@ func Init() (err error) {
 // New creates and returns a new MySQL database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
 func New(cfg config.MySQLConfig) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(makeDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
+	return gorm.Open(mysql.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func makeDSN(cfg config.MySQLConfig) string {
+func buildDSN(cfg config.MySQLConfig) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset,
 	)
