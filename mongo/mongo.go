@@ -35,7 +35,7 @@ func Init() (err error) {
 		return nil
 	}
 
-	uri := makeURI(cfg)
+	uri := buildURI(cfg)
 	client, err = mongo.Connect(options.Client().
 		ApplyURI(uri).
 		SetMaxPoolSize(cfg.MaxPoolSize).
@@ -57,7 +57,7 @@ func Init() (err error) {
 // It's the caller's responsibility to close the client,
 // caller should always call Close() when it's no longer needed.
 func New(cfg config.MongoConfig) (*mongo.Client, error) {
-	uri := makeURI(cfg)
+	uri := buildURI(cfg)
 	return mongo.Connect(options.Client().
 		ApplyURI(uri).
 		SetMaxPoolSize(cfg.MaxPoolSize).
@@ -66,7 +66,7 @@ func New(cfg config.MongoConfig) (*mongo.Client, error) {
 	)
 }
 
-func makeURI(cfg config.MongoConfig) string {
+func buildURI(cfg config.MongoConfig) string {
 	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port,
 		cfg.Database, cfg.AuthSource,
