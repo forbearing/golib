@@ -25,6 +25,7 @@ WARNING: Library under active development - expect significant API changes.
 -   Service usage
 -   Logger usage
 -   Package usage
+    -   [tunnel](./tunnel/session_test.go)
     -   lru
     -   cmap
     -   sqlite,postgres,mysql
