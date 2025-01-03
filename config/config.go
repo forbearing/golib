@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -58,7 +61,17 @@ func Init() (err error) {
 
 	SetDefaultValue()
 	if err = viper.ReadInConfig(); err != nil {
-		return
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			var tempdir string
+			if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
+				return err
+			}
+			if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 	if err = viper.Unmarshal(App); err != nil {
 		return
