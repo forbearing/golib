@@ -7,7 +7,7 @@ toolchain go1.23.3
 require (
 	github.com/allegro/bigcache v1.2.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/casbin/casbin/v2 v2.102.0
+	github.com/casbin/casbin/v2 v2.103.0
 	github.com/casbin/gorm-adapter/v3 v3.32.0
 	github.com/cloverstd/tcping v0.1.1
 	github.com/didip/tollbooth/v7 v7.0.2
@@ -60,7 +60,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
 	github.com/bytedance/sonic v1.12.6 // indirect
 	github.com/bytedance/sonic/loader v0.2.1 // indirect
-	github.com/casbin/govaluate v1.2.0 // indirect
+	github.com/casbin/govaluate v1.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
