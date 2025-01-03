@@ -23,6 +23,9 @@ var (
 	Cronjob    types.Logger
 	Job        types.Logger
 
+	Protocol types.Logger
+	Binary   types.Logger
+
 	Gin  *zap.Logger
 	Gorm gorml.Interface
 )

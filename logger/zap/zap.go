@@ -55,6 +55,8 @@ func Init() error {
 	logger.Visitor = New("visitor.log")
 	logger.Cronjob = New("cronjob.log")
 	logger.Job = New("job.log")
+	logger.Protocol = New("protocol.log")
+	logger.Binary = New("binary.log")
 	logger.Gin = NewGin("access.log")
 	logger.Gorm = NewGorm("gorm.log")
 
