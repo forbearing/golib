@@ -1,10 +1,13 @@
 package util
 
 import (
+	"errors"
+	"io"
 	"net"
 	"reflect"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 func GetConnection(conn net.Conn) Connection {
@@ -61,4 +64,11 @@ func GetFdFromListener(l net.Listener) int {
 	pfd := netFD.FieldByName("pfd")
 	fd := int(pfd.FieldByName("Sysfd").Int())
 	return fd
+}
+
+func IsConnClosed(err error) bool {
+	if err == io.EOF || errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) {
+		return true
+	}
+	return false
 }
