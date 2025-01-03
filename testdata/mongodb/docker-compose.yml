@@ -14,3 +14,4 @@ services:
       - /tmp/mongo-volume:/data/db
     ports:
       - "27017-27019:27017-27019"
+    restart: unless-stopped
