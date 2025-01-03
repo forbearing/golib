@@ -2,38 +2,23 @@
 package tunnel
 
 // Cmd is the command type
+// NOTE: custom cmd must be greater than 1000.
 type Cmd uint32
 
 // NOTE:赋予具体的值的目的是防止 Cmd 值变化了, 如果 Cmd 值变化了, 相当于发送了其他
 // 的命令, 这会直接导致 server 和 client 之间的通信出现问题.
 const (
-	RegisterAsControl Cmd = 1
-	RegisterSuccess   Cmd = 2
-	RegisterFailure   Cmd = 3
-	ClientShutdown    Cmd = 5
-
-	Heartbeat     Cmd = 1000
-	ClientSysInfo Cmd = 1001
-
-	Ping Cmd = 2001
-	Pong Cmd = 2002
+	Ping Cmd = 1
+	Pong Cmd = 2
 )
 
-var CmdMap = map[Cmd]string{
-	RegisterAsControl: "RegisterAsControl",
-	RegisterSuccess:   "RegisterSuccess",
-	RegisterFailure:   "RegisterFailure",
-	ClientShutdown:    "ClientShutdown",
-
-	Heartbeat:     "Heartbeat",
-	ClientSysInfo: "ClientSysInfo",
-
+var cmdMap = map[Cmd]string{
 	Ping: "Ping",
 	Pong: "Pong",
 }
 
 func (c Cmd) String() string {
-	v, ok := CmdMap[c]
+	v, ok := cmdMap[c]
 	if ok {
 		return v
 	}
