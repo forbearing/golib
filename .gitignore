@@ -14,3 +14,4 @@ resources
 rsync.sh
 TODO
 .dccache
+*.db
