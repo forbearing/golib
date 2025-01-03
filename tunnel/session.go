@@ -2,7 +2,6 @@ package tunnel
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -12,6 +11,7 @@ import (
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	"github.com/gorilla/websocket"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +31,7 @@ type connMapVal struct {
 	// is an atomic operation, otherwise dirty data will be generated.
 	wmu sync.Mutex
 
-	// network detail contains the connection of remote/local ip and remote/local port.
+	// connection contains the connection of remote/local ip and remote/local port.
 	connection util.Connection
 }
 
@@ -83,7 +83,7 @@ func (s *Session) Read() (*Event, error) {
 	logger.Binary.Infoz("Read", zap.Uint32("size", size), zap.ByteString("data", cmdBuf), zap.Binary("binary", cmdBuf))
 	// 3.unmarshal data.
 	event := &Event{}
-	if err := json.Unmarshal(cmdBuf, event); err != nil {
+	if err := msgpack.Unmarshal(cmdBuf, event); err != nil {
 		return nil, err
 	}
 
@@ -110,14 +110,10 @@ func (s *Session) Write(event *Event) error {
 		event.ID = util.UUID()
 	}
 	// 1.marshal data
-	buf, err := json.Marshal(event)
+	buf, err := msgpack.Marshal(event)
 	if err != nil {
 		return err
 	}
-
-	// if err := internal.WriteBinary(s.tcpconn, buf); err != nil {
-	// 	return err
-	// }
 
 	// 2.write data size
 	if err := binary.Write(s.tcpconn, binary.BigEndian, uint32(len(buf))); err != nil {
