@@ -7,7 +7,7 @@ import (
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 const (
@@ -74,7 +74,7 @@ func Init() (err error) {
 	if RBAC.adapter, err = gormadapter.NewAdapterByDB(database.DB); err != nil {
 		return
 	}
-	if RBAC.enforcer, err = casbin.NewEnforcer(types.FileRbacConf, RBAC.adapter); err != nil {
+	if RBAC.enforcer, err = casbin.NewEnforcer(consts.FileRbacConf, RBAC.adapter); err != nil {
 		return
 	}
 	// RBAC.enforcer.AddFunction("isAdmin", func(args ...any) (any, error) {

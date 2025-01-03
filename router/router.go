@@ -9,6 +9,7 @@ import (
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -76,7 +77,7 @@ func Run() error {
 //   - GET    /{path}/export  -> Export
 //
 // For custom controller configuration, use RegisterWithConfig instead.
-func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...types.HTTPVerb) {
+func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
 	rawPath = strings.TrimSpace(rawPath)
 	if len(rawPath) == 0 {
 		zap.S().Warn("empty path, skip register routes")
@@ -91,7 +92,7 @@ func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...types.
 // RegisterWithConfig is same as Register, but with custom controller configuration.
 // The cfg parameter allow custom controller behavior.
 // more details see Register.
-func RegisterWithConfig[M types.Model](cfg *types.ControllerConfig[M], router gin.IRouter, rawPath string, verbs ...types.HTTPVerb) {
+func RegisterWithConfig[M types.Model](cfg *types.ControllerConfig[M], router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
 	rawPath = strings.TrimSpace(rawPath)
 	if len(rawPath) == 0 {
 		zap.S().Warn("empty path, skip register routes")
@@ -103,32 +104,32 @@ func RegisterWithConfig[M types.Model](cfg *types.ControllerConfig[M], router gi
 	register(router, path, verbMap, cfg)
 }
 
-func register[M types.Model](router gin.IRouter, path string, verbMap map[types.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
-	if verbMap[types.Create] {
+func register[M types.Model](router gin.IRouter, path string, verbMap map[consts.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
+	if verbMap[consts.Create] {
 		router.POST(path, controller.CreateFactory(cfg...))
 	}
-	if verbMap[types.Delete] {
+	if verbMap[consts.Delete] {
 		router.DELETE(path, controller.DeleteFactory(cfg...))
 		router.DELETE(path+"/:id", controller.DeleteFactory(cfg...))
 	}
-	if verbMap[types.Update] {
+	if verbMap[consts.Update] {
 		router.PUT(path, controller.UpdateFactory(cfg...))
 		router.PUT(path+"/:id", controller.UpdateFactory(cfg...))
 	}
-	if verbMap[types.UpdatePartial] {
+	if verbMap[consts.UpdatePartial] {
 		router.PATCH(path, controller.UpdatePartialFactory(cfg...))
 		router.PATCH(path+"/:id", controller.UpdatePartialFactory(cfg...))
 	}
-	if verbMap[types.List] {
+	if verbMap[consts.List] {
 		router.GET(path, controller.ListFactory(cfg...))
 	}
-	if verbMap[types.Get] {
+	if verbMap[consts.Get] {
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
 	}
-	if verbMap[types.Import] {
+	if verbMap[consts.Import] {
 		router.POST(path+"/import", controller.ImportFactory(cfg...))
 	}
-	if verbMap[types.Export] {
+	if verbMap[consts.Export] {
 		router.GET(path+"/export", controller.ExportFactory(cfg...))
 	}
 }
@@ -142,28 +143,28 @@ func buildPath(path string) string {
 }
 
 // buildVerbMap creates a map of allowed HTTP verbs according to the specified verbs.
-func buildVerbMap(verbs ...types.HTTPVerb) map[types.HTTPVerb]bool {
-	verbMap := make(map[types.HTTPVerb]bool)
+func buildVerbMap(verbs ...consts.HTTPVerb) map[consts.HTTPVerb]bool {
+	verbMap := make(map[consts.HTTPVerb]bool)
 
 	if len(verbs) == 0 {
-		verbMap[types.Most] = true
+		verbMap[consts.Most] = true
 	} else {
 		for _, verb := range verbs {
 			verbMap[verb] = true
 		}
 	}
-	if verbMap[types.All] {
-		verbMap[types.Most] = true
-		verbMap[types.Import] = true
-		verbMap[types.Export] = true
+	if verbMap[consts.All] {
+		verbMap[consts.Most] = true
+		verbMap[consts.Import] = true
+		verbMap[consts.Export] = true
 	}
-	if verbMap[types.Most] {
-		verbMap[types.Create] = true
-		verbMap[types.Delete] = true
-		verbMap[types.Update] = true
-		verbMap[types.UpdatePartial] = true
-		verbMap[types.List] = true
-		verbMap[types.Get] = true
+	if verbMap[consts.Most] {
+		verbMap[consts.Create] = true
+		verbMap[consts.Delete] = true
+		verbMap[consts.Update] = true
+		verbMap[consts.UpdatePartial] = true
+		verbMap[consts.List] = true
+		verbMap[consts.Get] = true
 	}
 	return verbMap
 }

@@ -17,6 +17,7 @@ import (
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/gin-gonic/gin"
@@ -73,10 +74,10 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_CREATE),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_CREATE),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -145,8 +146,8 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			RequestId: c.GetString(types.REQUEST_ID),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -177,10 +178,10 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_DELETE),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_DELETE),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
@@ -270,8 +271,8 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 				RecordId:  ml[i].GetID(),
 				Record:    util.BytesToString(record),
 				IP:        c.ClientIP(),
-				User:      c.GetString(types.CTX_USERNAME),
-				RequestId: c.GetString(types.REQUEST_ID),
+				User:      c.GetString(consts.CTX_USERNAME),
+				RequestId: c.GetString(consts.REQUEST_ID),
 				URI:       c.Request.RequestURI,
 				Method:    c.Request.Method,
 				UserAgent: c.Request.UserAgent(),
@@ -300,10 +301,10 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_UPDATE),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_UPDATE),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -371,8 +372,8 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			RequestId: c.GetString(types.REQUEST_ID),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -402,10 +403,10 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_UPDATE_PARTIAL),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_UPDATE_PARTIAL),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -554,8 +555,8 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			RequestId: c.GetString(types.REQUEST_ID),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -607,10 +608,10 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_LIST),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_LIST),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		var page, size int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -623,10 +624,10 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		index, _ := c.GetQuery(QUERY_INDEX)
 		selects, _ := c.GetQuery(QUERY_SELECT)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
-			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+			startTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
 		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
-			endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
+			endTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 		}
 
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -779,8 +780,8 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		// 	Model:     typ.Name(),
 		// 	Table:     tableName,
 		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(types.CTX_USERNAME),
-		// 	RequestId: c.GetString(types.REQUEST_ID),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
 		// 	URI:       c.Request.RequestURI,
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
@@ -832,10 +833,10 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_GET),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_GET),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		if len(c.Param(PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
@@ -959,8 +960,8 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// 	Model:     typ.Name(),
 		// 	Table:     tableName,
 		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(types.CTX_USERNAME),
-		// 	RequestId: c.GetString(types.REQUEST_ID),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
 		// 	URI:       c.Request.RequestURI,
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
@@ -1013,10 +1014,10 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_EXPORT),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_EXPORT),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		var page, size, limit int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -1032,10 +1033,10 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		index, _ := c.GetQuery(QUERY_INDEX)
 		selects, _ := c.GetQuery(QUERY_SELECT)
 		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
-			startTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, startTimeStr, time.Local)
+			startTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
 		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
-			endTime, _ = time.ParseInLocation(types.DATE_TIME_LAYOUT, endTimeStr, time.Local)
+			endTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 		}
 
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -1165,8 +1166,8 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			Table:     tableName,
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			RequestId: c.GetString(types.REQUEST_ID),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -1189,10 +1190,10 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.With(
-			types.PHASE, string(types.PHASE_IMPORT),
-			types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-			types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-			types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+			consts.PHASE, string(consts.PHASE_IMPORT),
+			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
+			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
+			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
 		// NOTE:字段为 file 必须和前端协商好.
 
 		file, err := c.FormFile("file")
@@ -1270,8 +1271,8 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			Table:     tableName,
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
-			User:      c.GetString(types.CTX_USERNAME),
-			RequestId: c.GetString(types.REQUEST_ID),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),

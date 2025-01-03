@@ -17,6 +17,7 @@ import (
 	// redis "github.com/redis/go-redis/v9"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	redis "github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )
@@ -48,7 +49,7 @@ func Init() error {
 			DB:       config.App.RedisConfig.DB,
 		})
 		// 确保 redis 没有问题
-		err = rdb.Set(context.TODO(), config.App.RedisConfig.Namespace+"_"+"now", time.Now().Format(types.DATE_TIME_LAYOUT), config.App.RedisConfig.Expiration).Err()
+		err = rdb.Set(context.TODO(), config.App.RedisConfig.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), config.App.RedisConfig.Expiration).Err()
 	})
 	return err
 }

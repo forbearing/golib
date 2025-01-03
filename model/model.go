@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -61,7 +62,7 @@ type Record struct {
 type route struct {
 	Model types.Model
 	Path  string
-	Verbs []types.HTTPVerb
+	Verbs []consts.HTTPVerb
 }
 
 // Register associates the model with database table and will created automatically.
@@ -126,7 +127,7 @@ func RegisterTo[M types.Model](dbname string, records ...M) {
 // If route path is same, using latest register route path.
 //
 // Deprecated: use router.Register() instead. This function is a no-op.
-func RegisterRoutes[M types.Model](path string, verbs ...types.HTTPVerb) {
+func RegisterRoutes[M types.Model](path string, verbs ...consts.HTTPVerb) {
 	// mu.Lock()
 	// defer mu.Unlock()
 	// if len(path) != 0 && len(verbs) != 0 {
@@ -232,7 +233,7 @@ func SetID(m types.Model, id ...string) {
 type GormTime time.Time
 
 func (t *GormTime) Scan(value any) error {
-	localTime, err := time.Parse(types.DATE_TIME_LAYOUT, string(value.([]byte)))
+	localTime, err := time.Parse(consts.DATE_TIME_LAYOUT, string(value.([]byte)))
 	if err != nil {
 		return err
 	}
@@ -241,14 +242,14 @@ func (t *GormTime) Scan(value any) error {
 }
 
 func (t GormTime) Value() (driver.Value, error) {
-	return time.Time(t).Format(types.DATE_TIME_LAYOUT), nil
+	return time.Time(t).Format(consts.DATE_TIME_LAYOUT), nil
 }
 
 func (t *GormTime) UnmarshalJSON(b []byte) error {
 	// Trim quotes from the stringified JSON value
 	s := strings.Trim(string(b), "\"")
 	// Parse the time using the custom format
-	parsedTime, err := time.Parse(types.DATE_TIME_LAYOUT, s)
+	parsedTime, err := time.Parse(consts.DATE_TIME_LAYOUT, s)
 	if err != nil {
 		return err
 	}
@@ -259,7 +260,7 @@ func (t *GormTime) UnmarshalJSON(b []byte) error {
 
 func (ct GormTime) MarshalJSON() ([]byte, error) {
 	// Convert the time to the custom format and stringify it
-	return []byte("\"" + time.Time(ct).Format(types.DATE_TIME_LAYOUT) + "\""), nil
+	return []byte("\"" + time.Time(ct).Format(consts.DATE_TIME_LAYOUT) + "\""), nil
 }
 
 type GormStrings []string

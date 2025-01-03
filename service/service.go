@@ -8,6 +8,7 @@ import (
 
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
@@ -83,7 +84,7 @@ func (f Factory[M]) Service() types.Service[M] {
 // GinContext build *types.ServiceContext from *gin.Context.
 func GinContext(c *gin.Context) *types.ServiceContext {
 	var requestId string
-	val, _ := c.Get(types.REQUEST_ID)
+	val, _ := c.Get(consts.REQUEST_ID)
 	switch v := val.(type) {
 	case string:
 		requestId = v
@@ -99,9 +100,9 @@ func GinContext(c *gin.Context) *types.ServiceContext {
 		ClientIP:     c.ClientIP(),
 		UserAgent:    c.Request.UserAgent(),
 
-		Username:  c.GetString(types.CTX_USERNAME),
-		UserId:    c.GetString(types.CTX_USER_ID),
-		SessionId: c.GetString(types.CTX_SESSION_ID),
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		SessionId: c.GetString(consts.CTX_SESSION_ID),
 		RequestId: requestId,
 	}
 }

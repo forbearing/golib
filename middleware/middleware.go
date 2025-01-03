@@ -15,7 +15,7 @@ import (
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/model"
 	. "github.com/forbearing/golib/response"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-contrib/gzip"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -44,9 +44,9 @@ func Logger(filename ...string) gin.HandlerFunc {
 		fields := []zapcore.Field{
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
-			zap.String("username", c.GetString(types.CTX_USERNAME)),
-			zap.String("user_id", c.GetString(types.CTX_USER_ID)),
-			zap.String("log_id", c.GetString(types.REQUEST_ID)),
+			zap.String("username", c.GetString(consts.CTX_USERNAME)),
+			zap.String("user_id", c.GetString(consts.CTX_USER_ID)),
+			zap.String("log_id", c.GetString(consts.REQUEST_ID)),
 			zap.String("path", path),
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
@@ -118,9 +118,9 @@ func JwtAuth() gin.HandlerFunc {
 		// 将当前请求的 username 信息保存到请求的上线 *gin.Context 中
 		// 后续的处理函数可以通过 c.Get("username") 来获取当前请求的用户信息
 		// TODO: 将 user id 和 username 定义成变量/常量
-		c.Set(types.CTX_USER_ID, claims.UserId)
-		c.Set(types.CTX_USERNAME, claims.Username)
-		c.Set(types.CTX_SESSION_ID, c.GetHeader("X-Session-Id"))
+		c.Set(consts.CTX_USER_ID, claims.UserId)
+		c.Set(consts.CTX_USERNAME, claims.Username)
+		c.Set(consts.CTX_SESSION_ID, c.GetHeader("X-Session-Id"))
 		c.Next()
 	}
 }
@@ -161,7 +161,7 @@ func OperationLogger() gin.HandlerFunc {
 			c.Next() // next()方法的作用是跳过该调用链去直接后面的中间件以及api路由
 		}
 		info := func() (string, string) {
-			username := c.GetString(types.CTX_USERNAME)
+			username := c.GetString(consts.CTX_USERNAME)
 			var table string
 			items := strings.Split(c.Request.URL.Path, `/`)
 			if len(items) > 0 {
