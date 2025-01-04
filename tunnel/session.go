@@ -52,10 +52,16 @@ type Session struct {
 	locker *connMapVal
 }
 
-// Read reads binary data and the size of binary data.
-// Read should be locked to ensure that reading data and size of data
-// is an atomic operation.
-// FIXME: handle io.EOF error
+// Read reads and decodes an Event from the connection.
+// The binary protocol format is:
+//  1. First 4 bytes: data size in BigEndian uint32
+//  2. Remaining bytes: msgpack encoded Event data
+//
+// Returns an error if:
+//   - Failed to read the data size
+//   - Data size is 0
+//   - Failed to read the event data
+//   - Failed to unmarshal the data into Event
 func (s *Session) Read() (*Event, error) {
 	// logger.Protocol.Infow("Session.Read() S", "key", s.locker.key) // S: start
 	// s.locker.rmu.Lock()
@@ -66,6 +72,9 @@ func (s *Session) Read() (*Event, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
+	if s.tcpconn == nil {
+		return nil, errors.New("connection is nil")
+	}
 
 	// 1.read data size
 	var size uint32
@@ -73,7 +82,7 @@ func (s *Session) Read() (*Event, error) {
 		return nil, err
 	}
 	if size == 0 {
-		return nil, errors.New("data size is nil")
+		return nil, errors.New("invalid data size: received zero")
 	}
 	// 2.read data
 	cmdBuf := make([]byte, size)
@@ -91,11 +100,21 @@ func (s *Session) Read() (*Event, error) {
 	return event, nil
 }
 
-// Write writes binary data and the size of binary data.
-// Write should be locked to ensure that writing data and size of data
-// is an atomic operation.
-// FIXME: handle io.EOF error
+// Write encodes and writes an Event to the connection.
+// The binary protocol format is:
+//  1. First 4 bytes: data size in BigEndian uint32
+//  2. Remaining bytes: msgpack encoded Event data
+//
+// If the Event.ID is empty, it will be set to a new UUID.
+// The write operation is synchronized using a mutex to ensure atomic writes.
+// Returns an error if:
+//   - Failed to marshal the event
+//   - Failed to write the data size
+//   - Failed to write the event data
 func (s *Session) Write(event *Event) error {
+	if s.tcpconn == nil {
+		return errors.New("connection is nil")
+	}
 	if event == nil {
 		return nil
 	}
@@ -103,7 +122,7 @@ func (s *Session) Write(event *Event) error {
 	s.locker.wmu.Lock()
 	logger.Protocol.Infow("Session.Write() L", "key", s.locker.key, "event", event.Cmd) // L: lock
 	defer s.locker.wmu.Unlock()
-	// 这个 ID 极其重要, 如果人家设置了 ID, 你千万别动人家的 I
+	// 这个 ID 极其重要, 如果人家设置了 ID, 你千万别动人家的
 	// 因为 Event 的 ID 相同就表明这是正在进行的同一个通信.
 	// 如果 Event 的 ID 就表明这不是同一个通信.
 	if event.ID == "" {
@@ -127,9 +146,24 @@ func (s *Session) Write(event *Event) error {
 	return nil
 }
 
-// NewSession
-// cid is the client control connection uuid.
-// server-side should always provides the cid when send or receive event.
+// NewSession creates a new tunnel session from a connection.
+// Currently only supports TCP connections (*net.TCPConn).
+//
+// Parameters:
+//   - _conn: The connection to create session from, must be *net.TCPConn
+//   - appSide: Indicates whether this is server or client side (consts.Server/consts.Client)
+//   - cid: Optional client ID, only used on server side. If provided, will be used as the connection key
+//
+// The session tracking differs between server and client:
+//   - Server side: Uses remote IP or client ID(if provided) as the connection key
+//   - Client side: Uses local port as the connection key
+//
+// Each connection is associated with a locker to ensure thread-safe reads/writes.
+// If a connection with the same key already exists, the existing locker will be reused.
+//
+// Returns:
+//   - *Session and nil if successful
+//   - nil and error if connection type not supported or other errors occur
 func NewSession(_conn any, appSide consts.AppSide, cid ...string) (*Session, error) {
 	switch conn := _conn.(type) {
 	case *net.TCPConn:
