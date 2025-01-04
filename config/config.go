@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +47,17 @@ const (
 	DBMySQL   = "mysql"
 )
 
+// Init initializes the application configuration
+//
+// Configuration priority (from highest to lowest):
+// 1. Environment variables
+// 2. Configuration file
+// 3. Default values
 func Init() (err error) {
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	SetDefaultValue()
+
 	if len(configFile) > 0 {
 		viper.SetConfigFile(configFile)
 	} else {
@@ -59,7 +70,6 @@ func Init() (err error) {
 		viper.AddConfigPath(path)
 	}
 
-	SetDefaultValue()
 	if err = viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			var tempdir string
@@ -88,6 +98,7 @@ func Init() (err error) {
 	case ModeDev:
 		App.Domain = "http://192.168.1.1:5173"
 	}
+
 	return nil
 }
 
