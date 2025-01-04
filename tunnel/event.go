@@ -38,25 +38,28 @@ type Event struct {
 	Payload any `json:"payload,omitempty" msgpack:"payload,omitempty"`
 }
 
-// DecodePayload converts Event.Payload to the specified type T.
+// DecodePayload decodes the payload into the provided value v of type T.
 // It handles three cases:
-// 1. If the payload is nil, returns the zero value of type T
-// 2. If the payload is already type T, returns it directly
-// 3. Otherwise, uses msgpack marshal/unmarshal to perform the conversion
-func DecodePayload[T any](data any) (T, error) {
-	var result T
-	if data == nil {
-		return result, nil
+// 1. If the payload is nil, v remains unchanged
+// 2. If the payload is already type T, assigns directly to v
+// 3. Otherwise, uses msgpack marshal/unmarshal to decode into v
+func DecodePayload[T any](payload any, v *T) error {
+	// Check nil payload
+	if payload == nil {
+		return nil
 	}
-	if v, ok := data.(T); ok {
-		return v, nil
+
+	// Try direct type assertion
+	if val, ok := payload.(T); ok {
+		*v = val
+		return nil
 	}
-	b, err := msgpack.Marshal(data)
+
+	// Use msgpack marshal/unmarshal for conversion
+	b, err := msgpack.Marshal(payload)
 	if err != nil {
-		return result, err
+		return err
 	}
-	if err := msgpack.Unmarshal(b, &result); err != nil {
-		return result, err
-	}
-	return result, nil
+
+	return msgpack.Unmarshal(b, v)
 }
