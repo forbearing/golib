@@ -3,7 +3,6 @@ package tunnel_test
 import (
 	"net"
 	"testing"
-	"time"
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/tunnel"
@@ -14,6 +13,9 @@ import (
 var (
 	addr   = "0.0.0.0:12345"
 	doneCh = make(chan struct{}, 1)
+
+	Bye   = tunnel.NewCmd("bye", 1000)
+	Hello = tunnel.NewCmd("hello", 1001)
 )
 
 func TestSession(t *testing.T) {
@@ -34,15 +36,21 @@ func server(t *testing.T) {
 	assert.NoError(t, err)
 	defer conn.Close()
 
-	session, err := tunnel.NewSession(conn, consts.Server)
-	assert.NoError(t, err)
-
-	event, err := session.Read()
-	assert.NoError(t, err)
-	switch event.Cmd {
-	case tunnel.Ping:
-		t.Log("client ping")
-		session.Write(&tunnel.Event{Cmd: tunnel.Pong})
+	session, _ := tunnel.NewSession(conn, consts.Server)
+	for {
+		event, err := session.Read()
+		assert.NoError(t, err)
+		switch event.Cmd {
+		case tunnel.Ping:
+			t.Log("client ping")
+			session.Write(&tunnel.Event{Cmd: tunnel.Pong})
+		case Hello:
+			t.Log("client hello")
+			session.Write(&tunnel.Event{Cmd: Hello})
+		case Bye:
+			t.Log("client bye")
+			session.Write(&tunnel.Event{Cmd: Bye})
+		}
 	}
 }
 
@@ -53,19 +61,24 @@ func client(t *testing.T) {
 	assert.NoError(t, err)
 	defer conn.Close()
 
-	session, err := tunnel.NewSession(conn, consts.Client)
-	assert.NoError(t, err)
-	assert.NoError(t, session.Write(&tunnel.Event{Cmd: tunnel.Ping}))
+	session, _ := tunnel.NewSession(conn, consts.Client)
+	session.Write(&tunnel.Event{Cmd: tunnel.Ping})
 
 	for {
 		event, err := session.Read()
 		assert.NoError(t, err)
-		if event.Cmd == tunnel.Pong {
-			t.Log("server pong")
-			break
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
 
-	doneCh <- struct{}{}
+		switch event.Cmd {
+		case tunnel.Pong:
+			t.Log("server pong")
+			session.Write(&tunnel.Event{Cmd: Hello})
+		case Hello:
+			t.Log("server hello")
+			session.Write(&tunnel.Event{Cmd: Bye})
+		case Bye:
+			t.Log("server bye")
+			doneCh <- struct{}{}
+			return
+		}
+	}
 }

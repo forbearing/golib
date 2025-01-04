@@ -1,31 +1,30 @@
 // package tunnel is communication protocol between with server and user, server and client.
 package tunnel
 
-// Cmd is the command type
-// NOTE: custom cmd must be greater than 1000.
+import "sync"
+
 type Cmd uint32
 
-// NOTE:赋予具体的值的目的是防止 Cmd 值变化了, 如果 Cmd 值变化了, 相当于发送了其他
-// 的命令, 这会直接导致 server 和 client 之间的通信出现问题.
-const (
-	Ping Cmd = 1
-	Pong Cmd = 2
+var (
+	Ping Cmd = NewCmd("ping", 1)
+	Pong Cmd = NewCmd("pong", 2)
 )
 
-var cmdMap = map[Cmd]string{
-	Ping: "Ping",
-	Pong: "Pong",
+var cmdMap sync.Map
+
+// NewCmd build a Cmd.
+// custom always greater than 1000
+func NewCmd(name string, value uint32) Cmd {
+	cmdMap.Store(value, name)
+	return Cmd(value)
 }
 
 func (c Cmd) String() string {
-	v, ok := cmdMap[c]
-	if ok {
-		return v
+	if v, loaded := cmdMap.Load(uint32(c)); loaded {
+		return v.(string)
 	}
-	return "Unknow"
+	return "Unknown"
 }
-
-func (c Cmd) Number() int { return int(c) }
 
 type Event struct {
 	ID    string `json:"id,omitempty" msgpack:"id,omitempty"`   // event id
