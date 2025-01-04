@@ -28,6 +28,8 @@ func main() {
 	// Add tasks.
 	task.Register(SayHello, 1*time.Second, "say hello")
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
+
+	// os.Setenv("SERVER_DB", config.DBPostgre)
 	RunOrDie(bootstrap.Bootstrap)
 
 	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
