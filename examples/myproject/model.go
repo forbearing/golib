@@ -9,8 +9,8 @@ func init() {
 }
 
 type User struct {
-	Name   string `json:"name,omitempty" schema:"name" gorm:"unique" binding:"required"`
-	Email  string `json:"email,omitempty" schema:"email" gorm:"unique" binding:"required"`
+	Name   string `json:"name,omitempty" schema:"name" gorm:"unique"`
+	Email  string `json:"email,omitempty" schema:"email" gorm:"unique"`
 	Avatar string `json:"avatar,omitempty" schema:"avatar"`
 
 	model.Base
