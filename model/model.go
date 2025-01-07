@@ -146,31 +146,31 @@ var _ types.Model = (*Base)(nil)
 // gorm:"foreignKey:ParentID"
 // gorm:"foreignKey:ParentID,references:ID"
 type Base struct {
-	ID string `json:"id" gorm:"primaryKey" schema:"id"`
+	ID string `json:"id" gorm:"primaryKey" schema:"id" url:"-"`
 
-	CreatedBy string     `json:"created_by,omitempty" schema:"created_by" gorm:"index"`
-	UpdatedBy string     `json:"updated_by,omitempty" schema:"updated_by" gorm:"index"`
-	CreatedAt *time.Time `json:"created_at,omitempty" schema:"-" gorm:"index"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index"`
-	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order     *uint      `json:"order,omitempty" schema:"-"`
+	CreatedBy string     `json:"created_by,omitempty" gorm:"index" schema:"created_by" url:"-"`
+	UpdatedBy string     `json:"updated_by,omitempty" gorm:"index" schema:"updated_by" url:"-"`
+	CreatedAt *time.Time `json:"created_at,omitempty" gorm:"index" schema:"-" url:"-"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" gorm:"index" schema:"-" url:"-"`
+	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
+	Order     *uint      `json:"order,omitempty" schema:"-" url:"-"`
 
 	// Query parameter
-	Page       uint    `json:"-" gorm:"-" schema:"page"`         // Query parameter, eg: "page=2"
-	Size       uint    `json:"-" gorm:"-" schema:"size"`         // Query parameter, eg: "size=10"
-	Expand     *string `json:"-" gorm:"-" schema:"_expand"`      // Query parameter, eg: "_expand=children,parent".
-	Depth      *uint   `json:"-" gorm:"-" schema:"_depth"`       // Query parameter, eg: "_depth=3".
-	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy"`       // Query parameter, eg: "_fuzzy=true"
-	SortBy     string  `json:"-" gorm:"-" schema:"_sortby"`      // Query parameter, eg: "_sortby=name"
-	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache"`     // Query parameter: eg: "_nocache=false"
-	ColumnName string  `json:"-" gorm:"-" schema:"_column_name"` // Query parameter: eg: "_column_name=created_at"
-	StartTime  string  `json:"-" gorm:"-" schema:"_start_time"`  // Query parameter: eg: "_start_time=2024-04-29+23:59:59"
-	EndTime    string  `json:"-" gorm:"-" schema:"_end_time"`    // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
-	Or         *bool   `json:"-" gorm:"-" schema:"_or"`          // query parameter: eg: "_or=true"
-	Index      string  `json:"-" gorm:"-" schema:"_index"`       // Query parameter: eg: "_index=name"
-	Select     string  `json:"-" gorm:"-" schema:"_select"`      // Query parameter: eg: "_select=field1,field2"
+	Page       uint    `json:"-" gorm:"-" schema:"page" url:"page,omitempty"`                 // Query parameter, eg: "page=2"
+	Size       uint    `json:"-" gorm:"-" schema:"size" url:"size,omitempty"`                 // Query parameter, eg: "size=10"
+	Expand     *string `json:"-" gorm:"-" schema:"_expand" url:"_expand,omitempty"`           // Query parameter, eg: "_expand=children,parent".
+	Depth      *uint   `json:"-" gorm:"-" schema:"_depth" url:"_depth,omitempty"`             // Query parameter, eg: "_depth=3".
+	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy" url:"_fuzzy,omitempty"`             // Query parameter, eg: "_fuzzy=true"
+	SortBy     string  `json:"-" gorm:"-" schema:"_sortby" url:"_sortby,omitempty"`           // Query parameter, eg: "_sortby=name"
+	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache" url:"_nocache,omitempty"`         // Query parameter: eg: "_nocache=false"
+	ColumnName string  `json:"-" gorm:"-" schema:"_column_name" url:"_column_name,omitempty"` // Query parameter: eg: "_column_name=created_at"
+	StartTime  string  `json:"-" gorm:"-" schema:"_start_time" url:"_start_time,omitempty"`   // Query parameter: eg: "_start_time=2024-04-29+23:59:59"
+	EndTime    string  `json:"-" gorm:"-" schema:"_end_time" url:"_end_time,omitempty"`       // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
+	Or         *bool   `json:"-" gorm:"-" schema:"_or" url:"_or,omitempty"`                   // query parameter: eg: "_or=true"
+	Index      string  `json:"-" gorm:"-" schema:"_index" url:"_index,omitempty"`             // Query parameter: eg: "_index=name"
+	Select     string  `json:"-" gorm:"-" schema:"_select" url:"_select,omitempty"`           // Query parameter: eg: "_select=field1,field2"
 
-	gorm.Model `json:"-"`
+	gorm.Model `json:"-" schema:"-" url:"-"`
 }
 
 func (b *Base) GetTableName() string       { return "" }
