@@ -8,7 +8,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/database/mysql"
-	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
@@ -17,6 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	_ "github.com/forbearing/golib/examples/myproject/service"
 )
 
 func main() {
@@ -33,16 +35,14 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 
 	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
-	logger.Controller.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
-	logger.Service.Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 
 	// use Base router.
 	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 
 	// without auth
-	router.API.GET("/noauth/user", controller.List[*User])
-	router.API.GET("/noauth/user/:id", controller.Get[*User])
+	router.API.GET("/noauth/user", controller.List[*model.User])
+	router.API.GET("/noauth/user/:id", controller.Get[*model.User])
 	router.API.Use(middleware.JwtAuth(), middleware.RateLimiter())
 
 	// router.API.POST("/user", controller.Create[*User])
@@ -69,8 +69,8 @@ func main() {
 	// router.API.GET("/group/export", controller.Export[*Group])
 	// router.API.POST("/group/import", controller.Import[*Group])
 
-	router.Register[*User](router.API, "/user")
-	router.Register[*Group](router.API, "/group")
+	router.Register[*model.User](router.API, "/user")
+	router.Register[*model.Group](router.API, "/group")
 	router.API.GET("/debug/debug", Debug.Debug)
 
 	cfg := config.MySQLConfig{}
@@ -85,8 +85,8 @@ func main() {
 		panic(err)
 	}
 	// It's your responsibility to ensure the table already exists.
-	router.RegisterWithConfig(&types.ControllerConfig[*User]{DB: db}, router.API, "/external/user")
-	router.RegisterWithConfig(&types.ControllerConfig[*Group]{DB: db}, router.API, "/external/group")
+	router.RegisterWithConfig(&types.ControllerConfig[*model.User]{DB: db}, router.API, "/external/user")
+	router.RegisterWithConfig(&types.ControllerConfig[*model.Group]{DB: db}, router.API, "/external/group")
 
 	// Run server.
 	RunOrDie(router.Run)

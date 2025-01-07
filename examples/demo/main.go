@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 )
 
@@ -52,7 +53,7 @@ func main() {
 	//
 	// Equvalent to:
 	// router.Register[*model.User](router.API, "/user")
-	// router.Register[*model.User](router.API, "user", types.Most)
+	// router.Register[*model.User](router.API, "user", consts.Most)
 	router.Register[*model.User](router.API, "user")
 	router.Register[*model.Category](router.API, "category")
 
@@ -60,39 +61,39 @@ func main() {
 	// Generated endpoints:
 	//   POST   /api/group     - create group
 	//   POST   /api/group/:id - create group
-	router.Register[*model.Group](router.API, "group", types.Create)
+	router.Register[*model.Group](router.API, "group", consts.Create)
 	// Only register `Delete` operation for the model `Group`.
 	// Generated endpoints:
 	//   DELETE /api/group     - delete group
 	//   DELETE /api/group/:id - delete group
-	router.Register[*model.Group](router.API, "group", types.Delete)
+	router.Register[*model.Group](router.API, "group", consts.Delete)
 	// Only register `Update` operation for the model `Group`.
 	// Generated endpoints:
 	//   PUT    /api/group     - update group
 	//   PUT    /api/group/:id - update group
-	router.Register[*model.Group](router.API, "group", types.Update)
+	router.Register[*model.Group](router.API, "group", consts.Update)
 	// Only register `Update` operation for the model `Group`.
 	// Generated endpoints:
 	//   PATCH  /api/group     - update partial group
 	//   PATCH  /api/group/:id - update partial group
-	router.Register[*model.Group](router.API, "group", types.UpdatePartial)
+	router.Register[*model.Group](router.API, "group", consts.UpdatePartial)
 	// Only register `List` operation for the model `Group`.
 	// Generated endpoints:
 	//   GET    /api/group/    - List users
-	router.Register[*model.Group](router.API, "group", types.List)
+	router.Register[*model.Group](router.API, "group", consts.List)
 	// Only register `Get` operation for the model `Group`.
 	// Generated endpoints:
 	//   GET    /api/group/:id - Get group by ID
-	router.Register[*model.Group](router.API, "group", types.Get)
+	router.Register[*model.Group](router.API, "group", consts.Get)
 	// Generated endpoints:
 	//   POST   /api/group/import - import groups.
-	router.Register[*model.Group](router.API, "group", types.Import)
+	router.Register[*model.Group](router.API, "group", consts.Import)
 	// Generated endpoints:
 	//   GET    /api/group/export - export groups.
-	router.Register[*model.Group](router.API, "group", types.Export)
+	router.Register[*model.Group](router.API, "group", consts.Export)
 
 	// `All` equvalent to: `Most` + `Import` + `Export`
-	router.Register[*model.Department](router.API, "department", types.All)
+	router.Register[*model.Department](router.API, "department", consts.All)
 
 	// Manual RESTful API route configuration for model `Contact`.
 	router.API.POST("/contact", controller.Create[*model.Contact])             // create
