@@ -73,11 +73,7 @@ func Create[M types.Model](c *gin.Context) {
 func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_CREATE),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_CREATE)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -177,11 +173,7 @@ func Delete[M types.Model](c *gin.Context) {
 func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_DELETE),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_DELETE)
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
@@ -300,11 +292,7 @@ func Update[M types.Model](c *gin.Context) {
 func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_UPDATE),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_UPDATE)
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -402,11 +390,7 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_UPDATE_PARTIAL),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_UPDATE_PARTIAL)
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -607,11 +591,7 @@ func List[M types.Model](c *gin.Context) {
 func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_LIST),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_LIST)
 		var page, size int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -832,11 +812,7 @@ func Get[M types.Model](c *gin.Context) {
 func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_GET),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_GET)
 		if len(c.Param(PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
@@ -1013,11 +989,7 @@ func Export[M types.Model](c *gin.Context) {
 func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_EXPORT),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_EXPORT)
 		var page, size, limit int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -1189,13 +1161,8 @@ func Import[M types.Model](c *gin.Context) {
 func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.With(
-			consts.PHASE, string(consts.PHASE_IMPORT),
-			consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME),
-			consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID),
-			consts.REQUEST_ID, c.GetString(consts.REQUEST_ID))
+		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_IMPORT)
 		// NOTE:字段为 file 必须和前端协商好.
-
 		file, err := c.FormFile("file")
 		if err != nil {
 			log.Error(err)
@@ -1303,4 +1270,15 @@ func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler fu
 		return fn
 	}
 	return
+}
+
+func controllerContext(c *gin.Context) *types.ControllerContext {
+	if c == nil {
+		return new(types.ControllerContext)
+	}
+	return &types.ControllerContext{
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		RequestId: c.GetString(consts.REQUEST_ID),
+	}
 }
