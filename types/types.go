@@ -69,6 +69,13 @@ type ServiceContext struct {
 	RequestId string
 }
 
+type ControllerContext struct {
+	Username string // currrent login user.
+	UserId   string // currrent login user id
+
+	RequestId string
+}
+
 type ControllerConfig[M Model] struct {
 	DB        any // only support *gorm.DB
 	TableName string

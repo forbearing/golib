@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
@@ -44,23 +45,25 @@ func (l *Logger) Warnz(msg string, fields ...zap.Field)  { l.zlog.Warn(msg, fiel
 func (l *Logger) Errorz(msg string, fields ...zap.Field) { l.zlog.Error(msg, fields...) }
 func (l *Logger) Fatalz(msg string, fields ...zap.Field) { l.zlog.Fatal(msg, fields...) }
 
-// With one or multiple fields.
-// Examples:
+// With creates a new logger with additional string key-value pairs.
+// Each pair of arguments must be a key(string) followed by its value(string).
+// If an odd number of arguments is provided, an empty string will be appended as the last value.
 //
-// log := logger.Controller.
+// Example 1 - Multiple With calls:
 //
-//	With(types.PHASE, string(types.PHASE_UPDATE)).
-//	With(types.CTX_USERNAME, c.GetString(types.CTX_USERNAME)).
-//	With(types.CTX_USER_ID, c.GetString(types.CTX_USER_ID)).
-//	With(types.REQUEST_ID, c.GetString(types.REQUEST_ID))
+//	logger.With("phase", "update").
+//	      With("user", "admin").
+//	      With("request_id", "123")
 //
-// log := logger.Controller.With(
+// Example 2 - Single With call with multiple fields:
 //
-//	types.PHASE, string(types.PHASE_DELETE),
-//	types.CTX_USERNAME, c.GetString(types.CTX_USERNAME),
-//	types.CTX_USER_ID, c.GetString(types.CTX_USER_ID),
-//	types.REQUEST_ID, c.GetString(types.REQUEST_ID),
+//	logger.With(
+//	    "phase", "update",
+//	    "user", "admin",
+//	    "request_id", "123",
 //	)
+//
+// Returns the original logger if no fields are provided or if only an empty key is provided.
 func (l *Logger) With(fields ...string) types.Logger {
 	if len(fields) == 0 {
 		return l
@@ -84,6 +87,36 @@ func (l *Logger) With(fields ...string) types.Logger {
 	clone.zlog = l.zlog.With(zapFields...)
 	clone.slog = l.slog.With(sugaredFields...)
 	return clone
+}
+
+// WithControllerContext creates a new logger with controller context fields.
+// It extends the base logger with phase, username, user ID, and request ID from *types.ControllerContext.
+//
+// examples:
+//
+// log := logger.Controller.WithControllerContext(ctx, consts.PHASE_LIST)
+func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase consts.Phase) types.Logger {
+	return l.With(
+		consts.PHASE, string(phase),
+		consts.CTX_USERNAME, ctx.Username,
+		consts.CTX_USER_ID, ctx.UserId,
+		consts.REQUEST_ID, ctx.RequestId,
+	)
+}
+
+// LoggerWithServiceContext creates a new logger with service context fields.
+// It extends the base logger with phase, username, user ID, and request ID from *types.ServiceContext.
+//
+// examples:
+//
+// log := logger.Service.WithServiceContext(ctx, consts.PHASE_LIST_BEFORE)
+func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phase) types.Logger {
+	return l.With(
+		consts.PHASE, string(phase),
+		consts.CTX_USERNAME, ctx.Username,
+		consts.CTX_USER_ID, ctx.UserId,
+		consts.REQUEST_ID, ctx.RequestId,
+	)
 }
 
 // GormLogger implements gorm logger.Interface
