@@ -18,6 +18,7 @@ import (
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/gin-gonic/gin"
@@ -73,7 +74,7 @@ func Create[M types.Model](c *gin.Context) {
 func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_CREATE)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -105,7 +106,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 
 		// 1.Perform business logic processing before create resource.
-		if err := new(service.Factory[M]).Service().CreateBefore(service.GinContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().CreateBefore(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -121,7 +122,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after create resource
-		if err := new(service.Factory[M]).Service().CreateAfter(service.GinContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().CreateAfter(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -173,7 +174,7 @@ func Delete[M types.Model](c *gin.Context) {
 func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_DELETE)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
@@ -221,7 +222,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
 		// 1.Perform business logic processing before delete resources.
-		if err := new(service.Factory[M]).Service().DeleteBefore(service.GinContext(c), ml...); err != nil {
+		if err := new(service.Factory[M]).Service().DeleteBefore(helper.NewServiceContext(c), ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -243,7 +244,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after delete resources.
-		if err := new(service.Factory[M]).Service().DeleteAfter(service.GinContext(c), ml...); err != nil {
+		if err := new(service.Factory[M]).Service().DeleteAfter(helper.NewServiceContext(c), ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -292,7 +293,7 @@ func Update[M types.Model](c *gin.Context) {
 func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_UPDATE)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -328,7 +329,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		req.SetCreatedBy(data[0].GetCreatedBy())    // keep original "created_by"
 		req.SetUpdatedBy(c.GetString(CTX_USERNAME)) // keep original "updated_by"
 		// 1.Perform business logic processing before update resource.
-		if err := new(service.Factory[M]).Service().UpdateBefore(service.GinContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateBefore(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -341,7 +342,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after update resource.
-		if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -390,7 +391,7 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_UPDATE_PARTIAL)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_PARTIAL)
 		id := c.Param(PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -506,7 +507,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
 
 		// 1.Perform business logic processing before partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialBefore(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialBefore(helper.NewServiceContext(c), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -518,7 +519,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			return
 		}
 		// 3.Perform business logic processing after partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialAfter(service.GinContext(c), oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialAfter(helper.NewServiceContext(c), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -591,7 +592,7 @@ func List[M types.Model](c *gin.Context) {
 func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_LIST)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_LIST)
 		var page, size int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -692,7 +693,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		}
 
 		svc := new(service.Factory[M]).Service()
-		svcCtx := service.GinContext(c)
+		svcCtx := helper.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
 		if err = svc.ListBefore(svcCtx, &data); err != nil {
 			log.Error(err)
@@ -812,7 +813,7 @@ func Get[M types.Model](c *gin.Context) {
 func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_GET)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_GET)
 		if len(c.Param(PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
@@ -888,7 +889,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		}
 
 		// 1.Perform business logic processing before get resource.
-		if err = new(service.Factory[M]).Service().GetBefore(service.GinContext(c), m); err != nil {
+		if err = new(service.Factory[M]).Service().GetBefore(helper.NewServiceContext(c), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -910,7 +911,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			cached = true
 		}
 		// 3.Perform business logic processing after get resource.
-		if err := new(service.Factory[M]).Service().GetAfter(service.GinContext(c), m); err != nil {
+		if err := new(service.Factory[M]).Service().GetAfter(helper.NewServiceContext(c), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -989,7 +990,7 @@ func Export[M types.Model](c *gin.Context) {
 func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_EXPORT)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_EXPORT)
 		var page, size, limit int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
@@ -1084,7 +1085,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 
 		// 1.Perform business logic processing before list resources.
-		if err = new(service.Factory[M]).Service().ListBefore(service.GinContext(c), &data); err != nil {
+		if err = new(service.Factory[M]).Service().ListBefore(helper.NewServiceContext(c), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -1092,7 +1093,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		sortBy, _ := c.GetQuery(QUERY_SORTBY)
 		_, _ = page, size
 		svc := new(service.Factory[M]).Service()
-		svcCtx := service.GinContext(c)
+		svcCtx := helper.NewServiceContext(c)
 		// 2.List resources from database.
 		if err = handler().
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
@@ -1112,14 +1113,14 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after list resources.
-		if err = new(service.Factory[M]).Service().ListAfter(service.GinContext(c), &data); err != nil {
+		if err = new(service.Factory[M]).Service().ListAfter(helper.NewServiceContext(c), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
 		}
 		log.Info("export data length: ", len(data))
 		// 4.Export
-		exported, err := new(service.Factory[M]).Service().Export(service.GinContext(c), data...)
+		exported, err := new(service.Factory[M]).Service().Export(helper.NewServiceContext(c), data...)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
@@ -1161,7 +1162,7 @@ func Import[M types.Model](c *gin.Context) {
 func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, db := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(controllerContext(c), consts.PHASE_IMPORT)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_IMPORT)
 		// NOTE:字段为 file 必须和前端协商好.
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -1195,7 +1196,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		// check filetype
 
-		ml, err := new(service.Factory[M]).Service().Import(service.GinContext(c), buf)
+		ml, err := new(service.Factory[M]).Service().Import(helper.NewServiceContext(c), buf)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
@@ -1212,7 +1213,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		if err := new(service.Factory[M]).Service().UpdateAfter(service.GinContext(c), ml...); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c), ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -1270,15 +1271,4 @@ func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler fu
 		return fn
 	}
 	return
-}
-
-func controllerContext(c *gin.Context) *types.ControllerContext {
-	if c == nil {
-		return new(types.ControllerContext)
-	}
-	return &types.ControllerContext{
-		Username:  c.GetString(consts.CTX_USERNAME),
-		UserId:    c.GetString(consts.CTX_USER_ID),
-		RequestId: c.GetString(consts.REQUEST_ID),
-	}
 }

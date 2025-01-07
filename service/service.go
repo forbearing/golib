@@ -8,8 +8,6 @@ import (
 
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
-	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
 
@@ -79,32 +77,6 @@ func (f Factory[M]) Service() types.Service[M] {
 		return new(Base[M])
 	}
 	return svc.(types.Service[M])
-}
-
-// GinContext build *types.ServiceContext from *gin.Context.
-func GinContext(c *gin.Context) *types.ServiceContext {
-	var requestId string
-	val, _ := c.Get(consts.REQUEST_ID)
-	switch v := val.(type) {
-	case string:
-		requestId = v
-	}
-
-	return &types.ServiceContext{
-		Request: c.Request,
-
-		Method:       c.Request.Method,
-		URL:          c.Request.URL,
-		Header:       c.Request.Header,
-		WriterHeader: c.Writer.Header(),
-		ClientIP:     c.ClientIP(),
-		UserAgent:    c.Request.UserAgent(),
-
-		Username:  c.GetString(consts.CTX_USERNAME),
-		UserId:    c.GetString(consts.CTX_USER_ID),
-		SessionId: c.GetString(consts.CTX_SESSION_ID),
-		RequestId: requestId,
-	}
 }
 
 type Base[M types.Model] struct{ types.Logger }
