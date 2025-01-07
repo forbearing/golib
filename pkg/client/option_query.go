@@ -7,37 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/types/consts"
-	"gorm.io/gorm"
 )
-
-type Query struct {
-	ID string `json:"id" gorm:"primaryKey" schema:"id" url:"-"`
-
-	CreatedBy string     `json:"created_by,omitempty" schema:"created_by" gorm:"index" url:"-"`
-	UpdatedBy string     `json:"updated_by,omitempty" schema:"updated_by" gorm:"index" url:"-"`
-	CreatedAt *time.Time `json:"created_at,omitempty" schema:"-" gorm:"index" url:"-"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty" schema:"-" gorm:"index" url:"-"`
-	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order     *uint      `json:"order,omitempty" schema:"-" url:"-"`
-
-	// Query parameter
-	Page       uint    `json:"-" gorm:"-" schema:"page" url:"page,omitempty"`                 // Query parameter, eg: "page=2"
-	Size       uint    `json:"-" gorm:"-" schema:"size" url:"size,omitempty"`                 // Query parameter, eg: "size=10"
-	Expand     *string `json:"-" gorm:"-" schema:"_expand" url:"_expand,omitempty"`           // Query parameter, eg: "_expand=children,parent".
-	Depth      *uint   `json:"-" gorm:"-" schema:"_depth" url:"_depth,omitempty"`             // Query parameter, eg: "_depth=3".
-	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy" url:"_fuzzy,omitempty"`             // Query parameter, eg: "_fuzzy=true"
-	SortBy     string  `json:"-" gorm:"-" schema:"_sortby" url:"_sortby,omitempty"`           // Query parameter, eg: "_sortby=name"
-	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache" url:"_nocache,omitempty"`         // Query parameter: eg: "_nocache=false"
-	ColumnName string  `json:"-" gorm:"-" schema:"_column_name" url:"_column_name,omitempty"` // Query parameter: eg: "_column_name=created_at"
-	StartTime  string  `json:"-" gorm:"-" schema:"_start_time" url:"_start_time,omitempty"`   // Query parameter: eg: "_start_time=2024-04-29+23:59:59"
-	EndTime    string  `json:"-" gorm:"-" schema:"_end_time" url:"_end_time,omitempty"`       // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
-	Or         *bool   `json:"-" gorm:"-" schema:"_or" url:"_or,omitempty"`                   // query parameter: eg: "_or=true"
-	Index      string  `json:"-" gorm:"-" schema:"_index" url:"_index,omitempty"`             // Query parameter: eg: "_index=name"
-	Select     string  `json:"-" gorm:"-" schema:"_select" url:"_select,omitempty"`           // Query parameter: eg: "_select=field1,field2"
-
-	gorm.Model `json:"-" schema:"-" url:"-"`
-}
 
 func WithQuery(_keyValues ...any) Option {
 	if len(_keyValues) == 0 || len(_keyValues) == 1 {
@@ -93,7 +65,7 @@ func WithQuery(_keyValues ...any) Option {
 func WithQueryPagination(page, size uint) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		if page == 0 {
 			page = 1
@@ -109,7 +81,7 @@ func WithQueryPagination(page, size uint) Option {
 func WithQueryExpand(expand string, depth uint) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		if expand = strings.TrimSpace(expand); len(expand) == 0 {
 			return
@@ -122,7 +94,7 @@ func WithQueryExpand(expand string, depth uint) Option {
 func WithQueryFuzzy(fuzzy bool) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.Fuzzy = &fuzzy
 	}
@@ -134,7 +106,7 @@ func WithQuerySortby(sortby string) Option {
 			return
 		}
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.SortBy = sortby
 	}
@@ -143,7 +115,7 @@ func WithQuerySortby(sortby string) Option {
 func WithQueryNocache(nocache bool) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.NoCache = nocache
 	}
@@ -152,7 +124,7 @@ func WithQueryNocache(nocache bool) Option {
 func WithQueryTimeRange(columeName string, start, end time.Time) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		if columeName = strings.TrimSpace(columeName); len(columeName) == 0 {
 			return
@@ -172,7 +144,7 @@ func WithQueryTimeRange(columeName string, start, end time.Time) Option {
 func WithQueryOr(or bool) Option {
 	return func(c *Client) {
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.Or = &or
 	}
@@ -184,7 +156,7 @@ func WithQueryIndex(index string) Option {
 			return
 		}
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.Index = index
 	}
@@ -202,7 +174,7 @@ func WithQuerySelect(selects ...string) Option {
 			return
 		}
 		if c.query == nil {
-			c.query = new(Query)
+			c.query = new(model.Base)
 		}
 		c.query.Select = strings.Join(_selects, ",")
 	}

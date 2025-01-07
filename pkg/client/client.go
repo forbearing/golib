@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/types"
 	"github.com/google/go-querystring/query"
 	"github.com/pkg/errors"
@@ -27,7 +28,7 @@ type Client struct {
 	token      string
 
 	header      http.Header
-	query       *Query
+	query       *model.Base
 	queryRaw    string
 	param       string
 	debug       bool
