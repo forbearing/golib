@@ -4,6 +4,7 @@ import (
 	"demo/model"
 	model_asset "demo/model/asset"
 	model_instance "demo/model/instance"
+	_ "demo/service"
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
