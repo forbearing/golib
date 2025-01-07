@@ -22,8 +22,7 @@ WARNING: Library under active development - expect significant API changes.
 -   [Database List](./examples/demo/controller/user_list.go)
 -   [Database Get](./examples/demo/controller/user_get.go)
 -   [Controller usage](./controller/READMD.md)
--   Service usage
--   Logger usage
+-   [Service usage](./examples/demo/service/user.go)
 -   [Client usage](./pkg/client/client_test.go)
 -   [tunnel usage](./tunnel/session_test.go)
 -   Package usage
