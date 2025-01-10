@@ -3,7 +3,7 @@ module demo
 go 1.23.4
 
 require (
-	github.com/forbearing/golib v0.2.1-0.20250107044856-5317146295d3
+	github.com/forbearing/golib v0.2.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.27.0

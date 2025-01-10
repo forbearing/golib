@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"demo/model"
 	model_asset "demo/model/asset"
 	model_instance "demo/model/instance"
@@ -12,6 +14,7 @@ import (
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
+	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
@@ -21,6 +24,10 @@ func main() {
 	// Ensure config file `config.init` exists in the current directory, empty config is permitted.
 	// Alternatively, specify a custom config file path:
 	//     config.SetConfigFile("path/to/config.ini")
+
+	// NOTE: task must register before application bootstrap.
+	task.Register(TaskSayHello, 1*time.Second, "task say hello")
+	task.Register(TaskSayBye, 1*time.Second, "task say bye")
 
 	util.RunOrDie(bootstrap.Bootstrap)
 
@@ -39,6 +46,8 @@ func main() {
 		// middleware.BaseAuth(),
 	)
 
+	// NOTE: router must register after application bootstrap.
+	//
 	// Registers basic CURD operation for the model `User`.
 	//
 	// Generated endpoints:
