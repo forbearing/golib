@@ -1,14 +1,17 @@
 package zap
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -217,6 +220,7 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 	case "json":
 		return zapcore.NewJSONEncoder(encConfig)
 	case "text", "console":
+		// return newCustomConsoleEncoder(encConfig)
 		return zapcore.NewConsoleEncoder(encConfig)
 	default:
 		return zapcore.NewJSONEncoder(encConfig)
@@ -253,4 +257,47 @@ func colorfulLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder
 	}
 	// 使用颜色代码包装原始 Level 字符串
 	enc.AppendString(color + level.String() + "\033[0m")
+}
+
+func newCustomConsoleEncoder(config zapcore.EncoderConfig) zapcore.Encoder {
+	return &customConsoleEncoder{zapcore.NewConsoleEncoder(config)}
+}
+
+type customConsoleEncoder struct {
+	zapcore.Encoder
+}
+
+func (e *customConsoleEncoder) EncodeEntry(ent zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+	line, err := e.Encoder.EncodeEntry(ent, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// if contains extra fields, append them in key=value format
+	if len(fields) > 0 {
+		line.TrimNewline() // remove trailing newline
+		// add extra fields
+		for i, f := range fields {
+			if i > 0 {
+				line.AppendString("\t")
+			} else {
+				line.AppendString("\t")
+			}
+			line.AppendString(f.Key)
+			line.AppendString("=")
+			// according to the field type, format the value
+			switch f.Type {
+			case zapcore.StringType:
+				line.AppendString(f.String)
+			case zapcore.Int64Type, zapcore.Int32Type, zapcore.Int16Type, zapcore.Int8Type:
+				line.AppendString(strconv.FormatInt(f.Integer, 10))
+			// you can add more types here
+			default:
+				line.AppendString(fmt.Sprint(f.Interface))
+			}
+		}
+		line.AppendString("\n")
+	}
+
+	return line, nil
 }
