@@ -164,7 +164,7 @@ func newLogWriter(_ ...option) zapcore.WriteSyncer {
 		return zapcore.AddSync(os.Stdout)
 	default:
 		return zapcore.AddSync(&lumberjack.Logger{
-			Filename:   filepath.Join(config.App.LogDir, logFile),
+			Filename:   filepath.Join(config.App.Dir, logFile),
 			MaxAge:     logMaxAge,
 			MaxSize:    logMaxSize,
 			MaxBackups: logMaxBackups,
@@ -225,13 +225,13 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 
 func initVar() {
 	mode = config.App.Mode
-	logFile = config.App.LogFile
-	logLevel = config.App.LogLevel
-	logFormat = config.App.LogFormat
-	logEncoder = config.App.LogEncoder
-	logMaxAge = int(config.App.LogMaxAge)
-	logMaxSize = int(config.App.LogMaxSize)
-	logMaxBackups = int(config.App.LogMaxBackups)
+	logFile = config.App.LoggerConfig.File
+	logLevel = config.App.LoggerConfig.Level
+	logFormat = config.App.LoggerConfig.Format
+	logEncoder = config.App.LoggerConfig.Encoder
+	logMaxAge = int(config.App.LoggerConfig.MaxAge)
+	logMaxSize = int(config.App.LoggerConfig.MaxSize)
+	logMaxBackups = int(config.App.LoggerConfig.MaxBackups)
 }
 
 // colorfulLevelEncoder 自定义 Level Encoder，为不同的日志级别添加颜色

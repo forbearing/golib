@@ -106,7 +106,7 @@ database = test
 password = qQk5zXWHfj4LD2Nxm9vF3YpBZt8a6JhUTdsS7RgyruGCAEebVP
 
 [logger]
-log_dir = "/tmp/golib/logs"
+dir = "/tmp/golib/logs"
 `
 )
 

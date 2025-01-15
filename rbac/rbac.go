@@ -81,7 +81,7 @@ func Init() (err error) {
 	// 	username := args[0].(string)
 	// 	return RBAC.enforcer.HasRoleForUser(username, "root")
 	// })
-	if strings.ToLower(config.App.LogLevel) == "debug" {
+	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
 		RBAC.enforcer.EnableLog(true)
 	}
 

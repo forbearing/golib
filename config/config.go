@@ -116,14 +116,13 @@ func SetDefaultValue() {
 	viper.SetDefault("auth.base_auth_password", baseAuthPassword)
 	viper.SetDefault("auth.token_expire_duration", "24h")
 
-	viper.SetDefault("logger.log_dir", "./logs")
-	viper.SetDefault("logger.log_file", "")
-	viper.SetDefault("logger.log_level", "info")
-	viper.SetDefault("logger.log_format", "json")
-	viper.SetDefault("logger.log_encoder", "json")
-	viper.SetDefault("logger.log_max_age", 30)
-	viper.SetDefault("logger.log_max_size", 100)
-	viper.SetDefault("logger.log_max_backups", 1)
+	viper.SetDefault("logger.dir", "./logs")
+	viper.SetDefault("logger.level", "info")
+	viper.SetDefault("logger.format", "json")
+	viper.SetDefault("logger.encoder", "json")
+	viper.SetDefault("logger.max_age", 30)
+	viper.SetDefault("logger.max_size", 100)
+	viper.SetDefault("logger.max_backups", 1)
 
 	viper.SetDefault("sqlite.path", "./data.db")
 	viper.SetDefault("sqlite.database", "main")
@@ -257,43 +256,43 @@ type AuthConfig struct {
 // LoggerConfig represents section "logger" for client-side or server-side configuration,
 // and there is only one copy during the application entire lifetime.
 type LoggerConfig struct {
-	// LogDir specifies which direcotory log to.
-	LogDir string `json:"log_dir" ini:"log_dir" yaml:"log_dir" mapstructure:"log_dir"`
+	// Dir specifies which direcotory log to.
+	Dir string `json:"dir" ini:"dir" yaml:"dir" mapstructure:"dir"`
 
-	// LogPrefix specifies the log prefix.
+	// Prefix specifies the log prefix.
 	// You can set the prefix name to your project name.
-	LogPrefix string `json:"log_prefix" ini:"log_prefix" yaml:"log_prefix" mapstructure:"log_prefix"`
+	Prefix string `json:"prefix" ini:"prefix" yaml:"prefix" mapstructure:"prefix"`
 
-	// LogFile specifies the which file log to.
+	// File specifies the which file log to.
 	// If value is "/dev/stdout", log to os.Stdout.
 	// If value is "/dev/stderr", log to os.Stderr.
 	// If value is empty(length is zero), log to os.Stdout.
 	// The value default to "/tmp/car-client.log".
-	LogFile string `json:"log_file" ini:"log_file" yaml:"log_file" mapstructure:"log_file"`
+	File string `json:"file" ini:"file" yaml:"file" mapstructure:"file"`
 
-	// LogLevel specifies the log level,  supported values are: (error|warn|warning|info|debug).
+	// Level specifies the log level,  supported values are: (error|warn|warning|info|debug).
 	// The value default to "info" and ignore case.
-	LogLevel string `json:"log_level" ini:"log_level" yaml:"log_level" mapstructure:"log_level"`
+	Level string `json:"level" ini:"level" yaml:"level" mapstructure:"level"`
 
-	// LogFormat specifies the log format, supported values are: (json|text).
+	// Format specifies the log format, supported values are: (json|text).
 	// The Value default to "text" and ignore case.
-	LogFormat string `json:"log_format" ini:"log_format" yaml:"log_format" mapstructure:"log_format"`
+	Format string `json:"format" ini:"format" yaml:"format" mapstructure:"format"`
 
-	// LogEncoder is the same as LogFormat.
-	LogEncoder string `json:"log_encoder" ini:"log_encoder" yaml:"log_encoder" mapstructure:"log_encoder"`
+	// Encoder is the same as LogFormat.
+	Encoder string `json:"encoder" ini:"encoder" yaml:"encoder" mapstructure:"encoder"`
 
-	// LogMaxAge is the maximum number of days to retain old log files based on the
+	// MaxAge is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.
 	// uint is "day" and default to 7.
-	LogMaxAge uint `json:"log_max_age" ini:"log_max_age" yaml:"log_max_age" mapstructure:"log_max_age"`
+	MaxAge uint `json:"max_age" ini:"max_age" yaml:"max_age" mapstructure:"max_age"`
 
-	// LogMaxSize is the maximum size in megabytes of the log file before it gets
+	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated, default to 1MB.
-	LogMaxSize uint `json:"log_max_size" ini:"log_max_size" yaml:"log_max_size" mapstructure:"log_max_size"`
+	MaxSize uint `json:"max_size" ini:"max_size" yaml:"max_size" mapstructure:"max_size"`
 
-	// LogMaxBackups is the maximum number of old log files to retain.
+	// MaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
-	LogMaxBackups uint `json:"log_max_backups" ini:"log_max_backups" yaml:"log_max_backups" mapstructure:"log_max_backups"`
+	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 }
 
 type SqliteConfig struct {

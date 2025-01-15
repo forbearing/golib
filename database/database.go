@@ -124,7 +124,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	// db.shouldAutoMigrate = true
-	if strings.ToLower(config.App.LogLevel) == "debug" {
+	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
 		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
 	} else {
 		db.db = _db.WithContext(context.TODO()).Limit(defaultLimit)
@@ -1124,7 +1124,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
 		// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
 		var _db *gorm.DB
-		if strings.ToLower(config.App.LogLevel) == "debug" {
+		if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
 			_db = DB.Debug()
 		} else {
 			_db = DB
@@ -2246,7 +2246,7 @@ func Database[M types.Model](ctx ...context.Context) types.Database[M] {
 			c = ctx[0]
 		}
 	}
-	if strings.ToLower(config.App.LogLevel) == "debug" {
+	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
 		return &database[M]{db: DB.WithContext(c).Debug().Limit(defaultLimit), ctx: c}
 	}
 	return &database[M]{db: DB.WithContext(c).Limit(defaultLimit), ctx: c}
