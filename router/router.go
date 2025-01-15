@@ -1,9 +1,15 @@
 package router
 
 import (
+	"context"
 	"net"
+	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
@@ -46,12 +52,39 @@ func Init() error {
 }
 
 func Run() error {
+	log := zap.S()
 	addr := net.JoinHostPort(config.App.ServerConfig.Listen, strconv.Itoa(config.App.ServerConfig.Port))
-	zap.S().Infow("starting server", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
+	log.Infow("starting server", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
 	for _, r := range Base.Routes() {
-		zap.S().Debugw("", "method", r.Method, "path", r.Path)
+		log.Debugw("", "method", r.Method, "path", r.Path)
 	}
-	return Base.Run(addr)
+
+	server := &http.Server{
+		Addr:           addr,
+		Handler:        Base,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1 MB
+	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Errorw("failed to start server", "err", err)
+		}
+	}()
+
+	<-quit
+	log.Info("shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Errorw("failed to shutdown server", "err", err)
+		return err
+	}
+	log.Info("server exiting")
+	return nil
 }
 
 // Register registers HTTP routes for a given model type with specified verbs
