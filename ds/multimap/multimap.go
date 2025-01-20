@@ -4,8 +4,8 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/forbearing/golib/ds/types"
 	"github.com/forbearing/golib/ds/util"
-	"github.com/forbearing/golib/types"
 )
 
 var ErrNilEqual = errors.New("nil equal function")
