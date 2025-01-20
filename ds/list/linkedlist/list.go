@@ -357,10 +357,15 @@ func (l *List[V]) Merge(other *List[V]) {
 	other.count = 0
 }
 
-// MergeSorted merges two sorted lists into one sorted list using the provided cmp function.
-// Both input lists should be sorted according to the cmp function,
-// otherwise the result may not be as expected.
-// The other list is emptied after the merge.
+// MergeSorted merges two lists into one sorted list using the provided cmp function.
+// The compare function should return:
+//   - negative value if a < b.
+//   - zero if a = b.
+//   - positive value if a > b.
+//
+// Both input list can be unsorted, the resulting list will be sorted according to
+// cmp function
+// The other list will be emptied after the merge.
 func (l *List[V]) MergeSorted(other *List[V], cmp func(V, V) int) {
 	if other == nil {
 		return
@@ -377,37 +382,24 @@ func (l *List[V]) MergeSorted(other *List[V], cmp func(V, V) int) {
 	defer l.mu.Unlock()
 	defer other.mu.Unlock()
 
-	// 获取所有元素
 	merged := make([]V, 0, l.count+other.count)
-
-	// 收集当前列表的元素
 	curr := l.Head
 	for curr != nil {
 		merged = append(merged, curr.Value)
 		curr = curr.Next
 	}
-
-	// 收集另一个列表的元素
 	curr = other.Head
 	for curr != nil {
 		merged = append(merged, curr.Value)
 		curr = curr.Next
 	}
-
-	// 排序
 	slices.SortFunc(merged, cmp)
-
-	// 清空当前列表
 	l.Head = nil
 	l.Tail = nil
 	l.count = 0
-
-	// 重建当前列表
 	for _, v := range merged {
 		l.PushBack(v)
 	}
-
-	// 清空另一个列表
 	other.Head = nil
 	other.Tail = nil
 	other.count = 0
