@@ -25,7 +25,7 @@ type List[V any] struct {
 // New creates and returns an empty doubly-linked list.
 func New[V any](ops ...Option[V]) (*List[V], error) {
 	l := new(List[V])
-	l.mu = types.FackeLocker{}
+	l.mu = types.FakeLocker{}
 	for _, op := range ops {
 		if op == nil {
 			continue

@@ -28,7 +28,7 @@ func New[K comparable, V any](equal util.EqualFn[V], ops ...Option[K, V]) (*Mult
 	m := &MultiMap[K, V]{
 		data:  make(map[K][]V),
 		equal: equal,
-		mu:    types.FackeLocker{},
+		mu:    types.FakeLocker{},
 	}
 	for _, op := range ops {
 		if op == nil {

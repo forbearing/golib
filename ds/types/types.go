@@ -1,10 +1,10 @@
 package types
 
-var _ Locker = FackeLocker{}
+var _ Locker = FakeLocker{}
 
-type FackeLocker struct{}
+type FakeLocker struct{}
 
-func (FackeLocker) Lock()    {}
-func (FackeLocker) Unlock()  {}
-func (FackeLocker) RLock()   {}
-func (FackeLocker) RUnlock() {}
+func (FakeLocker) Lock()    {}
+func (FakeLocker) Unlock()  {}
+func (FakeLocker) RLock()   {}
+func (FakeLocker) RUnlock() {}
