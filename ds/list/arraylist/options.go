@@ -8,6 +8,7 @@ type Option[V any] func(*List[V]) error
 func WithSafe[V any]() Option[V] {
 	return func(l *List[V]) error {
 		l.mu = new(sync.RWMutex)
+		l.safe = true
 		return nil
 	}
 }
