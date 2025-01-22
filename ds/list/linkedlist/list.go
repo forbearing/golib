@@ -394,7 +394,7 @@ func (l *List[V]) MergeSorted(other *List[V], cmp func(V, V) int) {
 	l.Tail = nil
 	l.count = 0
 	for _, v := range merged {
-		l.PushBack(v)
+		l.pushBackNode(&Node[V]{Value: v})
 	}
 	other.Head = nil
 	other.Tail = nil
