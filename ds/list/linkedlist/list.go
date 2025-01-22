@@ -50,6 +50,7 @@ func NewFromSlice[V any](s []V, ops ...Option[V]) (*List[V], error) {
 }
 
 // PushBack adds a new node with value v to the end of the list.
+// Returns a pointer to the newly added node.
 func (l *List[V]) PushBack(v V) *Node[V] {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -72,8 +73,8 @@ func (l *List[V]) PushBackNode(n *Node[V]) *Node[V] {
 func (l *List[V]) pushBackNode(n *Node[V]) *Node[V] {
 	n.Prev = l.Tail
 	n.Next = nil
-	// l.Tail is nil means the list is empty, ndoe 'n' is the frist node.
-	// so l.Tail and l.Head will pointer to 'n'.
+	// If l.Tail is nil, the list is empty, and 'n' becomes the first node.
+	// Both l.Head and l.Tail will point to 'n'.
 	if l.Tail != nil {
 		l.Tail.Next = n
 	} else {
@@ -135,8 +136,6 @@ func (l *List[V]) InsertAfter(n *Node[V], v V) *Node[V] {
 }
 
 // InsertAfterNode inserts node 'next' after the given node.
-// If either node is nil, returns nil.
-// Returns the inserted node.
 func (l *List[V]) InsertAfterNode(n *Node[V], next *Node[V]) *Node[V] {
 	if n == nil || next == nil {
 		return nil
@@ -177,8 +176,6 @@ func (l *List[V]) InsertBefore(n *Node[V], v V) *Node[V] {
 }
 
 // InsertBeforeNode inserts node 'prev' before the given node.
-// If either node is nil, returns nil.
-// Returns the inserted node.
 func (l *List[V]) InsertBeforeNode(n *Node[V], prev *Node[V]) *Node[V] {
 	if n == nil || prev == nil {
 		return nil
@@ -206,7 +203,7 @@ func (l *List[V]) insertBeforeNode(n *Node[V], prev *Node[V]) *Node[V] {
 }
 
 // Remove removes the given node from the list.
-// If the node is nil, the operation is a no-op.
+// If the node is nil, it does nothing and returns the zero value.
 func (l *List[V]) Remove(n *Node[V]) V {
 	var v V
 	if n == nil {
@@ -363,9 +360,8 @@ func (l *List[V]) Merge(other *List[V]) {
 //   - zero if a = b.
 //   - positive value if a > b.
 //
-// Both input list can be unsorted, the resulting list will be sorted according to
-// cmp function
-// The other list will be emptied after the merge.
+// Both input list can be unsorted, the resulting list will be sorted.
+// The other list is emptied after the merge.
 func (l *List[V]) MergeSorted(other *List[V], cmp func(V, V) int) {
 	if other == nil {
 		return
