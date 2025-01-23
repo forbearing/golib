@@ -140,11 +140,14 @@ func (s *Set[E]) Len() int {
 // - If the original set is concurrent safe, the cloned set is concurrent safe.
 func (s *Set[E]) Clone() *Set[E] {
 	var cloned *Set[E]
+	ops := []Option[E]{}
 	if s.safe {
-		cloned, _ = NewFromMapKeys(s.set, WithSafe[E]())
-	} else {
-		cloned, _ = NewFromMapKeys(s.set)
+		ops = append(ops, WithSafe[E]())
 	}
+	if s.sorted {
+		ops = append(ops, WithSorted(s.cmp))
+	}
+	cloned, _ = NewFromMapKeys(s.set, ops...)
 	return cloned
 }
 
@@ -205,13 +208,22 @@ func (s *Set[E]) ContainsAnyElement(other *Set[E]) bool {
 // range calls fn for each element in the set.
 // If fn returns false, "Range" stops the iteration.
 // If fn is nil, "Range" does nothing.
-func (s *Set[E]) Range(fn func(v E) bool) {
+func (s *Set[E]) Range(fn func(e E) bool) {
 	if fn == nil {
 		return
 	}
-	for e := range s.set {
-		if !fn(e) {
-			return
+	if s.sorted {
+		el := s.sortedSlice(s.cmp)
+		for _, e := range el {
+			if !fn(e) {
+				return
+			}
+		}
+	} else {
+		for e := range s.set {
+			if !fn(e) {
+				return
+			}
 		}
 	}
 }
@@ -243,12 +255,77 @@ func (s *Set[E]) IsEmpty() bool {
 func (s *Set[E]) Iter() <-chan E {
 	ch := make(chan E)
 	go func() {
-		for e := range s.set {
-			ch <- e
+		if s.sorted {
+			el := s.sortedSlice(s.cmp)
+			for _, e := range el {
+				ch <- e
+			}
+		} else {
+			for e := range s.set {
+				ch <- e
+			}
 		}
 		close(ch)
 	}()
 	return ch
+}
+
+// IsSubset checks if the current set is a subset of the given set.
+// A subset means every element of the current set is also in the given set.
+// If the given set is nil, the function always returns false.
+func (s *Set[E]) IsSubset(other *Set[E]) bool {
+	if other == nil {
+		return false
+	}
+	if len(s.set) > len(other.set) {
+		return false
+	}
+	var ok bool
+	for e := range s.set {
+		if _, ok = other.set[e]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// IsProperSubset checks if the current set is a proper subset of the given set.
+// A proper subset means every element of the current set is in the given set,
+// and the given set contains more elements than the current set.
+func (s *Set[E]) IsProperSubset(other *Set[E]) bool {
+	if other == nil {
+		return false
+	}
+	return len(s.set) < len(other.set) && s.IsSubset(other)
+}
+
+// IsSuperset checks if the current set is a superset of the given set.
+// A superset means the current set contains every element of the given set.
+// If the given set is nil or empty, the function always returns true.
+func (s *Set[E]) IsSuperset(other *Set[E]) bool {
+	if other == nil {
+		return true
+	}
+	if len(other.set) == 0 {
+		return true
+	}
+	var ok bool
+	for e := range other.set {
+		if _, ok = s.set[e]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// IsProperSuperset checks if the current set is a proper superset of given set.
+// A proper superset means all elements of given set are present int the current set.
+// and the current set has additional element not present in the given set.
+func (s *Set[E]) IsProperSuperset(other *Set[E]) bool {
+	if other == nil && len(s.set) > 0 {
+		return true
+	}
+	return len(s.set) > len(other.set) && s.IsSuperset(other)
 }
 
 // Difference computes the difference between the current set and the given set.
@@ -386,74 +463,12 @@ func (s *Set[E]) Intersect(other *Set[E]) *Set[E] {
 	return inter
 }
 
-// IsSubset checks if the current set is a subset of the given set.
-// A subset means every element of the current set is also in the given set.
-// If the given set is nil, the function always returns false.
-func (s *Set[E]) IsSubset(other *Set[E]) bool {
-	if other == nil {
-		return false
-	}
-	if len(s.set) > len(other.set) {
-		return false
-	}
-	var ok bool
-	for e := range s.set {
-		if _, ok = other.set[e]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// IsProperSubset checks if the current set is a proper subset of the given set.
-// A proper subset means every element of the current set is in the given set,
-// and the given set contains more elements than the current set.
-func (s *Set[E]) IsProperSubset(other *Set[E]) bool {
-	if other == nil {
-		return false
-	}
-	return len(s.set) < len(other.set) && s.IsSubset(other)
-}
-
-// IsSuperset checks if the current set is a superset of the given set.
-// A superset means the current set contains every element of the given set.
-// If the given set is nil or empty, the function always returns true.
-func (s *Set[E]) IsSuperset(other *Set[E]) bool {
-	if other == nil {
-		return true
-	}
-	if len(other.set) == 0 {
-		return true
-	}
-	var ok bool
-	for e := range other.set {
-		if _, ok = s.set[e]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// IsProperSuperset checks if the current set is a proper superset of given set.
-// A proper superset means all elements of given set are present int the current set.
-// and the current set has additional element not present in the given set.
-func (s *Set[E]) IsProperSuperset(other *Set[E]) bool {
-	if other == nil && len(s.set) > 0 {
-		return true
-	}
-	return len(s.set) > len(other.set) && s.IsSuperset(other)
-}
-
 // String returns a string representation of the set.
 func (s *Set[E]) String() string {
 	el := make([]string, 0, len(s.set))
 	if s.sorted {
-		clone := make([]E, len(s.set))
-		for e := range s.set {
-			clone = append(clone, e)
-		}
-		slices.SortFunc(clone, s.cmp)
-		for _, e := range clone {
+		elements := s.sortedSlice(s.cmp)
+		for _, e := range elements {
 			el = append(el, fmt.Sprintf("%v", e))
 		}
 	} else {
@@ -467,6 +482,22 @@ func (s *Set[E]) String() string {
 // Slice returns a slice of the elements in the set.
 // The order of the elements is non-deterministic.
 func (s *Set[E]) Slice() []E {
+	if s.sorted {
+		return s.sortedSlice(s.cmp)
+	}
+	return s.slice()
+}
+
+func (s *Set[E]) sortedSlice(cmp func(E, E) int) []E {
+	el := make([]E, 0, len(s.set))
+	for e := range s.set {
+		el = append(el, e)
+	}
+	slices.SortFunc(el, cmp)
+	return el
+}
+
+func (s *Set[E]) slice() []E {
 	el := make([]E, 0, len(s.set))
 	for e := range s.set {
 		el = append(el, e)
@@ -477,12 +508,23 @@ func (s *Set[E]) Slice() []E {
 // MarshalJSON will marshal the set into a JSON-based representation.
 func (s *Set[E]) MarshalJSON() ([]byte, error) {
 	items := make([]string, 0, len(s.set))
-	for e := range s.set {
-		b, err := json.Marshal(e)
-		if err != nil {
-			return nil, err
+	if s.sorted {
+		elements := s.sortedSlice(s.cmp)
+		for _, e := range elements {
+			b, err := json.Marshal(e)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, string(b))
 		}
-		items = append(items, string(b))
+	} else {
+		for e := range s.set {
+			b, err := json.Marshal(e)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, string(b))
+		}
 	}
 
 	return []byte(fmt.Sprintf("[%s]", strings.Join(items, ","))), nil
