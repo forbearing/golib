@@ -1,17 +1,22 @@
-package set
+package mapset
 
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/forbearing/golib/ds/types"
 )
 
+var ErrNilCmp = fmt.Errorf("nil comparator")
+
 type Set[E comparable] struct {
-	set  map[E]struct{}
-	mu   types.Locker
-	safe bool
+	set    map[E]struct{}
+	mu     types.Locker
+	safe   bool
+	cmp    func(E, E) int
+	sorted bool
 }
 
 // New creates a new set without pre-allocates space.
@@ -442,8 +447,19 @@ func (s *Set[E]) IsProperSuperset(other *Set[E]) bool {
 // String returns a string representation of the set.
 func (s *Set[E]) String() string {
 	el := make([]string, 0, len(s.set))
-	for e := range s.set {
-		el = append(el, fmt.Sprintf("%v", e))
+	if s.sorted {
+		clone := make([]E, len(s.set))
+		for e := range s.set {
+			clone = append(clone, e)
+		}
+		slices.SortFunc(clone, s.cmp)
+		for _, e := range clone {
+			el = append(el, fmt.Sprintf("%v", e))
+		}
+	} else {
+		for e := range s.set {
+			el = append(el, fmt.Sprintf("%v", e))
+		}
 	}
 	return fmt.Sprintf("Set{%s}", strings.Join(el, ", "))
 }
