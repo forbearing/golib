@@ -97,6 +97,11 @@ func NewFromMapValues[K comparable, V comparable](m map[K]V, ops ...Option[V]) (
 // Add one or more elements into the set.
 // Returns the number of elements added.
 func (s *Set[E]) Add(el ...E) int {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	prevLen := len(s.set)
 	for _, e := range el {
 		s.set[e] = struct{}{}
@@ -108,6 +113,11 @@ func (s *Set[E]) Add(el ...E) int {
 // The order of removal is non-deterministic.
 // If the set is empty, it returns zero value of element type and false.
 func (s *Set[E]) Pop() (e E, ok bool) {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	for v := range s.set {
 		delete(s.set, v)
 		return v, true
@@ -117,6 +127,11 @@ func (s *Set[E]) Pop() (e E, ok bool) {
 
 // Remove one or more elements from the set.
 func (s *Set[E]) Remove(el ...E) {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	for _, e := range el {
 		delete(s.set, e)
 	}
@@ -124,6 +139,11 @@ func (s *Set[E]) Remove(el ...E) {
 
 // Clear removes all elements from the set.
 func (s *Set[E]) Clear() {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	for e := range s.set {
 		delete(s.set, e)
 	}
@@ -131,6 +151,11 @@ func (s *Set[E]) Clear() {
 
 // Len returns the number of elements in the set.
 func (s *Set[E]) Len() int {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	return len(s.set)
 }
 
@@ -139,7 +164,21 @@ func (s *Set[E]) Len() int {
 // The property of the cloned set is the same as the original set.
 // - If the original set is concurrent safe, the cloned set is concurrent safe.
 func (s *Set[E]) Clone() *Set[E] {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
+	return s.clone()
+}
+
+func (s *Set[E]) clone() *Set[E] {
 	var cloned *Set[E]
+	cloned, _ = NewFromMapKeys(s.set, s.options()...)
+	return cloned
+}
+
+func (s *Set[E]) options() []Option[E] {
 	ops := []Option[E]{}
 	if s.safe {
 		ops = append(ops, WithSafe[E]())
@@ -147,12 +186,20 @@ func (s *Set[E]) Clone() *Set[E] {
 	if s.sorted {
 		ops = append(ops, WithSorted(s.cmp))
 	}
-	cloned, _ = NewFromMapKeys(s.set, ops...)
-	return cloned
+	return ops
 }
 
 // Contains reports whether the set contains all the given elements.
+// It always returns true if the provided slice is nil or empty.
 func (s *Set[E]) Contains(el ...E) bool {
+	if len(el) == 0 {
+		return true
+	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	var ok bool
 	for _, e := range el {
 		if _, ok = s.set[e]; !ok {
@@ -164,12 +211,26 @@ func (s *Set[E]) Contains(el ...E) bool {
 
 // ContainsOne reports whether the set contains the given element.
 func (s *Set[E]) ContainsOne(v E) bool {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	_, ok := s.set[v]
 	return ok
 }
 
 // ContainsAny reports whether the set contains any of the given element.
+// It returns true if the provided slice is nil or empty.
 func (s *Set[E]) ContainsAny(el ...E) bool {
+	if len(el) == 0 {
+		return true
+	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	var ok bool
 	for _, e := range el {
 		if _, ok = s.set[e]; ok {
@@ -180,9 +241,18 @@ func (s *Set[E]) ContainsAny(el ...E) bool {
 }
 
 // ContainsAnyElement reports whether the set contains any element of the given set.
+// If the given set is nil or empty, it returns false.
 func (s *Set[E]) ContainsAnyElement(other *Set[E]) bool {
 	if other == nil {
 		return false
+	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
 	}
 	if len(other.set) == 0 {
 		return false
@@ -212,6 +282,11 @@ func (s *Set[E]) Range(fn func(e E) bool) {
 	if fn == nil {
 		return
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	if s.sorted {
 		el := s.sortedSlice(s.cmp)
 		for _, e := range el {
@@ -233,6 +308,14 @@ func (s *Set[E]) Equal(other *Set[E]) bool {
 	if other == nil {
 		return false
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
 	if len(s.set) != len(other.set) {
 		return false
 	}
@@ -248,6 +331,11 @@ func (s *Set[E]) Equal(other *Set[E]) bool {
 
 // IsEmpty reports whether the set is empty.
 func (s *Set[E]) IsEmpty() bool {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	return len(s.set) == 0
 }
 
@@ -255,6 +343,10 @@ func (s *Set[E]) IsEmpty() bool {
 func (s *Set[E]) Iter() <-chan E {
 	ch := make(chan E)
 	go func() {
+		if s.safe {
+			s.mu.RLock()
+			defer s.mu.RUnlock()
+		}
 		if s.sorted {
 			el := s.sortedSlice(s.cmp)
 			for _, e := range el {
@@ -277,6 +369,19 @@ func (s *Set[E]) IsSubset(other *Set[E]) bool {
 	if other == nil {
 		return false
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+
+	return s.isSubset(other)
+}
+
+func (s *Set[E]) isSubset(other *Set[E]) bool {
 	if len(s.set) > len(other.set) {
 		return false
 	}
@@ -296,7 +401,16 @@ func (s *Set[E]) IsProperSubset(other *Set[E]) bool {
 	if other == nil {
 		return false
 	}
-	return len(s.set) < len(other.set) && s.IsSubset(other)
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+
+	return len(s.set) < len(other.set) && s.isSubset(other)
 }
 
 // IsSuperset checks if the current set is a superset of the given set.
@@ -306,6 +420,19 @@ func (s *Set[E]) IsSuperset(other *Set[E]) bool {
 	if other == nil {
 		return true
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+
+	return s.isSuperset(other)
+}
+
+func (s *Set[E]) isSuperset(other *Set[E]) bool {
 	if len(other.set) == 0 {
 		return true
 	}
@@ -322,10 +449,18 @@ func (s *Set[E]) IsSuperset(other *Set[E]) bool {
 // A proper superset means all elements of given set are present int the current set.
 // and the current set has additional element not present in the given set.
 func (s *Set[E]) IsProperSuperset(other *Set[E]) bool {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
 	if other == nil && len(s.set) > 0 {
 		return true
 	}
-	return len(s.set) > len(other.set) && s.IsSuperset(other)
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+	return len(s.set) > len(other.set) && s.isSuperset(other)
 }
 
 // Difference computes the difference between the current set and the given set.
@@ -337,21 +472,23 @@ func (s *Set[E]) IsProperSuperset(other *Set[E]) bool {
 // be concurrent-safe.
 func (s *Set[E]) Difference(other *Set[E]) *Set[E] {
 	if other == nil {
-		return s.Clone()
+		return s.clone()
 	}
-	if len(other.set) == 0 {
-		return s.Clone()
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+	if len(other.set) == 0 || len(s.set) == 0 {
+		return s.clone()
 	}
 
-	var diff *Set[E]
-	var ok bool
-	if s.safe {
-		diff, _ = New(WithSafe[E]())
-	} else {
-		diff, _ = New[E]()
-	}
+	diff, _ := New(s.options()...)
 	for e := range s.set {
-		if _, ok = other.set[e]; !ok {
+		if _, ok := other.set[e]; !ok {
 			diff.set[e] = struct{}{}
 		}
 	}
@@ -369,24 +506,26 @@ func (s *Set[E]) SymmetricDifference(other *Set[E]) *Set[E] {
 	if other == nil {
 		return s.Clone()
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
 	if len(other.set) == 0 {
 		return s.Clone()
 	}
 
-	var diff *Set[E]
-	var ok bool
-	if s.safe {
-		diff, _ = New(WithSafe[E]())
-	} else {
-		diff, _ = New[E]()
-	}
+	diff, _ := New(s.options()...)
 	for e := range s.set {
-		if _, ok = other.set[e]; !ok {
+		if _, ok := other.set[e]; !ok {
 			diff.set[e] = struct{}{}
 		}
 	}
 	for e := range other.set {
-		if _, ok = s.set[e]; !ok {
+		if _, ok := s.set[e]; !ok {
 			diff.set[e] = struct{}{}
 		}
 	}
@@ -406,16 +545,19 @@ func (s *Set[E]) Union(other *Set[E]) *Set[E] {
 	if other == nil {
 		return s.Clone()
 	}
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
 	if len(other.set) == 0 {
 		return s.Clone()
 	}
 
-	var union *Set[E]
-	if s.safe {
-		union, _ = New(WithSafe[E]())
-	} else {
-		union, _ = New[E]()
-	}
+	union, _ := New(s.options()...)
 	for e := range s.set {
 		union.set[e] = struct{}{}
 	}
@@ -432,12 +574,15 @@ func (s *Set[E]) Union(other *Set[E]) *Set[E] {
 // The returned set inherits the properties of the current set.
 // For example, if the current set is concurrent-safe, the returned set is also
 func (s *Set[E]) Intersect(other *Set[E]) *Set[E] {
-	var inter *Set[E]
 	if s.safe {
-		inter, _ = New(WithSafe[E]())
-	} else {
-		inter, _ = New[E]()
+		s.mu.RLock()
+		defer s.mu.RUnlock()
 	}
+	if other.safe {
+		other.mu.RLock()
+		defer other.mu.RUnlock()
+	}
+	inter, _ := New(s.options()...)
 	if other == nil {
 		return inter
 	}
@@ -445,16 +590,15 @@ func (s *Set[E]) Intersect(other *Set[E]) *Set[E] {
 		return inter
 	}
 
-	var ok bool
 	if len(s.set) < len(other.set) {
 		for e := range s.set {
-			if _, ok = other.set[e]; ok {
+			if _, ok := other.set[e]; ok {
 				inter.set[e] = struct{}{}
 			}
 		}
 	} else {
 		for e := range other.set {
-			if _, ok = s.set[e]; ok {
+			if _, ok := s.set[e]; ok {
 				inter.set[e] = struct{}{}
 			}
 		}
@@ -465,6 +609,11 @@ func (s *Set[E]) Intersect(other *Set[E]) *Set[E] {
 
 // String returns a string representation of the set.
 func (s *Set[E]) String() string {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	el := make([]string, 0, len(s.set))
 	if s.sorted {
 		elements := s.sortedSlice(s.cmp)
@@ -482,6 +631,11 @@ func (s *Set[E]) String() string {
 // Slice returns a slice of the elements in the set.
 // The order of the elements is non-deterministic.
 func (s *Set[E]) Slice() []E {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	if s.sorted {
 		return s.sortedSlice(s.cmp)
 	}
@@ -507,6 +661,11 @@ func (s *Set[E]) unsortedSlice() []E {
 
 // MarshalJSON will marshal the set into a JSON-based representation.
 func (s *Set[E]) MarshalJSON() ([]byte, error) {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	items := make([]string, 0, len(s.set))
 	if s.sorted {
 		elements := s.sortedSlice(s.cmp)
@@ -532,6 +691,11 @@ func (s *Set[E]) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON will Unmarshal a JSON-based representation byte slice into the set.
 func (s *Set[E]) UnmarshalJSON(data []byte) error {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	var items []E
 	if err := json.Unmarshal(data, &items); err != nil {
 		return err
