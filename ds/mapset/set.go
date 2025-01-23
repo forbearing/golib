@@ -485,7 +485,7 @@ func (s *Set[E]) Slice() []E {
 	if s.sorted {
 		return s.sortedSlice(s.cmp)
 	}
-	return s.slice()
+	return s.unsortedSlice()
 }
 
 func (s *Set[E]) sortedSlice(cmp func(E, E) int) []E {
@@ -497,7 +497,7 @@ func (s *Set[E]) sortedSlice(cmp func(E, E) int) []E {
 	return el
 }
 
-func (s *Set[E]) slice() []E {
+func (s *Set[E]) unsortedSlice() []E {
 	el := make([]E, 0, len(s.set))
 	for e := range s.set {
 		el = append(el, e)
