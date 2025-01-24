@@ -22,9 +22,9 @@ var ErrEqualNil = errors.New("equal function is nil")
 // List represents a resizable array-backend list.
 // Call New or NewFromSlice default creates a list witout concurrent safety.
 // Call New or NewFromSlice with `WithSafe` option to make the List safe for concurrent use.
-type List[T any] struct {
-	elements []T
-	equal    func(T, T) bool
+type List[E any] struct {
+	elements []E
+	equal    func(E, E) bool
 	mu       types.Locker
 
 	safe bool
@@ -33,12 +33,12 @@ type List[T any] struct {
 // New creates and returns a new array-backed list.
 // The provided equal function is used to compare values for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
-func New[T any](equal func(T, T) bool, ops ...Option[T]) (*List[T], error) {
+func New[E any](equal func(E, E) bool, ops ...Option[E]) (*List[E], error) {
 	if equal == nil {
 		return nil, ErrEqualNil
 	}
-	l := &List[T]{
-		elements: make([]T, 0, minCap), // NOTE: zero capacity will cause growBy blocked.
+	l := &List[E]{
+		elements: make([]E, 0, minCap), // NOTE: zero capacity will cause growBy blocked.
 		mu:       types.FakeLocker{},
 		equal:    equal,
 	}
@@ -56,7 +56,7 @@ func New[T any](equal func(T, T) bool, ops ...Option[T]) (*List[T], error) {
 // NewFromSlice creates a new array-backed list from the given slice.
 // The provided equal function is used to compare values for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
-func NewFromSlice[T any](equal func(T, T) bool, values []T, ops ...Option[T]) (*List[T], error) {
+func NewFromSlice[E any](equal func(E, E) bool, values []E, ops ...Option[E]) (*List[E], error) {
 	l, err := New(equal, ops...)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func NewFromSlice[T any](equal func(T, T) bool, values []T, ops ...Option[T]) (*
 }
 
 // Get returns the value at the given index.
-func (l *List[T]) Get(index int) (T, bool) {
+func (l *List[E]) Get(index int) (E, bool) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.RLock()
@@ -75,14 +75,14 @@ func (l *List[T]) Get(index int) (T, bool) {
 	}
 
 	if !l.withinRange(index, false) {
-		var v T
+		var v E
 		return v, false
 	}
 	return l.elements[index], true
 }
 
 // Append appends specified values to the end of the list.
-func (l *List[T]) Append(values ...T) {
+func (l *List[E]) Append(values ...E) {
 	if len(values) == 0 {
 		return
 	}
@@ -95,7 +95,7 @@ func (l *List[T]) Append(values ...T) {
 	l.append(values...)
 }
 
-func (l *List[T]) append(values ...T) {
+func (l *List[E]) append(values ...E) {
 	oldLen := len(l.elements)
 	l.growBy(len(values))
 	for i := range values {
@@ -106,7 +106,7 @@ func (l *List[T]) append(values ...T) {
 // Insert inserts values at the given index.
 // If the index is the length of the list, the values will be appended.
 // If the index out of range, this function is no-op.
-func (l *List[T]) Insert(index int, values ...T) {
+func (l *List[E]) Insert(index int, values ...E) {
 	if len(values) == 0 {
 		return
 	}
@@ -136,7 +136,7 @@ func (l *List[T]) Insert(index int, values ...T) {
 // Set sets the value at the given index.
 // If the index is the length of the list, the value will be appended.
 // If the index out of range, this function is no-op.
-func (l *List[T]) Set(index int, value T) {
+func (l *List[E]) Set(index int, value E) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -154,7 +154,7 @@ func (l *List[T]) Set(index int, value T) {
 }
 
 // Remove removes all the value from the list.
-func (l *List[T]) Remove(v T) {
+func (l *List[E]) Remove(v E) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -173,7 +173,7 @@ func (l *List[T]) Remove(v T) {
 
 // RemoveAt removes the value at the given index.
 // If the index out of range, this function is no-op and returns zero value of T.
-func (l *List[T]) RemoveAt(index int) T {
+func (l *List[E]) RemoveAt(index int) E {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -183,8 +183,8 @@ func (l *List[T]) RemoveAt(index int) T {
 	return l.removeAt(index)
 }
 
-func (l *List[T]) removeAt(index int) T {
-	var v T
+func (l *List[E]) removeAt(index int) E {
+	var v E
 	if !l.withinRange(index, false) {
 		return v
 	}
@@ -197,7 +197,7 @@ func (l *List[T]) removeAt(index int) T {
 }
 
 // Clear removes all elements from the list.
-func (l *List[T]) Clear() {
+func (l *List[E]) Clear() {
 	if l.safe {
 		l.mu.Lock()
 		defer l.mu.Unlock()
@@ -205,12 +205,12 @@ func (l *List[T]) Clear() {
 
 	// l.elements = l.elements[:0]
 	// l.elements = nil
-	l.elements = make([]T, 0)
+	l.elements = make([]E, 0)
 }
 
 // Contains reports whether the list contains all the given values.
 // Returns true if all values are present in the list, false otherwise.
-func (l *List[T]) Contains(values ...T) bool {
+func (l *List[E]) Contains(values ...E) bool {
 	if len(values) == 0 {
 		return false
 	}
@@ -223,7 +223,7 @@ func (l *List[T]) Contains(values ...T) bool {
 	return true
 }
 
-func (l *List[T]) contains(value T) bool {
+func (l *List[E]) contains(value E) bool {
 	// Skipping the "l.safe" check is more efficient based on benchmark result.
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -239,7 +239,7 @@ func (l *List[T]) contains(value T) bool {
 // Values returns a slice containing all values in the list.
 // The returned slice is a copy of the internal slice,
 // and modifications to it will not affect the list.
-func (l *List[T]) Values() []T {
+func (l *List[E]) Values() []E {
 	// Skipping the "l.safe" check is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.RLock()
@@ -249,7 +249,7 @@ func (l *List[T]) Values() []T {
 }
 
 // IndexOf returns the index of the first occurrence of value in the list.
-func (l *List[T]) IndexOf(value T) int {
+func (l *List[E]) IndexOf(value E) int {
 	// Skipping the "l.safe" check is more efficient based on benchmark result.
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -263,7 +263,7 @@ func (l *List[T]) IndexOf(value T) int {
 }
 
 // IsEmpty reports whether the list has no elements.
-func (l *List[T]) IsEmpty() bool {
+func (l *List[E]) IsEmpty() bool {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.RLock()
@@ -273,7 +273,7 @@ func (l *List[T]) IsEmpty() bool {
 }
 
 // Len returns the number of elements in the list.
-func (l *List[T]) Len() int {
+func (l *List[E]) Len() int {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.RLock()
@@ -289,7 +289,7 @@ func (l *List[T]) Len() int {
 // - A negative value if first argument is less than second.
 // - Zero if the arguments are equal.
 // - A positive value if first argument is greater than second.
-func (l *List[T]) Sort(cmp util.Comparator[T]) {
+func (l *List[E]) Sort(cmp util.Comparator[E]) {
 	if cmp == nil {
 		return
 	}
@@ -306,7 +306,7 @@ func (l *List[T]) Sort(cmp util.Comparator[T]) {
 }
 
 // Swap swaps the values at the given indexes.
-func (l *List[T]) Swap(i, j int) {
+func (l *List[E]) Swap(i, j int) {
 	// Check "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -321,7 +321,7 @@ func (l *List[T]) Swap(i, j int) {
 // Range call function fn on each value in the list.
 // if `fn` returns false, the iteration stops.
 // if `fn` is nil, the method does nothing.
-func (l *List[T]) Range(fn func(v T) bool) {
+func (l *List[E]) Range(fn func(v E) bool) {
 	if fn == nil {
 		return
 	}
@@ -338,13 +338,13 @@ func (l *List[T]) Range(fn func(v T) bool) {
 	}
 }
 
-func (l *List[T]) resize(len, cap int) {
-	newElements := make([]T, len, cap)
+func (l *List[E]) resize(len, cap int) {
+	newElements := make([]E, len, cap)
 	copy(newElements, l.elements)
 	l.elements = newElements
 }
 
-func (l *List[T]) growBy(n int) {
+func (l *List[E]) growBy(n int) {
 	currCap := cap(l.elements)
 	newLen := len(l.elements) + n
 	if newLen > currCap {
@@ -363,7 +363,7 @@ func (l *List[T]) growBy(n int) {
 	}
 }
 
-func (l *List[T]) shrink() {
+func (l *List[E]) shrink() {
 	currCap := cap(l.elements)
 	if len(l.elements) <= int(shrinkFactor*float32(currCap)) {
 		newCap := int(shrinkFactor * float32(currCap))
@@ -374,7 +374,7 @@ func (l *List[T]) shrink() {
 	}
 }
 
-func (l *List[T]) withinRange(index int, allowEnd bool) bool {
+func (l *List[E]) withinRange(index int, allowEnd bool) bool {
 	if allowEnd {
 		return index >= 0 && index <= len(l.elements)
 	}
