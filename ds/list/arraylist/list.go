@@ -350,6 +350,9 @@ func (l *List[E]) growBy(n int) {
 
 		// method 2:
 		newCap := int(growthFactor * float32(currCap))
+		if newCap == 0 {
+			newCap = minCap
+		}
 		for newCap < newLen {
 			newCap = int(growthFactor * float32(newCap))
 		}
