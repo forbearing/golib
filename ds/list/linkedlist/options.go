@@ -8,6 +8,20 @@ type Option[V any] func(*List[V]) error
 func WithSafe[V any]() Option[V] {
 	return func(m *List[V]) error {
 		m.mu = new(sync.RWMutex)
+		m.safe = true
+		return nil
+	}
+}
+
+// WithSorted creates a option that ensure the doublely-linked to always makeup a sorted
+// order elements based on the provided compator function.
+func WithSorted[V any](cmp func(V, V) int) Option[V] {
+	return func(m *List[V]) error {
+		m.sorted = true
+		if cmp == nil {
+			return ErrNilCmp
+		}
+		m.cmp = cmp
 		return nil
 	}
 }

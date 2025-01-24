@@ -10,16 +10,22 @@
 package linkedlist
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/forbearing/golib/ds/types"
 )
+
+var ErrNilCmp = fmt.Errorf("nil comparator")
 
 // List represents a doubly-linked list.
 type List[V any] struct {
 	Head, Tail *Node[V]
 	count      int
 	mu         types.Locker
+	safe       bool
+	sorted     bool
+	cmp        func(V, V) int
 }
 
 // New creates and returns an empty doubly-linked list.
@@ -453,4 +459,15 @@ func (l *List[V]) Clear() {
 	l.Head = nil
 	l.Tail = nil
 	l.count = 0
+}
+
+func (l *List[V]) options() []Option[V] {
+	ops := make([]Option[V], 0)
+	if l.safe {
+		ops = append(ops, WithSafe[V]())
+	}
+	if l.sorted {
+		ops = append(ops, WithSorted(l.cmp))
+	}
+	return ops
 }
