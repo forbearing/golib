@@ -72,7 +72,7 @@ func NewFromMapKeys[K comparable, V any](cmp func(K, K) int, m map[K]V, ops ...O
 	return s, nil
 }
 
-// NewFromMapKeys creates a stack from the provided map values.
+// NewFromMapValues creates a stack from the provided map values.
 // Options can be provided to customize the stack's properties (e.g., thread safety).
 // Returns an empty stack if the provided map is nil or empty.
 func NewFromMapValues[K comparable, V any](cmp func(V, V) int, m map[K]V, ops ...Option[V]) (*Stack[V], error) {
