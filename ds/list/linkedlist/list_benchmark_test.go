@@ -125,7 +125,7 @@ func BenchmarkLinkedList_PushFront(b *testing.B) {
 	)
 }
 
-func BenchmarkLinkedListInsertAfter(b *testing.B) {
+func BenchmarkLinkedList_InsertAfter(b *testing.B) {
 	for _, size := range []int{10, 10000} {
 		b.Run(fmt.Sprintf("size-%d", size), func(b *testing.B) {
 			benchmarkInsertAfter(b, size)
@@ -214,7 +214,7 @@ func benchmarkInsertAfter(b *testing.B, _ int) {
 	})
 }
 
-func BenchmarkLinkedListInsertBefore(b *testing.B) {
+func BenchmarkLinkedList_InsertBefore(b *testing.B) {
 	for _, size := range []int{10, 10000} {
 		b.Run(fmt.Sprintf("size-%d", size), func(b *testing.B) {
 			benchmarkInsertBefore(b, size)
