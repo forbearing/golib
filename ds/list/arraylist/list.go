@@ -30,7 +30,7 @@ type List[E any] struct {
 }
 
 // New creates and returns a new array-backed list.
-// The provided equal function is used to compare values for equality.
+// The provided equal function is used to compare elements for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 	if cmp == nil {
@@ -53,19 +53,19 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 }
 
 // NewFromSlice creates a new array-backed list from the given slice.
-// The provided equal function is used to compare values for equality.
+// The provided equal function is used to compare elements for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
-func NewFromSlice[E any](cmp func(E, E) int, values []E, ops ...Option[E]) (*List[E], error) {
+func NewFromSlice[E any](cmp func(E, E) int, elements []E, ops ...Option[E]) (*List[E], error) {
 	l, err := New(cmp, ops...)
 	if err != nil {
 		return nil, err
 	}
-	l.growBy(len(values))
-	copy(l.elements, values)
+	l.growBy(len(elements))
+	copy(l.elements, elements)
 	return l, nil
 }
 
-// Get returns the value at the given index.
+// Get returns the element at the given index.
 func (l *List[E]) Get(index int) (E, bool) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
@@ -74,15 +74,15 @@ func (l *List[E]) Get(index int) (E, bool) {
 	}
 
 	if !l.withinRange(index, false) {
-		var v E
-		return v, false
+		var e E
+		return e, false
 	}
 	return l.elements[index], true
 }
 
-// Append appends specified values to the end of the list.
-func (l *List[E]) Append(values ...E) {
-	if len(values) == 0 {
+// Append appends specified elements to the end of the list.
+func (l *List[E]) Append(el ...E) {
+	if len(el) == 0 {
 		return
 	}
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
@@ -91,22 +91,22 @@ func (l *List[E]) Append(values ...E) {
 		defer l.mu.Unlock()
 	}
 
-	l.append(values...)
+	l.append(el...)
 }
 
-func (l *List[E]) append(values ...E) {
+func (l *List[E]) append(el ...E) {
 	oldLen := len(l.elements)
-	l.growBy(len(values))
-	for i := range values {
-		l.elements[oldLen+i] = values[i]
+	l.growBy(len(el))
+	for i := range el {
+		l.elements[oldLen+i] = el[i]
 	}
 }
 
-// Insert inserts values at the given index.
-// If the index is the length of the list, the values will be appended.
+// Insert inserts elements at the given index.
+// If the index is the length of the list, the elements will be appended.
 // If the index out of range, this function is no-op.
-func (l *List[E]) Insert(index int, values ...E) {
-	if len(values) == 0 {
+func (l *List[E]) Insert(index int, el ...E) {
+	if len(el) == 0 {
 		return
 	}
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
@@ -119,23 +119,23 @@ func (l *List[E]) Insert(index int, values ...E) {
 		return
 	}
 	if index == len(l.elements) {
-		l.append(values...)
+		l.append(el...)
 		return
 	}
 
-	addLen := len(values)
+	addLen := len(el)
 	oldLen := len(l.elements)
 	l.growBy(addLen)
-	// move elements after index + length of values.
+	// move elements after index + length of "el".
 	copy(l.elements[index+addLen:], l.elements[index:oldLen])
-	// copy values after index
-	copy(l.elements[index:index+addLen], values)
+	// copy elements after index
+	copy(l.elements[index:index+addLen], el)
 }
 
-// Set sets the value at the given index.
-// If the index is the length of the list, the value will be appended.
+// Set sets the element at the given index.
+// If the index is the length of the list, the element will be appended.
 // If the index out of range, this function is no-op.
-func (l *List[E]) Set(index int, value E) {
+func (l *List[E]) Set(index int, e E) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -146,14 +146,14 @@ func (l *List[E]) Set(index int, value E) {
 		return
 	}
 	if index == len(l.elements) {
-		l.append(value)
+		l.append(e)
 		return
 	}
-	l.elements[index] = value
+	l.elements[index] = e
 }
 
-// Remove removes all the value from the list.
-func (l *List[E]) Remove(v E) {
+// Remove removes all the elements from the list.
+func (l *List[E]) Remove(e E) {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
 		l.mu.Lock()
@@ -162,7 +162,7 @@ func (l *List[E]) Remove(v E) {
 
 	i := 0
 	for i < len(l.elements) {
-		if l.cmp(v, l.elements[i]) == 0 {
+		if l.cmp(e, l.elements[i]) == 0 {
 			l.removeAt(i)
 		} else {
 			i++
@@ -170,8 +170,8 @@ func (l *List[E]) Remove(v E) {
 	}
 }
 
-// RemoveAt removes the value at the given index.
-// If the index out of range, this function is no-op and returns zero value of T.
+// RemoveAt removes the element at the given index.
+// If the index out of range, this function is no-op and returns zero value of E.
 func (l *List[E]) RemoveAt(index int) E {
 	// Checking "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
@@ -183,16 +183,16 @@ func (l *List[E]) RemoveAt(index int) E {
 }
 
 func (l *List[E]) removeAt(index int) E {
-	var v E
+	var e E
 	if !l.withinRange(index, false) {
-		return v
+		return e
 	}
-	v = l.elements[index]
+	e = l.elements[index]
 	// equivalent to
 	// l.elements = append(l.elements[:index], l.elements[index+1:]...)
 	l.elements = slices.Delete(l.elements, index, index+1)
 	l.shrink()
-	return v
+	return e
 }
 
 // Clear removes all elements from the list.
@@ -207,35 +207,35 @@ func (l *List[E]) Clear() {
 	l.elements = make([]E, 0)
 }
 
-// Contains reports whether the list contains all the given values.
-// Returns true if all values are present in the list, false otherwise.
-func (l *List[E]) Contains(values ...E) bool {
-	if len(values) == 0 {
+// Contains reports whether the list contains all the given elements.
+// Returns true if all elements are present in the list, false otherwise.
+func (l *List[E]) Contains(el ...E) bool {
+	if len(el) == 0 {
 		return false
 	}
 
-	for _, v := range values {
-		if !l.contains(v) {
+	for _, e := range el {
+		if !l.contains(e) {
 			return false
 		}
 	}
 	return true
 }
 
-func (l *List[E]) contains(value E) bool {
+func (l *List[E]) contains(e E) bool {
 	// Skipping the "l.safe" check is more efficient based on benchmark result.
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	for _, v := range l.elements {
-		if l.cmp(v, value) == 0 {
+		if l.cmp(v, e) == 0 {
 			return true
 		}
 	}
 	return false
 }
 
-// Values returns a slice containing all values in the list.
+// Values returns a slice containing all elements in the list.
 // The returned slice is a copy of the internal slice,
 // and modifications to it will not affect the list.
 func (l *List[E]) Values() []E {
@@ -247,14 +247,14 @@ func (l *List[E]) Values() []E {
 	return slices.Clone(l.elements)
 }
 
-// IndexOf returns the index of the first occurrence of value in the list.
-func (l *List[E]) IndexOf(value E) int {
+// IndexOf returns the index of the first occurrence of element in the list.
+func (l *List[E]) IndexOf(e E) int {
 	// Skipping the "l.safe" check is more efficient based on benchmark result.
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 
 	for i, v := range l.elements {
-		if l.cmp(v, value) == 0 {
+		if l.cmp(v, e) == 0 {
 			return i
 		}
 	}
@@ -301,7 +301,7 @@ func (l *List[E]) Sort() {
 	slices.SortFunc(l.elements, l.cmp)
 }
 
-// Swap swaps the values at the given indexes.
+// Swap swaps the elements at the given indexes.
 func (l *List[E]) Swap(i, j int) {
 	// Check "l.safe" before acquiring the lock is more efficient based on benchmark result.
 	if l.safe {
@@ -314,10 +314,10 @@ func (l *List[E]) Swap(i, j int) {
 	}
 }
 
-// Range call function fn on each value in the list.
+// Range call function fn on each element in the list.
 // if `fn` returns false, the iteration stops.
 // if `fn` is nil, the method does nothing.
-func (l *List[E]) Range(fn func(v E) bool) {
+func (l *List[E]) Range(fn func(e E) bool) {
 	if fn == nil {
 		return
 	}
@@ -327,8 +327,8 @@ func (l *List[E]) Range(fn func(v E) bool) {
 		defer l.mu.RUnlock()
 	}
 
-	for _, v := range l.elements {
-		if !fn(v) {
+	for _, e := range l.elements {
+		if !fn(e) {
 			return
 		}
 	}
