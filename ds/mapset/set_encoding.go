@@ -36,7 +36,7 @@ func (s *Set[E]) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("[%s]", strings.Join(items, ","))), nil
 }
 
-// UnmarshalJSON will Unmarshal a JSON-based representation byte slice into the set.
+// UnmarshalJSON will unmarshal a JSON-based representation byte slice into the set.
 func (s *Set[E]) UnmarshalJSON(data []byte) error {
 	if s.safe {
 		s.mu.Lock()
