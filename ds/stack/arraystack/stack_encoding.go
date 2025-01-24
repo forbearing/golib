@@ -32,11 +32,7 @@ func (s *Stack[E]) UnmarshalJSON(data []byte) (err error) {
 	if err = json.Unmarshal(data, &el); err != nil {
 		return err
 	}
-	s1, err := New(s.cmp, s.options()...)
-	if err != nil {
-		return err
-	}
-	(*s) = *s1
+	s.Clear()
 	for _, e := range el {
 		s.Push(e)
 	}
