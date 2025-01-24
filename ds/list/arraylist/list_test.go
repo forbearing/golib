@@ -7,12 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func intEqual(a, b int) bool {
-	return a == b
-}
-
-func stringEqual(a, b string) bool {
-	return a == b
+func cmp(a, b int) int {
+	return a - b
 }
 
 func intCompare(a, b int) int {
@@ -20,7 +16,7 @@ func intCompare(a, b int) int {
 }
 
 func TestNew(t *testing.T) {
-	list, err := arraylist.New(intEqual)
+	list, err := arraylist.New(cmp)
 	assert.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.True(t, list.IsEmpty())
@@ -29,7 +25,7 @@ func TestNew(t *testing.T) {
 
 func TestNewFromSlice(t *testing.T) {
 	values := []int{1, 2, 3}
-	list, err := arraylist.NewFromSlice(intEqual, values)
+	list, err := arraylist.NewFromSlice(cmp, values)
 	assert.NoError(t, err)
 	assert.NotNil(t, list)
 	assert.Equal(t, len(values), list.Len())
@@ -37,7 +33,7 @@ func TestNewFromSlice(t *testing.T) {
 }
 
 func TestAppend(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	assert.Equal(t, 3, list.Len())
@@ -45,7 +41,7 @@ func TestAppend(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 3)
 	list.Insert(1, 2)
@@ -61,7 +57,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	list.Set(1, 5)
@@ -73,7 +69,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3)
 	list.Remove(2)
@@ -81,7 +77,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveAt(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	removed := list.RemoveAt(1)
@@ -95,7 +91,7 @@ func TestRemoveAt(t *testing.T) {
 }
 
 func TestContains(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	assert.True(t, list.Contains(1, 2))
@@ -105,7 +101,7 @@ func TestContains(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	list.Clear()
@@ -114,15 +110,15 @@ func TestClear(t *testing.T) {
 }
 
 func TestSort(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(3, 1, 2)
-	list.Sort(intCompare)
+	list.Sort()
 	assert.Equal(t, []int{1, 2, 3}, list.Values())
 }
 
 func TestLenIsEmpty(t *testing.T) {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	assert.True(t, list.IsEmpty())
 	assert.Equal(t, 0, list.Len())

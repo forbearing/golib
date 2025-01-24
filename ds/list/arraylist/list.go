@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/forbearing/golib/ds/types"
-	"github.com/forbearing/golib/ds/util"
 )
 
 const (
@@ -24,7 +23,7 @@ var ErrEqualNil = errors.New("equal function is nil")
 // Call New or NewFromSlice with `WithSafe` option to make the List safe for concurrent use.
 type List[E any] struct {
 	elements []E
-	equal    func(E, E) bool
+	cmp      func(E, E) int
 	mu       types.Locker
 
 	safe bool
@@ -33,14 +32,14 @@ type List[E any] struct {
 // New creates and returns a new array-backed list.
 // The provided equal function is used to compare values for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
-func New[E any](equal func(E, E) bool, ops ...Option[E]) (*List[E], error) {
-	if equal == nil {
+func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
+	if cmp == nil {
 		return nil, ErrEqualNil
 	}
 	l := &List[E]{
 		elements: make([]E, 0, minCap), // NOTE: zero capacity will cause growBy blocked.
 		mu:       types.FakeLocker{},
-		equal:    equal,
+		cmp:      cmp,
 	}
 	for _, op := range ops {
 		if op == nil {
@@ -56,8 +55,8 @@ func New[E any](equal func(E, E) bool, ops ...Option[E]) (*List[E], error) {
 // NewFromSlice creates a new array-backed list from the given slice.
 // The provided equal function is used to compare values for equality.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
-func NewFromSlice[E any](equal func(E, E) bool, values []E, ops ...Option[E]) (*List[E], error) {
-	l, err := New(equal, ops...)
+func NewFromSlice[E any](cmp func(E, E) int, values []E, ops ...Option[E]) (*List[E], error) {
+	l, err := New(cmp, ops...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +162,7 @@ func (l *List[E]) Remove(v E) {
 
 	i := 0
 	for i < len(l.elements) {
-		if l.equal(v, l.elements[i]) {
+		if l.cmp(v, l.elements[i]) == 0 {
 			l.removeAt(i)
 		} else {
 			i++
@@ -229,7 +228,7 @@ func (l *List[E]) contains(value E) bool {
 	defer l.mu.RUnlock()
 
 	for _, v := range l.elements {
-		if l.equal(v, value) {
+		if l.cmp(v, value) == 0 {
 			return true
 		}
 	}
@@ -255,7 +254,7 @@ func (l *List[E]) IndexOf(value E) int {
 	defer l.mu.RUnlock()
 
 	for i, v := range l.elements {
-		if l.equal(v, value) {
+		if l.cmp(v, value) == 0 {
 			return i
 		}
 	}
@@ -289,10 +288,7 @@ func (l *List[E]) Len() int {
 // - A negative value if first argument is less than second.
 // - Zero if the arguments are equal.
 // - A positive value if first argument is greater than second.
-func (l *List[E]) Sort(cmp util.Comparator[E]) {
-	if cmp == nil {
-		return
-	}
+func (l *List[E]) Sort() {
 	// Whether to check "l.safe" has no significant performance impact according to benchmark.
 	if l.safe {
 		l.mu.Lock()
@@ -302,7 +298,7 @@ func (l *List[E]) Sort(cmp util.Comparator[E]) {
 	if len(l.elements) < 2 {
 		return
 	}
-	slices.SortFunc(l.elements, cmp)
+	slices.SortFunc(l.elements, l.cmp)
 }
 
 // Swap swaps the values at the given indexes.

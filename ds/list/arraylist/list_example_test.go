@@ -7,11 +7,11 @@ import (
 )
 
 func ExampleList() {
-	list, _ := arraylist.New(intEqual)
+	list, _ := arraylist.New(cmp)
 
 	list.Append(1, 2, 3)
 	list.Remove(2)
-	list.Sort(intCompare)
+	list.Sort()
 
 	values := list.Values()
 	for _, v := range values {

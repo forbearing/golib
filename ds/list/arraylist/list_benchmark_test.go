@@ -12,9 +12,9 @@ func createList(b *testing.B, size int, safe bool) *arraylist.List[int] {
 	var err error
 
 	if safe {
-		list, err = arraylist.New(intEqual, arraylist.WithSafe[int]())
+		list, err = arraylist.New(cmp, arraylist.WithSafe[int]())
 	} else {
-		list, err = arraylist.New(intEqual)
+		list, err = arraylist.New(cmp)
 	}
 	if err != nil {
 		b.Fatalf("failed to create list: %v", err)
@@ -215,11 +215,8 @@ func BenchmarkArrayList_Len(b *testing.B) {
 }
 
 func BenchmarkArrayList_Sort(b *testing.B) {
-	cmp := func(a, b int) int {
-		return a - b
-	}
 	benchmark(b, false, []int{10, 100000}, func(list *arraylist.List[int]) {
-		list.Sort(cmp)
+		list.Sort()
 	})
 }
 
