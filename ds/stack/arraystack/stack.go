@@ -41,16 +41,16 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (s *Stack[E], err error) {
 	return s, nil
 }
 
-// NewFromSlice creates and initializes a stack from the provided slices.
+// NewFromSlice creates and initializes a stack from the provided slice.
 // The "cmp" function is used to compare elements for equality.
 // Options can be provided to customize the stack's properties (e.g., thread safety).
-func NewFromSlice[E any](cmp func(E, E) int, slices []E, ops ...Option[E]) (*Stack[E], error) {
+func NewFromSlice[E any](cmp func(E, E) int, slice []E, ops ...Option[E]) (*Stack[E], error) {
 	s, err := New(cmp, ops...)
 	if err != nil {
 		return nil, err
 	}
-	if len(slices) > 0 {
-		s.list.Append(slices...)
+	if len(slice) > 0 {
+		s.list.Append(slice...)
 	}
 	return s, nil
 }
