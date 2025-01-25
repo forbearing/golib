@@ -12,17 +12,17 @@ import (
 )
 
 func createLinkedList(b *testing.B, size int, safe bool) *linkedlist.List[int] {
-	slices := make([]int, 0, size)
+	slice := make([]int, 0, size)
 	for i := range size {
-		slices = append(slices, i)
+		slice = append(slice, i)
 	}
 
 	var list *linkedlist.List[int]
 	var err error
 	if safe {
-		list, err = linkedlist.NewFromSlice(slices, linkedlist.WithSafe[int]())
+		list, err = linkedlist.NewFromSlice(slice, linkedlist.WithSafe[int]())
 	} else {
-		list, err = linkedlist.NewFromSlice(slices)
+		list, err = linkedlist.NewFromSlice(slice)
 	}
 	if err != nil {
 		b.Fatalf("failed to create list: %v", err)
@@ -441,19 +441,19 @@ func benchmarkMergeSorted(b *testing.B, size int) {
 	}
 
 	b.Run("unsafe", func(b *testing.B) {
-		slices := make([]int, 0, size)
+		slice := make([]int, 0, size)
 		r := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(time.Now().UnixNano())))
 		for range size {
-			slices = append(slices, r.IntN(size))
+			slice = append(slice, r.IntN(size))
 		}
-		l1, err := linkedlist.NewFromSlice(slices)
+		l1, err := linkedlist.NewFromSlice(slice)
 		if err != nil {
 			b.Fatalf("failed to create list: %v", err)
 		}
 		b.ResetTimer()
 		for range b.N {
 			b.StopTimer()
-			l2, err := linkedlist.NewFromSlice(slices)
+			l2, err := linkedlist.NewFromSlice(slice)
 			if err != nil {
 				b.Fatalf("failed to create list: %v", err)
 			}
@@ -463,19 +463,19 @@ func benchmarkMergeSorted(b *testing.B, size int) {
 	})
 
 	b.Run("safe", func(b *testing.B) {
-		slices := make([]int, 0, size)
+		slice := make([]int, 0, size)
 		r := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(time.Now().UnixNano())))
 		for range size {
-			slices = append(slices, r.IntN(size))
+			slice = append(slice, r.IntN(size))
 		}
-		l1, err := linkedlist.NewFromSlice(slices, linkedlist.WithSafe[int]())
+		l1, err := linkedlist.NewFromSlice(slice, linkedlist.WithSafe[int]())
 		if err != nil {
 			b.Fatalf("failed to create list: %v", err)
 		}
 		b.ResetTimer()
 		for range b.N {
 			b.StopTimer()
-			l2, err := linkedlist.NewFromSlice(slices, linkedlist.WithSafe[int]())
+			l2, err := linkedlist.NewFromSlice(slice, linkedlist.WithSafe[int]())
 			if err != nil {
 				b.Fatalf("failed to create list: %v", err)
 			}
