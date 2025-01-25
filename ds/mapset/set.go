@@ -43,17 +43,17 @@ func NewWithSize[T comparable](size int, ops ...Option[T]) (*Set[T], error) {
 }
 
 // NewFromSlice creates a new set from the provided slice.
-// If the provided slices is nil or empty, creates an empty set.
+// If the provided slice is nil or empty, creates an empty set.
 // Options can be provided to customize the set's properties (e.g., thread safety).
-func NewFromSlice[E comparable](slices []E, ops ...Option[E]) (*Set[E], error) {
-	if len(slices) == 0 {
+func NewFromSlice[E comparable](slice []E, ops ...Option[E]) (*Set[E], error) {
+	if len(slice) == 0 {
 		return New(ops...)
 	}
-	s, err := NewWithSize(len(slices), ops...)
+	s, err := NewWithSize(len(slice), ops...)
 	if err != nil {
 		return nil, err
 	}
-	for _, e := range slices {
+	for _, e := range slice {
 		s.set[e] = struct{}{}
 	}
 	return s, nil
