@@ -38,15 +38,15 @@ func New[E any](ops ...Option[E]) (s *Stack[E], err error) {
 	return s, nil
 }
 
-// NewFromSlice creates and initializes a stack from the provided slices.
+// NewFromSlice creates and initializes a stack from the provided slice.
 // Options can be provided to customize the stack's properties (e.g., thread safety).
-func NewFromSlice[E any](slices []E, ops ...Option[E]) (*Stack[E], error) {
+func NewFromSlice[E any](slice []E, ops ...Option[E]) (*Stack[E], error) {
 	s, err := New(ops...)
 	if err != nil {
 		return nil, err
 	}
-	if len(slices) > 0 {
-		for _, e := range slices {
+	if len(slice) > 0 {
+		for _, e := range slice {
 			s.list.PushBack(e)
 		}
 	}
