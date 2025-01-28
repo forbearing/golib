@@ -154,11 +154,7 @@ func (s *Stack[E]) options() []Option[E] {
 
 // String returns a string representation of the stack.
 func (s *Stack[E]) String() string {
-	el := make([]E, 0, s.list.Len())
-	s.list.Range(func(e E) bool {
-		el = append(el, e)
-		return true
-	})
+	el := s.list.Values()
 	slices.Reverse(el)
 	items := make([]string, 0, s.list.Len())
 	for _, e := range el {
