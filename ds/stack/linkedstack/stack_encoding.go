@@ -9,11 +9,7 @@ import (
 
 // MarshalJSON will marshal the stack into a JSON-based representation.
 func (s *Stack[E]) MarshalJSON() ([]byte, error) {
-	el := make([]E, 0, s.list.Len())
-	s.list.Range(func(e E) bool {
-		el = append(el, e)
-		return true
-	})
+	el := s.list.Slice()
 	slices.Reverse(el)
 	items := make([]string, 0, s.list.Len())
 	for _, e := range el {
