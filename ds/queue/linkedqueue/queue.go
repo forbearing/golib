@@ -122,7 +122,7 @@ func (q *Queue[E]) Peek() (E, bool) {
 	}
 
 	var e E
-	if q.list.Len() == 0 {
+	if q.list.IsEmpty() {
 		return e, false
 	}
 	return q.list.Head.Value, true
