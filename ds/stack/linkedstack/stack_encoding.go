@@ -9,6 +9,11 @@ import (
 
 // MarshalJSON will marshal the stack into a JSON-based representation.
 func (s *Stack[E]) MarshalJSON() ([]byte, error) {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	el := s.list.Slice()
 	slices.Reverse(el)
 	items := make([]string, 0, s.list.Len())
@@ -24,13 +29,18 @@ func (s *Stack[E]) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON will unmarshal a JSON-based representation byte slice into the stack.
 func (s *Stack[E]) UnmarshalJSON(data []byte) (err error) {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	el := make([]E, 0)
 	if err = json.Unmarshal(data, &el); err != nil {
 		return err
 	}
-	s.Clear()
+	s.list.Clear()
 	for _, e := range el {
-		s.Push(e)
+		s.list.PushBack(e)
 	}
 	return nil
 }
