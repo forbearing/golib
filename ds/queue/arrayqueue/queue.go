@@ -21,8 +21,7 @@ type Queue[E any] struct {
 // The "cmp" function is used to compare elements for equality.
 // Options can be provided to customize the queue's properties (e.g., thread safety).
 func New[E any](cmp func(E, E) int, ops ...Option[E]) (*Queue[E], error) {
-	q := &Queue[E]{mu: types.FakeLocker{}}
-	q.cmp = cmp
+	q := &Queue[E]{mu: types.FakeLocker{}, cmp: cmp}
 	var err error
 	for _, op := range ops {
 		if op == nil {
