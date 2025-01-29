@@ -128,7 +128,7 @@ func (q *Queue[E]) IsEmpty() bool {
 		defer q.mu.RUnlock()
 	}
 
-	return q.list.Len() == 0
+	return q.list.IsEmpty()
 }
 
 // Len returns the number of elements currently in the queue.
