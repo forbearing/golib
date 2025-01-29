@@ -1,0 +1,634 @@
+package multimap_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/forbearing/golib/ds/multimap"
+	"github.com/forbearing/golib/ds/util"
+)
+
+func BenchmarkMultiMap_Get(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Get(fmt.Sprintf("key%d", i%100))
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Get(fmt.Sprintf("key%d", i%100))
+		}
+	})
+}
+
+func BenchmarkMultiMap_GetOne(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.GetOne(fmt.Sprintf("key%d", i%100))
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.GetOne(fmt.Sprintf("key%d", i%100))
+		}
+	})
+}
+
+func BenchmarkMultiMap_Set(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			mm.Set(fmt.Sprintf("key%d", i%100), i)
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			mm.Set(fmt.Sprintf("key%d", i%100), i)
+		}
+	})
+}
+
+func BenchmarkMultiMap_SetAll(b *testing.B) {
+	values := make([]int, 100)
+	for i := range values {
+		values[i] = i
+	}
+
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.SetAll(fmt.Sprintf("key%d", i%100), values)
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.SetAll(fmt.Sprintf("key%d", i%100), values)
+		}
+	})
+}
+
+func BenchmarkMultiMap_Delete(b *testing.B) {
+	b.Run("unsafe_exists", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		keys := make([]string, 100)
+		for i := 0; i < 100; i++ {
+			key := fmt.Sprintf("key%d", i)
+			keys[i] = key
+			for j := 0; j < 5; j++ {
+				mm.Set(key, j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Delete(keys[i%100])
+		}
+	})
+
+	b.Run("unsafe_not_exists", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Delete(fmt.Sprintf("not_exists_key%d", i))
+		}
+	})
+
+	b.Run("safe_exists", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		keys := make([]string, 100)
+		for i := 0; i < 100; i++ {
+			key := fmt.Sprintf("key%d", i)
+			keys[i] = key
+			for j := 0; j < 5; j++ {
+				mm.Set(key, j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Delete(keys[i%100])
+		}
+	})
+
+	b.Run("safe_not_exists", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Delete(fmt.Sprintf("not_exists_key%d", i))
+		}
+	})
+}
+
+func BenchmarkMultiMap_DeleteValue(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		key := "test_key"
+		for i := 0; i < 100; i++ {
+			mm.Set(key, i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.DeleteValue(key, i%100)
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		key := "test_key"
+		for i := 0; i < 100; i++ {
+			mm.Set(key, i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.DeleteValue(key, i%100)
+		}
+	})
+}
+
+func BenchmarkMultiMap_Has(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Has(fmt.Sprintf("key%d", i%100))
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Has(fmt.Sprintf("key%d", i%100))
+		}
+	})
+}
+
+func BenchmarkMultiMap_Count(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		key := "test_key"
+		for i := 0; i < 100; i++ {
+			mm.Set(key, i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Count(key)
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		key := "test_key"
+		for i := 0; i < 100; i++ {
+			mm.Set(key, i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Count(key)
+		}
+	})
+}
+
+func BenchmarkMultiMap_Contains(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set("key", i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Contains("key", i%100)
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set("key", i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Contains("key", i%100)
+		}
+	})
+}
+
+func BenchmarkMultiMap_Size(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Size()
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Size()
+		}
+	})
+}
+
+func BenchmarkMultiMap_IsEmpty(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.IsEmpty()
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.IsEmpty()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Keys(b *testing.B) {
+	b.Run("unsafe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Keys()
+		}
+	})
+
+	b.Run("unsafe_large", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 10000; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Keys()
+		}
+	})
+
+	b.Run("safe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Keys()
+		}
+	})
+
+	b.Run("safe_large", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 10000; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Keys()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Values(b *testing.B) {
+	b.Run("unsafe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			for j := 0; j < 5; j++ { // 每个key存5个值
+				mm.Set(fmt.Sprintf("key%d", i), i*10+j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Values()
+		}
+	})
+
+	b.Run("unsafe_large", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 1000; i++ {
+			for j := 0; j < 10; j++ { // 每个key存10个值
+				mm.Set(fmt.Sprintf("key%d", i), i*10+j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Values()
+		}
+	})
+
+	b.Run("safe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			for j := 0; j < 5; j++ {
+				mm.Set(fmt.Sprintf("key%d", i), i*10+j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Values()
+		}
+	})
+
+	b.Run("safe_large", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 1000; i++ {
+			for j := 0; j < 10; j++ {
+				mm.Set(fmt.Sprintf("key%d", i), i*10+j)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Values()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Clear(b *testing.B) {
+	b.Run("unsafe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		// 预填充一次，避免在循环中重复填充
+		for j := 0; j < 100; j++ {
+			for k := 0; k < 5; k++ {
+				mm.Set(fmt.Sprintf("key%d", j), k)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			// 使用 Clone 来获取新的副本进行清理
+			clone := mm.Clone()
+			clone.Clear()
+		}
+	})
+
+	b.Run("unsafe_medium", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		// 使用中等规模的数据：500个键，每个键5个值
+		for j := 0; j < 500; j++ {
+			for k := 0; k < 5; k++ {
+				mm.Set(fmt.Sprintf("key%d", j), k)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			clone := mm.Clone()
+			clone.Clear()
+		}
+	})
+
+	b.Run("safe_small", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for j := 0; j < 100; j++ {
+			for k := 0; k < 5; k++ {
+				mm.Set(fmt.Sprintf("key%d", j), k)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			clone := mm.Clone()
+			clone.Clear()
+		}
+	})
+
+	b.Run("safe_medium", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for j := 0; j < 500; j++ {
+			for k := 0; k < 5; k++ {
+				mm.Set(fmt.Sprintf("key%d", j), k)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			clone := mm.Clone()
+			clone.Clear()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Clone(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 1000; i++ {
+			mm.Set(fmt.Sprintf("key%d", i%100), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Clone()
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 1000; i++ {
+			mm.Set(fmt.Sprintf("key%d", i%100), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Clone()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Map(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Map()
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Map()
+		}
+	})
+}
+
+func BenchmarkMultiMap_Range(b *testing.B) {
+	b.Run("unsafe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](util.Equal[int])
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Range(func(key string, values []int) bool {
+				return true
+			})
+		}
+	})
+
+	b.Run("safe", func(b *testing.B) {
+		mm, _ := multimap.New[string, int](
+			util.Equal[int],
+			multimap.WithSafe[string, int](),
+		)
+		for i := 0; i < 100; i++ {
+			mm.Set(fmt.Sprintf("key%d", i), i)
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			mm.Range(func(key string, values []int) bool {
+				return true
+			})
+		}
+	})
+}
