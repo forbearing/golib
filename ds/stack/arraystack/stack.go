@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/ds/list/arraylist"
+	"github.com/forbearing/golib/ds/types"
 )
 
 // Stack represents a stack based on array-backed list.
@@ -14,14 +15,14 @@ type Stack[E any] struct {
 	list *arraylist.List[E]
 	cmp  func(E, E) int
 	safe bool
+	mu   types.Locker
 }
 
 // New creates and initializes a empty stack.
 // The "cmp" function is used to compare elements for equality.
 // Options can be provided to customize the stack's properties (e.g., thread safety).
 func New[E any](cmp func(E, E) int, ops ...Option[E]) (s *Stack[E], err error) {
-	s = new(Stack[E])
-	s.cmp = cmp
+	s = &Stack[E]{mu: types.FakeLocker{}, cmp: cmp}
 	for _, op := range ops {
 		if op == nil {
 			continue
@@ -30,11 +31,8 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (s *Stack[E], err error) {
 			return nil, err
 		}
 	}
-	if s.safe {
-		s.list, err = arraylist.New(cmp, arraylist.WithSafe[E]())
-	} else {
-		s.list, err = arraylist.New(cmp)
-	}
+	// internal list alway concurrent unsafe.
+	s.list, err = arraylist.New(cmp)
 	if err != nil {
 		return nil, err
 	}
@@ -91,43 +89,69 @@ func NewFromMapValues[K comparable, V any](cmp func(V, V) int, m map[K]V, ops ..
 // Push adds an element to the top of the stack.
 // The stack's size increases by one.
 func (s *Stack[E]) Push(e E) {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	s.list.Append(e)
 }
 
 // Pop removes and returns the top element of the stack.
 // Returns the zero value of E and false if the stack is empty.
 func (s *Stack[E]) Pop() (E, bool) {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	var e E
-	if s.Len() == 0 {
+	if s.list.IsEmpty() {
 		return e, false
 	}
-	e = s.list.RemoveAt(s.Len() - 1)
+	e = s.list.RemoveAt(s.list.Len() - 1)
 	return e, true
 }
 
 // Peek returns the top element of the stack without removing it.
 // Returns the zero value of E and false if the stack is empty.
 func (s *Stack[E]) Peek() (E, bool) {
-	var e E
-	if s.Len() == 0 {
-		return e, false
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
 	}
+
 	return s.list.Get(s.Len() - 1)
 }
 
 // IsEmpty reports whether the stack has no elements.
 func (s *Stack[E]) IsEmpty() bool {
-	return s.Len() == 0
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
+	return s.list.IsEmpty()
 }
 
 // Len returns the number of elements currently in the stack.
 func (s *Stack[E]) Len() int {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	return s.list.Len()
 }
 
 // Values returns all elements in the stack in LIFO(last-in, first-out) order.
 // If the stack is empty, it returns an empty slice (not nil).
 func (s *Stack[E]) Values() []E {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	el := s.list.Values()
 	slices.Reverse(el)
 	return el
@@ -135,11 +159,21 @@ func (s *Stack[E]) Values() []E {
 
 // Clear removes all elements from the stack.
 func (s *Stack[E]) Clear() {
+	if s.safe {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+	}
+
 	s.list.Clear()
 }
 
 // Clone returns a deep copy of the stack.
 func (s *Stack[E]) Clone() *Stack[E] {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	clone, _ := NewFromSlice(s.cmp, s.list.Values(), s.options()...)
 	return clone
 }
@@ -154,6 +188,11 @@ func (s *Stack[E]) options() []Option[E] {
 
 // String returns a string representation of the stack.
 func (s *Stack[E]) String() string {
+	if s.safe {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+	}
+
 	el := s.list.Values()
 	slices.Reverse(el)
 	items := make([]string, 0, s.list.Len())
