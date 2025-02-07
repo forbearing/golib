@@ -77,7 +77,7 @@ func NewFromMap[K comparable, V any](m map[K]V, cmp func(K, K) int, ops ...Optio
 // It uses cmp.Compare[K] as the default comparison function,
 // which is suitable for types that implement the cmp.Ordered interface, such as int, float64, and string.
 func NewFromMapWithOrderedKeys[K cmp.Ordered, V any](m map[K]V, ops ...Option[K, V]) (*Tree[K, V], error) {
-	t, err := NewWithOrderedKeys[K, V]()
+	t, err := NewWithOrderedKeys(ops...)
 	if err != nil {
 		return nil, err
 	}
