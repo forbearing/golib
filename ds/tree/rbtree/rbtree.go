@@ -24,7 +24,7 @@ type Tree[K comparable, V any] struct {
 // New creates and returns a red-black tree.
 // The provided function "cmp" is determines the order of the keys.
 func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*Tree[K, V], error) {
-	t := &Tree[K, V]{cmp: cmp}
+	t := &Tree[K, V]{cmp: cmp, mu: types.FakeLocker{}}
 	for _, op := range ops {
 		if op == nil {
 			continue
@@ -41,7 +41,7 @@ func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*Tree[K,
 // This is suitable for types that implement the cmp.Ordered interface,
 // such as int, float64 and string
 func NewWithOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], error) {
-	t := &Tree[K, V]{cmp: cmp.Compare[K]}
+	t := &Tree[K, V]{cmp: cmp.Compare[K], mu: types.FakeLocker{}}
 	for _, op := range ops {
 		if op == nil {
 			continue
