@@ -1,14 +1,11 @@
 package multimap
 
 import (
-	"errors"
 	"slices"
 
 	"github.com/forbearing/golib/ds/types"
 	"github.com/forbearing/golib/ds/util"
 )
-
-var ErrNilEqual = errors.New("nil equal function")
 
 // MultiMap represents a map that can store multiple values for each key.
 // call New with `WithSafe` option to make the MultiMap safe for concurrent use.
@@ -23,7 +20,7 @@ type MultiMap[K comparable, V any] struct {
 // equal is nil will case error.
 func New[K comparable, V any](equal util.EqualFn[V], ops ...Option[K, V]) (*MultiMap[K, V], error) {
 	if equal == nil {
-		return nil, ErrNilEqual
+		return nil, types.ErrEqualNil
 	}
 	m := &MultiMap[K, V]{
 		data:  make(map[K][]V),
