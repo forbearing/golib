@@ -3,6 +3,7 @@
 package arraylist
 
 import (
+	"cmp"
 	"errors"
 	"slices"
 
@@ -50,6 +51,13 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 		}
 	}
 	return l, nil
+}
+
+// NewWithOrderedElements creates and returns a new array-backed list for ordered elements.
+// It use cmp.Compare[E] as the default comparsion function for elements.
+// Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
+func NewWithOrderedElements[E cmp.Ordered](ops ...Option[E]) (*List[E], error) {
+	return New(cmp.Compare[E], ops...)
 }
 
 // NewFromSlice creates a new array-backed list from the given slice.
