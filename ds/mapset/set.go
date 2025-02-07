@@ -8,8 +8,6 @@ import (
 	"github.com/forbearing/golib/ds/types"
 )
 
-var ErrNilCmp = fmt.Errorf("nil comparator")
-
 type Set[E comparable] struct {
 	set    map[E]struct{}
 	mu     types.Locker

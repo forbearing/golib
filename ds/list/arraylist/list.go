@@ -4,7 +4,6 @@ package arraylist
 
 import (
 	"cmp"
-	"errors"
 	"slices"
 
 	"github.com/forbearing/golib/ds/types"
@@ -16,8 +15,6 @@ const (
 
 	minCap = 16
 )
-
-var ErrEqualNil = errors.New("equal function is nil")
 
 // List represents a resizable array-backend list.
 // Call New or NewFromSlice default creates a list witout concurrent safety.
@@ -35,7 +32,7 @@ type List[E any] struct {
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 	if cmp == nil {
-		return nil, ErrEqualNil
+		return nil, types.ErrEqualNil
 	}
 	l := &List[E]{
 		elements: make([]E, 0, minCap), // NOTE: zero capacity will cause growBy blocked.

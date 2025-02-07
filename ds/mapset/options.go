@@ -1,6 +1,10 @@
 package mapset
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/forbearing/golib/ds/types"
+)
 
 // Option is a functional option type for configuring a Set.
 type Option[T comparable] func(*Set[T]) error
@@ -26,7 +30,7 @@ func WithSafe[E comparable]() Option[E] {
 func WithSorted[E comparable](cmp func(E, E) int) Option[E] {
 	return func(s *Set[E]) error {
 		if cmp == nil {
-			return ErrNilCmp
+			return types.ErrComparisonNil
 		}
 		s.sorted = true
 		s.cmp = cmp

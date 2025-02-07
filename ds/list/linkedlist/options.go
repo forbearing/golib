@@ -1,6 +1,10 @@
 package linkedlist
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/forbearing/golib/ds/types"
+)
 
 type Option[V any] func(*List[V]) error
 
@@ -19,7 +23,7 @@ func WithSorted[V any](cmp func(V, V) int) Option[V] {
 	return func(m *List[V]) error {
 		m.sorted = true
 		if cmp == nil {
-			return ErrNilCmp
+			return types.ErrComparisonNil
 		}
 		m.cmp = cmp
 		return nil
