@@ -145,6 +145,11 @@ func (t *Tree[K, V]) Get(key K) (value V, found bool) {
 	return value, false
 }
 
+// GetNode returns the node associated with the given key.
+func (t *Tree[K, V]) GetNode(key K) *Node[K, V] {
+	return t.lookup(key)
+}
+
 // Delete removes the node with the given key from the tree.
 func (t *Tree[K, V]) Delete(key K) {
 	if t.safe {
