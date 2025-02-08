@@ -109,17 +109,41 @@ func BenchmarkRedBlackTree_Values(b *testing.B) {
 	})
 }
 
-func BenchmarkRedBlackTree_Preorder(b *testing.B) {
+func BenchmarkRedBlackTree_PreorderChan(b *testing.B) {
 	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
-		for n := range t.Preorder() {
+		for n := range t.PreorderChan() {
 			_ = n
 		}
 	})
 }
 
-func BenchmarkRedBlackTree_Inordeer(b *testing.B) {
+func BenchmarkRedBlackTree_Preorder(b *testing.B) {
 	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
-		for n := range t.Inorder() {
+		t.Preorder(func(f1, f2 float64) {
+			_, _ = f1, f2
+		})
+	})
+}
+
+func BenchmarkRedBlackTree_InorderChan(b *testing.B) {
+	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+		for n := range t.InorderChan() {
+			_ = n
+		}
+	})
+}
+
+func BenchmarkRedBlackTree_Inorder(b *testing.B) {
+	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+		t.Inorder(func(f1, f2 float64) {
+			_, _ = f1, f2
+		})
+	})
+}
+
+func BenchmarkRedBlackTree_PostorderChan(b *testing.B) {
+	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+		for n := range t.PostorderChan() {
 			_ = n
 		}
 	})
@@ -127,7 +151,15 @@ func BenchmarkRedBlackTree_Inordeer(b *testing.B) {
 
 func BenchmarkRedBlackTree_Postorder(b *testing.B) {
 	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
-		for n := range t.Postorder() {
+		t.Postorder(func(f1, f2 float64) {
+			_, _ = f1, f2
+		})
+	})
+}
+
+func BenchmarkRedBlackTree_LevelOrderChan(b *testing.B) {
+	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+		for n := range t.LevelOrderChan() {
 			_ = n
 		}
 	})
@@ -135,9 +167,9 @@ func BenchmarkRedBlackTree_Postorder(b *testing.B) {
 
 func BenchmarkRedBlackTree_LevelOrder(b *testing.B) {
 	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
-		for n := range t.LevelOrder() {
-			_ = n
-		}
+		t.LevelOrder(func(f1, f2 float64) {
+			_, _ = f1, f2
+		})
 	})
 }
 

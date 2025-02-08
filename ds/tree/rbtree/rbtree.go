@@ -214,9 +214,9 @@ func (t *Tree[K, V]) Keys() []K {
 	}
 
 	keys := make([]K, 0, t.size)
-	for n := range t.Inorder() {
-		keys = append(keys, n.Key)
-	}
+	t.Inorder(func(k K, _ V) {
+		keys = append(keys, k)
+	})
 	return keys
 }
 
@@ -228,15 +228,15 @@ func (t *Tree[K, V]) Values() []V {
 	}
 
 	values := make([]V, 0, t.size)
-	for n := range t.Inorder() {
-		values = append(values, n.Value)
-	}
+	t.Inorder(func(_ K, v V) {
+		values = append(values, v)
+	})
 	return values
 }
 
-// Preorder returns a channel that emits tree nodes in preorder traversal order.
+// PreorderChan returns a channel that emits tree nodes in preorder traversal order.
 // The traversal starts from the root and follows: node → left subtree → right subtree.
-func (t *Tree[K, V]) Preorder() <-chan *Node[K, V] {
+func (t *Tree[K, V]) PreorderChan() <-chan *Node[K, V] {
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -262,10 +262,33 @@ func (t *Tree[K, V]) Preorder() <-chan *Node[K, V] {
 	return ch
 }
 
-// Inorder returns a channel that emits tree nodes in inorder traversal order.
+// Preorder call function "do" on each node in preorder traversal order.
+// The traversal starts from the root and follows: node → left subtree → right subtree
+func (t *Tree[K, V]) Preorder(do func(K, V)) {
+	if do == nil {
+		return
+	}
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	preorder(do, t.root)
+}
+
+func preorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
+	if n == nil {
+		return
+	}
+	do(n.Key, n.Value)
+	preorder(do, n.Left)
+	preorder(do, n.Right)
+}
+
+// InorderChan returns a channel that emits tree nodes in inorder traversal order.
 // The traversal follows: left subtree → node → right subtree,
 // producing nodes in sorted order for a binary search tree.
-func (t *Tree[K, V]) Inorder() <-chan *Node[K, V] {
+func (t *Tree[K, V]) InorderChan() <-chan *Node[K, V] {
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -291,9 +314,30 @@ func (t *Tree[K, V]) Inorder() <-chan *Node[K, V] {
 	return ch
 }
 
-// Postorder returns a channel that emits tree nodes in postorder traversal order.
+func (t *Tree[K, V]) Inorder(do func(K, V)) {
+	if do == nil {
+		return
+	}
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	inorder(do, t.root)
+}
+
+func inorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
+	if n == nil {
+		return
+	}
+	inorder(do, n.Left)
+	do(n.Key, n.Value)
+	inorder(do, n.Right)
+}
+
+// PostorderChan returns a channel that emits tree nodes in postorder traversal order.
 // The traversal follows: left subtree → right subtree → node,
-func (t *Tree[K, V]) Postorder() <-chan *Node[K, V] {
+func (t *Tree[K, V]) PostorderChan() <-chan *Node[K, V] {
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -319,9 +363,30 @@ func (t *Tree[K, V]) Postorder() <-chan *Node[K, V] {
 	return ch
 }
 
-// LevelOrder returns a channel that emits tree nodes in level-order traversal order.
+func (t *Tree[K, V]) Postorder(do func(K, V)) {
+	if do == nil {
+		return
+	}
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	postorder(do, t.root)
+}
+
+func postorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
+	if n == nil {
+		return
+	}
+	postorder(do, n.Left)
+	postorder(do, n.Right)
+	do(n.Key, n.Value)
+}
+
+// LevelOrderChan returns a channel that emits tree nodes in level-order traversal order.
 // The traversal visits nodes level by level from left to right, starting from the root.
-func (t *Tree[K, V]) LevelOrder() <-chan *Node[K, V] {
+func (t *Tree[K, V]) LevelOrderChan() <-chan *Node[K, V] {
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -347,6 +412,33 @@ func (t *Tree[K, V]) LevelOrder() <-chan *Node[K, V] {
 		}
 	}()
 	return ch
+}
+
+// LevelOrder call function "do" on each node in levelorder traversal order
+func (t *Tree[K, V]) LevelOrder(do func(K, V)) {
+	if do == nil {
+		return
+	}
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+	if t.root == nil {
+		return
+	}
+
+	queue := []*Node[K, V]{t.root}
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+		do(node.Key, node.Value)
+		if node.Left != nil {
+			queue = append(queue, node.Left)
+		}
+		if node.Right != nil {
+			queue = append(queue, node.Right)
+		}
+	}
 }
 
 // Min returns the minimum node in the tree.
