@@ -68,49 +68,49 @@ func benchmark(b *testing.B, hasConcUnsafe bool, sizes []int, do func(t *rbtree.
 }
 
 func BenchmarkRedBlackTree_Put(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Put(float64(time.Now().UnixNano()), float64(time.Now().UnixNano()))
 	})
 }
 
 func BenchmarkRedBlackTree_Get(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_, _ = t.Get(0)
 	})
 }
 
 func BenchmarkRedBlackTree_Delete(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Delete(0)
 	})
 }
 
 func BenchmarkRedBlackTree_IsEmpty(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.IsEmpty()
 	})
 }
 
 func BenchmarkRedBlackTree_Size(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.Size()
 	})
 }
 
 func BenchmarkRedBlackTree_Keys(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.Keys()
 	})
 }
 
 func BenchmarkRedBlackTree_Values(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.Values()
 	})
 }
 
 func BenchmarkRedBlackTree_PreorderChan(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		for n := range t.PreorderChan() {
 			_ = n
 		}
@@ -118,7 +118,7 @@ func BenchmarkRedBlackTree_PreorderChan(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_Preorder(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Preorder(func(f1, f2 float64) {
 			_, _ = f1, f2
 		})
@@ -126,7 +126,7 @@ func BenchmarkRedBlackTree_Preorder(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_InorderChan(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		for n := range t.InorderChan() {
 			_ = n
 		}
@@ -134,7 +134,7 @@ func BenchmarkRedBlackTree_InorderChan(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_Inorder(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Inorder(func(f1, f2 float64) {
 			_, _ = f1, f2
 		})
@@ -142,7 +142,7 @@ func BenchmarkRedBlackTree_Inorder(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_PostorderChan(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		for n := range t.PostorderChan() {
 			_ = n
 		}
@@ -150,7 +150,7 @@ func BenchmarkRedBlackTree_PostorderChan(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_Postorder(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Postorder(func(f1, f2 float64) {
 			_, _ = f1, f2
 		})
@@ -158,7 +158,7 @@ func BenchmarkRedBlackTree_Postorder(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_LevelOrderChan(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		for n := range t.LevelOrderChan() {
 			_ = n
 		}
@@ -166,7 +166,7 @@ func BenchmarkRedBlackTree_LevelOrderChan(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_LevelOrder(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.LevelOrder(func(f1, f2 float64) {
 			_, _ = f1, f2
 		})
@@ -174,61 +174,61 @@ func BenchmarkRedBlackTree_LevelOrder(b *testing.B) {
 }
 
 func BenchmarkRedBlackTree_Min(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.Min()
 	})
 }
 
 func BenchmarkRedBlackTree_Max(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.Max()
 	})
 }
 
 func BenchmarkRedBlackTree_Floor(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_, _ = t.Floor(0)
 	})
 }
 
 func BenchmarkRedBlackTree_Ceiling(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_, _ = t.Ceiling(0)
 	})
 }
 
 func BenchmarkRedBlackTree_Clear(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		t.Clear()
 	})
 }
 
 func BenchmarkRedBlackTree_BlackCount(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.BlackCount()
 	})
 }
 
 func BenchmarkRedBlackTree_RedCount(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.RedCount()
 	})
 }
 
 func BenchmarkRedBlackTree_LeafCount(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.LeafCount()
 	})
 }
 
 func BenchmarkRedBlackTree_MaxDepth(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.MaxDepth()
 	})
 }
 
 func BenchmarkRedBlackTree_MinDepth(b *testing.B) {
-	benchmark(b, false, []int{100, 100000}, func(t *rbtree.Tree[float64, float64]) {
+	benchmark(b, false, []int{10, 100000}, func(t *rbtree.Tree[float64, float64]) {
 		_ = t.MinDepth()
 	})
 }
