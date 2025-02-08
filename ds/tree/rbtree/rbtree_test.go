@@ -213,33 +213,53 @@ func TestRedBlackTree_Traversals(t *testing.T) {
 	// Preorder: 根 → 左 → 右
 	expectedPreorder := []int{10, 5, 3, 7, 15}
 	var preorder []int
-	for n := range tree.Preorder() {
+	for n := range tree.PreorderChan() {
 		preorder = append(preorder, n.Key)
 	}
+	assert.Equal(t, expectedPreorder, preorder)
+	preorder = make([]int, 0)
+	tree.Preorder(func(i int, s string) {
+		preorder = append(preorder, i)
+	})
 	assert.Equal(t, expectedPreorder, preorder)
 
 	// Inorder: 左 → 根 → 右 (排序)
 	expectedInorder := []int{3, 5, 7, 10, 15}
 	var inorder []int
-	for n := range tree.Inorder() {
+	for n := range tree.InorderChan() {
 		inorder = append(inorder, n.Key)
 	}
+	assert.Equal(t, expectedInorder, inorder)
+	inorder = make([]int, 0)
+	tree.Inorder(func(i int, s string) {
+		inorder = append(inorder, i)
+	})
 	assert.Equal(t, expectedInorder, inorder)
 
 	// Postorder: 左 → 右 → 根
 	expectedPostorder := []int{3, 7, 5, 15, 10}
 	var postorder []int
-	for n := range tree.Postorder() {
+	for n := range tree.PostorderChan() {
 		postorder = append(postorder, n.Key)
 	}
+	assert.Equal(t, expectedPostorder, postorder)
+	postorder = make([]int, 0)
+	tree.Postorder(func(i int, s string) {
+		postorder = append(postorder, i)
+	})
 	assert.Equal(t, expectedPostorder, postorder)
 
 	// LevelOrder: 层级遍历
 	expectedLevelOrder := []int{10, 5, 15, 3, 7}
 	var levelOrder []int
-	for n := range tree.LevelOrder() {
+	for n := range tree.LevelOrderChan() {
 		levelOrder = append(levelOrder, n.Key)
 	}
+	assert.Equal(t, expectedLevelOrder, levelOrder)
+	levelOrder = make([]int, 0)
+	tree.LevelOrder(func(i int, s string) {
+		levelOrder = append(levelOrder, i)
+	})
 	assert.Equal(t, expectedLevelOrder, levelOrder)
 }
 
