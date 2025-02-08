@@ -262,10 +262,10 @@ func (t *Tree[K, V]) PreorderChan() <-chan *Node[K, V] {
 	return ch
 }
 
-// Preorder call function "do" on each node in preorder traversal order.
+// Preorder call function "fn" on each node in preorder traversal order.
 // The traversal starts from the root and follows: node → left subtree → right subtree
-func (t *Tree[K, V]) Preorder(do func(K, V)) {
-	if do == nil {
+func (t *Tree[K, V]) Preorder(fn func(K, V)) {
+	if fn == nil {
 		return
 	}
 	if t.safe {
@@ -273,7 +273,7 @@ func (t *Tree[K, V]) Preorder(do func(K, V)) {
 		defer t.mu.RUnlock()
 	}
 
-	preorder(do, t.root)
+	preorder(fn, t.root)
 }
 
 func preorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
@@ -314,8 +314,10 @@ func (t *Tree[K, V]) InorderChan() <-chan *Node[K, V] {
 	return ch
 }
 
-func (t *Tree[K, V]) Inorder(do func(K, V)) {
-	if do == nil {
+// Inorder call function "fn" on each node in inorder traversal order.
+// The traversal follows: left subtree → node → right subtree,
+func (t *Tree[K, V]) Inorder(fn func(K, V)) {
+	if fn == nil {
 		return
 	}
 	if t.safe {
@@ -323,7 +325,7 @@ func (t *Tree[K, V]) Inorder(do func(K, V)) {
 		defer t.mu.RUnlock()
 	}
 
-	inorder(do, t.root)
+	inorder(fn, t.root)
 }
 
 func inorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
@@ -363,8 +365,10 @@ func (t *Tree[K, V]) PostorderChan() <-chan *Node[K, V] {
 	return ch
 }
 
-func (t *Tree[K, V]) Postorder(do func(K, V)) {
-	if do == nil {
+// Postorder call function "fn" on each node in postorder traversal order.
+// The traversal follows: left subtree → right subtree → node
+func (t *Tree[K, V]) Postorder(fn func(K, V)) {
+	if fn == nil {
 		return
 	}
 	if t.safe {
@@ -372,7 +376,7 @@ func (t *Tree[K, V]) Postorder(do func(K, V)) {
 		defer t.mu.RUnlock()
 	}
 
-	postorder(do, t.root)
+	postorder(fn, t.root)
 }
 
 func postorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
@@ -414,9 +418,9 @@ func (t *Tree[K, V]) LevelOrderChan() <-chan *Node[K, V] {
 	return ch
 }
 
-// LevelOrder call function "do" on each node in levelorder traversal order
-func (t *Tree[K, V]) LevelOrder(do func(K, V)) {
-	if do == nil {
+// LevelOrder call function "fn" on each node in levelorder traversal order
+func (t *Tree[K, V]) LevelOrder(fn func(K, V)) {
+	if fn == nil {
 		return
 	}
 	if t.safe {
@@ -431,7 +435,7 @@ func (t *Tree[K, V]) LevelOrder(do func(K, V)) {
 	for len(queue) > 0 {
 		node := queue[0]
 		queue = queue[1:]
-		do(node.Key, node.Value)
+		fn(node.Key, node.Value)
 		if node.Left != nil {
 			queue = append(queue, node.Left)
 		}
