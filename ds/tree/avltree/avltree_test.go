@@ -1,6 +1,7 @@
 package avltree_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/forbearing/golib/ds/tree/avltree"
@@ -194,9 +195,7 @@ func TestAVLTree_Clear(t *testing.T) {
 }
 
 func TestAVLTree_Preorder(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -221,9 +220,7 @@ func TestAVLTree_Preorder(t *testing.T) {
 }
 
 func TestAVLTree_PreorderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -298,9 +295,7 @@ func TestAVLTree_InorderChan(t *testing.T) {
 }
 
 func TestAVLTree_Postorder(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -325,9 +320,7 @@ func TestAVLTree_Postorder(t *testing.T) {
 }
 
 func TestAVLTree_PostorderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -352,9 +345,7 @@ func TestAVLTree_PostorderChan(t *testing.T) {
 }
 
 func TestAVLTree_LevelOrder(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -379,9 +370,7 @@ func TestAVLTree_LevelOrder(t *testing.T) {
 }
 
 func TestAVLTree_LevelOrderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](func(a, b int) int {
-		return a - b
-	})
+	tree, _ := avltree.New[int, string](intCmp)
 
 	tree.Put(40, "forty")
 	tree.Put(20, "twenty")
@@ -403,4 +392,18 @@ func TestAVLTree_LevelOrderChan(t *testing.T) {
 
 	assert.Equal(t, expectedKeys, keys)
 	assert.Equal(t, expectedValues, values)
+}
+
+func TestAVLTree_String(t *testing.T) {
+	tree, _ := avltree.New[int, string](intCmp)
+
+	tree.Put(40, "forty")
+	tree.Put(20, "twenty")
+	tree.Put(60, "sixty")
+	tree.Put(10, "ten")
+	tree.Put(30, "thirty")
+	tree.Put(50, "fifty")
+	tree.Put(70, "seventy")
+
+	fmt.Println(tree.String())
 }
