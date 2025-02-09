@@ -648,6 +648,43 @@ func (t *Tree[K, V]) Clear() {
 	t.size = 0
 }
 
+// String returns a string representation of container
+func (t *Tree[K, V]) String() string {
+	str := "AVLTree\n"
+	if t.Root != nil {
+		output(t.Root, "", true, &str)
+	}
+	return str
+}
+
+func output[K comparable, V any](node *Node[K, V], prefix string, isTail bool, str *string) {
+	if node.Children[1] != nil {
+		newPrefix := prefix
+		if isTail {
+			newPrefix += "│   "
+		} else {
+			newPrefix += "    "
+		}
+		output(node.Children[1], newPrefix, false, str)
+	}
+	*str += prefix
+	if isTail {
+		*str += "╰── "
+	} else {
+		*str += "╭── "
+	}
+	*str += node.String() + "\n"
+	if node.Children[0] != nil {
+		newPrefix := prefix
+		if isTail {
+			newPrefix += "    "
+		} else {
+			newPrefix += "│   "
+		}
+		output(node.Children[0], newPrefix, true, str)
+	}
+}
+
 func (t *Tree[K, V]) bottom(pos int) *Node[K, V] {
 	if t.Root == nil {
 		return nil
