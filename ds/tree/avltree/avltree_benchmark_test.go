@@ -12,9 +12,9 @@ func createTree(b *testing.B, size int, safe bool) *avltree.Tree[float64, float6
 	var t *avltree.Tree[float64, float64]
 	var err error
 	if safe {
-		t, err = avltree.NewWithOrderedKeys(avltree.WithSafe[float64, float64]())
+		t, err = avltree.NewOrderedKeys(avltree.WithSafe[float64, float64]())
 	} else {
-		t, err = avltree.NewWithOrderedKeys[float64, float64]()
+		t, err = avltree.NewOrderedKeys[float64, float64]()
 	}
 	for i := range size {
 		t.Put(float64(i), float64(i))
