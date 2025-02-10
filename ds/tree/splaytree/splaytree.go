@@ -474,6 +474,9 @@ func (t *Tree[K, V]) Ceiling(key K) (K, V, bool) {
 //
 // Unlike Get/Put operations, PreOrder does not perform any splay operations.
 func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -509,6 +512,9 @@ func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
 //
 // Unlike Get/Put operations, InOrder does not perform any splay operations.
 func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -542,6 +548,9 @@ func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
 //
 // Unlike Get/Put operations, PostOrder does not perform any splay operations.
 func (t *Tree[K, V]) PostOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -576,6 +585,9 @@ func (t *Tree[K, V]) PostOrder(fn func(key K, value V) bool) {
 //
 // Unlike Get/Put operations, LevelOrder does not perform any splay operations.
 func (t *Tree[K, V]) LevelOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
