@@ -333,7 +333,7 @@ import (
 // }
 
 func newIntStringTree(t *testing.T) *rbtree.Tree[int, string] {
-	tree, err := rbtree.NewWithOrderedKeys(rbtree.WithSafe[int, string]())
+	tree, err := rbtree.NewOrderedKeys(rbtree.WithSafe[int, string]())
 	assert.NoError(t, err)
 	return tree
 }
@@ -477,7 +477,7 @@ func TestRedBlackTree_Delete(t *testing.T) {
 }
 
 func TestRedBlackTree_Clear(t *testing.T) {
-	tree, err := rbtree.NewWithOrderedKeys[int, string]()
+	tree, err := rbtree.NewOrderedKeys[int, string]()
 	assert.NoError(t, err)
 
 	tree.Put(1, "one")
@@ -492,7 +492,7 @@ func TestRedBlackTree_Clear(t *testing.T) {
 }
 
 func TestRedBlackTree_KeysValues(t *testing.T) {
-	tree, err := rbtree.NewWithOrderedKeys[int, string]()
+	tree, err := rbtree.NewOrderedKeys[int, string]()
 	assert.NoError(t, err)
 	tree.Put(3, "three")
 	tree.Put(1, "one")
@@ -660,7 +660,7 @@ func TestRedBlackTree_MarshalJSON(t *testing.T) {
 }
 
 func TestRedBlackTree_Traversals(t *testing.T) {
-	tree, err := rbtree.NewWithOrderedKeys[int, string]()
+	tree, err := rbtree.NewOrderedKeys[int, string]()
 	assert.NoError(t, err)
 	tree.Put(10, "ten")
 	tree.Put(5, "five")
@@ -733,7 +733,7 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println("=== Test Red-Black Tree Visualization ===")
 
 	// 1️⃣ 创建一个 int -> string 的红黑树
-	tree, err := rbtree.NewWithOrderedKeys(rbtree.WithColorfulString[int, string]())
+	tree, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[int, string]())
 	assert.NoError(t, err)
 	tree.Put(10, "ten")
 	tree.Put(20, "twenty")
@@ -750,7 +750,7 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println(tree.String())
 
 	// 2️⃣ 创建一个 string -> int 的红黑树
-	treeStr, err := rbtree.NewWithOrderedKeys(rbtree.WithColorfulString[string, int](), rbtree.WithNodeFormat[string, int]("%s:%d "))
+	treeStr, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[string, int](), rbtree.WithNodeFormat[string, int]("%s:%d "))
 	assert.NoError(t, err)
 	treeStr.Put("banana", 10)
 	treeStr.Put("apple", 5)
@@ -764,7 +764,7 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println(treeStr.String())
 
 	// 3️⃣ 创建一个 float64 -> string 的红黑树
-	treeFloat, err := rbtree.NewWithOrderedKeys(rbtree.WithColorfulString[float64, string](), rbtree.WithNodeFormat[float64, string]("%.2f:%s "))
+	treeFloat, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[float64, string](), rbtree.WithNodeFormat[float64, string]("%.2f:%s "))
 	assert.NoError(t, err)
 
 	treeFloat.Put(3.14, "pi")
@@ -776,7 +776,7 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println("\n🔹 Red-Black Tree (float64 -> string):")
 	fmt.Println(treeFloat.String())
 
-	tt, _ := rbtree.NewWithOrderedKeys(rbtree.WithColorfulString[float64, float64]())
+	tt, _ := rbtree.NewOrderedKeys(rbtree.WithColorfulString[float64, float64]())
 	r := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(time.Now().UnixNano())))
 	for range 10000 {
 		v := r.Float64()

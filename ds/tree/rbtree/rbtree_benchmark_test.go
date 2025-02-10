@@ -12,9 +12,9 @@ func createTree(b *testing.B, size int, safe bool) *rbtree.Tree[float64, float64
 	var t *rbtree.Tree[float64, float64]
 	var err error
 	if safe {
-		t, err = rbtree.NewWithOrderedKeys(rbtree.WithSafe[float64, float64]())
+		t, err = rbtree.NewOrderedKeys(rbtree.WithSafe[float64, float64]())
 	} else {
-		t, err = rbtree.NewWithOrderedKeys[float64, float64]()
+		t, err = rbtree.NewOrderedKeys[float64, float64]()
 	}
 	for i := range size {
 		t.Put(float64(i), float64(i))
