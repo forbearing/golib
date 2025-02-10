@@ -12,16 +12,16 @@ func (t *Tree[K, V]) MarshalJSON() ([]byte, error) {
 	}
 
 	m := make(map[K]V)
-	var iter func(n *Node[K, V])
-	iter = func(n *Node[K, V]) {
+	var fn func(n *Node[K, V])
+	fn = func(n *Node[K, V]) {
 		if n == nil {
 			return
 		}
-		iter(n.Children[0])
+		fn(n.Children[0])
 		m[n.Key] = n.Value
-		iter(n.Children[1])
+		fn(n.Children[1])
 	}
-	iter(t.root)
+	fn(t.root)
 
 	return json.Marshal(m)
 }
