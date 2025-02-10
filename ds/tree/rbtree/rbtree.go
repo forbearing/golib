@@ -16,9 +16,10 @@ type Tree[K comparable, V any] struct {
 	size int
 	cmp  func(K, K) int
 
-	safe  bool
-	mu    types.Locker
-	color bool
+	safe       bool
+	mu         types.Locker
+	color      bool
+	nodeFormat string
 }
 
 // New creates and returns a red-black tree.
@@ -95,6 +96,10 @@ func (t *Tree[K, V]) Put(key K, val V) {
 		defer t.mu.Unlock()
 	}
 
+	t.put(key, val)
+}
+
+func (t *Tree[K, V]) put(key K, val V) {
 	if t.root == nil {
 		t.root = &Node[K, V]{Key: key, Value: val, color: black}
 		t.size++
@@ -145,13 +150,8 @@ func (t *Tree[K, V]) Get(key K) (value V, found bool) {
 	return value, false
 }
 
-// GetNode returns the node associated with the given key.
-func (t *Tree[K, V]) GetNode(key K) *Node[K, V] {
-	return t.lookup(key)
-}
-
 // Delete removes the node with the given key from the tree.
-func (t *Tree[K, V]) Delete(key K) {
+func (t *Tree[K, V]) Delete(key K) (V, bool) {
 	if t.safe {
 		t.mu.Lock()
 		defer t.mu.Unlock()
@@ -160,8 +160,10 @@ func (t *Tree[K, V]) Delete(key K) {
 	var child *Node[K, V]
 	n := t.lookup(key)
 	if n == nil {
-		return
+		var v V
+		return v, false
 	}
+	deletedVal := n.Value
 	if n.Left != nil && n.Right != nil {
 		pred := n.Left.maximum()
 		n.Key = pred.Key
@@ -184,6 +186,7 @@ func (t *Tree[K, V]) Delete(key K) {
 		}
 	}
 	t.size--
+	return deletedVal, true
 }
 
 // IsEmpty reports whether the tree is empty.
@@ -206,6 +209,17 @@ func (t *Tree[K, V]) Size() int {
 	return t.size
 }
 
+// Clear clears the tree.
+func (t *Tree[K, V]) Clear() {
+	if t.safe {
+		t.mu.Lock()
+		defer t.mu.Unlock()
+	}
+
+	t.root = nil
+	t.size = 0
+}
+
 // Keys returns a slice containing all keys in sorted order.
 func (t *Tree[K, V]) Keys() []K {
 	if t.safe {
@@ -214,9 +228,16 @@ func (t *Tree[K, V]) Keys() []K {
 	}
 
 	keys := make([]K, 0, t.size)
-	t.Inorder(func(k K, _ V) {
-		keys = append(keys, k)
-	})
+	var inorder func(n *Node[K, V])
+	inorder = func(n *Node[K, V]) {
+		if n == nil {
+			return
+		}
+		inorder(n.Left)
+		keys = append(keys, n.Key)
+		inorder(n.Right)
+	}
+	inorder(t.root)
 	return keys
 }
 
@@ -228,43 +249,164 @@ func (t *Tree[K, V]) Values() []V {
 	}
 
 	values := make([]V, 0, t.size)
-	t.Inorder(func(_ K, v V) {
-		values = append(values, v)
-	})
+	var inorder func(n *Node[K, V])
+	inorder = func(n *Node[K, V]) {
+		if n == nil {
+			return
+		}
+		inorder(n.Left)
+		values = append(values, n.Value)
+		inorder(n.Right)
+	}
+	inorder(t.root)
 	return values
 }
 
-// PreorderChan returns a channel that emits tree nodes in preorder traversal order.
-// The traversal starts from the root and follows: node → left subtree → right subtree.
-func (t *Tree[K, V]) PreorderChan() <-chan *Node[K, V] {
+// Min returns the minimum node in the tree.
+// If the tree is empty, it returns the nil.
+func (t *Tree[K, V]) Min() (K, V, bool) {
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
 	}
 
-	ch := make(chan *Node[K, V])
-	go func() {
-		defer close(ch)
-		if t.root == nil {
-			return
-		}
-		var traverse func(*Node[K, V])
-		traverse = func(n *Node[K, V]) {
-			if n == nil {
-				return
-			}
-			ch <- n
-			traverse(n.Left)
-			traverse(n.Right)
-		}
-		traverse(t.root)
-	}()
-	return ch
+	if t.root == nil {
+		var k K
+		var v V
+		return k, v, false
+	}
+	curr := t.root
+	for curr != nil && curr.Left != nil {
+		curr = curr.Left
+	}
+	return curr.Key, curr.Value, true
 }
 
-// Preorder call function "fn" on each node in preorder traversal order.
+// Max returns the maximum node in the tree.
+// If the tree is empty, it returns the nil.
+func (t *Tree[K, V]) Max() (K, V, bool) {
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	if t.root == nil {
+		var k K
+		var v V
+		return k, v, false
+	}
+	curr := t.root
+	for curr != nil && curr.Right != nil {
+		curr = curr.Right
+	}
+	return curr.Key, curr.Value, true
+}
+
+// Floor returns the largest node with a key less than or equal to the given key.
+// If such a node exists, it is returned along with true; otherwise, nil and false are returned.
+func (t *Tree[K, V]) Floor(key K) (K, V, bool) {
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	if t.root == nil {
+		var k K
+		var v V
+		return k, v, false
+	}
+	n := t.root
+	var floor *Node[K, V]
+	for n != nil {
+		res := t.cmp(n.Key, key)
+		switch {
+		case res == 0:
+			return n.Key, n.Value, true
+		case res > 0:
+			n = n.Left
+		case res < 0:
+			floor = n
+			n = n.Right
+		}
+	}
+
+	if floor != nil {
+		return floor.Key, floor.Value, true
+	}
+
+	var k K
+	var v V
+	return k, v, false
+}
+
+// Ceiling returns the smallest node with a key greater than or equal to the given key.
+// If such a node exists, it is returned along with true; otherwise, nil and false are returned.
+func (t *Tree[K, V]) Ceiling(key K) (K, V, bool) {
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	if t.root == nil {
+		var k K
+		var v V
+		return k, v, false
+	}
+	n := t.root
+	var ceiling *Node[K, V]
+	for n != nil {
+		res := t.cmp(n.Key, key)
+		switch {
+		case res == 0:
+			return n.Key, n.Value, true
+		case res > 0:
+			ceiling = n
+			n = n.Left
+		case res < 0:
+			n = n.Right
+		}
+	}
+
+	if ceiling != nil {
+		return ceiling.Key, ceiling.Value, true
+	}
+
+	var k K
+	var v V
+	return k, v, false
+}
+
+// // PreorderChan returns a channel that emits tree nodes in preorder traversal order.
+// // The traversal starts from the root and follows: node → left subtree → right subtree.
+// func (t *Tree[K, V]) PreorderChan() <-chan *Node[K, V] {
+// 	if t.safe {
+// 		t.mu.RLock()
+// 		defer t.mu.RUnlock()
+// 	}
+//
+// 	ch := make(chan *Node[K, V])
+// 	go func() {
+// 		defer close(ch)
+// 		if t.root == nil {
+// 			return
+// 		}
+// 		var traverse func(*Node[K, V])
+// 		traverse = func(n *Node[K, V]) {
+// 			if n == nil {
+// 				return
+// 			}
+// 			ch <- n
+// 			traverse(n.Left)
+// 			traverse(n.Right)
+// 		}
+// 		traverse(t.root)
+// 	}()
+// 	return ch
+// }
+
+// PreOrder call function "fn" on each node in preorder traversal order.
 // The traversal starts from the root and follows: node → left subtree → right subtree
-func (t *Tree[K, V]) Preorder(fn func(K, V)) {
+func (t *Tree[K, V]) PreOrder(fn func(K, V) bool) {
 	if fn == nil {
 		return
 	}
@@ -272,51 +414,58 @@ func (t *Tree[K, V]) Preorder(fn func(K, V)) {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
 	}
-
-	preorder(fn, t.root)
-}
-
-func preorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
-	if n == nil {
+	if t.root == nil {
 		return
 	}
-	do(n.Key, n.Value)
-	preorder(do, n.Left)
-	preorder(do, n.Right)
-}
 
-// InorderChan returns a channel that emits tree nodes in inorder traversal order.
-// The traversal follows: left subtree → node → right subtree,
-// producing nodes in sorted order for a binary search tree.
-func (t *Tree[K, V]) InorderChan() <-chan *Node[K, V] {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
+	var preorder func(n *Node[K, V]) bool
+	preorder = func(n *Node[K, V]) bool {
+		if n == nil {
+			return true
+		}
+		if !fn(n.Key, n.Value) {
+			return false
+		}
+		if !preorder(n.Left) {
+			return false
+		}
+		return preorder(n.Right)
 	}
-
-	ch := make(chan *Node[K, V])
-	go func() {
-		defer close(ch)
-		if t.root == nil {
-			return
-		}
-		var traverse func(*Node[K, V])
-		traverse = func(n *Node[K, V]) {
-			if n == nil {
-				return
-			}
-			traverse(n.Left)
-			ch <- n
-			traverse(n.Right)
-		}
-		traverse(t.root)
-	}()
-	return ch
+	preorder(t.root)
 }
 
-// Inorder call function "fn" on each node in inorder traversal order.
+// // InorderChan returns a channel that emits tree nodes in inorder traversal order.
+// // The traversal follows: left subtree → node → right subtree,
+// // producing nodes in sorted order for a binary search tree.
+// func (t *Tree[K, V]) InorderChan() <-chan *Node[K, V] {
+// 	if t.safe {
+// 		t.mu.RLock()
+// 		defer t.mu.RUnlock()
+// 	}
+//
+// 	ch := make(chan *Node[K, V])
+// 	go func() {
+// 		defer close(ch)
+// 		if t.root == nil {
+// 			return
+// 		}
+// 		var traverse func(*Node[K, V])
+// 		traverse = func(n *Node[K, V]) {
+// 			if n == nil {
+// 				return
+// 			}
+// 			traverse(n.Left)
+// 			ch <- n
+// 			traverse(n.Right)
+// 		}
+// 		traverse(t.root)
+// 	}()
+// 	return ch
+// }
+
+// InOrder call function "fn" on each node in inorder traversal order.
 // The traversal follows: left subtree → node → right subtree,
-func (t *Tree[K, V]) Inorder(fn func(K, V)) {
+func (t *Tree[K, V]) InOrder(fn func(K, V) bool) {
 	if fn == nil {
 		return
 	}
@@ -324,50 +473,57 @@ func (t *Tree[K, V]) Inorder(fn func(K, V)) {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
 	}
-
-	inorder(fn, t.root)
-}
-
-func inorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
-	if n == nil {
+	if t.root == nil {
 		return
 	}
-	inorder(do, n.Left)
-	do(n.Key, n.Value)
-	inorder(do, n.Right)
-}
 
-// PostorderChan returns a channel that emits tree nodes in postorder traversal order.
-// The traversal follows: left subtree → right subtree → node,
-func (t *Tree[K, V]) PostorderChan() <-chan *Node[K, V] {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
+	var inorder func(n *Node[K, V]) bool
+	inorder = func(n *Node[K, V]) bool {
+		if n == nil {
+			return true
+		}
+		if !inorder(n.Left) {
+			return false
+		}
+		if !fn(n.Key, n.Value) {
+			return false
+		}
+		return inorder(n.Right)
 	}
-
-	ch := make(chan *Node[K, V])
-	go func() {
-		defer close(ch)
-		if t.root == nil {
-			return
-		}
-		var traverse func(*Node[K, V])
-		traverse = func(n *Node[K, V]) {
-			if n == nil {
-				return
-			}
-			traverse(n.Left)
-			traverse(n.Right)
-			ch <- n
-		}
-		traverse(t.root)
-	}()
-	return ch
+	inorder(t.root)
 }
 
-// Postorder call function "fn" on each node in postorder traversal order.
+// // PostorderChan returns a channel that emits tree nodes in postorder traversal order.
+// // The traversal follows: left subtree → right subtree → node,
+// func (t *Tree[K, V]) PostorderChan() <-chan *Node[K, V] {
+// 	if t.safe {
+// 		t.mu.RLock()
+// 		defer t.mu.RUnlock()
+// 	}
+//
+// 	ch := make(chan *Node[K, V])
+// 	go func() {
+// 		defer close(ch)
+// 		if t.root == nil {
+// 			return
+// 		}
+// 		var traverse func(*Node[K, V])
+// 		traverse = func(n *Node[K, V]) {
+// 			if n == nil {
+// 				return
+// 			}
+// 			traverse(n.Left)
+// 			traverse(n.Right)
+// 			ch <- n
+// 		}
+// 		traverse(t.root)
+// 	}()
+// 	return ch
+// }
+
+// PostOrder call function "fn" on each node in postorder traversal order.
 // The traversal follows: left subtree → right subtree → node
-func (t *Tree[K, V]) Postorder(fn func(K, V)) {
+func (t *Tree[K, V]) PostOrder(fn func(K, V) bool) {
 	if fn == nil {
 		return
 	}
@@ -375,51 +531,58 @@ func (t *Tree[K, V]) Postorder(fn func(K, V)) {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
 	}
-
-	postorder(fn, t.root)
-}
-
-func postorder[K comparable, V any](do func(K, V), n *Node[K, V]) {
-	if n == nil {
+	if t.root == nil {
 		return
 	}
-	postorder(do, n.Left)
-	postorder(do, n.Right)
-	do(n.Key, n.Value)
-}
 
-// LevelOrderChan returns a channel that emits tree nodes in level-order traversal order.
-// The traversal visits nodes level by level from left to right, starting from the root.
-func (t *Tree[K, V]) LevelOrderChan() <-chan *Node[K, V] {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
+	var postorder func(n *Node[K, V]) bool
+	postorder = func(n *Node[K, V]) bool {
+		if n == nil {
+			return true
+		}
+		if !postorder(n.Left) {
+			return false
+		}
+		if !postorder(n.Right) {
+			return false
+		}
+		return fn(n.Key, n.Value)
 	}
-
-	ch := make(chan *Node[K, V])
-	go func() {
-		defer close(ch)
-		if t.root == nil {
-			return
-		}
-		queue := []*Node[K, V]{t.root}
-		for len(queue) > 0 {
-			n := queue[0]
-			queue = queue[1:]
-			ch <- n
-			if n.Left != nil {
-				queue = append(queue, n.Left)
-			}
-			if n.Right != nil {
-				queue = append(queue, n.Right)
-			}
-		}
-	}()
-	return ch
+	postorder(t.root)
 }
+
+// // LevelOrderChan returns a channel that emits tree nodes in level-order traversal order.
+// // The traversal visits nodes level by level from left to right, starting from the root.
+// func (t *Tree[K, V]) LevelOrderChan() <-chan *Node[K, V] {
+// 	if t.safe {
+// 		t.mu.RLock()
+// 		defer t.mu.RUnlock()
+// 	}
+//
+// 	ch := make(chan *Node[K, V])
+// 	go func() {
+// 		defer close(ch)
+// 		if t.root == nil {
+// 			return
+// 		}
+// 		queue := []*Node[K, V]{t.root}
+// 		for len(queue) > 0 {
+// 			n := queue[0]
+// 			queue = queue[1:]
+// 			ch <- n
+// 			if n.Left != nil {
+// 				queue = append(queue, n.Left)
+// 			}
+// 			if n.Right != nil {
+// 				queue = append(queue, n.Right)
+// 			}
+// 		}
+// 	}()
+// 	return ch
+// }
 
 // LevelOrder call function "fn" on each node in levelorder traversal order
-func (t *Tree[K, V]) LevelOrder(fn func(K, V)) {
+func (t *Tree[K, V]) LevelOrder(fn func(K, V) bool) {
 	if fn == nil {
 		return
 	}
@@ -435,7 +598,9 @@ func (t *Tree[K, V]) LevelOrder(fn func(K, V)) {
 	for len(queue) > 0 {
 		node := queue[0]
 		queue = queue[1:]
-		fn(node.Key, node.Value)
+		if !fn(node.Key, node.Value) {
+			return
+		}
 		if node.Left != nil {
 			queue = append(queue, node.Left)
 		}
@@ -443,108 +608,6 @@ func (t *Tree[K, V]) LevelOrder(fn func(K, V)) {
 			queue = append(queue, node.Right)
 		}
 	}
-}
-
-// Min returns the minimum node in the tree.
-// If the tree is empty, it returns the nil.
-func (t *Tree[K, V]) Min() *Node[K, V] {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
-	}
-
-	if t.root == nil {
-		return nil
-	}
-	curr := t.root
-	for curr != nil && curr.Left != nil {
-		curr = curr.Left
-	}
-	return curr
-}
-
-// Max returns the maximum node in the tree.
-// If the tree is empty, it returns the nil.
-func (t *Tree[K, V]) Max() *Node[K, V] {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
-	}
-
-	if t.root == nil {
-		return nil
-	}
-	curr := t.root
-	for curr != nil && curr.Right != nil {
-		curr = curr.Right
-	}
-	return curr
-}
-
-// Floor returns the largest node with a key less than or equal to the given key.
-// If such a node exists, it is returned along with true; otherwise, nil and false are returned.
-func (t *Tree[K, V]) Floor(key K) (*Node[K, V], bool) {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
-	}
-
-	if t.root == nil {
-		return nil, false
-	}
-	n := t.root
-	var floor *Node[K, V]
-	for n != nil {
-		res := t.cmp(n.Key, key)
-		switch {
-		case res == 0:
-			return n, true
-		case res > 0:
-			n = n.Left
-		case res < 0:
-			floor = n
-			n = n.Right
-		}
-	}
-	return floor, floor != nil
-}
-
-// Ceiling returns the smallest node with a key greater than or equal to the given key.
-// If such a node exists, it is returned along with true; otherwise, nil and false are returned.
-func (t *Tree[K, V]) Ceiling(key K) (*Node[K, V], bool) {
-	if t.safe {
-		t.mu.RLock()
-		defer t.mu.RUnlock()
-	}
-
-	if t.root == nil {
-		return nil, false
-	}
-	n := t.root
-	var ceiling *Node[K, V]
-	for n != nil {
-		res := t.cmp(n.Key, key)
-		switch {
-		case res == 0:
-			return n, true
-		case res > 0:
-			ceiling = n
-			n = n.Left
-		case res < 0:
-			n = n.Right
-		}
-	}
-	return ceiling, ceiling != nil
-}
-
-func (t *Tree[K, V]) Clear() {
-	if t.safe {
-		t.mu.Lock()
-		defer t.mu.Unlock()
-	}
-
-	t.root = nil
-	t.size = 0
 }
 
 func (t *Tree[K, V]) BlackCount() int {
@@ -666,12 +729,12 @@ func (t *Tree[K, V]) String() string {
 
 	var sb strings.Builder
 	sb.WriteString("RedBlackTree\n")
-	t.visualizeTree(t.root, "", true, &sb)
+	t.output(t.root, "", true, &sb, t.nodeFormat)
 	return sb.String()
 }
 
-// visualizeTree recursively builds the tree structure as a string.
-func (t *Tree[K, V]) visualizeTree(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder) {
+// output recursively builds the tree structure as a string.
+func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, format string) {
 	if node == nil {
 		return
 	}
@@ -684,7 +747,7 @@ func (t *Tree[K, V]) visualizeTree(node *Node[K, V], prefix string, isTail bool,
 		} else {
 			newPrefix = prefix + "    "
 		}
-		t.visualizeTree(node.Right, newPrefix, false, sb)
+		t.output(node.Right, newPrefix, false, sb, format)
 	}
 
 	// current node
@@ -705,8 +768,11 @@ func (t *Tree[K, V]) visualizeTree(node *Node[K, V], prefix string, isTail bool,
 			colorCode = BlackBg
 		}
 	}
-
-	fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, node.Key, node.color.symbol(), Reset)
+	if len(format) > 0 {
+		fmt.Fprintf(sb, "%s"+format+"(%s)%s\n", colorCode, node.Key, node.Value, node.color.symbol(), Reset)
+	} else {
+		fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, node.String(), node.color.symbol(), Reset)
+	}
 
 	// left node
 	if node.Left != nil {
@@ -716,7 +782,7 @@ func (t *Tree[K, V]) visualizeTree(node *Node[K, V], prefix string, isTail bool,
 		} else {
 			newPrefix = prefix + "│   "
 		}
-		t.visualizeTree(node.Left, newPrefix, true, sb)
+		t.output(node.Left, newPrefix, true, sb, format)
 	}
 }
 
