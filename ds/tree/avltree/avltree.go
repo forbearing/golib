@@ -39,18 +39,18 @@ func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*Tree[K,
 	return t, nil
 }
 
-// NewWithOrderedKeys creates and returns a AVL tree.
+// NewOrderedKeys creates and returns a AVL tree.
 // It use the cmp.Compare[K] as the default comparsion function.
 // This is suitable for types that implement the cmp.Ordered interface,
 // such as int, float64 and string
-func NewWithOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], error) {
+func NewOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], error) {
 	return New(cmp.Compare[K], ops...)
 }
 
 // NewFromSlice creates and returns a AVL tree from a given slice.
 // It use the cmp.Compare[K] as the default comparsion function.
 func NewFromSlice[V any](slice []V, ops ...Option[int, V]) (*Tree[int, V], error) {
-	t, err := NewWithOrderedKeys(ops...)
+	t, err := NewOrderedKeys(ops...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +73,11 @@ func NewFromMap[K comparable, V any](m map[K]V, cmp func(K, K) int, ops ...Optio
 	return t, nil
 }
 
-// NewFromMapWithOrderedKeys creates and returns a AVL tree from a given map.
+// NewFromOrderedMap creates and returns a AVL tree from a given map.
 // It uses cmp.Compare[K] as the default comparison function,
 // which is suitable for types that implement the cmp.Ordered interface, such as int, float64, and string.
-func NewFromMapWithOrderedKeys[K cmp.Ordered, V any](m map[K]V, ops ...Option[K, V]) (*Tree[K, V], error) {
-	t, err := NewWithOrderedKeys(ops...)
+func NewFromOrderedMap[K cmp.Ordered, V any](m map[K]V, ops ...Option[K, V]) (*Tree[K, V], error) {
+	t, err := NewOrderedKeys(ops...)
 	if err != nil {
 		return nil, err
 	}
