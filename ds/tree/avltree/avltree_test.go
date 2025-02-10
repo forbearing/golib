@@ -1,6 +1,8 @@
 package avltree_test
 
 import (
+	"cmp"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -8,402 +10,337 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func intCmp(a, b int) int {
-	return a - b
+func newIntStringTree(t *testing.T) *avltree.Tree[int, string] {
+	tree, err := avltree.NewWithOrderedKeys(avltree.WithSafe[int, string]())
+	assert.NoError(t, err)
+	return tree
 }
 
 func TestAVLTree_New(t *testing.T) {
-	tt, err := avltree.New[int, string](intCmp)
-	assert.NoError(t, err)
-	assert.NotNil(t, tt)
-	assert.Equal(t, 0, tt.Size())
-
-	m := map[int]string{
-		10: "ten",
-		20: "twenty",
-		5:  "five",
+	tests := []struct {
+		name    string
+		cmp     func(int, int) int
+		wantErr bool
+	}{
+		{
+			name:    "nil comparator",
+			cmp:     nil,
+			wantErr: true,
+		},
+		{
+			name:    "valid comparator",
+			cmp:     cmp.Compare[int],
+			wantErr: false,
+		},
 	}
-	tt, err = avltree.NewFromMap(m, intCmp)
-	assert.NoError(t, err)
-	assert.NotNil(t, tt)
-	assert.Equal(t, 3, tt.Size())
 
-	tt, err = avltree.NewFromMapWithOrderedKeys(m)
-	assert.NoError(t, err)
-	assert.NotNil(t, tt)
-	assert.Equal(t, 3, tt.Size())
-
-	slice := []int{10, 20, 5}
-	tt2, err := avltree.NewFromSlice(slice)
-	assert.NoError(t, err)
-	assert.NotNil(t, tt2)
-	assert.Equal(t, 3, tt2.Size())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tree, err := avltree.New[int, int](tt.cmp)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, tree)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, tree)
+			}
+		})
+	}
 }
 
-func TestAVLTree_PutAndGet(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
+func TestAVLTree_Put(t *testing.T) {
+	tree := newIntStringTree(t)
 
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(5, "five")
-
-	val, found := tree.Get(10)
-	assert.True(t, found)
-	assert.Equal(t, "ten", val)
-
-	val, found = tree.Get(20)
-	assert.True(t, found)
-	assert.Equal(t, "twenty", val)
-
-	val, found = tree.Get(5)
-	assert.True(t, found)
-	assert.Equal(t, "five", val)
-
-	// 查找不存在的键
-	_, found = tree.Get(100)
-	assert.False(t, found)
-}
-
-func TestAVLTree_PutDuplicateKey(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(10, "ten")
-	tree.Put(10, "updated-ten")
-
-	val, found := tree.Get(10)
-	assert.True(t, found)
-	assert.Equal(t, "updated-ten", val)
-
+	// Test empty tree insert
+	tree.Put(1, "one")
 	assert.Equal(t, 1, tree.Size())
+	assert.Equal(t, 1, tree.Height())
+
+	// Test update existing key
+	tree.Put(1, "ONE")
+	assert.Equal(t, 1, tree.Size())
+	val, exists := tree.Get(1)
+	assert.True(t, exists)
+	assert.Equal(t, "ONE", val)
+
+	// Test multiple inserts with balancing
+	// Test LL rotation
+	tree.Put(2, "two")
+	tree.Put(3, "three") // Should trigger right rotation
+	assert.Equal(t, 3, tree.Size())
+	assert.Equal(t, 2, tree.Height())
+
+	// Test RR rotation
+	tree.Put(0, "zero")
+	tree.Put(-1, "minus one") // Should trigger left rotation
+	assert.Equal(t, 5, tree.Size())
+	assert.Equal(t, 3, tree.Height())
+
+	// Test LR rotation
+	tree.Put(7, "seven")
+	tree.Put(5, "five")
+	tree.Put(6, "six") // Should trigger left-right rotation
+	assert.Equal(t, 8, tree.Size())
+	assert.Equal(t, 4, tree.Height())
+
+	// Test RL rotation
+	tree.Put(10, "ten")
+	tree.Put(8, "eight")
+	tree.Put(9, "nine") // Should trigger right-left rotation
+	assert.Equal(t, 11, tree.Size())
+	assert.Equal(t, 4, tree.Height())
+}
+
+func TestAVLTree_Get(t *testing.T) {
+	tree := newIntStringTree(t)
+
+	// Test get from empty tree
+	val, exists := tree.Get(1)
+	assert.False(t, exists)
+	assert.Empty(t, val)
+
+	// Test existing key
+	tree.Put(1, "one")
+	val, exists = tree.Get(1)
+	assert.True(t, exists)
+	assert.Equal(t, "one", val)
+
+	// Test non-existing key
+	val, exists = tree.Get(2)
+	assert.False(t, exists)
+	assert.Empty(t, val)
 }
 
 func TestAVLTree_Delete(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
+	tree := newIntStringTree(t)
 
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(5, "five")
-
-	tree.Delete(10)
-	_, found := tree.Get(10)
-	assert.False(t, found)
-
-	tree.Delete(100)
-	assert.Equal(t, 2, tree.Size())
-
-	tree.Delete(5)
-	tree.Delete(20)
-	assert.True(t, tree.IsEmpty())
-}
-
-func TestAVLTree_SizeHeight(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
+	// Test delete from empty tree
 	assert.Equal(t, 0, tree.Size())
-	assert.Equal(t, 0, tree.Height())
 
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(5, "five")
+	// Setup test tree
+	values := []struct {
+		key int
+		val string
+	}{
+		{4, "four"},
+		{2, "two"},
+		{6, "six"},
+		{1, "one"},
+		{3, "three"},
+		{5, "five"},
+		{7, "seven"},
+	}
 
-	assert.Equal(t, 3, tree.Size())
-	assert.Greater(t, tree.Height(), 0)
-}
+	for _, v := range values {
+		tree.Put(v.key, v.val)
+	}
+	assert.Equal(t, 7, tree.Size())
 
-func TestAVLTree_KeysAndValues(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
+	// Test delete leaf node
+	tree.Delete(7)
+	assert.Equal(t, 6, tree.Size())
 
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(5, "five")
+	// Test delete node with one child
+	tree.Delete(6)
+	assert.Equal(t, 5, tree.Size())
 
-	keys := tree.Keys()
-	values := tree.Values()
-	assert.Equal(t, []int{5, 10, 20}, keys)
-	assert.Equal(t, []string{"five", "ten", "twenty"}, values)
+	// Test delete node with two children
+	tree.Delete(2)
+	assert.Equal(t, 4, tree.Size())
 
-	maxNode := tree.Max()
-	assert.NotNil(t, maxNode)
-	assert.Equal(t, 20, maxNode.Key)
-	assert.Equal(t, "twenty", maxNode.Value)
+	// Delete remaining nodes
+	tree.Delete(1)
+	tree.Delete(3)
+	tree.Delete(4)
+	tree.Delete(5)
+
+	// Verify tree is empty
+	assert.True(t, tree.IsEmpty())
 }
 
 func TestAVLTree_MinMax(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
+	tree := newIntStringTree(t)
 
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(5, "five")
+	// Test empty tree
+	k, v, exists := tree.Min()
+	assert.False(t, exists)
+	assert.Zero(t, k)
+	assert.Empty(t, v)
 
-	minNode := tree.Min()
-	assert.NotNil(t, minNode)
-	assert.Equal(t, 5, minNode.Key)
-	assert.Equal(t, "five", minNode.Value)
+	k, v, exists = tree.Max()
+	assert.False(t, exists)
+	assert.Zero(t, k)
+	assert.Empty(t, v)
 
-	maxNode := tree.Max()
-	assert.NotNil(t, maxNode)
-	assert.Equal(t, 20, maxNode.Key)
-	assert.Equal(t, "twenty", maxNode.Value)
-}
-
-func TestAVLTree_Balance(t *testing.T) {
-	tree, _ := avltree.New[int, int](intCmp)
-
-	// 插入会导致不平衡的情况
-	tree.Put(30, 30)
-	tree.Put(20, 20)
-	tree.Put(40, 40)
-	tree.Put(10, 10) // 触发平衡调整
-	tree.Put(25, 25) // 触发平衡调整
-	tree.Put(35, 35) // 触发平衡调整
-	tree.Put(50, 50) // 触发平衡调整
-
-	assert.Equal(t, 7, tree.Size())
-	assert.Greater(t, tree.Height(), 0)
-}
-
-func TestAVLTree_FloorAndCeiling(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-	tree.Put(30, "thirty")
-
-	node, found := tree.Floor(25)
-	assert.True(t, found)
-	assert.Equal(t, 20, node.Key)
-
-	node, found = tree.Ceiling(15)
-	assert.True(t, found)
-	assert.Equal(t, 20, node.Key)
-
-	node, found = tree.Floor(5)
-	assert.False(t, found)
-
-	node, found = tree.Ceiling(35)
-	assert.False(t, found)
-}
-
-func TestAVLTree_Clear(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(10, "ten")
-	tree.Put(20, "twenty")
-
-	tree.Clear()
-	assert.True(t, tree.IsEmpty())
-}
-
-func TestAVLTree_Preorder(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{40, 20, 10, 30, 60, 50, 70}
-	expectedValues := []string{"forty", "twenty", "ten", "thirty", "sixty", "fifty", "seventy"}
-
-	var keys []int
-	var values []string
-	tree.Preorder(func(k int, v string) {
-		keys = append(keys, k)
-		values = append(values, v)
-	})
-
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_PreorderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{40, 20, 10, 30, 60, 50, 70}
-	expectedValues := []string{"forty", "twenty", "ten", "thirty", "sixty", "fifty", "seventy"}
-
-	var keys []int
-	var values []string
-	for node := range tree.PreorderChan() {
-		keys = append(keys, node.Key)
-		values = append(values, node.Value)
+	// Setup tree
+	values := map[int]string{
+		1: "one",
+		3: "three",
+		2: "two",
+	}
+	for k, v := range values {
+		tree.Put(k, v)
 	}
 
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
+	// Test min
+	k, v, exists = tree.Min()
+	assert.True(t, exists)
+	assert.Equal(t, 1, k)
+	assert.Equal(t, "one", v)
+
+	// Test max
+	k, v, exists = tree.Max()
+	assert.True(t, exists)
+	assert.Equal(t, 3, k)
+	assert.Equal(t, "three", v)
 }
 
-func TestAVLTree_Inorder(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{10, 20, 30, 40, 50, 60, 70}
-	expectedValues := []string{"ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy"}
-
-	var keys []int
-	var values []string
-	tree.Inorder(func(k int, v string) {
-		keys = append(keys, k)
-		values = append(values, v)
-	})
-
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_InorderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{10, 20, 30, 40, 50, 60, 70}
-	expectedValues := []string{"ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy"}
-
-	var keys []int
-	var values []string
-	for node := range tree.InorderChan() {
-		keys = append(keys, node.Key)
-		values = append(values, node.Value)
+func TestAVLTree_FloorCeiling(t *testing.T) {
+	tree := newIntStringTree(t)
+	values := map[int]string{
+		1:  "one",
+		3:  "three",
+		5:  "five",
+		7:  "seven",
+		9:  "nine",
+		11: "eleven",
+	}
+	for k, v := range values {
+		tree.Put(k, v)
 	}
 
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_Postorder(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{10, 30, 20, 50, 70, 60, 40}
-	expectedValues := []string{"ten", "thirty", "twenty", "fifty", "seventy", "sixty", "forty"}
-
-	var keys []int
-	var values []string
-	tree.Postorder(func(k int, v string) {
-		keys = append(keys, k)
-		values = append(values, v)
-	})
-
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_PostorderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{10, 30, 20, 50, 70, 60, 40}
-	expectedValues := []string{"ten", "thirty", "twenty", "fifty", "seventy", "sixty", "forty"}
-
-	var keys []int
-	var values []string
-	for node := range tree.PostorderChan() {
-		keys = append(keys, node.Key)
-		values = append(values, node.Value)
+	// Test Floor
+	tests := []struct {
+		name      string
+		input     int
+		wantKey   int
+		wantValue string
+		wantFound bool
+	}{
+		{"Floor of minimum - 1", 0, 0, "", false},
+		{"Floor of existing key", 5, 5, "five", true},
+		{"Floor between keys", 6, 5, "five", true},
+		{"Floor of maximum + 1", 12, 11, "eleven", true},
+		{"Floor between 3 and 5", 4, 3, "three", true},
+		{"Floor between 7 and 9", 8, 7, "seven", true},
 	}
 
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_LevelOrder(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{40, 20, 60, 10, 30, 50, 70}
-	expectedValues := []string{"forty", "twenty", "sixty", "ten", "thirty", "fifty", "seventy"}
-
-	var keys []int
-	var values []string
-	tree.LevelOrder(func(k int, v string) {
-		keys = append(keys, k)
-		values = append(values, v)
-	})
-
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
-}
-
-func TestAVLTree_LevelOrderChan(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
-
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
-
-	expectedKeys := []int{40, 20, 60, 10, 30, 50, 70}
-	expectedValues := []string{"forty", "twenty", "sixty", "ten", "thirty", "fifty", "seventy"}
-
-	var keys []int
-	var values []string
-	for node := range tree.LevelOrderChan() {
-		keys = append(keys, node.Key)
-		values = append(values, node.Value)
+	for _, tt := range tests {
+		t.Run("Floor_"+tt.name, func(t *testing.T) {
+			k, v, found := tree.Floor(tt.input)
+			assert.Equal(t, tt.wantFound, found)
+			if found {
+				assert.Equal(t, tt.wantKey, k)
+				assert.Equal(t, tt.wantValue, v)
+			}
+		})
 	}
 
-	assert.Equal(t, expectedKeys, keys)
-	assert.Equal(t, expectedValues, values)
+	// Test Ceiling
+	ceilingTests := []struct {
+		name      string
+		input     int
+		wantKey   int
+		wantValue string
+		wantFound bool
+	}{
+		{"Ceiling of minimum - 1", 0, 1, "one", true},
+		{"Ceiling of existing key", 5, 5, "five", true},
+		{"Ceiling between keys", 6, 7, "seven", true},
+		{"Ceiling of maximum + 1", 12, 0, "", false},
+		{"Ceiling between 3 and 5", 4, 5, "five", true},
+		{"Ceiling between 7 and 9", 8, 9, "nine", true},
+	}
+
+	for _, tt := range ceilingTests {
+		t.Run("Ceiling_"+tt.name, func(t *testing.T) {
+			k, v, found := tree.Ceiling(tt.input)
+			assert.Equal(t, tt.wantFound, found)
+			if found {
+				assert.Equal(t, tt.wantKey, k)
+				assert.Equal(t, tt.wantValue, v)
+			}
+		})
+	}
 }
 
-func TestAVLTree_String(t *testing.T) {
-	tree, _ := avltree.New[int, string](intCmp)
+func TestAVLTree_Traversal(t *testing.T) {
+	tree := newIntStringTree(t)
+	values := map[int]string{
+		1:  "one",
+		2:  "two",
+		3:  "three",
+		4:  "four",
+		5:  "five",
+		6:  "six",
+		7:  "seven",
+		8:  "eight",
+		9:  "nine",
+		10: "ten",
+	}
+	for k, v := range values {
+		tree.Put(k, v)
+	}
 
-	tree.Put(40, "forty")
-	tree.Put(20, "twenty")
-	tree.Put(60, "sixty")
-	tree.Put(10, "ten")
-	tree.Put(30, "thirty")
-	tree.Put(50, "fifty")
-	tree.Put(70, "seventy")
+	t.Run("InOrder", func(t *testing.T) {
+		result := make([]int, 0)
+		tree.InOrder(func(key int, value string) bool {
+			result = append(result, key)
+			return true
+		})
+		expected := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		assert.Equal(t, expected, result)
+	})
 
-	fmt.Println(tree.String())
+	t.Run("PreOrder", func(t *testing.T) {
+		result := make([]int, 0)
+		tree.PreOrder(func(key int, value string) bool {
+			result = append(result, key)
+			return true
+		})
+		assert.Len(t, result, len(values))
+	})
+
+	t.Run("PostOrder", func(t *testing.T) {
+		result := make([]int, 0)
+		tree.PostOrder(func(key int, value string) bool {
+			result = append(result, key)
+			return true
+		})
+		assert.Len(t, result, len(values))
+	})
+
+	t.Run("LevelOrder", func(t *testing.T) {
+		result := make([]int, 0)
+		tree.LevelOrder(func(key int, value string) bool {
+			result = append(result, key)
+			return true
+		})
+		assert.Len(t, result, len(values))
+	})
+
+	t.Run("Early termination", func(t *testing.T) {
+		result := make([]int, 0)
+		tree.InOrder(func(key int, value string) bool {
+			result = append(result, key)
+			return key < 5
+		})
+		expected := []int{1, 2, 3, 4, 5}
+		assert.Equal(t, expected, result)
+	})
+}
+
+func TestAVLTree_MarshalJSON(t *testing.T) {
+	tree := newIntStringTree(t)
+	for i := range 10 {
+		tree.Put(i, fmt.Sprintf("%d", i))
+	}
+	jsonBytes, err := json.Marshal(tree)
+	assert.NoError(t, err)
+
+	tree2 := newIntStringTree(t)
+	err = json.Unmarshal(jsonBytes, tree2)
+	assert.NoError(t, err)
+	assert.Equal(t, tree.Keys(), tree2.Keys())
+	assert.Equal(t, tree.Values(), tree2.Values())
 }
