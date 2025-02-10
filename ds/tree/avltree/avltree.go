@@ -182,7 +182,6 @@ func (t *Tree[K, V]) lookup(key K) (*Node[K, V], bool) {
 }
 
 // Delete delete the node from the tree by key.
-// FIXME: Delete(key K)(V,bool)
 func (t *Tree[K, V]) Delete(key K) {
 	if t.safe {
 		t.mu.Lock()
@@ -520,6 +519,9 @@ func (t *Tree[K, V]) Ceiling(key K) (K, V, bool) {
 // Preorder call function "fn" on each node in preorder traversal order.
 // The traversal starts from the root and follows: node → left subtree → right subtree
 func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -571,8 +573,10 @@ func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
 
 // Inorder call function "fn" on each node in inorder traversal order.
 // The traversal starts from the root and follows: left subtree → node → right subtree
-// FIXME: Inorder(fn func(K, V) bool)
 func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -625,6 +629,9 @@ func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
 // Postorder call function "fn" on each node in postorder traversal order.
 // The traversal starts from the root and follows: left subtree → right subtree → node
 func (t *Tree[K, V]) PostOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -682,6 +689,9 @@ func (t *Tree[K, V]) PostOrder(fn func(key K, value V) bool) {
 
 // LevelOrder call function "fn" on each node in levelorder traversal order
 func (t *Tree[K, V]) LevelOrder(fn func(key K, value V) bool) {
+	if fn == nil {
+		return
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
