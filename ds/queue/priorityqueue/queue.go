@@ -129,8 +129,7 @@ func (q *Queue[E]) Clone() *Queue[E] {
 		defer q.mu.RUnlock()
 	}
 	clone, _ := New(q.cmp, q.options()...)
-	values := q.heap.Values()
-	for _, v := range values {
+	for _, v := range q.heap.Values() {
 		clone.heap.Push(v)
 	}
 	return clone
