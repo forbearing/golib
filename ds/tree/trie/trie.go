@@ -687,11 +687,13 @@ func (t *Trie[K, V]) String() string {
 	if t.root == nil {
 		return "Trie (empty)"
 	}
-	if t.nodeFormatter == nil {
-		t.nodeFormatter = func(n *Node[K, V]) string { return n.valueString() }
+	nodeFormatter := t.nodeFormatter
+	if nodeFormatter == nil {
+		nodeFormatter = func(n *Node[K, V]) string { return n.valueString() }
 	}
-	if t.keyFormatter == nil {
-		t.keyFormatter = func(k K, n *Node[K, V]) string {
+	keyFormatter := t.keyFormatter
+	if keyFormatter == nil {
+		keyFormatter = func(k K, n *Node[K, V]) string {
 			if n.count > 1 {
 				return fmt.Sprintf("%v(%d)", k, n.count)
 			}
@@ -700,15 +702,18 @@ func (t *Trie[K, V]) String() string {
 	}
 	var sb strings.Builder
 	sb.WriteString("Trie\n")
-	t.output(t.root, " ", "", &sb)
+	t.output(t.root, " ", "", &sb, nodeFormatter, keyFormatter)
 	return sb.String()
 }
 
-func (t *Trie[K, V]) output(node *Node[K, V], valuePrefix string, childPrefix string, sb *strings.Builder) {
+func (t *Trie[K, V]) output(node *Node[K, V],
+	valuePrefix string, childPrefix string, sb *strings.Builder,
+	nodeFormatter func(*Node[K, V]) string, keyFormatter func(K, *Node[K, V]) string,
+) {
 	sb.WriteString(valuePrefix)
 
 	// output current node.
-	sb.WriteString(t.nodeFormatter(node))
+	sb.WriteString(nodeFormatter(node))
 	sb.WriteString("\n")
 
 	// collect all children.
@@ -734,13 +739,13 @@ func (t *Trie[K, V]) output(node *Node[K, V], valuePrefix string, childPrefix st
 		// determine connection line and child prefix
 		newPrefix := childPrefix
 		if isLast {
-			sb.WriteString(childPrefix + "└─" + t.keyFormatter(child.key, child.node))
+			sb.WriteString(childPrefix + "└─" + keyFormatter(child.key, child.node))
 			newPrefix += "  "
 		} else {
-			sb.WriteString(childPrefix + "├─" + t.keyFormatter(child.key, child.node))
+			sb.WriteString(childPrefix + "├─" + keyFormatter(child.key, child.node))
 			newPrefix += "│ "
 		}
 
-		t.output(child.node, valuePrefix, newPrefix, sb)
+		t.output(child.node, valuePrefix, newPrefix, sb, nodeFormatter, keyFormatter)
 	}
 }
