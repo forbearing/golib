@@ -16,10 +16,10 @@ type Tree[K comparable, V any] struct {
 	size int
 	cmp  func(K, K) int
 
-	safe       bool
-	mu         types.Locker
-	color      bool
-	nodeFormat string
+	safe          bool
+	mu            types.Locker
+	color         bool
+	nodeFormatter func(*Node[K, V]) string
 }
 
 // New creates and returns a red-black tree.
@@ -729,12 +729,17 @@ func (t *Tree[K, V]) String() string {
 
 	var sb strings.Builder
 	sb.WriteString("RedBlackTree\n")
-	t.output(t.root, "", true, &sb, t.nodeFormat)
+	if t.nodeFormatter == nil {
+		t.nodeFormatter = func(n *Node[K, V]) string {
+			return n.String()
+		}
+	}
+	t.output(t.root, "", true, &sb)
 	return sb.String()
 }
 
 // output recursively builds the tree structure as a string.
-func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, format string) {
+func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder) {
 	if node == nil {
 		return
 	}
@@ -747,7 +752,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 		} else {
 			newPrefix = prefix + "    "
 		}
-		t.output(node.Right, newPrefix, false, sb, format)
+		t.output(node.Right, newPrefix, false, sb)
 	}
 
 	// current node
@@ -768,11 +773,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 			colorCode = BlackBg
 		}
 	}
-	if len(format) > 0 {
-		fmt.Fprintf(sb, "%s"+format+"(%s)%s\n", colorCode, node.Key, node.Value, node.color.symbol(), Reset)
-	} else {
-		fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, node.String(), node.color.symbol(), Reset)
-	}
+	fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, t.nodeFormatter(node), node.color.symbol(), Reset)
 
 	// left node
 	if node.Left != nil {
@@ -782,7 +783,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 		} else {
 			newPrefix = prefix + "│   "
 		}
-		t.output(node.Left, newPrefix, true, sb, format)
+		t.output(node.Left, newPrefix, true, sb)
 	}
 }
 
