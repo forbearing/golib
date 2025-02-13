@@ -1,8 +1,9 @@
 package rbtree
 
 import (
-	"strings"
 	"sync"
+
+	"github.com/forbearing/golib/ds/types"
 )
 
 // Option is a functional option type for configuring a red-black tree.
@@ -17,16 +18,18 @@ func WithSafe[K comparable, V any]() Option[K, V] {
 	}
 }
 
-// WithNodeFormat creates a option that sets the node format when call tree.String().
-// Default node format is fmt.Sprintf("%v", n.Key).
-// The format must contains two placeholders, the first is the key and the second is the value.
-// For example: "%d:%s"
-func WithNodeFormat[K comparable, V any](format string) Option[K, V] {
+// WithNodeFormatter creates a option that sets the node formatter when call tree.String().
+// Example usage:
+//
+//	tree.WithNodeFormatter(func(n *Node[string, int]) string {
+//		return fmt.Sprintf("%s:%d ", n.Key, n.Value)
+//	})
+func WithNodeFormatter[K comparable, V any](fn func(*Node[K, V]) string) Option[K, V] {
 	return func(t *Tree[K, V]) error {
-		format = strings.TrimFunc(format, func(r rune) bool {
-			return r == '\n'
-		})
-		t.nodeFormat = format
+		if fn == nil {
+			return types.ErrFuncNil
+		}
+		t.nodeFormatter = fn
 		return nil
 	}
 }
