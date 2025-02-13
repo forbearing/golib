@@ -725,19 +725,17 @@ func (t *Tree[K, V]) String() string {
 	if t.root == nil {
 		return "AVLTree (empty)"
 	}
-	// str := "AVLTree\n"
-	// output(t.root, "", true, &str, t.nodeFormat)
-	// return str
 	var sb strings.Builder
 	sb.WriteString("AVLTree\n")
-	if t.nodeFormatter == nil {
-		t.nodeFormatter = func(n *Node[K, V]) string { return n.String() }
+	nodeFormatter := t.nodeFormatter
+	if nodeFormatter == nil {
+		nodeFormatter = func(n *Node[K, V]) string { return n.String() }
 	}
-	t.output(t.root, "", true, &sb)
+	t.output(t.root, "", true, &sb, nodeFormatter)
 	return sb.String()
 }
 
-func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder) {
+func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, nodeFormatter func(*Node[K, V]) string) {
 	if node.Children[1] != nil {
 		newPrefix := prefix
 		if isTail {
@@ -745,7 +743,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 		} else {
 			newPrefix += "    "
 		}
-		t.output(node.Children[1], newPrefix, false, sb)
+		t.output(node.Children[1], newPrefix, false, sb, nodeFormatter)
 	}
 
 	sb.WriteString(prefix)
@@ -755,7 +753,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 		sb.WriteString("╭── ")
 	}
 
-	sb.WriteString(t.nodeFormatter(node))
+	sb.WriteString(nodeFormatter(node))
 	sb.WriteString("\n")
 
 	if node.Children[0] != nil {
@@ -765,7 +763,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 		} else {
 			newPrefix += "│   "
 		}
-		t.output(node.Children[0], newPrefix, true, sb)
+		t.output(node.Children[0], newPrefix, true, sb, nodeFormatter)
 	}
 }
 
