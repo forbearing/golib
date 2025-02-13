@@ -204,3 +204,9 @@ func BenchmarkRedBlackTree_MinDepth(b *testing.B) {
 		_ = t.MinDepth()
 	})
 }
+
+func BenchmarkRedBlackTree_String(b *testing.B) {
+	benchmark(b, false, []int{100}, func(t *rbtree.Tree[float64, float64]) {
+		_ = t.String()
+	})
+}
