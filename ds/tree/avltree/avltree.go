@@ -2,7 +2,6 @@ package avltree
 
 import (
 	"cmp"
-	"fmt"
 	"strings"
 
 	"github.com/forbearing/golib/ds/types"
@@ -16,9 +15,9 @@ type Tree[K comparable, V any] struct {
 	cmp  func(K, K) int
 	size int
 
-	safe       bool
-	mu         types.Locker
-	nodeFormat string
+	safe          bool
+	mu            types.Locker
+	nodeFormatter func(*Node[K, V]) string
 }
 
 // New creates and returns a AVL tree.
@@ -731,11 +730,14 @@ func (t *Tree[K, V]) String() string {
 	// return str
 	var sb strings.Builder
 	sb.WriteString("AVLTree\n")
-	output2(t.root, "", true, &sb, t.nodeFormat)
+	if t.nodeFormatter == nil {
+		t.nodeFormatter = func(n *Node[K, V]) string { return n.String() }
+	}
+	t.output(t.root, "", true, &sb)
 	return sb.String()
 }
 
-func output2[K comparable, V any](node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, format string) {
+func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder) {
 	if node.Children[1] != nil {
 		newPrefix := prefix
 		if isTail {
@@ -743,7 +745,7 @@ func output2[K comparable, V any](node *Node[K, V], prefix string, isTail bool, 
 		} else {
 			newPrefix += "    "
 		}
-		output2(node.Children[1], newPrefix, false, sb, format)
+		t.output(node.Children[1], newPrefix, false, sb)
 	}
 
 	sb.WriteString(prefix)
@@ -753,11 +755,7 @@ func output2[K comparable, V any](node *Node[K, V], prefix string, isTail bool, 
 		sb.WriteString("╭── ")
 	}
 
-	if format != "" {
-		fmt.Fprintf(sb, format, node.Key, node.Value)
-	} else {
-		sb.WriteString(node.String())
-	}
+	sb.WriteString(t.nodeFormatter(node))
 	sb.WriteString("\n")
 
 	if node.Children[0] != nil {
@@ -767,39 +765,7 @@ func output2[K comparable, V any](node *Node[K, V], prefix string, isTail bool, 
 		} else {
 			newPrefix += "│   "
 		}
-		output2(node.Children[0], newPrefix, true, sb, format)
-	}
-}
-
-func output[K comparable, V any](node *Node[K, V], prefix string, isTail bool, str *string, format string) {
-	if node.Children[1] != nil {
-		newPrefix := prefix
-		if isTail {
-			newPrefix += "│   "
-		} else {
-			newPrefix += "    "
-		}
-		output(node.Children[1], newPrefix, false, str, format)
-	}
-	*str += prefix
-	if isTail {
-		*str += "╰── "
-	} else {
-		*str += "╭── "
-	}
-	if len(format) > 0 {
-		*str += fmt.Sprintf(format, node.Key, node.Value)
-	} else {
-		*str += node.String() + "\n"
-	}
-	if node.Children[0] != nil {
-		newPrefix := prefix
-		if isTail {
-			newPrefix += "    "
-		} else {
-			newPrefix += "│   "
-		}
-		output(node.Children[0], newPrefix, true, str, format)
+		t.output(node.Children[0], newPrefix, true, sb)
 	}
 }
 

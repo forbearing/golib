@@ -330,6 +330,29 @@ func TestAVLTree_Traversal(t *testing.T) {
 	})
 }
 
+func TestAVLTree_String(t *testing.T) {
+	m := map[string]int{
+		"one":   1,
+		"two":   2,
+		"three": 3,
+		"four":  4,
+		"five":  5,
+		"six":   6,
+		"seven": 7,
+		"eight": 8,
+		"nine":  9,
+		"ten":   10,
+	}
+	tt, err := avltree.NewFromOrderedMap(m)
+	assert.NoError(t, err)
+	fmt.Println(tt.String())
+	tt, err = avltree.NewFromOrderedMap(m, avltree.WithNodeFormatter(func(n *avltree.Node[string, int]) string {
+		return fmt.Sprintf("%d ", n.Value)
+	}))
+	assert.NoError(t, err)
+	fmt.Println(tt.String())
+}
+
 func TestAVLTree_MarshalJSON(t *testing.T) {
 	tree := newIntStringTree(t)
 	for i := range 10 {
