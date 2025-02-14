@@ -34,20 +34,6 @@ func (n *Node[K, V]) clone() *Node[K, V] {
 	return newN
 }
 
-func (n *Node[K, V]) valueString() string {
-	if n == nil {
-		return ""
-	}
-	if n.hasValue {
-		return fmt.Sprintf("● %v", n.value)
-		// return fmt.Sprintf("%v", n.value)
-	}
-	// return ""
-	return "○"
-}
-
-func (n *Node[K, V]) Count() int { return n.count }
-
 type KeysValue[K comparable, V any] struct {
 	Keys  []K
 	Value V
@@ -60,8 +46,8 @@ type Trie[K comparable, V any] struct {
 	safe bool
 	mu   types.Locker
 
-	nodeFormatter func(*Node[K, V]) string
-	keyFormatter  func(K, *Node[K, V]) string
+	nodeFormatter func(V, int, bool) string
+	keyFormatter  func(K, V, int, bool) string
 }
 
 func New[K comparable, V any](ops ...Option[K, V]) (*Trie[K, V], error) {
@@ -330,7 +316,7 @@ func (t *Trie[K, V]) options() []Option[K, V] {
 		ops = append(ops, WithSafe[K, V]())
 	}
 	if t.nodeFormatter != nil {
-		ops = append(ops, WithNodeFormatter(t.nodeFormatter))
+		ops = append(ops, WithNodeFormatter[K, V](t.nodeFormatter))
 	}
 	if t.keyFormatter != nil {
 		ops = append(ops, WithKeyFormatter(t.keyFormatter))
@@ -689,13 +675,13 @@ func (t *Trie[K, V]) String() string {
 	}
 	nodeFormatter := t.nodeFormatter
 	if nodeFormatter == nil {
-		nodeFormatter = func(n *Node[K, V]) string { return n.valueString() }
+		nodeFormatter = func(v V, c int, hasValue bool) string { return nodeString(v, c, hasValue) }
 	}
 	keyFormatter := t.keyFormatter
 	if keyFormatter == nil {
-		keyFormatter = func(k K, n *Node[K, V]) string {
-			if n.count > 1 {
-				return fmt.Sprintf("%v(%d)", k, n.count)
+		keyFormatter = func(k K, v V, count int, hasValue bool) string {
+			if count > 1 {
+				return fmt.Sprintf("%v(%d)", k, count)
 			}
 			return fmt.Sprintf("%v", k)
 		}
@@ -708,12 +694,12 @@ func (t *Trie[K, V]) String() string {
 
 func (t *Trie[K, V]) output(node *Node[K, V],
 	valuePrefix string, childPrefix string, sb *strings.Builder,
-	nodeFormatter func(*Node[K, V]) string, keyFormatter func(K, *Node[K, V]) string,
+	nodeFormatter func(V, int, bool) string, keyFormatter func(K, V, int, bool) string,
 ) {
 	sb.WriteString(valuePrefix)
 
 	// output current node.
-	sb.WriteString(nodeFormatter(node))
+	sb.WriteString(nodeFormatter(node.value, node.count, node.hasValue))
 	sb.WriteString("\n")
 
 	// collect all children.
@@ -739,13 +725,22 @@ func (t *Trie[K, V]) output(node *Node[K, V],
 		// determine connection line and child prefix
 		newPrefix := childPrefix
 		if isLast {
-			sb.WriteString(childPrefix + "└─" + keyFormatter(child.key, child.node))
+			sb.WriteString(childPrefix + "└─" + keyFormatter(child.key, child.node.value, child.node.count, child.node.hasValue))
 			newPrefix += "  "
 		} else {
-			sb.WriteString(childPrefix + "├─" + keyFormatter(child.key, child.node))
+			sb.WriteString(childPrefix + "├─" + keyFormatter(child.key, child.node.value, child.node.count, child.node.hasValue))
 			newPrefix += "│ "
 		}
 
 		t.output(child.node, valuePrefix, newPrefix, sb, nodeFormatter, keyFormatter)
 	}
+}
+
+func nodeString[V any](v V, _ int, hasValue bool) string {
+	if hasValue {
+		return fmt.Sprintf("● %v", v)
+		// return fmt.Sprintf("%v", n.value)
+	}
+	// return ""
+	return "○"
 }

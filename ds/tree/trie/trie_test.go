@@ -66,9 +66,9 @@ func TestTrie(t *testing.T) {
 	// t, err := trie.New(trie.WithSafe[rune, int]())
 	tt, err := trie.New(
 		trie.WithSafe[rune, string](),
-		trie.WithKeyFormatter(func(k rune, n *trie.Node[rune, string]) string {
-			if n.Count() > 1 {
-				return fmt.Sprintf("%s(%d)", string(k), n.Count())
+		trie.WithKeyFormatter(func(k rune, v string, count int, hasValue bool) string {
+			if count > 1 {
+				return fmt.Sprintf("%s(%d)", string(k), count)
 			}
 			return fmt.Sprintf("%s", string(k))
 		}),
