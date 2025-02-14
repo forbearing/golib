@@ -3,7 +3,6 @@ package avltree_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/forbearing/golib/ds/tree/avltree"
 )
@@ -21,6 +20,23 @@ func createTree(b *testing.B, size int, safe bool) *avltree.Tree[float64, float6
 	}
 	if err != nil {
 		b.Fatalf("failed to create red-black tree: %v", err)
+	}
+	return t
+}
+
+func createTreeInt(b *testing.B, size int, safe bool) *avltree.Tree[int, int] {
+	var t *avltree.Tree[int, int]
+	var err error
+	if safe {
+		t, err = avltree.NewOrderedKeys(avltree.WithSafe[int, int]())
+	} else {
+		t, err = avltree.NewOrderedKeys[int, int]()
+	}
+	for i := range size {
+		t.Put(i, i)
+	}
+	if err != nil {
+		b.Fatalf("failed to create avl tree: %v", err)
 	}
 	return t
 }
@@ -67,16 +83,61 @@ func benchmark(b *testing.B, hasConcUnsafe bool, sizes []int, do func(t *avltree
 	}
 }
 
+func benchmarkIndex(b *testing.B, sizes []int, do func(t *avltree.Tree[int, int], i int)) {
+	for _, size := range sizes {
+		b.Run(fmt.Sprintf("size-%d", size), func(b *testing.B) {
+			b.Run("single unsafe", func(b *testing.B) {
+				t := createTreeInt(b, size, false)
+				b.ResetTimer()
+				for i := range b.N {
+					do(t, i)
+				}
+			})
+			b.Run("single safe", func(b *testing.B) {
+				t := createTreeInt(b, size, true)
+				b.ResetTimer()
+				for i := range b.N {
+					do(t, i)
+				}
+			})
+			b.Run("concur safe", func(b *testing.B) {
+				t := createTreeInt(b, size, true)
+				b.ResetTimer()
+				b.RunParallel(func(p *testing.PB) {
+					i := 0
+					for p.Next() {
+						do(t, i)
+						i++
+					}
+				})
+			})
+		})
+	}
+}
+
 func BenchmarkAVLTreePut(b *testing.B) {
-	benchmark(b, false, []int{10, 100000}, func(t *avltree.Tree[float64, float64]) {
-		t.Put(float64(time.Now().UnixNano()), float64(time.Now().UnixNano()))
+	benchmarkIndex(b, []int{100}, func(t *avltree.Tree[int, int], i int) {
+		t.Put(i%100, i%100)
+	})
+	benchmarkIndex(b, []int{1000000}, func(t *avltree.Tree[int, int], i int) {
+		t.Put(i%1000000, i%1000000)
 	})
 }
 
 func BenchmarkAVLTreeGet(b *testing.B) {
-	benchmark(b, false, []int{10, 100000}, func(t *avltree.Tree[float64, float64]) {
-		_, _ = t.Get(0)
+	benchmarkIndex(b, []int{100}, func(t *avltree.Tree[int, int], i int) {
+		_, _ = t.Get(i % 100)
 	})
+	benchmarkIndex(b, []int{1000000}, func(t *avltree.Tree[int, int], i int) {
+		_, _ = t.Get(i % 1000000)
+	})
+}
+
+func benchmarkGet(b *testing.B, t *avltree.Tree[int, int], size int) {
+	b.ResetTimer()
+	for i := range b.N {
+		_, _ = t.Get(i % size)
+	}
 }
 
 func BenchmarkAVLTreeDelete(b *testing.B) {
