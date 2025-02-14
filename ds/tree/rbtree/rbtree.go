@@ -19,7 +19,7 @@ type Tree[K comparable, V any] struct {
 	safe          bool
 	mu            types.Locker
 	color         bool
-	nodeFormatter func(*Node[K, V]) string
+	nodeFormatter func(K, V) string
 }
 
 // New creates and returns a red-black tree.
@@ -731,14 +731,14 @@ func (t *Tree[K, V]) String() string {
 	sb.WriteString("RedBlackTree\n")
 	nodeFormatter := t.nodeFormatter
 	if nodeFormatter == nil {
-		nodeFormatter = func(n *Node[K, V]) string { return n.String() }
+		nodeFormatter = func(k K, v V) string { return fmt.Sprintf("%v", k) }
 	}
 	t.output(t.root, "", true, &sb, nodeFormatter)
 	return sb.String()
 }
 
 // output recursively builds the tree structure as a string.
-func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, nodeFormatter func(*Node[K, V]) string) {
+func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *strings.Builder, nodeFormatter func(K, V) string) {
 	if node == nil {
 		return
 	}
@@ -772,7 +772,7 @@ func (t *Tree[K, V]) output(node *Node[K, V], prefix string, isTail bool, sb *st
 			colorCode = BlackBg
 		}
 	}
-	fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, nodeFormatter(node), node.color.symbol(), Reset)
+	fmt.Fprintf(sb, "%s%v(%s)%s\n", colorCode, nodeFormatter(node.Key, node.Value), node.color.symbol(), Reset)
 
 	// left node
 	if node.Left != nil {

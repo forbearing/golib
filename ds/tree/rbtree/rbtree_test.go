@@ -750,8 +750,8 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println(tree.String())
 
 	// 2️⃣ 创建一个 string -> int 的红黑树
-	treeStr, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[string, int](), rbtree.WithNodeFormatter(func(n *rbtree.Node[string, int]) string {
-		return fmt.Sprintf("%s:%d ", n.Key, n.Value)
+	treeStr, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[string, int](), rbtree.WithNodeFormatter(func(k string, v int) string {
+		return fmt.Sprintf("%s:%d ", k, v)
 	}))
 	assert.NoError(t, err)
 	treeStr.Put("banana", 10)
@@ -766,8 +766,8 @@ func TestRedBlackTree_String(t *testing.T) {
 	fmt.Println(treeStr.String())
 
 	// 3️⃣ 创建一个 float64 -> string 的红黑树
-	treeFloat, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[float64, string](), rbtree.WithNodeFormatter(func(n *rbtree.Node[float64, string]) string {
-		return fmt.Sprintf("%.2f:%s ", n.Key, n.Value)
+	treeFloat, err := rbtree.NewOrderedKeys(rbtree.WithColorfulString[float64, string](), rbtree.WithNodeFormatter(func(k float64, v string) string {
+		return fmt.Sprintf("%.2f:%s ", k, v)
 	}))
 	assert.NoError(t, err)
 
