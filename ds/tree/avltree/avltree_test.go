@@ -346,8 +346,8 @@ func TestAVLTree_String(t *testing.T) {
 	tt, err := avltree.NewFromOrderedMap(m)
 	assert.NoError(t, err)
 	fmt.Println(tt.String())
-	tt, err = avltree.NewFromOrderedMap(m, avltree.WithNodeFormatter(func(n *avltree.Node[string, int]) string {
-		return fmt.Sprintf("%d ", n.Value)
+	tt, err = avltree.NewFromOrderedMap(m, avltree.WithNodeFormatter(func(k string, v int) string {
+		return fmt.Sprintf("%v", v)
 	}))
 	assert.NoError(t, err)
 	fmt.Println(tt.String())
