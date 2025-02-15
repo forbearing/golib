@@ -42,6 +42,8 @@ func New[E any](size int, ops ...Option[E]) (*CircularBuffer[E], error) {
 }
 
 // NewFromSlice creates a new circular buffer initialized with the given slice.
+// The buffer size will be equal to the length of the slice and will contain
+// all elements from the slice.
 func NewFromSlice[E any](slice []E, ops ...Option[E]) (*CircularBuffer[E], error) {
 	cb, err := New(len(slice), ops...)
 	if err != nil {
