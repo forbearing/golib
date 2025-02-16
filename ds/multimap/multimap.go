@@ -4,28 +4,27 @@ import (
 	"slices"
 
 	"github.com/forbearing/golib/ds/types"
-	"github.com/forbearing/golib/ds/util"
 )
 
 // MultiMap represents a map that can store multiple values for each key.
 // call New with `WithSafe` option to make the MultiMap safe for concurrent use.
 type MultiMap[K comparable, V any] struct {
-	data  map[K][]V
-	equal util.EqualFn[V]
-	mu    types.Locker
+	data map[K][]V
+	cmp  func(V, V) int
+	mu   types.Locker
 }
 
 // New creates an empty MultiMap.
-// equal is used to compare values for equality.
-// equal is nil will case error.
-func New[K comparable, V any](equal util.EqualFn[V], ops ...Option[K, V]) (*MultiMap[K, V], error) {
-	if equal == nil {
+// cmp is used to compare values for equality.
+// cmp is nil will case error.
+func New[K comparable, V any](cmp func(V, V) int, ops ...Option[K, V]) (*MultiMap[K, V], error) {
+	if cmp == nil {
 		return nil, types.ErrEqualNil
 	}
 	m := &MultiMap[K, V]{
-		data:  make(map[K][]V),
-		equal: equal,
-		mu:    types.FakeLocker{},
+		data: make(map[K][]V),
+		cmp:  cmp,
+		mu:   types.FakeLocker{},
 	}
 	for _, op := range ops {
 		if op == nil {
@@ -40,8 +39,8 @@ func New[K comparable, V any](equal util.EqualFn[V], ops ...Option[K, V]) (*Mult
 
 // NewFromMap creates a MultiMap from an existing map,
 // performing a deep copy of the input map's values.
-func NewFromMap[K comparable, V any](m map[K][]V, equal util.EqualFn[V], ops ...Option[K, V]) (*MultiMap[K, V], error) {
-	mm, err := New[K, V](equal, ops...)
+func NewFromMap[K comparable, V any](m map[K][]V, cmp func(V, V) int, ops ...Option[K, V]) (*MultiMap[K, V], error) {
+	mm, err := New[K, V](cmp, ops...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func (m *MultiMap[K, V]) DeleteValue(key K, val V) int {
 	newValues := make([]V, 0, len(values))
 	count := 0
 	for _, v := range values {
-		if !m.equal(v, val) {
+		if m.cmp(v, val) != 0 {
 			newValues = append(newValues, v)
 		} else {
 			count++
@@ -175,8 +174,6 @@ func (m *MultiMap[K, V]) Has(key K) bool {
 }
 
 // Contains reports whether the MultiMap contains the specified value for the given key.
-// The equal function is used for value comparison.
-// Returns false if key doesn't exist or equal is nil.
 func (m *MultiMap[K, V]) Contains(key K, val V) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -187,7 +184,7 @@ func (m *MultiMap[K, V]) Contains(key K, val V) bool {
 	}
 
 	for _, v := range values {
-		if m.equal(v, val) {
+		if m.cmp(v, val) == 0 {
 			return true
 		}
 	}
@@ -264,9 +261,9 @@ func (m *MultiMap[K, V]) Clone() *MultiMap[K, V] {
 	defer m.mu.RUnlock()
 
 	cloned := &MultiMap[K, V]{
-		data:  make(map[K][]V, len(m.data)),
-		equal: m.equal,
-		mu:    m.mu,
+		data: make(map[K][]V, len(m.data)),
+		cmp:  m.cmp,
+		mu:   m.mu,
 	}
 	for k, values := range m.data {
 		newValues := make([]V, len(values))

@@ -4,32 +4,35 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/ds/multimap"
-	"github.com/forbearing/golib/ds/util"
 	"github.com/stretchr/testify/assert"
 )
+
+func intCmp(a, b int) int {
+	return a - b
+}
 
 func TestMultiMap_Creation(t *testing.T) {
 	t.Run("New", func(t *testing.T) {
 		tests := []struct {
 			name    string
-			equal   util.EqualFn[int]
+			cmp     func(int, int) int
 			wantErr bool
 		}{
 			{
 				name:    "with valid equal function",
-				equal:   util.Equal[int],
+				cmp:     intCmp,
 				wantErr: false,
 			},
 			{
 				name:    "with nil equal function",
-				equal:   nil,
+				cmp:     nil,
 				wantErr: true,
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				mm, err := multimap.New[string, int](tt.equal)
+				mm, err := multimap.New[string, int](tt.cmp)
 				if tt.wantErr {
 					assert.Error(t, err)
 					assert.Nil(t, mm)
@@ -45,32 +48,32 @@ func TestMultiMap_Creation(t *testing.T) {
 		tests := []struct {
 			name    string
 			input   map[string][]int
-			equal   util.EqualFn[int]
+			cmp     func(int, int) int
 			wantErr bool
 		}{
 			{
 				name:    "with valid map and equal",
 				input:   map[string][]int{"a": {1, 2}},
-				equal:   util.Equal[int],
+				cmp:     intCmp,
 				wantErr: false,
 			},
 			{
 				name:    "with nil map",
 				input:   nil,
-				equal:   util.Equal[int],
+				cmp:     intCmp,
 				wantErr: false,
 			},
 			{
 				name:    "with nil equal",
 				input:   map[string][]int{"a": {1, 2}},
-				equal:   nil,
+				cmp:     nil,
 				wantErr: true,
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				mm, err := multimap.NewFromMap(tt.input, tt.equal)
+				mm, err := multimap.NewFromMap(tt.input, tt.cmp)
 				if tt.wantErr {
 					assert.Error(t, err)
 					assert.Nil(t, mm)
@@ -84,7 +87,7 @@ func TestMultiMap_Creation(t *testing.T) {
 }
 
 func TestMultiMap_GetOperations(t *testing.T) {
-	mm, _ := multimap.New[string, int](util.Equal[int])
+	mm, _ := multimap.New[string, int](intCmp)
 	mm.Set("a", 1)
 	mm.Set("a", 2)
 
@@ -130,7 +133,7 @@ func TestMultiMap_GetOperations(t *testing.T) {
 }
 
 func TestMultiMap_SetOperations(t *testing.T) {
-	mm, _ := multimap.New[string, int](util.Equal[int])
+	mm, _ := multimap.New[string, int](intCmp)
 
 	t.Run("Set", func(t *testing.T) {
 		mm.Set("a", 1)
@@ -155,7 +158,7 @@ func TestMultiMap_SetOperations(t *testing.T) {
 }
 
 func TestMultiMap_DeleteOperations(t *testing.T) {
-	mm, _ := multimap.New[string, int](util.Equal[int])
+	mm, _ := multimap.New[string, int](intCmp)
 	mm.Set("a", 1)
 	mm.Set("a", 2)
 	mm.Set("a", 1)
@@ -181,7 +184,7 @@ func TestMultiMap_DeleteOperations(t *testing.T) {
 }
 
 func TestMultiMap_QueryOperations(t *testing.T) {
-	mm, _ := multimap.New[string, int](util.Equal[int])
+	mm, _ := multimap.New[string, int](intCmp)
 	mm.Set("a", 1)
 	mm.Set("a", 2)
 	mm.Set("b", 3)
@@ -216,7 +219,7 @@ func TestMultiMap_QueryOperations(t *testing.T) {
 }
 
 func TestMultiMap_CloneAndMap(t *testing.T) {
-	original, _ := multimap.New[string, int](util.Equal[int])
+	original, _ := multimap.New[string, int](intCmp)
 	original.Set("a", 1)
 	original.Set("a", 2)
 
