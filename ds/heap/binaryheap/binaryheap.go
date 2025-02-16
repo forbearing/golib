@@ -348,7 +348,7 @@ func output[E any](idx int, prefix string, isTail bool, sb *strings.Builder, dat
 	}
 }
 
-// up will bubble up the element at index "i" until the min-heap property is restored.
+// upMinHeap will bubble up the element at index "i" until the min-heap property is restored.
 func (h *Heap[E]) upMinHeap(i int) {
 	for {
 		p := (i - 1) / 2 // parent index
@@ -360,7 +360,7 @@ func (h *Heap[E]) upMinHeap(i int) {
 	}
 }
 
-// upMaxHeap will bubble upMaxHeap the element at index "i" until the max-heap property is restored.
+// upMaxHeap will bubble up the element at index "i" until the max-heap property is restored.
 func (h *Heap[E]) upMaxHeap(i int) {
 	for {
 		p := (i - 1) / 2 // parent index
@@ -395,7 +395,7 @@ func (h *Heap[E]) downMinHeap(i int, cmp func(E, E) int) {
 	}
 }
 
-// downMaxHeap will sink downMaxHeap the given element at index "i" until the max-heap property is restored.
+// downMaxHeap will sink down the given element at index "i" until the max-heap property is restored.
 func (h *Heap[E]) downMaxHeap(i int, cmp func(E, E) int) {
 	for {
 		l, r := 2*i+1, 2*i+2
