@@ -172,9 +172,9 @@ func (h *Heap[E]) pop() (E, bool) {
 		h.data[0] = h.data[len(h.data)-1] // remove the root(first) element
 		h.data = h.data[:len(h.data)-1]   // remove the left(last) element
 		if h.maxHeap {
-			h.downMaxHeap(0, h.cmp) // sink down the element
+			h.downMaxHeap(0) // sink down the element
 		} else {
-			h.downMinHeap(0, h.cmp)
+			h.downMinHeap(0)
 		}
 	} else {
 		h.data = h.data[:0] // remove the last element
@@ -373,7 +373,7 @@ func (h *Heap[E]) upMaxHeap(i int) {
 }
 
 // downMinHeap will sink down the given element at index "i" until the min-heap property is restored.
-func (h *Heap[E]) downMinHeap(i int, cmp func(E, E) int) {
+func (h *Heap[E]) downMinHeap(i int) {
 	for {
 		l, r := 2*i+1, 2*i+2
 		if l >= len(h.data) || l < 0 { // over range or overflow
@@ -382,11 +382,11 @@ func (h *Heap[E]) downMinHeap(i int, cmp func(E, E) int) {
 
 		// find the minimum element
 		m := l // the minimum element index
-		if r < len(h.data) && cmp(h.data[r], h.data[l]) < 0 {
+		if r < len(h.data) && h.cmp(h.data[r], h.data[l]) < 0 {
 			m = r
 		}
 		// if the current element is less than or equal to the minimum element, break
-		if cmp(h.data[i], h.data[m]) <= 0 {
+		if h.cmp(h.data[i], h.data[m]) <= 0 {
 			break
 		}
 		// swap the current element with the minimum element
@@ -396,7 +396,7 @@ func (h *Heap[E]) downMinHeap(i int, cmp func(E, E) int) {
 }
 
 // downMaxHeap will sink down the given element at index "i" until the max-heap property is restored.
-func (h *Heap[E]) downMaxHeap(i int, cmp func(E, E) int) {
+func (h *Heap[E]) downMaxHeap(i int) {
 	for {
 		l, r := 2*i+1, 2*i+2
 		if l >= len(h.data) || l < 0 { // over range or overflow
@@ -405,11 +405,11 @@ func (h *Heap[E]) downMaxHeap(i int, cmp func(E, E) int) {
 
 		// find the maximum element
 		m := l // the maximum element index
-		if r < len(h.data) && cmp(h.data[r], h.data[l]) > 0 {
+		if r < len(h.data) && h.cmp(h.data[r], h.data[l]) > 0 {
 			m = r
 		}
 		// if the current element is greater than or equal to the maximum element, break
-		if cmp(h.data[i], h.data[m]) >= 0 {
+		if h.cmp(h.data[i], h.data[m]) >= 0 {
 			break
 		}
 		// swap the current element with the maximum element
