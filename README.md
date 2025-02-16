@@ -37,6 +37,31 @@ WARNING: Library under active development - expect significant API changes.
     -   task
 
 
+
+## Data Structure
+
+-   [list](./ds/list)
+    -   [arraylist](./ds/list/arraylist/list.go)
+    -   [linkedlist](./ds/list/linkedlist/list.go)
+    -   [skiplist](./ds/list/skiplist/skiplist.go)
+-   [stack](./ds/stack)
+    -   [arraystack](./ds/stack/arraystack/stack.go)
+    -   [linkedstack](./ds/stack/linkedstack/stack.go)
+-   [queue](./ds/queue)
+    -   [arrayqueue](./ds/queue/arrayqueue/queue.go)
+    -   [linkedqueue](./ds/queue/linkedqueue/queue.go)
+    -   [priorityqueue](./ds/queue/priorityqueue/queue.go)
+-   [tree](./ds/tree)
+    -   [rbtree](./ds/tree/rbtree/rbtree.go)
+    -   [avltree](./ds/tree/avltree/avltree.go)
+    -   [splaytree](./ds/tree/splaytree/splaytree.go)
+    -   [trie](./ds/tree/trie/trie.go)
+-   [heap](./ds/heap)
+    -   [binaryheap](./ds/heap/binaryheap/binaryheap.go)
+-   [mapset](./ds/mapset/set.go)
+-   [multimap](./ds/multimap/multimap.go)
+
+
 ## Interface
 
 ### Logger
