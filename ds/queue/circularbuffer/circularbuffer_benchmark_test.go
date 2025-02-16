@@ -1,6 +1,7 @@
 package circularbuffer_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -173,6 +174,23 @@ func BenchmarkCircularBuffer_Range(b *testing.B) {
 			_ = e
 			return true
 		})
+	})
+}
+
+func BenchmarkCircularBuffer_MarshalJSON(b *testing.B) {
+	benchmark2(b, []int{100, 100000}, func(cb *cb.CircularBuffer[int]) {
+		_, _ = json.Marshal(cb)
+	})
+}
+
+func BenchmarkCircularBuffer_UnmarshalJSON(b *testing.B) {
+	dst, err := cb.New[int](10)
+	if err != nil {
+		b.Fatal(err)
+	}
+	bytes := []byte("[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]")
+	benchmark2(b, []int{100, 100000}, func(cb *cb.CircularBuffer[int]) {
+		json.Unmarshal(bytes, dst)
 	})
 }
 
