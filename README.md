@@ -51,6 +51,7 @@ WARNING: Library under active development - expect significant API changes.
     -   [arrayqueue](./ds/queue/arrayqueue/queue.go)
     -   [linkedqueue](./ds/queue/linkedqueue/queue.go)
     -   [priorityqueue](./ds/queue/priorityqueue/queue.go)
+    -   [circularbuffer](./ds/queue/circularbuffer/circularbuffer.go)
 -   [tree](./ds/tree)
     -   [rbtree](./ds/tree/rbtree/rbtree.go)
     -   [avltree](./ds/tree/avltree/avltree.go)
