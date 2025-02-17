@@ -67,6 +67,9 @@ type ServiceContext struct {
 	Context   context.Context
 
 	RequestId string
+	TraceId   string
+	SpanId    string
+	PSpanId   string
 }
 
 type ControllerContext struct {
@@ -74,6 +77,9 @@ type ControllerContext struct {
 	UserId   string // currrent login user id
 
 	RequestId string
+	TraceId   string
+	SpanId    string
+	PSpanId   string
 }
 
 type ControllerConfig[M Model] struct {
