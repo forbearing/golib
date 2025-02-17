@@ -15,19 +15,15 @@ func NewControllerContext(c *gin.Context) *types.ControllerContext {
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACEID),
+		SpanId:    c.GetString(consts.SPANID),
+		PSpanId:   c.GetString(consts.PSPANID),
 	}
 }
 
 // NewServiceContext build ServiceContext from gin.Context.
 // Including request details, headers and user information.
 func NewServiceContext(c *gin.Context) *types.ServiceContext {
-	var requestId string
-	val, _ := c.Get(consts.REQUEST_ID)
-	switch v := val.(type) {
-	case string:
-		requestId = v
-	}
-
 	return &types.ServiceContext{
 		Request: c.Request,
 
@@ -41,6 +37,10 @@ func NewServiceContext(c *gin.Context) *types.ServiceContext {
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		SessionId: c.GetString(consts.CTX_SESSION_ID),
-		RequestId: requestId,
+
+		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACEID),
+		SpanId:    c.GetString(consts.SPANID),
+		PSpanId:   c.GetString(consts.PSPANID),
 	}
 }

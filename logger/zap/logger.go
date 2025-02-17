@@ -93,7 +93,9 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 		consts.PHASE, string(phase),
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.REQUEST_ID, ctx.RequestId,
+		consts.TRACEID, ctx.TraceId,
+		consts.SPANID, ctx.SpanId,
+		consts.PSPANID, ctx.PSpanId,
 	)
 }
 
@@ -108,7 +110,9 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 		consts.PHASE, string(phase),
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.REQUEST_ID, ctx.RequestId,
+		consts.TRACEID, ctx.TraceId,
+		consts.SPANID, ctx.SpanId,
+		consts.PSPANID, ctx.PSpanId,
 	)
 }
 
