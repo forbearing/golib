@@ -81,10 +81,7 @@ func New(filename ...string) *Logger {
 		zap.AddCallerSkip(1), // 这里别忘了
 		zap.AddStacktrace(zapcore.FatalLevel),
 	)
-	return &Logger{
-		zlog: logger,
-		slog: logger.Sugar(),
-	}
+	return &Logger{zlog: logger}
 }
 
 // NewGorm returns a *GormLogger instance that implements gorm logger.Interface.
@@ -102,7 +99,7 @@ func NewGorm(filename ...string) *GormLogger {
 		zap.AddCallerSkip(5), // 这个值是后期调出来的.
 		zap.AddStacktrace(zapcore.FatalLevel),
 	)
-	return &GormLogger{l: &Logger{zlog: logger, slog: logger.Sugar()}}
+	return &GormLogger{l: &Logger{zlog: logger}}
 }
 
 // NewGin returns a *Logger instance that contains *zap.Logger.

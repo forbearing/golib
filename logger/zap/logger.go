@@ -7,7 +7,6 @@ import (
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
 )
 
@@ -16,28 +15,27 @@ import (
 // eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
 type Logger struct {
 	zlog *zap.Logger
-	slog *zap.SugaredLogger
 }
 
 var _ types.Logger = (*Logger)(nil)
 
-func (l *Logger) Debug(args ...any) { l.slog.Debug(args...) }
-func (l *Logger) Info(args ...any)  { l.slog.Info(args...) }
-func (l *Logger) Warn(args ...any)  { l.slog.Warn(args...) }
-func (l *Logger) Error(args ...any) { l.slog.Error(args...) }
-func (l *Logger) Fatal(args ...any) { l.slog.Fatal(args...) }
+func (l *Logger) Debug(args ...any) { l.zlog.Sugar().Debug(args...) }
+func (l *Logger) Info(args ...any)  { l.zlog.Sugar().Info(args...) }
+func (l *Logger) Warn(args ...any)  { l.zlog.Sugar().Warn(args...) }
+func (l *Logger) Error(args ...any) { l.zlog.Sugar().Error(args...) }
+func (l *Logger) Fatal(args ...any) { l.zlog.Sugar().Fatal(args...) }
 
-func (l *Logger) Debugf(format string, args ...any) { l.slog.Debugf(format, args...) }
-func (l *Logger) Infof(format string, args ...any)  { l.slog.Infof(format, args...) }
-func (l *Logger) Warnf(format string, args ...any)  { l.slog.Warnf(format, args...) }
-func (l *Logger) Errorf(format string, args ...any) { l.slog.Errorf(format, args...) }
-func (l *Logger) Fatalf(format string, args ...any) { l.slog.Fatalf(format, args...) }
+func (l *Logger) Debugf(format string, args ...any) { l.zlog.Sugar().Debugf(format, args...) }
+func (l *Logger) Infof(format string, args ...any)  { l.zlog.Sugar().Infof(format, args...) }
+func (l *Logger) Warnf(format string, args ...any)  { l.zlog.Sugar().Warnf(format, args...) }
+func (l *Logger) Errorf(format string, args ...any) { l.zlog.Sugar().Errorf(format, args...) }
+func (l *Logger) Fatalf(format string, args ...any) { l.zlog.Sugar().Fatalf(format, args...) }
 
-func (l *Logger) Debugw(msg string, keysAndValues ...any) { l.slog.Debugw(msg, keysAndValues...) }
-func (l *Logger) Infow(msg string, keysAndValues ...any)  { l.slog.Infow(msg, keysAndValues...) }
-func (l *Logger) Warnw(msg string, keysAndValues ...any)  { l.slog.Warnw(msg, keysAndValues...) }
-func (l *Logger) Errorw(msg string, keysAndValues ...any) { l.slog.Errorw(msg, keysAndValues...) }
-func (l *Logger) Fatalw(msg string, keysAndValues ...any) { l.slog.Fatalw(msg, keysAndValues...) }
+func (l *Logger) Debugw(msg string, keysValues ...any) { l.zlog.Sugar().Debugw(msg, keysValues...) }
+func (l *Logger) Infow(msg string, keysValues ...any)  { l.zlog.Sugar().Infow(msg, keysValues...) }
+func (l *Logger) Warnw(msg string, keysValues ...any)  { l.zlog.Sugar().Warnw(msg, keysValues...) }
+func (l *Logger) Errorw(msg string, keysValues ...any) { l.zlog.Sugar().Errorw(msg, keysValues...) }
+func (l *Logger) Fatalw(msg string, keysValues ...any) { l.zlog.Sugar().Fatalw(msg, keysValues...) }
 
 func (l *Logger) Debugz(msg string, fields ...zap.Field) { l.zlog.Debug(msg, fields...) }
 func (l *Logger) Infoz(msg string, fields ...zap.Field)  { l.zlog.Info(msg, fields...) }
@@ -76,17 +74,12 @@ func (l *Logger) With(fields ...string) types.Logger {
 	if len(fields)%2 != 0 {
 		fields = append(fields, "")
 	}
-	var zapFields []zapcore.Field
-	var sugaredFields []any
+
+	zapFields := make([]zap.Field, 0, len(fields)/2)
 	for i := 0; i < len(fields); i += 2 {
-		key, val := fields[i], fields[i+1]
-		zapFields = append(zapFields, zap.String(key, val))
-		sugaredFields = append(sugaredFields, key, val)
+		zapFields = append(zapFields, zap.String(fields[i], fields[i+1]))
 	}
-	clone := new(Logger)
-	clone.zlog = l.zlog.With(zapFields...)
-	clone.slog = l.slog.With(sugaredFields...)
-	return clone
+	return &Logger{zlog: l.zlog.With(zapFields...)}
 }
 
 // WithControllerContext creates a new logger with controller context fields.
