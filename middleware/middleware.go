@@ -44,9 +44,9 @@ func Logger(filename ...string) gin.HandlerFunc {
 		fields := []zapcore.Field{
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
-			zap.String("username", c.GetString(consts.CTX_USERNAME)),
-			zap.String("user_id", c.GetString(consts.CTX_USER_ID)),
-			zap.String("log_id", c.GetString(consts.REQUEST_ID)),
+			zap.String(consts.CTX_USERNAME, c.GetString(consts.CTX_USERNAME)),
+			zap.String(consts.CTX_USER_ID, c.GetString(consts.CTX_USER_ID)),
+			zap.String(consts.REQUEST_ID, c.GetString(consts.REQUEST_ID)),
 			zap.String("path", path),
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
