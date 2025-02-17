@@ -31,7 +31,7 @@ func Init() error {
 	Base = gin.New()
 
 	Base.Use(
-		middleware.RequestID(),
+		middleware.TraceID(),
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
