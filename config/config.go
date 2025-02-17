@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -104,10 +105,12 @@ func Init() (err error) {
 
 // SetDefaultValue will set config default value
 func SetDefaultValue() {
-	viper.SetDefault("server.mode", ModeProd)
+	viper.SetDefault("server.mode", ModeDev)
+	viper.SetDefault("server.listen", "")
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.db", DBSqlite)
-	viper.SetDefault("enable_rbac", false)
+	viper.SetDefault("server.domain", "")
+	viper.SetDefault("server.enable_rbac", false)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
 	viper.SetDefault("auth.none_expire_user", noneExpireUser)
@@ -117,6 +120,8 @@ func SetDefaultValue() {
 	viper.SetDefault("auth.token_expire_duration", "24h")
 
 	viper.SetDefault("logger.dir", "./logs")
+	viper.SetDefault("logger.prefix", "")
+	viper.SetDefault("logger.file", "")
 	viper.SetDefault("logger.level", "info")
 	viper.SetDefault("logger.format", "json")
 	viper.SetDefault("logger.encoder", "json")
@@ -149,34 +154,85 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.db", 0)
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.pool_size", runtime.NumCPU())
 	viper.SetDefault("redis.namespace", "myproject")
 	viper.SetDefault("redis.expiration", "8h")
 	viper.SetDefault("redis.enable", false)
 
-	viper.SetDefault("elasticsearch.host", "127.0.0.1")
-	viper.SetDefault("elasticsearch.port", 9200)
+	viper.SetDefault("elasticsearch.hosts", "127.0.0.1")
+	viper.SetDefault("elasticsearch.username", "")
+	viper.SetDefault("elasticsearch.password", "")
+	viper.SetDefault("elasticsearch.cloud_id", "")
+	viper.SetDefault("elasticsearch.api_key", "")
+	viper.SetDefault("elasticsearch.service_token", "")
+	viper.SetDefault("elasticsearch.certificate_fingerprint", "")
 	viper.SetDefault("elasticsearch.enable", false)
 
 	viper.SetDefault("mongo.host", "127.0.0.1")
 	viper.SetDefault("mongo.port", 27017)
-	viper.SetDefault("mongo.enable", false)
+	viper.SetDefault("mongo.username", "")
+	viper.SetDefault("mongo.password", "")
+	viper.SetDefault("mongo.database", "")
 	viper.SetDefault("mongo.auth_source", "admin")
+	viper.SetDefault("mongo.max_pool_size", 100)
+	viper.SetDefault("mongo.min_pool_size", 0)
+	viper.SetDefault("mongo.connect_timeout", 30*time.Second)
+	viper.SetDefault("mongo.enable", false)
+
+	viper.SetDefault("ldap.host", "127.0.0.1")
+	viper.SetDefault("ldap.port", 389)
+	viper.SetDefault("ldap.use_ssl", false)
+	viper.SetDefault("ldap.bind_dn", "")
+	viper.SetDefault("ldap.bind_password", "")
+	viper.SetDefault("ldap.base_dn", "")
+	viper.SetDefault("ldap.search_filter", "")
+	viper.SetDefault("ldap.enable", false)
+
+	viper.SetDefault("influxdb.host", "127.0.0.1")
+	viper.SetDefault("influxdb.port", 8086)
+	viper.SetDefault("influxdb.admin_password", "")
+	viper.SetDefault("influxdb.admin_token", "")
+	viper.SetDefault("influxdb.admin_org", "")
+	viper.SetDefault("influxdb.bucket", "")
+	viper.SetDefault("influxdb.write_interval", 1*time.Minute)
+	viper.SetDefault("influxdb.enable", false)
+
+	viper.SetDefault("minio.endpoint", "127.0.0.1:9000")
+	viper.SetDefault("minio.region", "")
+	viper.SetDefault("minio.access_key", "")
+	viper.SetDefault("minio.secret_key", "")
+	viper.SetDefault("minio.bucket", "")
+	viper.SetDefault("minio.use_ssl", false)
+	viper.SetDefault("minio.enable", false)
+
+	viper.SetDefault("s3.endpoint", "")
+	viper.SetDefault("s3.region", "")
+	viper.SetDefault("s3.access_key_id", "")
+	viper.SetDefault("s3.secret_access_key", "")
+	viper.SetDefault("s3.bucket", "")
+	viper.SetDefault("s3.use_ssl", false)
+	viper.SetDefault("s3.enable", false)
 
 	viper.SetDefault("mqtt.addr", "127.0.0.1:1883")
-	viper.SetDefault("mqtt.keepalive", 1*time.Minute)
-	viper.SetDefault("mqtt.auto_reconnect", true)
+	viper.SetDefault("mqtt.username", "")
+	viper.SetDefault("mqtt.password", "")
+	viper.SetDefault("mqtt.client_prefix", "")
 	viper.SetDefault("mqtt.connect_timeout", 10*time.Second)
+	viper.SetDefault("mqtt.keepalive", 1*time.Minute)
 	viper.SetDefault("mqtt.clean_session", true)
+	viper.SetDefault("mqtt.auto_reconnect", true)
+	viper.SetDefault("mqtt.use_tls", false)
+	viper.SetDefault("mqtt.cert_file", "")
+	viper.SetDefault("mqtt.key_file", "")
+	viper.SetDefault("mqtt.insecure_skip_verify", true)
 	viper.SetDefault("mqtt.enable", false)
 
-	viper.SetDefault("minio.enable", false)
-	viper.SetDefault("s3.enable", false)
-	viper.SetDefault("ldap.enable", false)
-	viper.SetDefault("influxdb.enable", false)
+	viper.SetDefault("feishu.app_id", "")
+	viper.SetDefault("feishu.app_secret", "")
+	viper.SetDefault("feishu.msg_app_id", "")
+	viper.SetDefault("feishu.msg_app_secret", "")
 	viper.SetDefault("feishu.enable", false)
-
-	viper.SetDefault("minio.use_ssl", false)
-	viper.SetDefault("s3.use_ssl", false)
 }
 
 // SetConfigFile set the config file path.
@@ -236,11 +292,11 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
 	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
 	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
 
@@ -248,9 +304,9 @@ type AuthConfig struct {
 	NoneExpireToken     string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
 	NoneExpireUser      string        `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
 	NoneExpirePass      string        `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
-	TokenExpireDuration time.Duration `json:"token_expire_duration" mapstructure:"token_expire_duration" ini:"token_expire_duration" yaml:"token_expire_duration"`
 	BaseAuthUsername    string        `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
 	BaseAuthPassword    string        `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
+	TokenExpireDuration time.Duration `json:"token_expire_duration" mapstructure:"token_expire_duration" ini:"token_expire_duration" yaml:"token_expire_duration"`
 }
 
 // LoggerConfig represents section "logger" for client-side or server-side configuration,
@@ -267,7 +323,6 @@ type LoggerConfig struct {
 	// If value is "/dev/stdout", log to os.Stdout.
 	// If value is "/dev/stderr", log to os.Stderr.
 	// If value is empty(length is zero), log to os.Stdout.
-	// The value default to "/tmp/car-client.log".
 	File string `json:"file" ini:"file" yaml:"file" mapstructure:"file"`
 
 	// Level specifies the log level,  supported values are: (error|warn|warning|info|debug).
@@ -329,7 +384,6 @@ type RedisConfig struct {
 	DB         int           `json:"db" mapstructure:"db"`
 	Password   string        `json:"password" mapstructure:"password"`
 	PoolSize   int           `json:"pool_size" mapstructure:"pool_size"`
-	Protocol   uint          `json:"protocol" mapstructure:"protocol" ini:"protocol" yaml:"protocol"`
 	Namespace  string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
 	Expiration time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
 	Enable     bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
@@ -345,6 +399,7 @@ type ElasticsearchConfig struct {
 	CertificateFingerprint string `json:"certificate_fingerprint" mapstructure:"certificate_fingerprint" ini:"certificate_fingerprint" yaml:"certificate_fingerprint"`
 	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
 type MongoConfig struct {
 	Host           string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port           int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
@@ -356,14 +411,6 @@ type MongoConfig struct {
 	MinPoolSize    uint64        `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
 	ConnectTimeout time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
 	Enable         bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
-}
-
-type FeishuConfig struct {
-	AppID        string `json:"app_id" mapstructure:"app_id" ini:"app_id" yaml:"app_id"`
-	AppSecret    string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
-	MsgAppID     string `json:"msg_app_id" mapstructure:"msg_app_id" ini:"msg_app_id" yaml:"msg_app_id"`
-	MsgAppSecret string `json:"msg_app_secret" mapstructure:"msg_app_secret" ini:"msg_app_secret" yaml:"msg_app_secret"`
-	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 // LdapConfig
@@ -444,4 +491,12 @@ type MqttConfig struct {
 	KeyFile            string        `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
 	InsecureSkipVerify bool          `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
 	Enable             bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type FeishuConfig struct {
+	AppID        string `json:"app_id" mapstructure:"app_id" ini:"app_id" yaml:"app_id"`
+	AppSecret    string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
+	MsgAppID     string `json:"msg_app_id" mapstructure:"msg_app_id" ini:"msg_app_id" yaml:"msg_app_id"`
+	MsgAppSecret string `json:"msg_app_secret" mapstructure:"msg_app_secret" ini:"msg_app_secret" yaml:"msg_app_secret"`
+	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
