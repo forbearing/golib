@@ -292,6 +292,7 @@ func TestSplayTree_Traversal(t *testing.T) {
 		})
 		expected := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		assert.Equal(t, expected, result)
+		// fmt.Println(tree)
 		// tree.Get(1)
 		// fmt.Println(tree)
 		// tree.Get(2)
