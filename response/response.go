@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 )
@@ -32,31 +33,20 @@ const (
 
 const (
 	// 业务状态码
-	CodeServerCallbackTimeout Code = 2000 + iota
-	CodeInvalidLogin
+	CodeInvalidLogin Code = 2000 + iota
 	CodeInvalidSignup
 	CodeOldPasswordNotMatch
 	CodeNewPasswordNotMatch
 
-	CodeRequireRoleId
-
 	CodeNotFoundQueryID
 	CodeNotFoundRouteID
-	CodeNotFoundRoleId
 	CodeNotFoundUser
 	CodeNotFoundUserId
-	CodeNotFoundRoomType
-	CodeNotFoundCategory
 
 	CodeAlreadyExistsUser
 	CodeAlreadyExistsRole
-	CodeAlreadyExistsRoomType
-	CodeAlreadyExistsCategory
 
 	CodeTooLargeFile
-	CodeNotPNGJPG
-
-	CodeInvalidSoftwareLabel
 )
 
 type codeValue struct {
@@ -83,30 +73,17 @@ var codeValueMap = map[Code]codeValue{
 	CodeAlreadyExist:    {http.StatusConflict, "Resource already exists."},
 
 	// 业务状态码值
-	CodeServerCallbackTimeout: {http.StatusOK, "server callback timeout"},
-	CodeInvalidLogin:          {http.StatusBadRequest, "invalid username or password"},
-	CodeInvalidSignup:         {http.StatusBadRequest, "invalid username or password"},
-	CodeOldPasswordNotMatch:   {http.StatusBadRequest, "old password not match"},
-	CodeNewPasswordNotMatch:   {http.StatusBadRequest, "new password not match"},
-	CodeRequireRoleId:         {http.StatusBadRequest, "role id is required"},
-
-	CodeNotFoundQueryID:  {http.StatusBadRequest, "not found query parameter 'id'"},
-	CodeNotFoundRouteID:  {http.StatusBadRequest, "not found router 'id'"},
-	CodeNotFoundRoleId:   {http.StatusBadRequest, "not found role id"},
-	CodeNotFoundUser:     {http.StatusBadRequest, "not found user"},
-	CodeNotFoundUserId:   {http.StatusBadRequest, "not found user id"},
-	CodeNotFoundRoomType: {http.StatusBadRequest, "room type not found"},
-	CodeNotFoundCategory: {http.StatusBadRequest, "category not found"},
-
-	CodeAlreadyExistsUser:     {http.StatusConflict, "user already exists"},
-	CodeAlreadyExistsRole:     {http.StatusConflict, "role already exists"},
-	CodeAlreadyExistsRoomType: {http.StatusConflict, "room type already exists"},
-	CodeAlreadyExistsCategory: {http.StatusConflict, "category already exists"},
-
-	CodeTooLargeFile: {http.StatusBadRequest, "too large file"},
-	CodeNotPNGJPG:    {http.StatusBadGateway, "image must be png or jpg"},
-
-	CodeInvalidSoftwareLabel: {http.StatusBadRequest, "invalid software label"},
+	CodeInvalidLogin:        {http.StatusBadRequest, "invalid username or password"},
+	CodeInvalidSignup:       {http.StatusBadRequest, "invalid username or password"},
+	CodeOldPasswordNotMatch: {http.StatusBadRequest, "old password not match"},
+	CodeNewPasswordNotMatch: {http.StatusBadRequest, "new password not match"},
+	CodeNotFoundQueryID:     {http.StatusBadRequest, "not found query parameter 'id'"},
+	CodeNotFoundRouteID:     {http.StatusBadRequest, "not found router 'id'"},
+	CodeNotFoundUser:        {http.StatusBadRequest, "not found user"},
+	CodeNotFoundUserId:      {http.StatusBadRequest, "not found user id"},
+	CodeAlreadyExistsUser:   {http.StatusConflict, "user already exists"},
+	CodeAlreadyExistsRole:   {http.StatusConflict, "role already exists"},
+	CodeTooLargeFile:        {http.StatusBadRequest, "too large file"},
 }
 
 type Code int32
@@ -134,15 +111,17 @@ func (r Code) Status() int {
 func ResponseJSON(c *gin.Context, code Code, data ...any) {
 	if len(data) > 0 {
 		c.JSON(code.Status(), gin.H{
-			"code": code,
-			"msg":  code.Msg(),
-			"data": data[0],
+			"code":            code,
+			"msg":             code.Msg(),
+			"data":            data[0],
+			consts.REQUEST_ID: c.GetString(consts.REQUEST_ID),
 		})
 	} else {
 		c.JSON(code.Status(), gin.H{
-			"code": code,
-			"msg":  code.Msg(),
-			"data": "",
+			"code":            code,
+			"msg":             code.Msg(),
+			"data":            "",
+			consts.REQUEST_ID: c.GetString(consts.REQUEST_ID),
 		})
 	}
 }
@@ -152,9 +131,9 @@ func ResponseBytes(c *gin.Context, code Code, data ...[]byte) {
 	c.Header("X-cached", "true")
 	var dataStr string
 	if len(data) > 0 {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s",,"data":%s}`, code, code.Msg(), util.BytesToString(data[0]))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":%s,"request_id":"%s"}`, code, code.Msg(), util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
 	} else {
-		dataStr = fmt.Sprintf(`{"code":"%d","msg":"%s"}`, code, code.Msg())
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":"","request_id":"%s"}`, code, code.Msg(), c.GetString(consts.REQUEST_ID))
 	}
 	c.Writer.WriteHeader(code.Status())
 	c.Writer.Write(util.StringToBytes(dataStr))
@@ -164,9 +143,9 @@ func ResponseBytesList(c *gin.Context, code Code, total uint64, data ...[]byte) 
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	var dataStr string
 	if len(data) > 0 {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":%d,"items":%s}}`, code, code.Msg(), total, util.BytesToString(data[0]))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":%d,"items":%s},"request_id":"%s"}`, code, code.Msg(), total, util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
 	} else {
-		dataStr = fmt.Sprintf(`{"code":"%d","msg":"%s","data":{"total":0,"items":[]}}`, code, code.Msg())
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":0,"items":[]},"request_id":"%s"}`, code, code.Msg(), c.GetString(consts.REQUEST_ID))
 	}
 	c.Writer.WriteHeader(code.Status())
 	c.Writer.Write(util.StringToBytes(dataStr))
