@@ -110,6 +110,7 @@ func SetDefaultValue() {
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.db", DBSqlite)
 	viper.SetDefault("server.domain", "")
+	viper.SetDefault("server.slow_query_threshold", 500*time.Millisecond)
 	viper.SetDefault("server.enable_rbac", false)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
@@ -292,12 +293,13 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
-	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
-	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
-	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
-	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
+	Mode               Mode          `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
+	Listen             string        `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
+	Port               int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	DB                 DB            `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Domain             string        `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
+	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
+	EnableRBAC         bool          `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
 
 type AuthConfig struct {
