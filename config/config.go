@@ -110,7 +110,6 @@ func SetDefaultValue() {
 	viper.SetDefault("server.port", 9000)
 	viper.SetDefault("server.db", DBSqlite)
 	viper.SetDefault("server.domain", "")
-	viper.SetDefault("server.slow_query_threshold", 500*time.Millisecond)
 	viper.SetDefault("server.enable_rbac", false)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
@@ -129,6 +128,12 @@ func SetDefaultValue() {
 	viper.SetDefault("logger.max_age", 30)
 	viper.SetDefault("logger.max_size", 100)
 	viper.SetDefault("logger.max_backups", 1)
+
+	viper.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
+	viper.SetDefault("database.max_idle_conns", 10)
+	viper.SetDefault("database.max_open_conns", 100)
+	viper.SetDefault("database.conn_max_lifetime", 1*time.Hour)
+	viper.SetDefault("database.conn_max_idle_time", 10*time.Minute)
 
 	viper.SetDefault("sqlite.path", "./data.db")
 	viper.SetDefault("sqlite.database", "main")
@@ -277,6 +282,7 @@ func Save(filename string) error {
 type Config struct {
 	ServerConfig        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	AuthConfig          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	DatabaseConfig      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
 	SqliteConfig        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
 	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
@@ -293,13 +299,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Mode               Mode          `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
-	Listen             string        `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
-	Port               int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	DB                 DB            `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
-	Domain             string        `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
-	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
-	EnableRBAC         bool          `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
+	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
+	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
+	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
+	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
 
 type AuthConfig struct {
@@ -350,6 +355,14 @@ type LoggerConfig struct {
 	// MaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
 	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
+}
+
+type DatabaseConfig struct {
+	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
+	MaxIdleConns       int           `json:"max_idle_conns" mapstructure:"max_idle_conns" ini:"max_idle_conns" yaml:"max_idle_conns"`
+	MaxOpenConns       int           `json:"max_open_conns" mapstructure:"max_open_conns" ini:"max_open_conns" yaml:"max_open_conns"`
+	ConnMaxLifetime    time.Duration `json:"conn_max_lifetime" mapstructure:"conn_max_lifetime" ini:"conn_max_lifetime" yaml:"conn_max_lifetime"`
+	ConnMaxIdleTime    time.Duration `json:"conn_max_idle_time" mapstructure:"conn_max_idle_time" ini:"conn_max_idle_time" yaml:"conn_max_idle_time"`
 }
 
 type SqliteConfig struct {
