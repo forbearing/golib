@@ -148,14 +148,14 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	if err != nil {
 		g.l.Errorz("", zap.String("sql", sql), zap.Int64("rows", rows), zap.String("elapsed", elapsed.String()), zap.Error(err))
 	} else {
-		if elapsed > config.App.ServerConfig.SlowQueryThreshold {
+		if elapsed > config.App.DatabaseConfig.SlowQueryThreshold {
 			g.l.Warnz("slow SQL detected",
 				zap.String(consts.CTX_USERNAME, username),
 				zap.String(consts.CTX_USER_ID, userId),
 				zap.String(consts.TRACE_ID, traceId),
 				zap.String("sql", sql),
 				zap.String("elapsed", elapsed.String()),
-				zap.String("threshold", config.App.ServerConfig.SlowQueryThreshold.String()),
+				zap.String("threshold", config.App.DatabaseConfig.SlowQueryThreshold.String()),
 				zap.Int64("rows", rows))
 		} else {
 			g.l.Infoz("sql executed",

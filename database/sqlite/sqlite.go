@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"database/sql"
+
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database/helper"
 	"github.com/forbearing/golib/logger"
@@ -11,6 +13,7 @@ import (
 
 var (
 	Default *gorm.DB
+	db      *sql.DB
 	dbmap   = make(map[string]*gorm.DB)
 )
 
@@ -27,6 +30,15 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
+	if db, err = Default.DB(); err != nil {
+		zap.S().Error(err)
+		return err
+	}
+	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
+	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
+	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.App.DatabaseConfig.ConnMaxIdleTime)
+
 	zap.S().Infow("successfully connect to sqlite", "path", cfg.Path, "database", cfg.Database, "is_memory", cfg.IsMemory)
 	return helper.InitDatabase(Default, dbmap)
 }

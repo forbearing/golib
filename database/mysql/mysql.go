@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/forbearing/golib/config"
@@ -13,6 +14,7 @@ import (
 
 var (
 	Default *gorm.DB
+	db      *sql.DB
 	dbmap   = make(map[string]*gorm.DB)
 )
 
@@ -29,6 +31,15 @@ func Init() (err error) {
 		zap.S().Error(err)
 		return err
 	}
+	if db, err = Default.DB(); err != nil {
+		zap.S().Error(err)
+		return err
+	}
+	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
+	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
+	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.App.DatabaseConfig.ConnMaxIdleTime)
+
 	zap.S().Infow("successfully connect to mysql", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 	return helper.InitDatabase(Default, dbmap)
 }
