@@ -8,18 +8,19 @@ import (
 
 func TraceID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		traceId := c.Request.Header.Get(consts.TRACEID)
-		pspanId := c.Request.Header.Get(consts.SPANID)
+		traceId := c.Request.Header.Get(consts.TRACE_ID)
+		pspanId := c.Request.Header.Get(consts.SPAN_ID)
 		spanId := util.SpanID()
-		requestId := util.RequestID()
 		if len(traceId) == 0 {
 			// If traceid is empty, it means that it is the first request.
 			traceId = spanId
 		}
+		requestId := traceId
 		c.Set(consts.REQUEST_ID, requestId)
-		c.Set(consts.TRACEID, traceId)
-		c.Set(consts.SPANID, spanId)
-		c.Set(consts.PSPANID, pspanId)
+		c.Set(consts.TRACE_ID, traceId)
+		c.Set(consts.PSPAN_ID, pspanId)
+		c.Set(consts.SPAN_ID, spanId)
+		c.Set(consts.SEQ, 0)
 		c.Header(consts.HEADER_REQUEST_ID, requestId)
 		c.Header(consts.HEADER_TRACE_ID, traceId)
 		c.Header(consts.HEADER_SPAN_ID, spanId)

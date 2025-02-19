@@ -52,6 +52,28 @@ func Sort[M Model](order Order, data []M, reverse ...bool) {
 	}
 }
 
+type ControllerContext struct {
+	Username string // currrent login user.
+	UserId   string // currrent login user id
+
+	RequestId string
+	TraceId   string
+	PSpanId   string
+	SpanId    string
+	Seq       int
+}
+
+type DatabaseContext struct {
+	Username string // currrent login user.
+	UserId   string // currrent login user id
+
+	RequestId string
+	TraceId   string
+	PSpanId   string
+	SpanId    string
+	Seq       int
+}
+
 type ServiceContext struct {
 	Method       string        // http method
 	Request      *http.Request // http request
@@ -68,18 +90,9 @@ type ServiceContext struct {
 
 	RequestId string
 	TraceId   string
-	SpanId    string
 	PSpanId   string
-}
-
-type ControllerContext struct {
-	Username string // currrent login user.
-	UserId   string // currrent login user id
-
-	RequestId string
-	TraceId   string
 	SpanId    string
-	PSpanId   string
+	Seq       int
 }
 
 type ControllerConfig[M Model] struct {

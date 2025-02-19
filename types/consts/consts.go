@@ -48,9 +48,15 @@ const (
 	VALUE_ALL = "all"
 
 	REQUEST_ID = "request_id"
-	TRACEID    = "traceid"
-	SPANID     = "spanid"
-	PSPANID    = "pspanid"
+	TRACE_ID   = "trace_id"
+	SPAN_ID    = "span_id"
+	PSPAN_ID   = "pspan_id"
+	SEQ        = "seq"
+
+	PREFIX_REQUEST_ID = "rq_"
+	PREFIX_TRACE_ID   = "tr_"
+	PREFIX_SPAN_ID    = "sp"
+	PREFIX_PSPAN_ID   = "psp_"
 
 	HEADER_REQUEST_ID = "X-Request-ID"
 	HEADER_TRACE_ID   = "X-Trace-ID"

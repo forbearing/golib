@@ -78,6 +78,9 @@ func (l *Logger) With(fields ...string) types.Logger {
 
 	zapFields := make([]zap.Field, 0, len(fields)/2)
 	for i := 0; i < len(fields); i += 2 {
+		if len(fields[i]) == 0 {
+			continue
+		}
 		zapFields = append(zapFields, zap.String(fields[i], fields[i+1]))
 	}
 	return &Logger{zlog: l.zlog.With(zapFields...)}
@@ -94,9 +97,7 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 		consts.PHASE, string(phase),
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACEID, ctx.TraceId,
-		consts.SPANID, ctx.SpanId,
-		consts.PSPANID, ctx.PSpanId,
+		consts.TRACE_ID, ctx.TraceId,
 	)
 }
 
@@ -111,9 +112,16 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 		consts.PHASE, string(phase),
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACEID, ctx.TraceId,
-		consts.SPANID, ctx.SpanId,
-		consts.PSPANID, ctx.PSpanId,
+		consts.TRACE_ID, ctx.TraceId,
+	)
+}
+
+func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Phase) (clone types.Logger) {
+	return l.With(
+		consts.PHASE, string(phase),
+		consts.CTX_USERNAME, ctx.Username,
+		consts.CTX_USER_ID, ctx.UserId,
+		consts.TRACE_ID, ctx.TraceId,
 	)
 }
 
@@ -121,8 +129,7 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 // https://github.com/moul/zapgorm2 may be the alternative choice.
 // eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
 type GormLogger struct {
-	l   *Logger
-	ctx context.Context
+	l types.Logger
 }
 
 var _ gorml.Interface = (*GormLogger)(nil)
@@ -131,7 +138,11 @@ func (g *GormLogger) LogMode(gorml.LogLevel) gorml.Interface           { return 
 func (g *GormLogger) Info(_ context.Context, str string, args ...any)  { g.l.Infow(str, args) }
 func (g *GormLogger) Warn(_ context.Context, str string, args ...any)  { g.l.Warnw(str, args) }
 func (g *GormLogger) Error(_ context.Context, str string, args ...any) { g.l.Errorw(str, args) }
-func (g *GormLogger) Trace(_ context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	username, _ := ctx.Value(consts.CTX_USERNAME).(string)
+	userId, _ := ctx.Value(consts.CTX_USER_ID).(string)
+	traceId, _ := ctx.Value(consts.TRACE_ID).(string)
+
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 	if err != nil {
@@ -139,12 +150,18 @@ func (g *GormLogger) Trace(_ context.Context, begin time.Time, fc func() (sql st
 	} else {
 		if elapsed > config.App.ServerConfig.SlowQueryThreshold {
 			g.l.Warnz("slow SQL detected",
+				zap.String(consts.CTX_USERNAME, username),
+				zap.String(consts.CTX_USER_ID, userId),
+				zap.String(consts.TRACE_ID, traceId),
 				zap.String("sql", sql),
 				zap.String("elapsed", elapsed.String()),
 				zap.String("threshold", config.App.ServerConfig.SlowQueryThreshold.String()),
 				zap.Int64("rows", rows))
 		} else {
 			g.l.Infoz("sql executed",
+				zap.String(consts.CTX_USERNAME, username),
+				zap.String(consts.CTX_USER_ID, userId),
+				zap.String(consts.TRACE_ID, traceId),
 				zap.String("sql", sql),
 				zap.String("elapsed", elapsed.String()),
 				zap.Int64("rows", rows))

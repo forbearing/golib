@@ -9,6 +9,7 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 var (
@@ -73,7 +74,7 @@ type Factory[M types.Model] struct{}
 func (f Factory[M]) Service() types.Service[M] {
 	svc, ok := serviceMap[reflect.TypeOf(*new(M)).String()]
 	if !ok {
-		logger.Service.Debugw(ErrNotFoundService.Error(), "model", reflect.TypeOf(*new(M)).String())
+		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", reflect.TypeOf(*new(M)).String()))
 		return new(Base[M])
 	}
 	return svc.(types.Service[M])

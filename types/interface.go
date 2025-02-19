@@ -49,6 +49,7 @@ type Logger interface {
 	With(fields ...string) Logger
 	WithControllerContext(*ControllerContext, consts.Phase) Logger
 	WithServiceContext(*ServiceContext, consts.Phase) Logger
+	WithDatabaseContext(*DatabaseContext, consts.Phase) Logger
 
 	StandardLogger
 	StructuredLogger
