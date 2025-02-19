@@ -14,6 +14,8 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/lru"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/types/helper"
 
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
@@ -55,7 +57,7 @@ var (
 type database[M types.Model] struct {
 	mu  sync.Mutex
 	db  *gorm.DB
-	ctx context.Context
+	ctx *types.DatabaseContext
 
 	// options
 	enablePurge   bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
@@ -118,7 +120,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	// }
 	_db, ok := x.(*gorm.DB)
 	if !ok {
-		logger.Database.Warnw("invalid database type, expect *gorm.DB")
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithDB")).Warn("invalid database type, expect *gorm.DB")
 		return db
 	}
 	db.mu.Lock()
@@ -292,7 +294,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 	// 	case reflect.Slice:
 	// 		_len := val.Field(i).Len()
 	// 		if _len == 0 {
-	// 			logger.Database.Warn("reflect.Slice length is 0")
+	// 			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("reflect.Slice length is 0")
 	// 			_len = 1
 	// 		}
 	// 		slice := reflect.MakeSlice(val.Field(i).Type(), _len, _len)
@@ -322,7 +324,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 	// 	q[strcase.SnakeCase(jsonTag)] = _v
 	// }
 
-	structFieldToMap(typ, val, q)
+	structFieldToMap(db.ctx, typ, val, q)
 	// fmt.Println("------------- WithQuery", q)
 
 	if _fuzzyMatch {
@@ -403,7 +405,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 // StructFieldToMap extracts the field tags from a struct and writes them into a map.
 // This map can then be used to build SQL query conditions.
 // FIXME: if the field type is boolean or ineger, disable the fuzzy matching.
-func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) {
+func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.Value, q map[string]string) {
 	if q == nil {
 		q = make(map[string]string)
 	}
@@ -440,7 +442,7 @@ func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 					}
 				}
 			} else {
-				structFieldToMap(typ.Field(i).Type, val.Field(i), q)
+				structFieldToMap(ctx, typ.Field(i).Type, val.Field(i), q)
 			}
 			continue
 		}
@@ -504,7 +506,7 @@ func structFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		case reflect.Slice:
 			_len := val.Field(i).Len()
 			if _len == 0 {
-				logger.Database.Warn("reflect.Slice length is 0")
+				logger.Database.WithDatabaseContext(ctx, consts.Phase("WithQuery")).Warn("reflect.Slice length is 0")
 				_len = 1
 			}
 			slice := reflect.MakeSlice(val.Field(i).Type(), _len, _len)
@@ -622,7 +624,7 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 	// }
 	_tx, ok := tx.(*gorm.DB)
 	if !ok {
-		logger.Database.Warnw("invalid database type, expect *gorm.DB")
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithTransaction")).Warn("invalid database type, expect *gorm.DB")
 		return db
 	}
 
@@ -663,7 +665,7 @@ func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if !db.inTransaction {
-		logger.Database.Warnw("WithLock must be used within a transaction")
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithLock")).Warn("WithLock must be used within a transaction")
 		return db
 	}
 
@@ -778,9 +780,9 @@ func (db *database[M]) WithJoinRaw(query string, args ...any) types.Database[M] 
 
 	upperQuery := strings.ToUpper(query)
 	if !strings.Contains(upperQuery, "JOIN") || !strings.Contains(upperQuery, "ON") {
-		logger.Database.Warn("invalid join clause, must contain JOIN and ON",
-			"query", query,
-			"table", reflect.TypeOf(*new(M)).Elem().Name(),
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithJoinRaw")).Warnz("invalid join clause, must contain JOIN and ON",
+			zap.String("query", query),
+			zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
 		)
 		return db
 	}
@@ -2185,9 +2187,9 @@ func (db *database[M]) Health() error {
 
 	// 1.check database connection
 	if err := db.db.Exec("SELECT 1").Error; err != nil {
-		logger.Database.Errorw("database connection check failed",
-			"error", err,
-			"cost", time.Since(begin).String(),
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("database connection check failed",
+			zap.Error(err),
+			zap.String("cost", time.Since(begin).String()),
 		)
 		return fmt.Errorf("database connection check failed: %w", err)
 	}
@@ -2195,9 +2197,9 @@ func (db *database[M]) Health() error {
 	// 2.check database connection pool
 	sqlDB, err := db.db.DB()
 	if err != nil {
-		logger.Database.Errorw("get sql.DB instance failed",
-			"error", err,
-			"cost", time.Since(begin).String(),
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("get sql.DB instance failed",
+			zap.Error(err),
+			zap.String("cost", time.Since(begin).String()),
 		)
 		return fmt.Errorf("get sql.DB instance failed: %w", err)
 	}
@@ -2205,30 +2207,30 @@ func (db *database[M]) Health() error {
 	// check database connection pool config
 	stats := sqlDB.Stats()
 	if stats.OpenConnections >= stats.MaxOpenConnections {
-		logger.Database.Warnw("database connection pool is full",
-			"open", stats.OpenConnections,
-			"max", stats.MaxOpenConnections,
-			"in_use", stats.InUse,
-			"idle", stats.Idle,
-			"cost", time.Since(begin).String(),
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Warnz("database connection pool is full",
+			zap.Int("open", stats.OpenConnections),
+			zap.Int("max", stats.MaxOpenConnections),
+			zap.Int("in_use", stats.InUse),
+			zap.Int("idle", stats.Idle),
+			zap.String("cost", time.Since(begin).String()),
 		)
 	}
 
 	// 3.check database response time
-	if err := sqlDB.PingContext(db.ctx); err != nil {
-		logger.Database.Errorw("database ping failed",
-			"error", err,
-			"cost", time.Since(begin).String(),
+	if err := sqlDB.PingContext(context.TODO()); err != nil {
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("database ping failed",
+			zap.Error(err),
+			zap.String("cost", time.Since(begin).String()),
 		)
 		return fmt.Errorf("database ping failed: %w", err)
 	}
 
-	logger.Database.Infow("database health check passed",
-		"open_connections", stats.OpenConnections,
-		"in_use_connections", stats.InUse,
-		"idle_connections", stats.Idle,
-		"max_open_connections", stats.MaxOpenConnections,
-		"cost", time.Since(begin).String(),
+	logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Infoz("database health check passed",
+		zap.Int("open_connections", stats.OpenConnections),
+		zap.Int("in_use_connections", stats.InUse),
+		zap.Int("idle_connections", stats.Idle),
+		zap.Int("max_open_connections", stats.MaxOpenConnections),
+		zap.String("cost", time.Since(begin).String()),
 	)
 
 	return nil
@@ -2236,20 +2238,22 @@ func (db *database[M]) Health() error {
 
 // Database implement interface types.Database, its default database manipulator.
 // Database[M] returns a generic database manipulator with the `curd` capabilities.
-func Database[M types.Model](ctx ...context.Context) types.Database[M] {
+func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")
 	}
-	c := context.Background()
+	dbctx := new(types.DatabaseContext)
+	gctx := context.Background()
 	if len(ctx) > 0 {
 		if ctx[0] != nil {
-			c = ctx[0]
+			dbctx = ctx[0]
+			gctx = helper.NewGormContext(dbctx)
 		}
 	}
 	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
-		return &database[M]{db: DB.WithContext(c).Debug().Limit(defaultLimit), ctx: c}
+		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
 	}
-	return &database[M]{db: DB.WithContext(c).Limit(defaultLimit), ctx: c}
+	return &database[M]{db: DB.WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
 }
 
 // trace returns timing function for database operations.
@@ -2260,19 +2264,19 @@ func (db *database[M]) trace(op string) func(error) {
 	begin := time.Now()
 	return func(err error) {
 		if err != nil {
-			logger.Database.Errorw(op,
-				"table", reflect.TypeOf(*new(M)).Elem().Name(),
-				"cost", time.Since(begin).String(),
-				"cache_enabled", db.enableCache,
-				"try_run", db.tryRun,
-				"error", err,
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Errorz("",
+				zap.Error(err),
+				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("cost", time.Since(begin).String()),
+				zap.Bool("cache_enabled", db.enableCache),
+				zap.Bool("try_run", db.tryRun),
 			)
 		} else {
-			logger.Database.Infow(op,
-				"table", reflect.TypeOf(*new(M)).Elem().Name(),
-				"cost", time.Since(begin).String(),
-				"cache_enabled", db.enableCache,
-				"try_run", db.tryRun,
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
+				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("cost", time.Since(begin).String()),
+				zap.Bool("cache_enabled", db.enableCache),
+				zap.Bool("try_run", db.tryRun),
 			)
 		}
 	}

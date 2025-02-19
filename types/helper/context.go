@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"context"
+
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
@@ -15,13 +17,24 @@ func NewControllerContext(c *gin.Context) *types.ControllerContext {
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
-		TraceId:   c.GetString(consts.TRACEID),
-		SpanId:    c.GetString(consts.SPANID),
-		PSpanId:   c.GetString(consts.PSPANID),
+		TraceId:   c.GetString(consts.TRACE_ID),
 	}
 }
 
-// NewServiceContext build ServiceContext from gin.Context.
+// NewDatabaseContext creates a DatabaseContext from gin.Context
+func NewDatabaseContext(c *gin.Context) *types.DatabaseContext {
+	if c == nil {
+		return new(types.DatabaseContext)
+	}
+	return &types.DatabaseContext{
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACE_ID),
+	}
+}
+
+// NewServiceContext creates ServiceContext from gin.Context.
 // Including request details, headers and user information.
 func NewServiceContext(c *gin.Context) *types.ServiceContext {
 	return &types.ServiceContext{
@@ -39,8 +52,19 @@ func NewServiceContext(c *gin.Context) *types.ServiceContext {
 		SessionId: c.GetString(consts.CTX_SESSION_ID),
 
 		RequestId: c.GetString(consts.REQUEST_ID),
-		TraceId:   c.GetString(consts.TRACEID),
-		SpanId:    c.GetString(consts.SPANID),
-		PSpanId:   c.GetString(consts.PSPANID),
+		TraceId:   c.GetString(consts.TRACE_ID),
 	}
+}
+
+// NewGormContext converts *types.DatabaseContext to context.Context for use with gorm custom logger.
+func NewGormContext(ctx *types.DatabaseContext) context.Context {
+	c := context.Background()
+	if ctx == nil {
+		return c
+	}
+	c = context.WithValue(c, consts.CTX_USERNAME, ctx.Username)
+	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserId)
+	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestId)
+	c = context.WithValue(c, consts.TRACE_ID, ctx.TraceId)
+	return c
 }

@@ -116,7 +116,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
 		// NOTE: WithExpand(req.Expands()...) is not a good choices.
 		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-		if err := handler().WithExpand(req.Expands()).Create(req); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -232,13 +232,13 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		for i := range ml {
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(ml[i].GetID())
-			if err := handler().WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+			if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 				log.Error(err)
 			}
 			copied[i] = m
 		}
 		// 2.Delete resources in database.
-		if err := handler().Delete(ml...); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -314,13 +314,13 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		m.SetID(id)
 
 		// Make sure the record must be already exists.
-		if err := handler().WithLimit(1).WithQuery(m).List(&data); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
 		}
 		if len(data) != 1 {
-			log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
+			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
 			ResponseJSON(c, CodeNotFound)
 			return
 		}
@@ -336,7 +336,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 		// 2.Update resource in database.
 		log.Infoz("update in database", zap.Object(typ.Name(), req))
-		if err := handler().Update(req); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -367,7 +367,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
+			log.Error(fmt.Sprintf("failed to write operation log to database: %w", err.Error()))
 		}
 		ResponseJSON(c, CodeSuccess, req)
 	}
@@ -411,13 +411,13 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		m.SetID(id)
 
 		// Make sure the record must be already exists.
-		if err := handler().WithLimit(1).WithQuery(m).List(&data); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
 		}
 		if len(data) != 1 {
-			log.Errorw(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), "id", id)
+			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
 			ResponseJSON(c, CodeNotFound)
 			return
 		}
@@ -513,7 +513,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			return
 		}
 		// 2.Partial update resource in database.
-		if err := handler().Update(oldVal.Addr().Interface().(M)); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).Update(oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -546,7 +546,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
+			log.Error(fmt.Sprintf("failed to write operation log to database: %w", err.Error()))
 		}
 		// NOTE: You should response `oldVal` instead of `req`.
 		// The req is `newVal`.
@@ -619,7 +619,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 
 		// FIXME: failed to convert value when size value is -1.
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
-			log.Warn("failed to decode uri query parameter into model: ", err)
+			log.Warn(fmt.Sprintf("failed to decode uri query parameter into model: %w", err))
 		}
 		log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
 
@@ -704,7 +704,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		// 2.List resources from database.
 		cache := make([]byte, 0)
 		cached := false
-		if err = handler().
+		if err = handler(helper.NewDatabaseContext(c)).
 			WithScope(page, size).
 			WithOr(or).
 			WithIndex(index).
@@ -734,7 +734,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		nototalStr, _ := c.GetQuery(QUERY_NOTOTAL)
 		nototal, _ = strconv.ParseBool(nototalStr)
 		if !nototal {
-			if err := handler().
+			if err := handler(helper.NewDatabaseContext(c)).
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
@@ -897,7 +897,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// 2.Get resource from database.
 		cache := make([]byte, 0)
 		cached := false
-		if err = handler().
+		if err = handler(helper.NewDatabaseContext(c)).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
 			WithExpand(expands).
@@ -1095,7 +1095,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		svc := new(service.Factory[M]).Service()
 		svcCtx := helper.NewServiceContext(c)
 		// 2.List resources from database.
-		if err = handler().
+		if err = handler(helper.NewDatabaseContext(c)).
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
 			WithLimit(limit).
 			WithOr(or).
@@ -1208,7 +1208,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ml[i].SetCreatedBy(c.GetString(CTX_USERNAME))
 			ml[i].SetUpdatedBy(c.GetString(CTX_USERNAME))
 		}
-		if err := handler().Update(ml...); err != nil {
+		if err := handler(helper.NewDatabaseContext(c)).Update(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -1251,20 +1251,20 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	}
 }
 
-func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler func() types.Database[M], db any) {
+func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler func(ctx *types.DatabaseContext) types.Database[M], db any) {
 	if len(cfg) > 0 {
 		if cfg[0] != nil {
 			db = cfg[0].DB
 		}
 	}
-	handler = func() types.Database[M] {
-		fn := database.Database[M]()
+	handler = func(ctx *types.DatabaseContext) types.Database[M] {
+		fn := database.Database[M](ctx)
 		if len(cfg) > 0 {
 			if cfg[0] != nil {
 				if len(cfg[0].TableName) > 0 {
-					fn = database.Database[M]().WithDB(cfg[0].DB).WithTable(cfg[0].TableName)
+					fn = database.Database[M](ctx).WithDB(cfg[0].DB).WithTable(cfg[0].TableName)
 				} else {
-					fn = database.Database[M]().WithDB(cfg[0].DB)
+					fn = database.Database[M](ctx).WithDB(cfg[0].DB)
 				}
 			}
 		}
