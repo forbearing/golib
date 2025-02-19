@@ -91,7 +91,7 @@ func Register(fn func() error, interval time.Duration, name string) {
 
 func visitor() error {
 	logger.Visitor.Info("==================== config ====================")
-	logger.Visitor.Info(config.App)
+	logger.Visitor.Infof("%+v", config.App)
 
 	logger.Visitor.Info("==================== runtime ====================")
 	rtm := new(runtime.MemStats)

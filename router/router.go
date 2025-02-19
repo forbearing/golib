@@ -35,7 +35,6 @@ func Init() error {
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
-		// middleware.RateLimiter(),
 	)
 	Base.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	Base.GET("/-/healthz", controller.Probe.Healthz)
