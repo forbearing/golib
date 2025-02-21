@@ -6,11 +6,11 @@ import (
 	"io"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/util"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 

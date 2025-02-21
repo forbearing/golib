@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
