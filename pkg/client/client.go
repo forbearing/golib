@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/types"
 	"github.com/google/go-querystring/query"
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 )
 
