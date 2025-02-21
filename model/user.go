@@ -6,7 +6,7 @@ import (
 )
 
 type User struct {
-	Name         string `json:"name,omitempty" gorm:"unique" binding:"required"`
+	Name         string `json:"name,omitempty"`
 	EnName       string `json:"en_name,omitempty"`
 	Password     string `json:"password,omitempty"`
 	RePassword   string `json:"re_password,omitempty" gorm:"-"`
@@ -41,11 +41,6 @@ type User struct {
 
 	Base
 }
-
-// // SetID using the indexed uuid for user id.
-// func (u *User) SetID(id ...string) {
-// 	u.Base.SetID(util.IndexedUUID())
-// }
 
 // CreateBefore check whether user mobile is valid.
 func (u *User) CreateBefore() error {

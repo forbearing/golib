@@ -1,19 +1,20 @@
 package controller
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"time"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/jwt"
+	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
 	. "github.com/forbearing/golib/response"
+	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type user struct{}
@@ -22,27 +23,35 @@ var User = new(user)
 
 // Login
 func (*user) Login(c *gin.Context) {
+	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Login"))
+
 	req := new(model.User)
 	if err := c.ShouldBindJSON(req); err != nil {
-		zap.S().Error(err)
+		log.Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
 
+	passwd, err := encryptPasswd(req.Password)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
 	users := make([]*model.User, 0)
-	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Name: req.Name, Password: encryptPasswd(req.Password)}).List(&users); err != nil {
-		zap.S().Error(err)
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name, Password: passwd}).List(&users); err != nil {
+		log.Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
 	if len(users) == 0 {
-		zap.S().Error("not found any accounts")
+		log.Error("not found any accounts")
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
 	u := users[0]
 	if len(u.ID) == 0 {
-		zap.S().Error("username or password not equal")
+		log.Error("username or password not match")
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
@@ -61,95 +70,32 @@ func (*user) Login(c *gin.Context) {
 	ResponseJSON(c, CodeSuccess, u)
 }
 
-// // Login
-// func (*user) Login(c *gin.Context) {
-// 	req := new(model.User)
-// 	if err := c.ShouldBindJSON(req); err != nil {
-// 		zap.S().Error(err)
-// 		ResponseJSON(c, CodeInvalidLogin)
-// 		return
-// 	}
-//
-// 	users := make([]*model.User, 0)
-// 	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Username: req.Username}).List(&users); err != nil {
-// 		zap.S().Error(err)
-// 		ResponseJSON(c, CodeInvalidLogin)
-// 		return
-// 	}
-// 	if len(users) == 0 {
-// 		zap.S().Error("not found any accounts")
-// 		ResponseJSON(c, CodeInvalidLogin)
-// 		return
-// 	}
-// 	u := users[0]
-// 	if len(u.ID) == 0 {
-// 		zap.S().Error("account id length is zero")
-// 		ResponseJSON(c, CodeInvalidLogin)
-// 		return
-// 	}
-// 	if u.Username == req.Username && u.Password == encryptPasswd(req.Password) {
-// 		token, err := jwt.GenToken(0, req.Username)
-// 		if err != nil {
-// 			zap.S().Error(err)
-// 			ResponseJSON(c, CodeFailure)
-// 			return
-// 		}
-// 		u.Token = token
-// 		// set password to empty.
-// 		u.Password = ""
-// 		u.RePassword = ""
-// 		u.NewPassword = ""
-// 		ResponseJSON(c, CodeSuccess, u)
-// 		return
-// 	} else {
-// 		zap.S().Error("username or password not equal")
-// 		ResponseJSON(c, CodeInvalidLogin)
-// 		return
-// 	}
-// }
-
 // Signup
 func (*user) Signup(c *gin.Context) {
+	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Signup"))
+
 	req := new(model.User)
 	if err := c.ShouldBindJSON(req); err != nil {
-		zap.S().Error(err)
+		log.Error(err)
 		ResponseJSON(c, CodeInvalidSignup)
 		return
 	}
 	// TODO: check password complexibility.
 	if len(req.Password) == 0 {
-		zap.S().Error("password length is 0")
+		log.Error("password length is 0")
 		ResponseJSON(c, CodeInvalidSignup)
 		return
 	}
 
 	if req.Password != req.RePassword {
-		zap.S().Error("password and rePassword not the same")
+		log.Error("password and rePassword not the same")
 		ResponseJSON(c, CodeInvalidSignup)
 		return
 	}
 
-	// // roleId is required
-	// if req.RoleID == nil {
-	// 	zap.S().Error(CodeRequireRoleId)
-	// 	ResponseJSON(c, CodeRequireRoleId)
-	// 	return
-	// }
-	// role := new(model.Role)
-	// if err := database.Role().Get(role, req.RoleID); err != nil {
-	// 	zap.S().Error(err)
-	// 	ResponseJSON(c, CodeFailure)
-	// 	return
-	// }
-	// if len(role.Name) == 0 {
-	// 	zap.S().Error(CodeNotFoundRoleId)
-	// 	ResponseJSON(c, CodeNotFoundRoleId)
-	// 	return
-	// }
-
 	users := make([]*model.User, 0)
-	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
-		zap.S().Error(err)
+	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
+		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
@@ -159,10 +105,18 @@ func (*user) Signup(c *gin.Context) {
 			return
 		}
 	}
-	req.Password = encryptPasswd(req.Password)
+	passwd, err := encryptPasswd(req.Password)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	req.Password = passwd
 	req.Status = 1
-	if err := database.Database[*model.User]().WithDebug().Create(req); err != nil {
-		zap.S().Error(err)
+	req.ID = util.UUID()
+	fmt.Println("create user:", req.ID, req.Name, req.Password, req.RePassword)
+	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Create(req); err != nil {
+		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
@@ -170,50 +124,67 @@ func (*user) Signup(c *gin.Context) {
 }
 
 func (*user) ChangePasswd(c *gin.Context) {
+	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("ChangePasswd"))
+
 	req := new(model.User)
 	if err := c.ShouldBindJSON(req); err != nil {
-		zap.S().Error(err)
+		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
 	if len(req.ID) == 0 {
-		zap.S().Error(CodeNotFoundUserId)
+		log.Error(CodeNotFoundUserId)
 		ResponseJSON(c, CodeNotFoundUserId)
 		return
 	}
 	u := new(model.User)
-	if err := database.Database[*model.User]().Get(u, req.ID); err != nil {
-		zap.S().Error(err)
+	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Get(u, req.ID); err != nil {
+		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if len(u.Name) == 0 {
-		zap.S().Error(CodeNotFoundUser)
+	if len(u.ID) == 0 {
+		log.Error(CodeNotFoundUser)
 		ResponseJSON(c, CodeNotFoundUser)
 		return
 	}
-	if encryptPasswd(req.Password) != u.Password {
-		zap.S().Error(CodeOldPasswordNotMatch)
+	passwd, err := encryptPasswd(req.Password)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	if passwd != u.Password {
+		log.Error(CodeOldPasswordNotMatch)
 		ResponseJSON(c, CodeOldPasswordNotMatch)
 		return
 	}
 	if req.NewPassword != req.RePassword {
-		zap.S().Error(CodeNewPasswordNotMatch)
+		log.Error(CodeNewPasswordNotMatch)
 		ResponseJSON(c, CodeNewPasswordNotMatch)
 		return
 	}
-	u.Password = encryptPasswd(req.NewPassword)
-	if err := database.Database[*model.User]().Update(u); err != nil {
-		zap.S().Error(err)
+	passwd, err = encryptPasswd(req.NewPassword)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	u.Password = passwd
+	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Update(u); err != nil {
+		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
 	ResponseJSON(c, CodeSuccess)
 }
 
-func encryptPasswd(pass string) string {
-	hash := sha256.New().Sum([]byte(pass))
-	return hex.EncodeToString(hash)
-	// hashed, _ := bcrypt.GenerateFromPassword([]byte(pass), 8)
-	// return string(hashed)
+func encryptPasswd(pass string) (string, error) {
+	// hash := sha256.New().Sum([]byte(pass))
+	// return hex.EncodeToString(hash)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(pass), 8)
+	if err != nil {
+		return "", err
+	}
+	return string(hashed), nil
 }
