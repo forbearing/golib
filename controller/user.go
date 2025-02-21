@@ -30,7 +30,7 @@ func (*user) Login(c *gin.Context) {
 	}
 
 	users := make([]*model.User, 0)
-	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Username: req.Username, Password: encryptPasswd(req.Password)}).List(&users); err != nil {
+	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Name: req.Name, Password: encryptPasswd(req.Password)}).List(&users); err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
@@ -46,7 +46,7 @@ func (*user) Login(c *gin.Context) {
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
-	aToken, rToken, err := jwt.GenTokens(u.ID, req.Username)
+	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name)
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
 		return
@@ -148,7 +148,7 @@ func (*user) Signup(c *gin.Context) {
 	// }
 
 	users := make([]*model.User, 0)
-	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Username: req.Username}).List(&users); err != nil {
+	if err := database.Database[*model.User]().WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
 		zap.S().Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -187,7 +187,7 @@ func (*user) ChangePasswd(c *gin.Context) {
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if len(u.Username) == 0 {
+	if len(u.Name) == 0 {
 		zap.S().Error(CodeNotFoundUser)
 		ResponseJSON(c, CodeNotFoundUser)
 		return

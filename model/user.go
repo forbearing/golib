@@ -6,8 +6,7 @@ import (
 )
 
 type User struct {
-	Username     string `json:"username,omitempty" gorm:"unique" binding:"required"`
-	Name         string `json:"name,omitempty"` // 等同于 username
+	Name         string `json:"name,omitempty" gorm:"unique" binding:"required"`
 	EnName       string `json:"en_name,omitempty"`
 	Password     string `json:"password,omitempty"`
 	RePassword   string `json:"re_password,omitempty" gorm:"-"`

@@ -52,7 +52,7 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 		zap.S().Info("user is nil")
 		return
 	}
-	name := user.Username
+	name := user.Name
 	userId := user.ID
 	sessionId := user.SessionId
 	zap.S().Info("user.SessionId: ", user.SessionId)
