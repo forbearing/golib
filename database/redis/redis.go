@@ -5,7 +5,6 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	// redis "github.com/redis/go-redis/v9"
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"

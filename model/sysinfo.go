@@ -2,7 +2,8 @@ package model
 
 import (
 	"database/sql/driver"
-	"errors"
+
+	"github.com/cockroachdb/errors"
 )
 
 type SysInfo struct {

@@ -3,10 +3,10 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"reflect"
 	"strings"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"github.com/gertd/go-pluralize"

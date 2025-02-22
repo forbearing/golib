@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/lru"

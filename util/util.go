@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"unsafe"
 
 	tcping "github.com/cloverstd/tcping/ping"
+	"github.com/cockroachdb/errors"
 	"github.com/go-ping/ping"
 	"github.com/google/uuid"
 	"github.com/rs/xid"
