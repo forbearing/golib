@@ -2,44 +2,59 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
+	"regexp"
 	"time"
+	"unicode"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/response"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/time/rate"
+)
+
+var (
+	loginRatelimiterMap  = cmap.New[*rate.Limiter]()
+	signupRatelimiterMap = cmap.New[*rate.Limiter]()
 )
 
 type user struct{}
 
 var User = new(user)
 
-// Login
 func (*user) Login(c *gin.Context) {
 	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Login"))
+	limiter, found := loginRatelimiterMap.Get(c.ClientIP())
+	if !found {
+		limiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 10)
+		loginRatelimiterMap.Set(c.ClientIP(), limiter)
+	}
+	if !limiter.Allow() {
+		log.Error("too many login requests")
+		ResponseJSON(c, response.NewCode(http.StatusTooManyRequests, "too many login requests"))
+		return
+	}
 
 	req := new(model.User)
-	if err := c.ShouldBindJSON(req); err != nil {
+	var err error
+	if err = c.ShouldBindJSON(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
-
-	passwd, err := encryptPasswd(req.Password)
-	if err != nil {
-		log.Error(err)
-		ResponseJSON(c, CodeFailure)
-		return
-	}
 	users := make([]*model.User, 0)
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name, Password: passwd}).List(&users); err != nil {
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
@@ -49,12 +64,18 @@ func (*user) Login(c *gin.Context) {
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
+	if len(users) != 1 {
+		log.Errorf("too many accounts: %d", len(users))
+		ResponseJSON(c, CodeFailure)
+		return
+	}
 	u := users[0]
-	if len(u.ID) == 0 {
-		log.Error("username or password not match")
+	if err = comparePasswd(req.Password, u.Password); err != nil {
+		log.Errorf("user password not match: %v", err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
 	}
+	// TODO: 把以前的 token 失效掉
 	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name)
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
@@ -67,26 +88,54 @@ func (*user) Login(c *gin.Context) {
 	fmt.Println("SessionId: ", u.SessionId)
 	u.TokenExpiration = model.GormTime(time.Now().Add(config.App.TokenExpireDuration))
 	writeLocalSessionAndCookie(c, aToken, rToken, u)
+	// WARN: you must clean password before response to user.
+	u.Password = ""
+
+	u.LastLogin = model.GormTime(time.Now())
+	u.LastLoginIP = IPv6ToIPv4(c.ClientIP())
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLogin); err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
 	ResponseJSON(c, CodeSuccess, u)
 }
 
-// Signup
 func (*user) Signup(c *gin.Context) {
 	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Signup"))
+	limiter, found := signupRatelimiterMap.Get(c.ClientIP())
+	if !found {
+		limiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 1)
+		signupRatelimiterMap.Set(c.ClientIP(), limiter)
+	}
+	if !limiter.Allow() {
+		log.Error("too many signup requests")
+		ResponseJSON(c, response.NewCode(http.StatusTooManyRequests, "too many signup requests"))
+		return
+	}
 
 	req := new(model.User)
-	if err := c.ShouldBindJSON(req); err != nil {
+	var err error
+	if err = c.ShouldBindJSON(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeInvalidSignup)
 		return
 	}
-	// TODO: check password complexibility.
-	if len(req.Password) == 0 {
-		log.Error("password length is 0")
-		ResponseJSON(c, CodeInvalidSignup)
+	if err = validateUsername(req.Name); err != nil {
+		log.Error(err)
+		ResponseJSON(c, response.NewCode(http.StatusBadRequest, err.Error()))
 		return
 	}
-
+	if err = validatePassword(req.Password); err != nil {
+		log.Error(err)
+		ResponseJSON(c, response.NewCode(http.StatusBadRequest, err.Error()))
+		return
+	}
 	if req.Password != req.RePassword {
 		log.Error("password and rePassword not the same")
 		ResponseJSON(c, CodeInvalidSignup)
@@ -94,27 +143,26 @@ func (*user) Signup(c *gin.Context) {
 	}
 
 	users := make([]*model.User, 0)
-	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
 	if len(users) > 0 {
-		if len(users[0].ID) > 0 {
-			ResponseJSON(c, CodeAlreadyExistsUser)
-			return
-		}
+		ResponseJSON(c, CodeAlreadyExistsUser)
+		return
 	}
-	passwd, err := encryptPasswd(req.Password)
+	hashedPasswd, err := encryptPasswd(req.Password)
 	if err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	req.Password = passwd
+	req.Password = hashedPasswd
 	req.Status = 1
 	req.ID = util.UUID()
-	fmt.Println("create user:", req.ID, req.Name, req.Password, req.RePassword)
+	req.LastLogin = model.GormTime(time.Now())
+	req.LastLoginIP = IPv6ToIPv4(c.ClientIP())
 	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Create(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -148,13 +196,13 @@ func (*user) ChangePasswd(c *gin.Context) {
 		ResponseJSON(c, CodeNotFoundUser)
 		return
 	}
-	passwd, err := encryptPasswd(req.Password)
+	hashedPasswd, err := encryptPasswd(req.Password)
 	if err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if passwd != u.Password {
+	if hashedPasswd != u.Password {
 		log.Error(CodeOldPasswordNotMatch)
 		ResponseJSON(c, CodeOldPasswordNotMatch)
 		return
@@ -164,13 +212,13 @@ func (*user) ChangePasswd(c *gin.Context) {
 		ResponseJSON(c, CodeNewPasswordNotMatch)
 		return
 	}
-	passwd, err = encryptPasswd(req.NewPassword)
+	hashedPasswd, err = encryptPasswd(req.NewPassword)
 	if err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	u.Password = passwd
+	u.Password = hashedPasswd
 	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Update(u); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -180,11 +228,65 @@ func (*user) ChangePasswd(c *gin.Context) {
 }
 
 func encryptPasswd(pass string) (string, error) {
-	// hash := sha256.New().Sum([]byte(pass))
-	// return hex.EncodeToString(hash)
 	hashed, err := bcrypt.GenerateFromPassword([]byte(pass), 8)
 	if err != nil {
 		return "", err
 	}
 	return string(hashed), nil
+}
+
+func comparePasswd(pass string, hashed string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(pass))
+}
+
+func validatePassword(password string) error {
+	if len(password) < 8 {
+		return errors.New("password too short")
+	}
+	var (
+		hasNumber      = false
+		hasLowerCase   = false
+		hasUpperCase   = false
+		hasSpecialChar = false
+	)
+	for _, c := range password {
+		switch {
+		case unicode.IsNumber(c):
+			hasNumber = true
+		case unicode.IsLower(c):
+			hasLowerCase = true
+		case unicode.IsUpper(c):
+			hasUpperCase = true
+		case unicode.IsPunct(c) || unicode.IsSymbol(c):
+			hasSpecialChar = true
+		}
+	}
+
+	if !hasNumber {
+		return errors.New("password must contain at least one number")
+	}
+	if !hasLowerCase {
+		return errors.New("password must contain at least one lowercase letter")
+	}
+	if !hasUpperCase {
+		return errors.New("password must contain at least one uppercase letter")
+	}
+	if !hasSpecialChar {
+		return errors.New("password must contain at least one special character")
+	}
+
+	// if !hasNumber || !hasLowerCase || !hasUpperCase || !hasSpecialChar {
+	// 	return fmt.Errorf("password too weak")
+	// }
+	return nil
+}
+
+func validateUsername(username string) error {
+	if len(username) < 3 || len(username) > 32 {
+		return fmt.Errorf("username length must be between 3 and 32")
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(username) {
+		return fmt.Errorf("username can only contain letters, numbers, underscores and hyphens")
+	}
+	return nil
 }

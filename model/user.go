@@ -1,8 +1,9 @@
 package model
 
 import (
-	"errors"
 	"strconv"
+
+	"github.com/cockroachdb/errors"
 )
 
 type User struct {
@@ -29,9 +30,10 @@ type User struct {
 	RoleId       string `json:"role_id,omitempty"`
 	DepartmentId string `json:"department_id,omitempty"`
 
-	LastLogin  GormTime `json:"last_login,omitempty"`
-	LockExpire int64    `json:"lock_expire,omitempty"`
-	NumWrong   int      `json:"num_wrong,omitempty" gorm:"comment:the number of input password wrong"`
+	LastLogin   GormTime `json:"last_login,omitempty"`
+	LastLoginIP string   `json:"last_login_ip,omitempty"`
+	LockExpire  int64    `json:"lock_expire,omitempty"`
+	NumWrong    int      `json:"num_wrong,omitempty" gorm:"comment:the number of input password wrong"`
 
 	Token           string   `json:"token,omitempty" gorm:"-"`
 	AccessToken     string   `json:"access_token,omitempty" gorm:"-"`
@@ -52,14 +54,6 @@ func (u *User) CreateBefore() error {
 			return err
 		}
 	}
-	return nil
-}
-
-// ListAfter clean the fields value of Password, RePassword, NewPassword .
-func (u *User) ListAfter() error {
-	u.Password = ""
-	u.RePassword = ""
-	u.NewPassword = ""
 	return nil
 }
 
