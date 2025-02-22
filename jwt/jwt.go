@@ -1,9 +1,9 @@
 package jwt
 
 import (
-	"errors"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/golang-jwt/jwt/v5"
 )

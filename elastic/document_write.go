@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"

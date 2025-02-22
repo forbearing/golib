@@ -3,12 +3,12 @@ package model
 import (
 	"bytes"
 	"database/sql/driver"
-	"errors"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"

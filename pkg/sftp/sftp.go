@@ -1,13 +1,13 @@
 package sftp
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"syscall"
 
+	"github.com/cockroachdb/errors"
 	"github.com/pkg/sftp"
 )
 

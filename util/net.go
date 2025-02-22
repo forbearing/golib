@@ -1,13 +1,14 @@
 package util
 
 import (
-	"errors"
 	"io"
 	"net"
 	"reflect"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/cockroachdb/errors"
 )
 
 func GetConnection(conn net.Conn) Connection {

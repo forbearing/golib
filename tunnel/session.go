@@ -2,11 +2,11 @@ package tunnel
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
 	"net"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
