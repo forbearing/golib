@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/didip/tollbooth/v7/limiter"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/jwt"
@@ -25,10 +24,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var (
-	ratelimitMap   = cmap.New[*limiter.Limiter]()
-	ratelimiterMap = cmap.New[*rate.Limiter]()
-)
+var ratelimiterMap = cmap.New[*rate.Limiter]()
 
 func Logger(filename ...string) gin.HandlerFunc {
 	// return ginzap.Ginzap(pkgzap.NewGinLogger(filename...), time.RFC3339, true)
