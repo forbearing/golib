@@ -108,6 +108,15 @@ func (r Code) Status() int {
 	return val.Status
 }
 
+func NewCode(status int, msg string) Code {
+	code := -1
+	codeValueMap[Code(code)] = codeValue{
+		Status: status,
+		Msg:    msg,
+	}
+	return Code(code)
+}
+
 func ResponseJSON(c *gin.Context, code Code, data ...any) {
 	if len(data) > 0 {
 		c.JSON(code.Status(), gin.H{
