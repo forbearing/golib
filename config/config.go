@@ -118,7 +118,7 @@ func SetDefaultValue() {
 	viper.SetDefault("auth.base_auth_username", baseAuthUsername)
 	viper.SetDefault("auth.base_auth_password", baseAuthPassword)
 	viper.SetDefault("auth.access_token_expire_duration", "2h")
-	viper.SetDefault("auth.refresh_token_expire_duration", "336h")
+	viper.SetDefault("auth.refresh_token_expire_duration", "168h")
 
 	viper.SetDefault("logger.dir", "./logs")
 	viper.SetDefault("logger.prefix", "")

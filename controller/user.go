@@ -76,7 +76,7 @@ func (*user) Login(c *gin.Context) {
 		return
 	}
 	// TODO: 把以前的 token 失效掉
-	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name)
+	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name, createSession(c))
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
 		return
@@ -92,7 +92,7 @@ func (*user) Login(c *gin.Context) {
 	u.Password = ""
 
 	u.LastLogin = model.GormTime(time.Now())
-	u.LastLoginIP = IPv6ToIPv4(c.ClientIP())
+	u.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
 	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLogin); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -104,6 +104,22 @@ func (*user) Login(c *gin.Context) {
 		return
 	}
 	ResponseJSON(c, CodeSuccess, u)
+}
+
+func (*user) Logout(c *gin.Context) {
+	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Logout"))
+	_, claims, err := jwt.ParseTokenFromHeader(c.Request.Header)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	jwt.RevokeTokens(claims.Subject)
+
+	ResponseJSON(c, CodeSuccess)
+}
+
+func (*user) RefreshToken(c *gin.Context) {
 }
 
 func (*user) Signup(c *gin.Context) {
@@ -162,7 +178,7 @@ func (*user) Signup(c *gin.Context) {
 	req.Status = 1
 	req.ID = util.UUID()
 	req.LastLogin = model.GormTime(time.Now())
-	req.LastLoginIP = IPv6ToIPv4(c.ClientIP())
+	req.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
 	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Create(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
@@ -219,18 +235,19 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	u.Password = hashedPasswd
-	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Update(u); err != nil {
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).Update(u); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
+	_, claims, err := jwt.ParseTokenFromHeader(c.Request.Header)
+	if err != nil {
+		log.Error(err)
+		ResponseJSON(c, CodeFailure)
+		return
+	}
+	jwt.RevokeTokens(claims.Subject)
 	ResponseJSON(c, CodeSuccess)
-}
-
-func (*user) Logout(c *gin.Context) {
-}
-
-func (*user) RefreshToken(c *gin.Context) {
 }
 
 func encryptPasswd(pass string) (string, error) {
