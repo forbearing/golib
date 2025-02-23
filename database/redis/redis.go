@@ -100,7 +100,7 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 
 // SetSession wrapped Set function to set session data to redis, only for session.
 func SetSession(sessionId string, data []byte) error {
-	return Set(fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId), data, config.App.AuthConfig.TokenExpireDuration)
+	return Set(fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId), data, config.App.AuthConfig.AccessTokenExpireDuration)
 }
 
 // Get will get raw cache([]byte) from redis.

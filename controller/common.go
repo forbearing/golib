@@ -20,24 +20,24 @@ import (
 // writeCookie 写 cookie 并重定向
 func writeCookie(c *gin.Context, token, userId, name string, redirect ...bool) {
 	zap.S().Info("writeCookie")
-	zap.S().Info("'TokenExpireDuration:' ", config.App.TokenExpireDuration)
+	zap.S().Info("'TokenExpireDuration:' ", config.App.AccessTokenExpireDuration)
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    TOKEN,
 		Value:   token,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
 		Value:   userId,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    NAME,
 		Value:   base64.StdEncoding.EncodeToString([]byte(name)), // 中文名,需要转码
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	if len(redirect) > 0 {
 		if redirect[0] {
@@ -70,13 +70,13 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 		Path:    "/",
 		Name:    TOKEN,
 		Value:   aToken,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ACCESS_TOKEN,
 		Value:   aToken,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:  "/",
@@ -89,19 +89,19 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 		Path:    "/",
 		Name:    SESSION_ID,
 		Value:   sessionId,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
 		Value:   userId,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    NAME,
 		Value:   base64.StdEncoding.EncodeToString([]byte(name)), // 中文名,需要转码
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 }
 
@@ -128,13 +128,13 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		Path:    "/",
 		Name:    TOKEN,
 		Value:   aToken,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ACCESS_TOKEN,
 		Value:   aToken,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:  "/",
@@ -147,19 +147,19 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		Path:    "/",
 		Name:    SESSION_ID,
 		Value:   sessionId,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
 		Value:   userId,
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    NAME,
 		Value:   base64.StdEncoding.EncodeToString([]byte(name)), // 中文名,需要转码
-		Expires: time.Now().Add(config.App.TokenExpireDuration),
+		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()

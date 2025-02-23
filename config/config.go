@@ -117,7 +117,8 @@ func SetDefaultValue() {
 	viper.SetDefault("auth.none_expire_pass", noneExpirePass)
 	viper.SetDefault("auth.base_auth_username", baseAuthUsername)
 	viper.SetDefault("auth.base_auth_password", baseAuthPassword)
-	viper.SetDefault("auth.token_expire_duration", "24h")
+	viper.SetDefault("auth.access_token_expire_duration", "2h")
+	viper.SetDefault("auth.refresh_token_expire_duration", "7d")
 
 	viper.SetDefault("logger.dir", "./logs")
 	viper.SetDefault("logger.prefix", "")
@@ -308,12 +309,13 @@ type ServerConfig struct {
 }
 
 type AuthConfig struct {
-	NoneExpireToken     string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
-	NoneExpireUser      string        `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
-	NoneExpirePass      string        `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
-	BaseAuthUsername    string        `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
-	BaseAuthPassword    string        `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
-	TokenExpireDuration time.Duration `json:"token_expire_duration" mapstructure:"token_expire_duration" ini:"token_expire_duration" yaml:"token_expire_duration"`
+	NoneExpireToken            string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
+	NoneExpireUser             string        `json:"none_expire_user" mapstructure:"none_expire_user" ini:"none_expire_user" yaml:"none_expire_user"`
+	NoneExpirePassstring       string        `json:"none_expire_pass" mapstructure:"none_expire_pass" ini:"none_expire_pass" yaml:"none_expire_pass"`
+	BaseAuthUsernamering       string        `json:"base_auth_username" mapstructure:"base_auth_username" ini:"base_auth_username" yaml:"base_auth_username"`
+	BaseAuthPasswordring       string        `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
+	AccessTokenExpireDuration  time.Duration `json:"access_token_expire_duration" mapstructure:"access_token_expire_duration" ini:"access_token_expire_duration" yaml:"access_token_expire_duration"`
+	RefreshTokenExpireDuration time.Duration `json:"refresh_token_expire_duration" mapstructure:"refresh_token_expire_duration" ini:"refresh_token_expire_duration" yaml:"refresh_token_expire_duration"`
 }
 
 // LoggerConfig represents section "logger" for client-side or server-side configuration,
