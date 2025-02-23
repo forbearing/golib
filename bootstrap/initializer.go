@@ -50,5 +50,4 @@ func (i *initializer) Go() error {
 func Register(fn ...initFunc)   { _initializer.Register(fn...) }
 func RegisterGo(fn ...initFunc) { _initializer.RegisterGo(fn...) }
 func Init() (err error)         { return _initializer.Init() }
-func Run() (err error)          { return _initializer.Init() }
 func Go() (err error)           { return _initializer.Go() }
