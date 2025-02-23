@@ -8,6 +8,7 @@ import (
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/database/sqlite"
 	"github.com/forbearing/golib/elastic"
+	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/lru"
@@ -40,6 +41,7 @@ func Bootstrap() error {
 		rbac.Init,
 		service.Init,
 		router.Init,
+		jwt.Init,
 		task.Init,
 	)
 

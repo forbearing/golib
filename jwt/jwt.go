@@ -1,18 +1,22 @@
 package jwt
 
 import (
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/database"
+	"github.com/forbearing/golib/model"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/mssola/useragent"
 )
 
 const (
-	AccessTokenDuration  = 2 * time.Hour
-	RefreshTokenDuration = 7 * 24 * time.Hour
-	MinUserIDLength      = 1
-	MinUsernameLength    = 3
+	MinUserIDLength   = 1
+	MinUsernameLength = 3
 )
 
 var (
@@ -24,12 +28,13 @@ var (
 	ErrTokenNotValidYet    = errors.New("token not valid yet")
 )
 
-type TokenType int
-
-const (
-	AccessToken TokenType = iota
-	RefreshToken
+var (
+	accessTokenCache  *expirable.LRU[string, *model.Session]
+	refreshTokenCache *expirable.LRU[string, *model.Session]
+	sessionCache      *expirable.LRU[string, *model.Session]
 )
+
+type TokenType int
 
 var (
 	secret = []byte("defaultSecret")
@@ -42,22 +47,64 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// GenToken 生成 access token
-func GenToken(userId string, username string) (token string, err error) {
+func Init() error {
+	accessTokenCache = expirable.NewLRU[string, *model.Session](0, nil, config.App.AuthConfig.AccessTokenExpireDuration)
+	refreshTokenCache = expirable.NewLRU[string, *model.Session](0, nil, config.App.AuthConfig.RefreshTokenExpireDuration)
+	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session]().WithPurge().Delete(s) }, config.App.AuthConfig.RefreshTokenExpireDuration)
+
+	sessions := make([]*model.Session, 0)
+	if err := database.Database[*model.Session]().WithLimit(-1).List(&sessions); err != nil {
+		return err
+	}
+	for _, session := range sessions {
+		setSession(session.UserId, session)
+	}
+
+	return nil
+}
+
+// GenTokens 生成 access token 和 refresh token
+func GenTokens(userId string, username string, session *model.Session) (aToken, rToken string, err error) {
 	if len(userId) < MinUserIDLength || len(username) < MinUsernameLength {
-		return "", errors.New("invalid user id or username")
+		return "", "", errors.New("invalid user id or username")
 	}
-	if username == config.App.AuthConfig.NoneExpireUser {
-		return config.App.AuthConfig.NoneExpireToken, nil
+
+	if username == config.App.AuthConfig.NoneExpireUsername {
+		return config.App.AuthConfig.NoneExpireToken, "", nil
 	}
+	if aToken, err = genAccessToken(userId, username); err != nil {
+		return "", "", err
+	}
+	if rToken, err = genRefreshToken(userId); err != nil {
+		return "", "", err
+	}
+
+	if session == nil {
+		session = new(model.Session)
+	}
+	session.AccessToken = aToken
+	session.RefreshToken = rToken
+	session.UserId = userId
+	session.Username = username
+	// setToken(aToken, rToken, session)
+	setSession(userId, session)
+
+	return aToken, rToken, nil
+}
+
+func RevokeTokens(userId string) {
+	removeSession(userId)
+}
+
+func genAccessToken(userId string, username string) (token string, err error) {
 	now := time.Now()
 	claims := Claims{
 		userId, username,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(config.App.TokenExpireDuration)), // 过期时间
-			IssuedAt:  jwt.NewNumericDate(now),                                     // 签发时间
-			NotBefore: jwt.NewNumericDate(now),                                     // 生效时间
-			Issuer:    issuer,                                                      // 签发人
+			ExpiresAt: jwt.NewNumericDate(now.Add(config.App.AuthConfig.AccessTokenExpireDuration)), // 过期时间
+			IssuedAt:  jwt.NewNumericDate(now),                                                      // 签发时间
+			NotBefore: jwt.NewNumericDate(now),                                                      // 生效时间
+			Issuer:    issuer,                                                                       // 签发人
 			Subject:   userId,
 		},
 	}
@@ -69,28 +116,24 @@ func GenToken(userId string, username string) (token string, err error) {
 	return token, nil
 }
 
-// GenTokens 生成 access token 和 refresh token
-func GenTokens(userId string, username string) (aToken, rToken string, err error) {
-	if aToken, err = GenToken(userId, username); err != nil {
-		return "", "", err
-	}
+func genRefreshToken(userId string) (rToken string, err error) {
 	now := time.Now()
 	// refresh token 不需要任何自定义数据
 	// 使用指定的 secret 签名并获得完整的编码后的字符串 token
 	if rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(now.Add(RefreshTokenDuration)), // 过期时间
-		IssuedAt:  jwt.NewNumericDate(now),                           // 签发时间
-		NotBefore: jwt.NewNumericDate(now),                           // 生效时间
-		Issuer:    issuer,                                            // 签发人
+		ExpiresAt: jwt.NewNumericDate(now.Add(config.App.AuthConfig.RefreshTokenExpireDuration)), // 过期时间
+		IssuedAt:  jwt.NewNumericDate(now),                                                       // 签发时间
+		NotBefore: jwt.NewNumericDate(now),                                                       // 生效时间
+		Issuer:    issuer,                                                                        // 签发人
 		Subject:   userId,
 	}).SignedString(secret); err != nil {
-		return "", "", errors.Wrap(err, "failed to generate refresh token")
+		return "", errors.Wrap(err, "failed to generate refresh token")
 	}
-	return aToken, rToken, nil
+	return rToken, nil
 }
 
 // RefreshTokens 通过 refresh token 刷新一个新的 AccessToken
-func RefreshTokens(accessToken, refreshToken string) (newAccessToken, newRefreshToken string, err error) {
+func RefreshTokens(accessToken, refreshToken string, session *model.Session) (newAccessToken, newRefreshToken string, err error) {
 	// verify refresh token
 	refreshClaims := new(Claims)
 	token := new(jwt.Token)
@@ -118,7 +161,7 @@ func RefreshTokens(accessToken, refreshToken string) (newAccessToken, newRefresh
 		return "", "", ErrTokenMalformed
 	}
 
-	return GenTokens(accessClaims.UserId, accessClaims.Username)
+	return GenTokens(accessClaims.UserId, accessClaims.Username, session)
 }
 
 // ParseToken
@@ -157,5 +200,56 @@ func ParseToken(tokenStr string) (*Claims, error) {
 		return nil, errors.New("invalid token issuer")
 	}
 	return claims, nil
+}
+
+func Verify(claims *Claims, accessToken, userAgent string) error {
+	if claims == nil {
+		return errors.New("claims is nil")
+	}
+	if accessToken == config.App.AuthConfig.NoneExpireToken {
+		return nil
+	}
+
+	session, found := GetSession(claims.UserId)
+	if !found {
+		return errors.New("session not found")
+	}
+	if session.AccessToken != accessToken {
+		return errors.New("access token not match")
+	}
+
+	ua := useragent.New(userAgent)
+	engineName, _ := ua.Engine()
+	browserName, _ := ua.Browser()
+
+	if session.Platform != ua.Platform() {
+		return errors.New("platform not match")
+	}
+	if session.OS != ua.OS() {
+		return errors.New("os not match")
+	}
+	if session.EngineName != engineName {
+		return errors.New("engine not match")
+	}
+	if session.BrowserName != browserName {
+		return errors.New("browser not match")
+	}
+	return nil
+}
+
+func ParseTokenFromHeader(header http.Header) (token string, claims *Claims, err error) {
+	value := header.Get("Authorization")
+	if len(value) == 0 {
+		return "", nil, ErrInvalidToken
+	}
+
+	// 按空格分割
+	items := strings.SplitN(value, " ", 2)
+	if len(items) != 2 || items[0] != "Bearer" {
+		return "", nil, ErrInvalidToken
+	}
+	token = items[1]
+	claims, err = ParseToken(items[1])
+	return token, claims, err
 }
 func keyFunc(token *jwt.Token) (any, error) { return secret, nil }

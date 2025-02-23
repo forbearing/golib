@@ -1,17 +1,27 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/forbearing/golib/jwt"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 )
 
+// JwtAuth 效果如下:
+// 1.重复登录之后，会刷新 accessToken, refreshToken, 之后老的 accessToken 是失效
+// 2.换浏览器、换操作系统都需要重新登录，重新登录之后会挤掉其他设备、浏览器的登录
 func JwtAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims, err := jwt.ParseTokenFromHeader(c.Request.Header)
+		accessToken, claims, err := jwt.ParseTokenFromHeader(c.Request.Header)
 		if err != nil {
-			ResponseJSON(c, CodeInvalidToken)
+			ResponseJSON(c, NewCode(http.StatusUnauthorized, err.Error()))
+			c.Abort()
+			return
+		}
+		if err := jwt.Verify(claims, accessToken, c.Request.UserAgent()); err != nil {
+			ResponseJSON(c, NewCode(http.StatusUnauthorized, err.Error()))
 			c.Abort()
 			return
 		}
