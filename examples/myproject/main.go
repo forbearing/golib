@@ -6,10 +6,11 @@ import (
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/controller"
+	pkgcontroller "github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/middleware"
+	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
@@ -40,13 +41,19 @@ func main() {
 	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 
-	// without auth
-	router.API.GET("/noauth/user", controller.List[*model.User])
-	router.API.GET("/noauth/user/:id", controller.Get[*model.User])
+	router.API.POST("/login", pkgcontroller.User.Login)
+	router.API.POST("/signup", pkgcontroller.User.Signup)
+	router.API.DELETE("/logout", middleware.JwtAuth(), pkgcontroller.User.Logout)
+	router.API.POST("token/refresh", pkgcontroller.User.RefreshToken)
+	router.API.GET("/debug/debug", Debug.Debug)
+
 	router.API.Use(
 		middleware.JwtAuth(),
 		// middleware.RateLimiter(),
 	)
+
+	router.Register[*pkgmodel.User](router.API, "/user")
+	router.Register[*model.Group](router.API, "/group")
 
 	// router.API.POST("/user", controller.Create[*User])
 	// router.API.DELETE("/user", controller.Delete[*User])
@@ -72,10 +79,6 @@ func main() {
 	// router.API.GET("/group/export", controller.Export[*Group])
 	// router.API.POST("/group/import", controller.Import[*Group])
 
-	router.Register[*model.User](router.API, "/user")
-	router.Register[*model.Group](router.API, "/group")
-	router.API.GET("/debug/debug", Debug.Debug)
-
 	cfg := config.MySQLConfig{}
 	cfg.Host = "127.0.0.1"
 	cfg.Port = 3306
@@ -88,7 +91,7 @@ func main() {
 		panic(err)
 	}
 	// It's your responsibility to ensure the table already exists.
-	router.RegisterWithConfig(&types.ControllerConfig[*model.User]{DB: db}, router.API, "/external/user")
+	router.RegisterWithConfig(&types.ControllerConfig[*pkgmodel.User]{DB: db}, router.API, "/external/user")
 	router.RegisterWithConfig(&types.ControllerConfig[*model.Group]{DB: db}, router.API, "/external/group")
 
 	// Run server.
