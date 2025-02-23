@@ -44,7 +44,7 @@ func SearchUser(username string, attribute []string) (*ldap.Conn, []*ldap.Entry,
 
 // AuthUser checks that username and password matched.
 func AuthUser(username, password string) bool {
-	if username == config.App.AuthConfig.NoneExpireUser && password == config.App.AuthConfig.NoneExpirePass {
+	if username == config.App.AuthConfig.NoneExpireUsername && password == config.App.AuthConfig.NoneExpirePassword {
 		return true
 	}
 
