@@ -86,7 +86,7 @@ func (*user) Login(c *gin.Context) {
 	u.RefreshToken = rToken
 	u.SessionId = util.UUID()
 	fmt.Println("SessionId: ", u.SessionId)
-	u.TokenExpiration = model.GormTime(time.Now().Add(config.App.TokenExpireDuration))
+	u.TokenExpiration = model.GormTime(time.Now().Add(config.App.AccessTokenExpireDuration))
 	writeLocalSessionAndCookie(c, aToken, rToken, u)
 	// WARN: you must clean password before response to user.
 	u.Password = ""
@@ -225,6 +225,12 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	ResponseJSON(c, CodeSuccess)
+}
+
+func (*user) Logout(c *gin.Context) {
+}
+
+func (*user) RefreshToken(c *gin.Context) {
 }
 
 func encryptPasswd(pass string) (string, error) {
