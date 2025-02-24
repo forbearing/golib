@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database/helper"
@@ -35,7 +36,7 @@ func Init() (err error) {
 		return err
 	}
 	// It will fix error: "Cannot create column with type 'FixedString(10240)' because fixed string with size > 256 is suspicious. Set setting allow_suspicious_fixed_string_types = 1 in order to allow it"
-	Default.Exec("SET allow_suspicious_fixed_string_types = 1")
+	db.Exec("SET allow_suspicious_fixed_string_types = 1")
 	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
 	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
 	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
@@ -52,8 +53,12 @@ func New(cfg config.ClickhouseConfig) (*gorm.DB, error) {
 }
 
 func buildDSN(cfg config.ClickhouseConfig) string {
-	return "clickhouse://default:clickhouse@localhost:9010/default?debug=true?compress=false?read_timeout=5s?write_timeout=5s?dial_timeout=5s"
-	return "tcp://localhost:9010?database=default&username=default&password=clickhouse"
+	// return "clickhouse://default:clickhouse@localhost:9010/default?debug=true?compress=false?read_timeout=5s?write_timeout=5s?dial_timeout=5s"
+	return fmt.Sprintf("clickhouse://%s:%s@%s:%d/%s?debug=%t?compress=%t?read_timeout=%s?write_timeout=%s?dial_timeout=%s",
+		cfg.Username, cfg.Password,
+		cfg.Host, cfg.Port, cfg.Database,
+		cfg.Debug, cfg.Compress, cfg.ReadTimeout, cfg.WriteTimeout, cfg.DialTimeout,
+	)
 }
 
 func Transaction(fn func(tx *gorm.DB) error) error { return helper.Transaction(Default, fn) }
