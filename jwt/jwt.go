@@ -29,17 +29,11 @@ var (
 )
 
 var (
-	accessTokenCache  *expirable.LRU[string, *model.Session]
-	refreshTokenCache *expirable.LRU[string, *model.Session]
-	sessionCache      *expirable.LRU[string, *model.Session]
-)
-
-type TokenType int
-
-var (
 	secret = []byte("defaultSecret")
 	issuer = "golib"
 )
+
+var sessionCache *expirable.LRU[string, *model.Session]
 
 type Claims struct {
 	UserId   string `json:"user_id"`
@@ -48,10 +42,7 @@ type Claims struct {
 }
 
 func Init() error {
-	accessTokenCache = expirable.NewLRU[string, *model.Session](0, nil, config.App.AuthConfig.AccessTokenExpireDuration)
-	refreshTokenCache = expirable.NewLRU[string, *model.Session](0, nil, config.App.AuthConfig.RefreshTokenExpireDuration)
 	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session]().WithPurge().Delete(s) }, config.App.AuthConfig.RefreshTokenExpireDuration)
-
 	sessions := make([]*model.Session, 0)
 	if err := database.Database[*model.Session]().WithLimit(-1).List(&sessions); err != nil {
 		return err
