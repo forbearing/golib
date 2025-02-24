@@ -43,10 +43,11 @@ const (
 )
 
 const (
-	DBSqlite    = "sqlite"
-	DBPostgre   = "postgres"
-	DBMySQL     = "mysql"
-	DBSQLServer = "sqlserver"
+	DBSqlite     = "sqlite"
+	DBPostgre    = "postgres"
+	DBMySQL      = "mysql"
+	DBSQLServer  = "sqlserver"
+	DBClickHouse = "clickhouse"
 )
 
 // Init initializes the application configuration
@@ -158,6 +159,18 @@ func SetDefaultValue() {
 	viper.SetDefault("mysql.password", "toor")
 	viper.SetDefault("mysql.charset", "utf8mb4")
 	viper.SetDefault("mysql.enable", true)
+
+	viper.SetDefault("clickhouse.host", "127.0.0.1")
+	viper.SetDefault("clickhouse.port", 9000)
+	viper.SetDefault("clickhouse.database", "default")
+	viper.SetDefault("clickhouse.username", "default")
+	viper.SetDefault("clickhouse.password", "")
+	viper.SetDefault("clickhouse.dial_timeout", "5s")
+	viper.SetDefault("clickhouse.read_timeout", "30s")
+	viper.SetDefault("clickhouse.write_timeout", "30s")
+	viper.SetDefault("clickhouse.compress", false)
+	viper.SetDefault("clickhouse.debug", false)
+	viper.SetDefault("clickhouse.enable", false)
 
 	viper.SetDefault("sqlserver.host", "127.0.0.1")
 	viper.SetDefault("sqlserver.port", 1433)
@@ -299,6 +312,7 @@ type Config struct {
 	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
 	SQLServerConfig     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
+	ClickhouseConfig    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
 	RedisConfig         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
 	MongoConfig         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
@@ -405,6 +419,20 @@ type MySQLConfig struct {
 	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 	Charset  string `json:"charset" mapstructure:"charset" ini:"charset" yaml:"charset"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type ClickhouseConfig struct {
+	Host         string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port         uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Database     string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Username     string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password     string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	DialTimeout  string `json:"dial_timeout" mapstructure:"dial_timeout" ini:"dial_timeout" yaml:"dial_timeout"`
+	ReadTimeout  string `json:"read_timeout" mapstructure:"read_timeout" ini:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout string `json:"write_timeout" mapstructure:"write_timeout" ini:"write_timeout" yaml:"write_timeout"`
+	Compress     bool   `json:"compress" mapstructure:"compress" ini:"compress" yaml:"compress"`
+	Debug        bool   `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
+	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type SQLServerConfig struct {
