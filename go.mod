@@ -55,6 +55,7 @@ require (
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
+	gorm.io/driver/sqlserver v1.5.4
 	gorm.io/gorm v1.25.12
 	gorm.io/hints v1.1.2
 )
@@ -157,7 +158,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/sqlserver v1.5.4 // indirect
 	gorm.io/plugin/dbresolver v1.5.3 // indirect
 	modernc.org/libc v1.61.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
