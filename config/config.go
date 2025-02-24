@@ -43,9 +43,10 @@ const (
 )
 
 const (
-	DBSqlite  = "sqlite"
-	DBPostgre = "postgres"
-	DBMySQL   = "mysql"
+	DBSqlite    = "sqlite"
+	DBPostgre   = "postgres"
+	DBMySQL     = "mysql"
+	DBSQLServer = "sqlserver"
 )
 
 // Init initializes the application configuration
@@ -152,11 +153,21 @@ func SetDefaultValue() {
 
 	viper.SetDefault("mysql.host", "127.0.0.1")
 	viper.SetDefault("mysql.port", 3306)
-	viper.SetDefault("mysql.database", "mydb")
+	viper.SetDefault("mysql.database", "")
 	viper.SetDefault("mysql.username", "root")
 	viper.SetDefault("mysql.password", "toor")
 	viper.SetDefault("mysql.charset", "utf8mb4")
 	viper.SetDefault("mysql.enable", true)
+
+	viper.SetDefault("sqlserver.host", "127.0.0.1")
+	viper.SetDefault("sqlserver.port", 1433)
+	viper.SetDefault("sqlserver.database", "")
+	viper.SetDefault("sqlserver.username", "sa")
+	viper.SetDefault("sqlserver.password", "")
+	viper.SetDefault("sqlserver.encrypt", false)
+	viper.SetDefault("sqlserver.trust_server", true)
+	viper.SetDefault("sqlserver.app_name", "golib")
+	viper.SetDefault("sqlserver.enable", false)
 
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", 6379)
@@ -287,6 +298,7 @@ type Config struct {
 	SqliteConfig        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
 	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
+	SQLServerConfig     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
 	RedisConfig         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
 	MongoConfig         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
@@ -393,6 +405,18 @@ type MySQLConfig struct {
 	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 	Charset  string `json:"charset" mapstructure:"charset" ini:"charset" yaml:"charset"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type SQLServerConfig struct {
+	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port        uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Database    string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Username    string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password    string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Encrypt     bool   `json:"encrypt" mapstructure:"encrypt" ini:"encrypt" yaml:"encrypt"`
+	TrustServer bool   `json:"trust_server" mapstructure:"trust_server" ini:"trust_server" yaml:"trust_server"`
+	AppName     string `json:"app_name" mapstructure:"app_name" ini:"app_name" yaml:"app_name"`
+	Enable      bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type RedisConfig struct {
