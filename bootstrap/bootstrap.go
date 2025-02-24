@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/forbearing/golib/cmap"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/database/clickhouse"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/database/postgres"
 	"github.com/forbearing/golib/database/redis"
@@ -34,6 +35,7 @@ func Bootstrap() error {
 		sqlite.Init,
 		postgres.Init,
 		mysql.Init,
+		clickhouse.Init,
 		sqlserver.Init,
 		redis.Init,
 		elastic.Init,
