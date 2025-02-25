@@ -62,9 +62,12 @@ func maskMobile(phone string) string {
 
 // maskEmail 隐藏邮箱ID的中间部分 zhang@go-mall.com ---> z***g@go-mall.com
 func maskEmail(address string) string {
-	strings.LastIndex(address, "@")
-	id := address[0:strings.LastIndex(address, "@")]
-	domain := address[strings.LastIndex(address, "@"):]
+	atIndex := strings.LastIndex(address, "@")
+	if atIndex < 0 {
+		return address
+	}
+	id := address[0:atIndex]
+	domain := address[atIndex:]
 
 	if len(id) <= 1 {
 		return address
