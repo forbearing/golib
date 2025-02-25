@@ -93,14 +93,6 @@ func Init() (err error) {
 	if App.RedisConfig.Expiration < time.Minute || App.RedisConfig.Expiration > 24*time.Hour {
 		App.RedisConfig.Expiration = 8 * time.Hour
 	}
-	switch App.Mode {
-	case ModeProd:
-		App.Domain = "https://prod.example.com"
-	case ModeStg:
-		App.Domain = "https://stg.example.com"
-	case ModeDev:
-		App.Domain = "http://192.168.1.1:5173"
-	}
 
 	return nil
 }
