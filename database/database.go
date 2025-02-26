@@ -1109,10 +1109,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		batchSize = db.batchSize
 	}
 	for i := 0; i < len(objs); i += batchSize {
-		end := i + batchSize
-		if end > len(objs) {
-			end = len(objs)
-		}
+		end := min(i+batchSize, len(objs))
 		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
@@ -1212,10 +1209,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 			batchSize = db.batchSize
 		}
 		for i := 0; i < len(objs); i += batchSize {
-			end := i + batchSize
-			if end > len(objs) {
-				end = len(objs)
-			}
+			end := min(i+batchSize, len(objs))
 			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
@@ -1236,10 +1230,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 			batchSize = db.batchSize
 		}
 		for i := 0; i < len(objs); i += batchSize {
-			end := i + batchSize
-			if end > len(objs) {
-				end = len(objs)
-			}
+			end := min(i+batchSize, len(objs))
 			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
@@ -1325,10 +1316,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		batchSize = db.batchSize
 	}
 	for i := 0; i < len(objs); i += batchSize {
-		end := i + batchSize
-		if end > len(objs) {
-			end = len(objs)
-		}
+		end := min(i+batchSize, len(objs))
 		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
