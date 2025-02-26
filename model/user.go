@@ -10,7 +10,7 @@ type User struct {
 	Password     string `json:"password,omitempty"`
 	RePassword   string `json:"re_password,omitempty" gorm:"-"`
 	NewPassword  string `json:"new_password,omitempty" gorm:"-"`
-	Email        string `json:"email,omitempty" gorm:"unique"`
+	Email        string `json:"email,omitempty"`
 	Avatar       string `json:"avatar,omitempty"`
 	AvatarUrl    string `json:"avatar_url,omitempty"`    // 用户头像
 	AvatarThumb  string `json:"avatar_thumb,omitempty"`  // 用户头像 72x72
