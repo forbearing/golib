@@ -15,112 +15,11 @@ import (
 
 type column struct{}
 
-var Column = new(column)
 var (
-	columnAsset = []string{
-		"status",
-		"owner_entity_id",
-		"area_id",
-		"category_level1_id",
-		"category_level2_id",
-		"owner_id",
-		"owner_status",
-		"label_status",
-		"current_user",
-		"department_level1_id",
-		"department_level2_id",
-		"brand",
-		"brand_model",
-	}
-	columnDistribute = []string{
-		"status",
-		"user_id",
-		"department_level1_id",
-		"department_level2_id",
-	}
-	columnBack = []string{
-		"status",
-	}
-	columnChange = []string{
-		"status",
-	}
-	columnCheck = []string{
-		"status",
-		"progress",
-	}
-	columnSoftware = []string{
-		"type",
-		"os",
-		"hostname",
-		"user",
-		"ip_addresses",
-		"mac_addresses",
-		"machine_id",
-		// "name",
-		// "version",
-		// "maintainer",
-		// "description",
-		// "home_page",
-	}
-	columnSoftwrarePurchased = []string{
+	Column     = new(column)
+	columnUser = []string{
 		"name",
-		"version",
-		"platform",
-		"purchase_user",
-		"purchase_method",
-		"purchase_date",
-		"expire_date",
-		"license_type",
-		"license_quantity",
-		"vendor",
-		"cost",
-	}
-	columnSoftwrarePurchasedAssignment = []string{
-		"type",
-		"machine_id",
-		"hostname",
-		"user",
-		"ip_addresses",
-		"mac_addresses",
-		"name",
-		"version",
-	}
-	columnSoftwareReport = []string{
-		"name",
-		"version",
-		"status",
-		"type",
-		"os",
-		"hostname",
-		"user",
-		"ip_addresses",
-		"mac_addresses",
-		"machine_id",
-		"maintainer",
-		"description",
-		"home_page",
-	}
-	columnSoftwareCatalog = []string{
-		"label",
-		"os",
-		"name",
-		"version",
-		"maintainer",
-		// "description",
-		// "home_page",
-	}
-	columnFeishuApproval = []string{
-		"status",
-		"approval_code",
-		"approval_name",
-		"user_id",
-		"department_id",
-	}
-	columnFeishuEventApproval = []string{
-		"type",
-		"status",
-		"approval_code",
-		"user_id",
+		"email",
 	}
 )
 
@@ -128,40 +27,7 @@ func (cs *column) Get(c *gin.Context) {
 	switch c.Param(PARAM_ID) {
 	case "asset":
 		// cs.Asset(c)
-		cs.GetColumns(c, "assets", columnAsset)
-	case "distribute":
-		// cs.Distribute(c)
-		cs.GetColumns(c, "distributes", columnDistribute)
-	case "back":
-		// cs.Back(c)
-		cs.GetColumns(c, "backs", columnBack)
-	case "change":
-		// cs.Change(c)
-		cs.GetColumns(c, "changes", columnChange)
-	case "check":
-		// cs.Check(c)
-		cs.GetColumns(c, "checks", columnCheck)
-	case "software":
-		// cs.Software(c)
-		cs.GetColumns(c, "softwares", columnSoftware)
-	case "software_purchased":
-		// cs.SoftwarePurchased(c)
-		cs.GetColumns(c, "software_purchaseds", columnSoftwrarePurchased)
-	case "software_purchased_assignment":
-		// cs.SoftwarePurchasedAssignment(c)
-		cs.GetColumns(c, "software_purchased_assignments", columnSoftwrarePurchasedAssignment)
-	case "software_report":
-		// cs.SoftwareReport(c)
-		cs.GetColumns(c, "software_reports", columnSoftwareReport)
-	case "software_catalog":
-		// cs.SoftwareCatalog(c)
-		cs.GetColumns(c, "software_catalogs", columnSoftwareCatalog)
-	case "feishu_approval":
-		// cs.FeishuApproval(c)
-		cs.GetColumns(c, "feishu_approvals", columnFeishuApproval)
-	case "feishu_event_approval":
-		// cs.FeishuEventApproval(c)
-		cs.GetColumns(c, "feishu_event_approvals", columnFeishuEventApproval)
+		cs.GetColumns(c, "assets", columnUser)
 	default:
 		zap.S().Warn("unknow id: ", c.Param(PARAM_ID))
 		ResponseJSON(c, CodeSuccess)
