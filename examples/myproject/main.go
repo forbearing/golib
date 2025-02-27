@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	pkgcontroller "github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/middleware"
@@ -28,12 +29,16 @@ func main() {
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
 	config.SetConfigType("ini")
-	// Add tasks.
-	task.Register(SayHello, 1*time.Second, "say hello")
-	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 
-	// os.Setenv("SERVER_DB", config.DBPostgre)
+	// Register task and cronjob before bootstrap.
+	task.Register(SayHello, 1*time.Second, "say hello")
+	cronjob.Register(SayHello, "*/1 * * * * *", "say hello")
+
 	RunOrDie(bootstrap.Bootstrap)
+
+	// Register task and cronjob after bootstrap.
+	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
+	cronjob.Register(SayGoodbye, "*/1 * * * * *", "say goodbye")
 
 	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
 
