@@ -367,7 +367,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		}); err != nil {
-			log.Error(fmt.Sprintf("failed to write operation log to database: %w", err.Error()))
+			log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
 		}
 		ResponseJSON(c, CodeSuccess, req)
 	}
@@ -546,7 +546,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		}); err != nil {
-			log.Error(fmt.Sprintf("failed to write operation log to database: %w", err.Error()))
+			log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
 		}
 		// NOTE: You should response `oldVal` instead of `req`.
 		// The req is `newVal`.
@@ -619,7 +619,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 
 		// FIXME: failed to convert value when size value is -1.
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
-			log.Warn(fmt.Sprintf("failed to decode uri query parameter into model: %w", err))
+			log.Warn(fmt.Sprintf("failed to decode uri query parameter into model: %s", err))
 		}
 		log.Infoz(fmt.Sprintf("%s: list query parameter", typ.Name()), zap.Object(typ.String(), m))
 
