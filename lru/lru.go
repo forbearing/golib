@@ -3,6 +3,7 @@ package lru
 import (
 	"reflect"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/types"
 	lru "github.com/hashicorp/golang-lru/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -77,58 +78,58 @@ type (
 
 func Init() (err error) {
 	if _int, err = lru.New[string, int](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _int8, err = lru.New[string, int8](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _int16, err = lru.New[string, int16](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _int32, err = lru.New[string, int32](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _int64, err = lru.New[string, int64](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _uint, err = lru.New[string, uint](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _uint8, err = lru.New[string, uint8](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _uint16, err = lru.New[string, uint16](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _uint32, err = lru.New[string, uint32](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _uint64, err = lru.New[string, uint64](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _float32, err = lru.New[string, float32](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _float64, err = lru.New[string, float64](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _bool, err = lru.New[string, bool](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _rune, err = lru.New[string, rune](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _string, err = lru.New[string, string](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _byte, err = lru.New[string, byte](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _bytes, err = lru.New[string, []byte](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _any, err = lru.New[string, any](DEFAULT_SIZE); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	return
 }

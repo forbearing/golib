@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/multierr"
@@ -170,5 +171,5 @@ func Init() error {
 	// 	collectors.WithGoCollections(collectors.GoRuntimeMetricsCollection),
 	// 	collectors.WithGoCollections(collectors.GoRuntimeMemStatsCollection),
 	// )))
-	return multierr.Combine(errs...)
+	return errors.WithStack(multierr.Combine(errs...))
 }

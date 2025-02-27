@@ -45,7 +45,7 @@ func Init() error {
 	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session]().WithPurge().Delete(s) }, config.App.AuthConfig.RefreshTokenExpireDuration)
 	sessions := make([]*model.Session, 0)
 	if err := database.Database[*model.Session]().WithLimit(-1).List(&sessions); err != nil {
-		return err
+		return errors.Wrap(err, "failed to list sessions")
 	}
 	for _, session := range sessions {
 		setSession(session.UserId, session)

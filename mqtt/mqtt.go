@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 

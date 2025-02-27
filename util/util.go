@@ -107,7 +107,7 @@ func SplitByDoublePipe(data []byte, atEOF bool) (advance int, token []byte, err 
 func RunOrDie(fn func() error) {
 	if err := fn(); err != nil {
 		name := GetFunctionName(fn)
-		HandleErr(fmt.Errorf("%s error: %w", name, err))
+		HandleErr(fmt.Errorf("%s error: %+v", name, err))
 	}
 }
 
