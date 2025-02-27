@@ -126,11 +126,7 @@ func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Ph
 }
 
 // GormLogger implements gorm logger.Interface
-// https://github.com/moul/zapgorm2 may be the alternative choice.
-// eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
-type GormLogger struct {
-	l types.Logger
-}
+type GormLogger struct{ l types.Logger }
 
 var _ gorml.Interface = (*GormLogger)(nil)
 
