@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/spf13/viper"
 )
 
@@ -77,17 +78,17 @@ func Init() (err error) {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			var tempdir string
 			if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
-				return err
+				return errors.Wrap(err, "failed to create temp dir")
 			}
 			if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
-				return err
+				return errors.Wrap(err, "failed to create config file")
 			}
 		} else {
-			return err
+			return errors.Wrap(err, "failed to read config file")
 		}
 	}
 	if err = viper.Unmarshal(App); err != nil {
-		return
+		return errors.Wrap(err, "failed to unmarshal config")
 	}
 
 	if App.RedisConfig.Expiration < time.Minute || App.RedisConfig.Expiration > 24*time.Hour {

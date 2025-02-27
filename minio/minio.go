@@ -6,11 +6,11 @@ import (
 	"io"
 	"sync"
 
-	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/util"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -29,13 +29,13 @@ func Init() (err error) {
 		return nil
 	}
 	once.Do(func() {
-		if cli, err = New(cfg); err != nil {
-			err = errors.Wrap(err, "failed to create minio client")
-			zap.S().Error(err)
-		}
+		cli, err = New(cfg)
 	})
+	if err != nil {
+		return errors.Wrap(err, "failed to create minio client")
+	}
 	zap.S().Infow("successfully connect to minio", "endpoint", cfg.Endpoint, "bucket", cfg.Bucket)
-	return
+	return nil
 }
 
 // New creates a new Minio client instance with the given configuration.

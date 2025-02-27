@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
 	"go.uber.org/zap"
@@ -19,11 +20,11 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 	for _, m := range model.Tables {
 		if len(m.GetTableName()) > 0 {
 			if err = db.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return
+				return errors.Wrap(err, "failed to create table")
 			}
 		} else {
 			if err = db.AutoMigrate(m); err != nil {
-				return
+				return errors.Wrap(err, "failed to create table")
 			}
 		}
 	}
@@ -36,11 +37,11 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 		m := v.Table
 		if len(m.GetTableName()) > 0 {
 			if err = handler.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return
+				return errors.Wrap(err, "failed to create table")
 			}
 		} else {
 			if err = handler.AutoMigrate(m); err != nil {
-				return
+				return errors.Wrap(err, "failed to create table")
 			}
 		}
 	}
@@ -55,11 +56,11 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 		}
 		if len((r.Table.GetTableName())) > 0 {
 			if err = handler.Table(r.Table.GetTableName()).Save(r.Rows).Error; err != nil {
-				return err
+				return errors.Wrap(err, "failed to create table records")
 			}
 		} else {
 			if err = handler.Model(r.Table).Save(r.Rows).Error; err != nil {
-				return err
+				return errors.Wrap(err, "failed to create table records")
 			}
 		}
 	}

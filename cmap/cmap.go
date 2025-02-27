@@ -95,7 +95,7 @@ type (
 	_Any     struct{}
 )
 
-func Init() (err error) {
+func Init() error {
 	_int = cmap.New[int]()
 	_int8 = cmap.New[int8]()
 	_int16 = cmap.New[int16]()
@@ -114,7 +114,7 @@ func Init() (err error) {
 	_byte = cmap.New[byte]()
 	_bytes = cmap.New[[]byte]()
 	_any = cmap.New[any]()
-	return
+	return nil
 }
 
 // TODO: if type is int, string, returns the internal cache

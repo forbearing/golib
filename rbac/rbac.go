@@ -5,6 +5,7 @@ import (
 
 	"github.com/casbin/casbin/v2"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/types/consts"
@@ -75,7 +76,7 @@ func Init() (err error) {
 		return
 	}
 	if RBAC.enforcer, err = casbin.NewEnforcer(consts.FileRbacConf, RBAC.adapter); err != nil {
-		return
+		return errors.Wrap(err, "failed to create casbin enforcer")
 	}
 	// RBAC.enforcer.AddFunction("isAdmin", func(args ...any) (any, error) {
 	// 	username := args[0].(string)
@@ -88,7 +89,7 @@ func Init() (err error) {
 	// 将 root 用户加入所有的所有角色组
 	for _, role := range roles {
 		if _, err = RBAC.AddGroupingPolicy(root, role); err != nil {
-			return err
+			return errors.Wrap(err, "failed to add root to role")
 		}
 	}
 

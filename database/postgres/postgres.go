@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database/helper"
 	"github.com/forbearing/golib/logger"
@@ -28,12 +29,10 @@ func Init() (err error) {
 	}
 
 	if Default, err = New(cfg); err != nil {
-		zap.S().Error(err)
-		return err
+		return errors.Wrap(err, "failed to connect to postgres")
 	}
 	if db, err = Default.DB(); err != nil {
-		zap.S().Error(err)
-		return err
+		return errors.Wrap(err, "failed to get postgres db")
 	}
 	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
 	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)

@@ -49,7 +49,7 @@ func Init() (err error) {
 	}
 	esConfig = makeESConfig(cfg)
 	if client, err = elasticsearch.NewClient(esConfig); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create elasticsearch client")
 	}
 	ticker := time.NewTicker(timeout + 10*time.Second)
 	go func() {
