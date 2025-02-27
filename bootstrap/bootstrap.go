@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/forbearing/golib/cmap"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/clickhouse"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/database/postgres"
@@ -47,6 +48,7 @@ func Bootstrap() error {
 		router.Init,
 		jwt.Init,
 		task.Init,
+		cronjob.Init,
 	)
 
 	return Init()
