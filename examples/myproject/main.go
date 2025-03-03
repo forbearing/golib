@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -17,32 +18,43 @@ import (
 	"github.com/forbearing/golib/types"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 
 	_ "github.com/forbearing/golib/examples/myproject/service"
 )
 
 func main() {
-	// Prepare
-	// Setup configuration.
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
 	config.SetConfigType("ini")
+
+	// Register config before bootstrap.
+	config.Register[WechatConfig]("wechat")
 
 	// Register task and cronjob before bootstrap.
 	task.Register(SayHello, 1*time.Second, "say hello")
 	cronjob.Register(SayHello, "*/1 * * * * *", "say hello")
 
+	//
+	//
+	//
 	RunOrDie(bootstrap.Bootstrap)
+	//
+	//
+	//
+
+	// Register config after bootstrap.
+	config.Register[*NatsConfig]("nats")
+	fmt.Printf("%+v\n", config.Get[*WechatConfig]("wechat"))
+	fmt.Printf("%+v\n", config.Get[NatsConfig]("nats"))
 
 	// Register task and cronjob after bootstrap.
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 	cronjob.Register(SayGoodbye, "*/1 * * * * *", "say goodbye")
 
-	zap.S().Infow("successfully initialized", "addr", AppConf.MqttConfig.Addr, "username", AppConf.MqttConfig.Username)
-
-	// use Base router.
+	//
+	//
+	//
+	// router
 	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 
@@ -103,37 +115,16 @@ func main() {
 	RunOrDie(router.Run)
 }
 
-var AppConf = new(Config)
-
-func InitConfig() (err error) {
-	config.SetDefaultValue()
-	if err = viper.ReadInConfig(); err != nil {
-		return
-	}
-	if err = viper.Unmarshal(AppConf); err != nil {
-		return
-	}
-	return nil
+type WechatConfig struct {
+	AppID     string `json:"app_id" mapstructure:"app_id" default:"myappid"`
+	AppSecret string `json:"app_secret" mapstructure:"app_secret" default:"myappsecret"`
+	Enable    bool   `json:"enable" mapstructure:"enable"`
 }
 
-type Config struct {
-	MqttConfig            `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
-	config.ServerConfig   `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
-	config.AuthConfig     `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
-	config.SqliteConfig   `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
-	config.PostgreConfig  `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
-	config.MySQLConfig    `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
-	config.RedisConfig    `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
-	config.MinioConfig    `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
-	config.S3Config       `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
-	config.LoggerConfig   `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
-	config.LdapConfig     `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
-	config.InfluxdbConfig `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
-	config.FeishuConfig   `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
-}
-
-type MqttConfig struct {
-	Addr     string `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
-	Username string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+type NatsConfig struct {
+	URL      string        `json:"url" mapstructure:"url" default:"nats://127.0.0.1:4222"`
+	Username string        `json:"username" mapstructure:"username" default:"nats"`
+	Password string        `json:"password" mapstructure:"password" default:"nats"`
+	Timeout  time.Duration `json:"timeout" mapstructure:"timeout" default:"5s"`
+	Enable   bool          `json:"enable" mapstructure:"enable"`
 }
