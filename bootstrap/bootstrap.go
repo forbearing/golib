@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/database/sqlite"
 	"github.com/forbearing/golib/database/sqlserver"
+	"github.com/forbearing/golib/debug/statsviz"
 	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger/logrus"
@@ -66,4 +67,12 @@ func Bootstrap() error {
 
 	initialized = true
 	return Init()
+}
+
+func Run() error {
+	RegisterGo(
+		statsviz.Run,
+		router.Run,
+	)
+	return Go()
 }
