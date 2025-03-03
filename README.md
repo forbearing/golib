@@ -243,11 +243,3 @@ type ESDocumenter interface {
 	GetID() string
 }
 ```
-
-## TODO
-
-- [ ] Use reflect caching to optimizeize performance
-- [ ] Configuration `config/config.go` supports multiple instances, including MySQL, PostgresSQL, Elastic, Elasticsearch, MongoDB, etc.
-- [ ] Add `ldap` package and integrate it into `boostrap.Boostrap`
-- [ ] Controler layer utilizes github.com/araddon/dateparse to handle arbitrary date time formats.
-- [ ] Add more middleware
