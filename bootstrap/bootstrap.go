@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"sync"
+
 	"github.com/forbearing/golib/cmap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/cronjob"
@@ -25,7 +27,18 @@ import (
 	"github.com/forbearing/golib/task"
 )
 
+var (
+	initialized bool
+	mu          sync.Mutex
+)
+
 func Bootstrap() error {
+	mu.Lock()
+	defer mu.Unlock()
+	if initialized {
+		return nil
+	}
+
 	Register(
 		config.Init,
 		zap.Init,
@@ -51,5 +64,6 @@ func Bootstrap() error {
 		cronjob.Init,
 	)
 
+	initialized = true
 	return Init()
 }
