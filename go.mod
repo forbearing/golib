@@ -11,6 +11,7 @@ require (
 	github.com/casbin/gorm-adapter/v3 v3.32.0
 	github.com/cloverstd/tcping v0.1.1
 	github.com/cockroachdb/errors v1.11.3
+	github.com/creasty/defaults v1.8.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/gabriel-vasile/mimetype v1.4.8
