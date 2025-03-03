@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/forbearing/golib/bootstrap"
@@ -23,6 +24,8 @@ import (
 )
 
 func main() {
+	os.Setenv(config.SERVER_ENABLE_STATSVIZ, "true")
+
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
 	config.SetConfigType("ini")
@@ -111,8 +114,7 @@ func main() {
 	router.RegisterWithConfig(&types.ControllerConfig[*pkgmodel.User]{DB: db}, router.API, "/external/user")
 	router.RegisterWithConfig(&types.ControllerConfig[*model.Group]{DB: db}, router.API, "/external/group")
 
-	// Run server.
-	RunOrDie(router.Run)
+	RunOrDie(bootstrap.Run)
 }
 
 type WechatConfig struct {
