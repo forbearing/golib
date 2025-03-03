@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/creasty/defaults"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -29,7 +32,12 @@ var (
 	configFile  = ""
 	configName  = "config"
 	configType  = "ini"
-	mu          sync.Mutex
+
+	registeredConfigs = make(map[string]any)
+	registeredTypes   = make(map[string]reflect.Type)
+
+	inited bool
+	mu     sync.RWMutex
 )
 
 type (
@@ -91,11 +99,116 @@ func Init() (err error) {
 		return errors.Wrap(err, "failed to unmarshal config")
 	}
 
-	if App.RedisConfig.Expiration < time.Minute || App.RedisConfig.Expiration > 24*time.Hour {
-		App.RedisConfig.Expiration = 8 * time.Hour
+	for name, typ := range registeredTypes {
+		registerType(name, typ)
 	}
+	inited = true
 
 	return nil
+}
+
+// Register registers a configuration type with the given name.
+// The type parameter T can be either struct type or pointer to struct type.
+// The registered type will be used to create and initialize the configuration
+// instance when loading configuration from file or environment variables.
+//
+// The struct tag "default" can be used to set default value for the configuration.
+// Register can be called before or after `Init`.
+// NOTE: registered config not support set default value from environment variables.
+//
+// Example usage:
+//
+//	type WechatConfig struct {
+//		AppID     string `json:"app_id" mapstructure:"app_id" default:"myappid"`
+//		AppSecret string `json:"app_secret" mapstructure:"app_secret" default:"myappsecret"`
+//		Enable    bool   `json:"enable" mapstructure:"enable"`
+//	}
+//
+//	type NatsConfig struct {
+//		URL      string        `json:"url" mapstructure:"url" default:"nats://127.0.0.1:4222"`
+//		Username string        `json:"username" mapstructure:"username" default:"nats"`
+//		Password string        `json:"password" mapstructure:"password" default:"nats"`
+//		Timeout  time.Duration `json:"timeout" mapstructure:"timeout" default:"5s"`
+//		Enable   bool          `json:"enable" mapstructure:"enable"`
+//	}
+//	// Register with struct type
+//	config.Register[WechatConfig]("wechat")
+//
+//	// Register with pointer type (equivalent to above)
+//	config.Register[*WechatConfig]("wechat")
+func Register[T any](name string) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var t T
+	typ := reflect.TypeOf(t)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if inited {
+		registerType(name, typ)
+	} else {
+		registeredTypes[name] = typ
+	}
+}
+
+func registerType(name string, typ reflect.Type) {
+	// Set default value from struct tag "default".
+	cfg := reflect.New(typ).Interface()
+	if err := defaults.Set(cfg); err != nil {
+		zap.S().Warnw("failed to set default value", "name", name, "type", typ, "error", err)
+	}
+	// Set config value from config file.
+	if err := viper.UnmarshalKey(name, cfg); err != nil {
+		zap.S().Warnw("failed to unmarshal config", "name", name, "type", typ, "error", err)
+	}
+	registeredConfigs[name] = cfg
+}
+
+// Get returns the registered configuration by name.
+// The type parameter T must match the registered type or be a pointer to it,
+// othherwise a zero value or nil pointer will be returned.
+//
+// Example usage:
+//
+//	config.Register[WechatConfig]("wechat")
+//
+//	// Get by value type - returns value
+//	cfg1 := config.Get[WechatConfig]("wechat")
+//
+//	// Get by pointer type - returns pointer
+//	cfg2 := config.Get[*WechatConfig]("wechat")
+//
+//	// Type mismatch - returns zero value
+//	cfg3 := config.Get[OtherConfig]("wechat")
+//
+//	// Type mismatch - returns nil
+//	cfg4 := config.Get[*OtherConfig]("wechat")
+func Get[T any](name string) (t T) {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	config, exists := registeredConfigs[name]
+	if !exists {
+		zap.S().Warnw("config not found", "name", name)
+		return
+	}
+
+	storedVal := reflect.ValueOf(config)
+	storedTyp := storedVal.Elem().Type()
+	destTyp := reflect.TypeOf(t)
+
+	if storedTyp == destTyp {
+		return storedVal.Elem().Interface().(T)
+	}
+	if destTyp.Kind() == reflect.Ptr {
+		if storedTyp == destTyp.Elem() {
+			return storedVal.Interface().(T)
+		}
+	}
+
+	zap.S().Warnw("config type mismatch", "name", name, "stored", storedTyp.Name(), "dest", destTyp.Name())
+	return t
 }
 
 // SetDefaultValue will set config default value
