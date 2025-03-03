@@ -219,6 +219,9 @@ func SetDefaultValue() {
 	viper.SetDefault("server.db", DBSqlite)
 	viper.SetDefault("server.domain", "")
 	viper.SetDefault("server.enable_rbac", false)
+	viper.SetDefault("server.enable_statsviz", false)
+	viper.SetDefault("server.statsviz_listen", "")
+	viper.SetDefault("server.statsviz_port", 12345)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
 	viper.SetDefault("auth.none_expire_username", noneExpireUser)
@@ -438,6 +441,10 @@ type ServerConfig struct {
 	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
 	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
+
+	EnableStatsviz bool   `json:"enable_statsviz" mapstructure:"enable_statsviz" ini:"enable_statsviz" yaml:"enable_statsviz"`
+	StatsvizList   string `json:"statsviz_list" mapstructure:"statsviz_list" ini:"statsviz_list" yaml:"statsviz_list"`
+	StatsvizPort   int    `json:"statsviz_port" mapstructure:"statsviz_port" ini:"statsviz_port" yaml:"statsviz_port"`
 }
 
 type AuthConfig struct {

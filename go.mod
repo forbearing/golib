@@ -7,6 +7,7 @@ toolchain go1.24.0
 require (
 	github.com/allegro/bigcache v1.2.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/arl/statsviz v0.6.0
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/casbin/gorm-adapter/v3 v3.32.0
 	github.com/cloverstd/tcping v0.1.1
