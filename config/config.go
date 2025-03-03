@@ -158,11 +158,60 @@ func registerType(name string, typ reflect.Type) {
 	if err := defaults.Set(cfg); err != nil {
 		zap.S().Warnw("failed to set default value", "name", name, "type", typ, "error", err)
 	}
+	// NOTE: package "defaults" not support set default value for time.Duration, so we should set it manually.
+	setDefaultDurationFields(typ, reflect.ValueOf(cfg).Elem())
+
 	// Set config value from config file.
 	if err := viper.UnmarshalKey(name, cfg); err != nil {
 		zap.S().Warnw("failed to unmarshal config", "name", name, "type", typ, "error", err)
 	}
 	registeredConfigs[name] = cfg
+}
+
+func setDefaultDurationFields(typ reflect.Type, val reflect.Value) {
+	if typ.Kind() != reflect.Struct {
+		return
+	}
+	for i := range typ.NumField() {
+		fieldTyp := typ.Field(i)
+		fieldVal := val.Field(i)
+
+		// Handle embedded structs
+		if fieldTyp.Anonymous && fieldTyp.Type.Kind() == reflect.Struct {
+			setDefaultDurationFields(fieldTyp.Type, fieldVal)
+			continue
+		}
+
+		// Handle time.Duration field
+		if fieldTyp.Type == reflect.TypeOf(time.Duration(0)) {
+			// Check if the field has a default tag and its current value is zero
+			if defaultValue, ok := fieldTyp.Tag.Lookup("default"); ok && fieldVal.Interface().(time.Duration) == 0 {
+				// Parse the duration string
+				if duration, err := time.ParseDuration(defaultValue); err == nil {
+					fieldVal.Set(reflect.ValueOf(duration))
+				} else {
+					zap.S().Warnw("failed to parse duration default value",
+						"field", fieldTyp.Name,
+						"default", defaultValue,
+						"error", err)
+				}
+			}
+		}
+
+		// Recursively process nested structs (if not embedded)
+		if fieldTyp.Type.Kind() == reflect.Struct && !fieldTyp.Anonymous {
+			setDefaultDurationFields(fieldTyp.Type, fieldVal)
+		}
+
+		// Handle pointer to struct
+		if fieldTyp.Type.Kind() == reflect.Ptr && fieldTyp.Type.Elem().Kind() == reflect.Struct {
+			// If the pointer is nil, initialize it
+			if fieldVal.IsNil() {
+				fieldVal.Set(reflect.New(fieldTyp.Type.Elem()))
+			}
+			setDefaultDurationFields(fieldTyp.Type.Elem(), fieldVal.Elem())
+		}
+	}
 }
 
 // Get returns the registered configuration by name.
