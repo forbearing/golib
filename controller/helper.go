@@ -7,7 +7,7 @@ import (
 	"github.com/mssola/useragent"
 )
 
-func createSession(c *gin.Context) *model.Session {
+func CreateSession(c *gin.Context) *model.Session {
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()

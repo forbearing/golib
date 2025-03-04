@@ -76,7 +76,7 @@ func (*user) Login(c *gin.Context) {
 		return
 	}
 	// TODO: 把以前的 token 失效掉
-	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name, createSession(c))
+	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name, CreateSession(c))
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
 		return
