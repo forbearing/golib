@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -112,9 +113,16 @@ func Init() (err error) {
 // The registered type will be used to create and initialize the configuration
 // instance when loading configuration from file or environment variables.
 //
-// The struct tag "default" can be used to set default value for the configuration.
-// Register can be called before or after `Init`.
-// NOTE: registered config not support set default value from environment variables.
+// Configuration values are loaded in the following priority order (from highest to lowest):
+// 1. Environment variables (format: SECTION_FIELD, e.g., NATS_USERNAME)
+// 2. Configuration file values
+// 3. Default values from struct tags
+//
+// The struct tag "default" can be used to set default values for fields.
+// For time.Duration fields, you can use duration strings like "5s", "1m", etc.
+//
+// Register can be called before or after `Init`. If called before `Init`,
+// the registration will be processed during initialization.
 //
 // Example usage:
 //
@@ -131,11 +139,18 @@ func Init() (err error) {
 //		Timeout  time.Duration `json:"timeout" mapstructure:"timeout" default:"5s"`
 //		Enable   bool          `json:"enable" mapstructure:"enable"`
 //	}
+//
 //	// Register with struct type
 //	config.Register[WechatConfig]("wechat")
 //
 //	// Register with pointer type (equivalent to above)
-//	config.Register[*WechatConfig]("wechat")
+//	config.Register[*NatsConfig]("nats")
+//
+// After registration, you can access the config using Get:
+//
+//	natsCfg := config.Get[NatsConfig]("nats")
+//	// or with pointer
+//	natsPtr := config.Get[*NatsConfig]("nats")
 func Register[T any](name string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -165,6 +180,54 @@ func registerType(name string, typ reflect.Type) {
 	if err := viper.UnmarshalKey(name, cfg); err != nil {
 		zap.S().Warnw("failed to unmarshal config", "name", name, "type", typ, "error", err)
 	}
+
+	// Set config value from environment variables.
+	envCfg := reflect.New(typ).Interface()
+	envPrefix := strings.ToUpper(name) + "_"
+	v := reflect.ValueOf(envCfg).Elem()
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		mapstructureTag := field.Tag.Get("mapstructure")
+		if len(mapstructureTag) == 0 {
+			continue
+		}
+		envKey := envPrefix + strings.ToUpper(mapstructureTag)
+		if envVal, exists := os.LookupEnv(envKey); exists {
+			fieldVal := v.Field(i)
+			switch fieldVal.Kind() {
+			case reflect.String:
+				fieldVal.SetString(envVal)
+			case reflect.Bool:
+				boolVal, err := strconv.ParseBool(envVal)
+				if err == nil {
+					fieldVal.SetBool(boolVal)
+				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				if field.Type == reflect.TypeOf(time.Duration(0)) {
+					// handle time.Duration
+					if duration, err := time.ParseDuration(envVal); err == nil {
+						fieldVal.SetInt(int64(duration))
+					}
+				} else {
+					if intVal, err := strconv.ParseInt(envVal, 10, 64); err == nil {
+						fieldVal.SetInt(intVal)
+					}
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				if uintVal, err := strconv.ParseUint(envVal, 10, 64); err == nil {
+					fieldVal.SetUint(uintVal)
+				}
+			case reflect.Float32, reflect.Float64:
+				if floatVal, err := strconv.ParseFloat(envVal, 64); err == nil {
+					fieldVal.SetFloat(floatVal)
+				}
+
+			}
+		}
+	}
+	mergeNonZeroFields(reflect.ValueOf(cfg).Elem(), v)
+
 	registeredConfigs[name] = cfg
 }
 
@@ -212,6 +275,35 @@ func setDefaultDurationFields(typ reflect.Type, val reflect.Value) {
 			setDefaultDurationFields(fieldTyp.Type.Elem(), fieldVal.Elem())
 		}
 	}
+}
+
+func mergeNonZeroFields(dst, src reflect.Value) {
+	for i := 0; i < src.NumField(); i++ {
+		srcField := src.Field(i)
+		if !isZeroValue(srcField) {
+			dst.Field(i).Set(srcField)
+		}
+	}
+}
+
+func isZeroValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.String:
+		return v.String() == ""
+	case reflect.Slice, reflect.Map:
+		return v.Len() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	}
+	return false
 }
 
 // Get returns the registered configuration by name.
