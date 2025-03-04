@@ -7,7 +7,7 @@ import (
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/util"
+	. "github.com/forbearing/golib/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func TestRegisterStruct(t *testing.T) {
 	config.Register[WechatConfig]("wechat")
 
 	config.SetConfigFile(filename)
-	util.RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(bootstrap.Bootstrap)
 
 	// Register config after bootstrap
 	config.Register[NatsConfig]("nats")
@@ -61,7 +61,7 @@ func TestRegisterStructPointer(t *testing.T) {
 	config.Register[*WechatConfig]("wechat")
 
 	config.SetConfigFile(filename)
-	util.RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(bootstrap.Bootstrap)
 
 	// Register config after bootstrap
 	config.Register[*NatsConfig]("nats")
@@ -77,6 +77,38 @@ func TestRegisterStructPointer(t *testing.T) {
 	assert.Equal(t, "nuser", nats.Username)
 	assert.Equal(t, "npass", nats.Password)
 	assert.Equal(t, 5*time.Second, nats.Timeout)
+	assert.Equal(t, true, nats.Enable)
+}
+
+func TestRegisterStructFromEnv(t *testing.T) {
+	if err := os.WriteFile(filename, []byte(configData), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	os.Setenv("NATS_USERNAME", "user_from_env")
+	os.Setenv("NATS_PASSWORD", "pass_from_env")
+	os.Setenv("NATS_TIMEOUT", "60s")
+
+	// Register config before bootstrap
+	config.Register[WechatConfig]("wechat")
+
+	config.SetConfigFile(filename)
+	RunOrDie(bootstrap.Bootstrap)
+
+	// Register config after bootstrap
+	config.Register[NatsConfig]("nats")
+
+	wechat := config.Get[*WechatConfig]("wechat")
+
+	assert.Equal(t, "wx123456789", wechat.AppID)
+	assert.Equal(t, "myappsecret", wechat.AppSecret)
+	assert.Equal(t, false, wechat.Enable)
+
+	nats := config.Get[NatsConfig]("nats")
+	assert.Equal(t, "nats://127.0.0.1:4222", nats.URL)
+	assert.Equal(t, "user_from_env", nats.Username)
+	assert.Equal(t, "pass_from_env", nats.Password)
+	assert.Equal(t, 60*time.Second, nats.Timeout)
 	assert.Equal(t, true, nats.Enable)
 }
 

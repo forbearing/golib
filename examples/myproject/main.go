@@ -25,6 +25,9 @@ import (
 
 func main() {
 	os.Setenv(config.SERVER_ENABLE_STATSVIZ, "true")
+	os.Setenv("NATS_USERNAME", "user_from_env")
+	os.Setenv("NATS_PASSWORD", "pass_from_env")
+	os.Setenv("NATS_TIMEOUT", "60s")
 
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
