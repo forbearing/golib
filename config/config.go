@@ -360,9 +360,6 @@ func SetDefaultValue() {
 	viper.SetDefault("server.db", DBSqlite)
 	viper.SetDefault("server.domain", "")
 	viper.SetDefault("server.enable_rbac", false)
-	viper.SetDefault("server.enable_statsviz", false)
-	viper.SetDefault("server.statsviz_listen", "")
-	viper.SetDefault("server.statsviz_port", 12345)
 
 	viper.SetDefault("auth.none_expire_token", noneExpireToken)
 	viper.SetDefault("auth.none_expire_username", noneExpireUser)
@@ -514,6 +511,16 @@ func SetDefaultValue() {
 	viper.SetDefault("feishu.msg_app_id", "")
 	viper.SetDefault("feishu.msg_app_secret", "")
 	viper.SetDefault("feishu.enable", false)
+
+	viper.SetDefault("debug.enable_statsviz", false)
+	viper.SetDefault("debug.enable_pprof", false)
+	viper.SetDefault("debug.enable_gops", false)
+	viper.SetDefault("debug.statsviz_listen", "127.0.0.1")
+	viper.SetDefault("debug.pprof_listen", "127.0.0.1")
+	viper.SetDefault("debug.gops_listen", "127.0.0.1")
+	viper.SetDefault("debug.statsviz_port", 10000)
+	viper.SetDefault("debug.pprof_port", 10001)
+	viper.SetDefault("debug.gops_port", 10002)
 }
 
 // SetConfigFile set the config file path.
@@ -571,8 +578,9 @@ type Config struct {
 	LoggerConfig        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
 	LdapConfig          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
 	InfluxdbConfig      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
-	FeishuConfig        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	MqttConfig          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
+	FeishuConfig        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+	DebugConfig         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
 }
 
 type ServerConfig struct {
@@ -582,10 +590,6 @@ type ServerConfig struct {
 	DB         DB     `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
 	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
-
-	EnableStatsviz bool   `json:"enable_statsviz" mapstructure:"enable_statsviz" ini:"enable_statsviz" yaml:"enable_statsviz"`
-	StatsvizListen string `json:"statsviz_listen" mapstructure:"statsviz_listen" ini:"statsviz_listen" yaml:"statsviz_listen"`
-	StatsvizPort   int    `json:"statsviz_port" mapstructure:"statsviz_port" ini:"statsviz_port" yaml:"statsviz_port"`
 }
 
 type AuthConfig struct {
@@ -822,4 +826,18 @@ type FeishuConfig struct {
 	MsgAppID     string `json:"msg_app_id" mapstructure:"msg_app_id" ini:"msg_app_id" yaml:"msg_app_id"`
 	MsgAppSecret string `json:"msg_app_secret" mapstructure:"msg_app_secret" ini:"msg_app_secret" yaml:"msg_app_secret"`
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+type DebugConfig struct {
+	EnableStatsviz bool   `json:"enable_statsviz" mapstructure:"enable_statsviz" ini:"enable_statsviz" yaml:"enable_statsviz"`
+	StatsvizListen string `json:"statsviz_listen" mapstructure:"statsviz_listen" ini:"statsviz_listen" yaml:"statsviz_listen"`
+	StatsvizPort   int    `json:"statsviz_port" mapstructure:"statsviz_port" ini:"statsviz_port" yaml:"statsviz_port"`
+
+	EnablePprof bool   `json:"enable_pprof" mapstructure:"enable_pprof" ini:"enable_pprof" yaml:"enable_pprof"`
+	PprofListen string `json:"pprof_listen" mapstructure:"pprof_listen" ini:"pprof_listen" yaml:"pprof_listen"`
+	PprofPort   int    `json:"pprof_port" mapstructure:"pprof_port" ini:"pprof_port" yaml:"pprof_port"`
+
+	EnableGops bool   `json:"enable_gops" mapstructure:"enable_gops" ini:"enable_gops" yaml:"enable_gops"`
+	GopsListen string `json:"gops_listen" mapstructure:"gops_listen" ini:"gops_listen" yaml:"gops_listen"`
+	GopsPort   int    `json:"gops_port" mapstructure:"gops_port" ini:"gops_port" yaml:"gops_port"`
 }

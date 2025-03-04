@@ -12,6 +12,8 @@ import (
 	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/database/sqlite"
 	"github.com/forbearing/golib/database/sqlserver"
+	"github.com/forbearing/golib/debug/gops"
+	"github.com/forbearing/golib/debug/pprof"
 	"github.com/forbearing/golib/debug/statsviz"
 	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/jwt"
@@ -71,8 +73,10 @@ func Bootstrap() error {
 
 func Run() error {
 	RegisterGo(
-		statsviz.Run,
 		router.Run,
+		statsviz.Run,
+		pprof.Run,
+		gops.Run,
 	)
 	return Go()
 }

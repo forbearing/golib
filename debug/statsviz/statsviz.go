@@ -14,8 +14,8 @@ func Run() error {
 	if config.App.EnableStatsviz {
 		mux := http.NewServeMux()
 		statsviz.Register(mux)
-		zap.S().Infow("successfully start statsviz", "listen", config.App.ServerConfig.StatsvizListen, "port", config.App.ServerConfig.StatsvizPort)
-		return http.ListenAndServe(fmt.Sprintf("%s:%d", config.App.ServerConfig.StatsvizListen, config.App.ServerConfig.StatsvizPort), mux)
+		zap.S().Infow("successfully start statsviz", "listen", config.App.StatsvizListen, "port", config.App.StatsvizPort)
+		return http.ListenAndServe(fmt.Sprintf("%s:%d", config.App.StatsvizListen, config.App.StatsvizPort), mux)
 	}
 
 	<-context.Background().Done()
