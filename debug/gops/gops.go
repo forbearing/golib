@@ -1,8 +1,10 @@
 package gops
 
 import (
-	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/forbearing/golib/config"
 	"github.com/google/gops/agent"
@@ -10,16 +12,29 @@ import (
 )
 
 func Run() error {
-	if config.App.EnableGops {
-		if err := agent.Listen(agent.Options{
-			Addr:            fmt.Sprintf("%s:%d", config.App.GopsListen, config.App.GopsPort),
-			ShutdownCleanup: true,
-			ConfigDir:       "/tmp/gops",
-		}); err != nil {
-			return err
-		}
+	if !config.App.EnableGops {
+		return nil
 	}
-	zap.S().Infow("successfully start gops", "listen", config.App.GopsListen, "port", config.App.GopsPort)
-	<-context.Background().Done()
+	log := zap.S()
+	err := agent.Listen(agent.Options{
+		Addr:            fmt.Sprintf("%s:%d", config.App.GopsListen, config.App.GopsPort),
+		ShutdownCleanup: true,
+		ConfigDir:       "/tmp/gops",
+	})
+	if err != nil {
+		log.Errorw("gops agent startup failed", "err", err)
+		return err
+	}
+
+	log.Infow("gops agent started", "listen", config.App.GopsListen, "port", config.App.GopsPort)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	sig := <-quit
+	log.Infow("gops agent shutdown initiated", "signal", sig)
+	agent.Close()
+	log.Infow("gops agent shutdown completed", "signal", sig)
+
 	return nil
 }
