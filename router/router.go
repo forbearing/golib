@@ -53,7 +53,7 @@ func Init() error {
 func Run() error {
 	log := zap.S()
 	addr := net.JoinHostPort(config.App.ServerConfig.Listen, strconv.Itoa(config.App.ServerConfig.Port))
-	log.Infow("starting server", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
+	log.Infow("backend server started", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
 	for _, r := range Base.Routes() {
 		log.Debugw("", "method", r.Method, "path", r.Path)
 	}
@@ -75,14 +75,14 @@ func Run() error {
 	}()
 
 	sig := <-quit
-	log.Infow("shutting down server", "signal", sig.String())
+	log.Infow("backend server shutdown initiated", "signal", sig)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Errorw("failed to shutdown server", "err", err, "signal", sig)
+		log.Errorw("backend server shutdown failed", "err", err, "signal", sig)
 		return err
 	}
-	log.Infow("successfully shutdown server", "signal", sig)
+	log.Infow("backend server shutdown completed", "signal", sig)
 	return nil
 }
 
