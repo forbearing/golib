@@ -75,14 +75,14 @@ func Run() error {
 	}()
 
 	sig := <-quit
-	log.Infow("shutting down server...", "signal", sig.String())
+	log.Infow("shutting down server", "signal", sig.String())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Errorw("failed to shutdown server", "err", err, "signal", sig.String())
+		log.Errorw("failed to shutdown server", "err", err, "signal", sig)
 		return err
 	}
-	log.Infow("server exiting", "signal", sig.String())
+	log.Infow("successfully shutdown server", "signal", sig)
 	return nil
 }
 
