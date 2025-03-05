@@ -28,6 +28,7 @@ import (
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
 var (
@@ -36,6 +37,8 @@ var (
 )
 
 func Bootstrap() error {
+	maxprocs.Set(maxprocs.Logger(zap.New().Infof))
+
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
