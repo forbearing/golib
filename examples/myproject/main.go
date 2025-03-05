@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/forbearing/golib/types"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	_ "github.com/forbearing/golib/examples/myproject/service"
 )
@@ -52,8 +52,8 @@ func main() {
 
 	// Register config after bootstrap.
 	config.Register[*NatsConfig]("nats")
-	fmt.Printf("%+v\n", config.Get[*WechatConfig]("wechat"))
-	fmt.Printf("%+v\n", config.Get[NatsConfig]("nats"))
+	zap.S().Infof("%+v", config.Get[*WechatConfig]("wechat"))
+	zap.S().Infof("%+v", config.Get[*NatsConfig]("nats"))
 
 	// Register task and cronjob after bootstrap.
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
