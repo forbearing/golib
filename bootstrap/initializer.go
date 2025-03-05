@@ -1,6 +1,10 @@
 package bootstrap
 
-import "fmt"
+import (
+	"context"
+
+	"golang.org/x/sync/errgroup"
+)
 
 var _initializer = new(initializer)
 
@@ -32,19 +36,15 @@ func (i *initializer) Init() error {
 }
 
 func (i *initializer) Go() error {
-	errCh := make(chan error, 1)
-	for j := range i.gos {
-		fn := i.gos[j]
+	g, _ := errgroup.WithContext(context.Background())
+	for _, fn := range i.gos {
 		if fn == nil {
-			fmt.Println("is nil")
 			continue
 		}
-		go func(fn initFunc) {
-			errCh <- fn()
-		}(fn)
+		g.Go(fn)
 
 	}
-	return <-errCh
+	return g.Wait()
 }
 
 func Register(fn ...initFunc)   { _initializer.Register(fn...) }
