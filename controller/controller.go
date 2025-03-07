@@ -72,7 +72,7 @@ func Create[M types.Model](c *gin.Context) {
 
 // CreateFactory is a factory function to product gin handler to create one resource.
 func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
 		req := *new(M)
@@ -82,27 +82,8 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		// TODO: how to make sure resource already exists?
-		//
-		// Make sure record must be not exists.
-		// var err error
-		// data := make([]M, 0)
-		// if err = handler.WithLimit(1).WithQuery(req).List(&data); err != nil {
-		// 	zlog.Error(err)
-		// 	ResponseJSON(c, CodeFailure)
-		// 	return
-		// }
-		// if len(data) != 0 {
-		// 	for i := range data {
-		// 		zlog.Debug(data[i])
-		// 	}
-		// 	zlog.Error(CodeAlreadyExist)
-		// 	ResponseJSON(c, CodeAlreadyExist)
-		// 	return
-		// }
-
-		req.SetCreatedBy(c.GetString(CTX_USERNAME))
-		req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+		req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 		log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 
 		// 1.Perform business logic processing before create resource.
@@ -127,30 +108,32 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// 4.record operation log to database.
-		typ := reflect.TypeOf(*new(M)).Elem()
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(req)
-		// TODO: should we record the operation in the database of `db` instance.
-		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-			Op:        model.OperationTypeCreate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
-		}
+
+		// // 4.record operation log to database.
+		// typ := reflect.TypeOf(*new(M)).Elem()
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(req)
+		// // TODO: should we record the operation in the database of `db` instance.
+		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeCreate,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	RecordId:  req.GetID(),
+		// 	Record:    util.BytesToString(record),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error("failed to write operation log to database: ", err.Error())
+		// }
+
 		ResponseJSON(c, CodeSuccess, req)
 	}
 }
@@ -172,7 +155,7 @@ func Delete[M types.Model](c *gin.Context) {
 
 // DeleteFactory is a factory function to product gin handler to delete one or multiple resources.
 func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -181,14 +164,14 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		ml := make([]M, 0)
 
 		// Delete one record accoding to "query parameter `id`".
-		if id, ok := c.GetQuery(QUERY_ID); ok {
+		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
 			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(id)
 			ml = append(ml, m)
 		}
 		// Delete one record accoding to "route parameter `id`".
-		if id := c.Param(PARAM_ID); len(id) != 0 {
+		if id := c.Param(consts.PARAM_ID); len(id) != 0 {
 			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(id)
@@ -216,6 +199,8 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 				m.SetID(_ids[i])
 				ml = append(ml, m)
 			}
+		} else if err == io.EOF {
+			log.Warnf("empty request body")
 		} else {
 			log.Warn(err)
 		}
@@ -227,16 +212,18 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// find out the records and record to operation log.
-		copied := make([]M, len(ml))
-		for i := range ml {
-			m := reflect.New(typ).Interface().(M)
-			m.SetID(ml[i].GetID())
-			if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
-				log.Error(err)
-			}
-			copied[i] = m
-		}
+
+		// // find out the records and record to operation log.
+		// copied := make([]M, len(ml))
+		// for i := range ml {
+		// 	m := reflect.New(typ).Interface().(M)
+		// 	m.SetID(ml[i].GetID())
+		// 	if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+		// 		log.Error(err)
+		// 	}
+		// 	copied[i] = m
+		// }
+
 		// 2.Delete resources in database.
 		if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
 			log.Error(err)
@@ -249,30 +236,32 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		for i := range ml {
-			record, _ := json.Marshal(copied[i])
-			if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-				Op:        model.OperationTypeDelete,
-				Model:     typ.Name(),
-				Table:     tableName,
-				RecordId:  ml[i].GetID(),
-				Record:    util.BytesToString(record),
-				IP:        c.ClientIP(),
-				User:      c.GetString(consts.CTX_USERNAME),
-				RequestId: c.GetString(consts.REQUEST_ID),
-				URI:       c.Request.RequestURI,
-				Method:    c.Request.Method,
-				UserAgent: c.Request.UserAgent(),
-			}); err != nil {
-				log.Error("failed to write operation log to database: ", err.Error())
-			}
-		}
+
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// for i := range ml {
+		// 	record, _ := json.Marshal(copied[i])
+		// 	if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 		Op:        model.OperationTypeDelete,
+		// 		Model:     typ.Name(),
+		// 		Table:     tableName,
+		// 		RecordId:  ml[i].GetID(),
+		// 		Record:    util.BytesToString(record),
+		// 		IP:        c.ClientIP(),
+		// 		User:      c.GetString(consts.CTX_USERNAME),
+		// 		RequestId: c.GetString(consts.REQUEST_ID),
+		// 		URI:       c.Request.RequestURI,
+		// 		Method:    c.Request.Method,
+		// 		UserAgent: c.Request.UserAgent(),
+		// 	}); err != nil {
+		// 		log.Error("failed to write operation log to database: ", err.Error())
+		// 	}
+		// }
+
 		ResponseJSON(c, CodeSuccess)
 	}
 }
@@ -291,10 +280,10 @@ func Update[M types.Model](c *gin.Context) {
 
 // UpdateFactory is a factory function to product gin handler to update one resource.
 func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
-		id := c.Param(PARAM_ID)
+		id := c.Param(consts.PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -325,9 +314,9 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		req.SetCreatedAt(data[0].GetCreatedAt())    // keep original "created_at"
-		req.SetCreatedBy(data[0].GetCreatedBy())    // keep original "created_by"
-		req.SetUpdatedBy(c.GetString(CTX_USERNAME)) // keep original "updated_by"
+		req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
+		req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
+		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // keep original "updated_by"
 		// 1.Perform business logic processing before update resource.
 		if err := new(service.Factory[M]).Service().UpdateBefore(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
@@ -347,28 +336,30 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(req)
-		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-			Op:        model.OperationTypeUpdate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
-		}
+
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(req)
+		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeUpdate,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	RecordId:  req.GetID(),
+		// 	Record:    util.BytesToString(record),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
+		// }
+
 		ResponseJSON(c, CodeSuccess, req)
 	}
 }
@@ -389,10 +380,10 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 
 // UpdatePartialFactory is a factory function to product gin handler to partial update one resource.
 func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_PARTIAL)
-		id := c.Param(PARAM_ID)
+		id := c.Param(consts.PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
@@ -424,11 +415,11 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		// req.SetCreatedAt(data[0].GetCreatedAt())
 		// req.SetCreatedBy(data[0].GetCreatedBy())
 		// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-		data[0].SetUpdatedBy(c.GetString(CTX_USERNAME))
+		data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 
 		newVal := reflect.ValueOf(req).Elem()
 		oldVal := reflect.ValueOf(data[0]).Elem()
-		for i := 0; i < typ.NumField(); i++ {
+		for i := range typ.NumField() {
 			// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
 			switch typ.Field(i).Type.Kind() {
 			case reflect.Struct: // skip update base model.
@@ -524,34 +515,35 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		// NOTE: We should record the `req` instead of `oldVal`,
-		// The req is `newVal`.
-		record, _ := json.Marshal(req)
-		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-			Op:        model.OperationTypeUpdatePartial,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
-		}
+
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// // NOTE: We should record the `req` instead of `oldVal`,
+		// // The req is `newVal`.
+		// record, _ := json.Marshal(req)
+		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeUpdatePartial,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	RecordId:  req.GetID(),
+		// 	Record:    util.BytesToString(record),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
+		// }
+
 		// NOTE: You should response `oldVal` instead of `req`.
 		// The req is `newVal`.
 		ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
-		// ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
@@ -595,19 +587,19 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_LIST)
 		var page, size int
 		var startTime, endTime time.Time
-		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
+		if pageStr, ok := c.GetQuery(consts.QUERY_PAGE); ok {
 			page, _ = strconv.Atoi(pageStr)
 		}
-		if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
+		if sizeStr, ok := c.GetQuery(consts.QUERY_SIZE); ok {
 			size, _ = strconv.Atoi(sizeStr)
 		}
-		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
-		index, _ := c.GetQuery(QUERY_INDEX)
-		selects, _ := c.GetQuery(QUERY_SELECT)
-		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+		columnName, _ := c.GetQuery(consts.QUERY_COLUMN_NAME)
+		index, _ := c.GetQuery(consts.QUERY_INDEX)
+		selects, _ := c.GetQuery(consts.QUERY_SELECT)
+		if startTimeStr, ok := c.GetQuery(consts.QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
-		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+		if endTimeStr, ok := c.GetQuery(consts.QUERY_END_TIME); ok {
 			endTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 		}
 
@@ -631,29 +623,29 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		nocache := true  // default disable cache.
 		depth := 1
 		data := make([]M, 0)
-		if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
+		if nocacheStr, ok := c.GetQuery(consts.QUERY_NOCACHE); ok {
 			var _nocache bool
 			if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
 				nocache = _nocache
 			}
 		}
-		if orStr, ok := c.GetQuery(QUERY_OR); ok {
+		if orStr, ok := c.GetQuery(consts.QUERY_OR); ok {
 			or, _ = strconv.ParseBool(orStr)
 		}
-		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
+		if fuzzyStr, ok := c.GetQuery(consts.QUERY_FUZZY); ok {
 			fuzzy, _ = strconv.ParseBool(fuzzyStr)
 		}
-		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+		if depthStr, ok := c.GetQuery(consts.QUERY_DEPTH); ok {
 			depth, _ = strconv.Atoi(depthStr)
 			if depth < 1 || depth > 99 {
 				depth = 1
 			}
 		}
-		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+		if expandStr, ok := c.GetQuery(consts.QUERY_EXPAND); ok {
 			var _expands []string
 			items := strings.Split(expandStr, ",")
 			if len(items) > 0 {
-				if items[0] == VALUE_ALL { // expand all feilds
+				if items[0] == consts.VALUE_ALL { // expand all feilds
 					items = m.Expands()
 				}
 			}
@@ -666,7 +658,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			}
 			// fmt.Println("_expends: ", _expands)
 			fieldsMap := make(map[string]reflect.Kind)
-			for i := 0; i < typ.NumField(); i++ {
+			for i := range typ.NumField() {
 				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
 			}
 			for _, e := range _expands {
@@ -682,7 +674,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 					continue
 				}
 				t := make([]string, depth)
-				for i := 0; i < depth; i++ {
+				for i := range depth {
 					t[i] = e
 				}
 				// fmt.Println("t: ", t)
@@ -700,7 +692,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		sortBy, _ := c.GetQuery(QUERY_SORTBY)
+		sortBy, _ := c.GetQuery(consts.QUERY_SORTBY)
 		// 2.List resources from database.
 		cache := make([]byte, 0)
 		cached := false
@@ -731,7 +723,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			return
 		}
 		total := new(int64)
-		nototalStr, _ := c.GetQuery(QUERY_NOTOTAL)
+		nototalStr, _ := c.GetQuery(consts.QUERY_NOTOTAL)
 		nototal, _ = strconv.ParseBool(nototalStr)
 		if !nototal {
 			if err := handler(helper.NewDatabaseContext(c)).
@@ -814,42 +806,42 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_GET)
-		if len(c.Param(PARAM_ID)) == 0 {
+		if len(c.Param(consts.PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
 			return
 		}
-		index, _ := c.GetQuery(QUERY_INDEX)
-		selects, _ := c.GetQuery(QUERY_SELECT)
+		index, _ := c.GetQuery(consts.QUERY_INDEX)
+		selects, _ := c.GetQuery(consts.QUERY_SELECT)
 
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
 		m := reflect.New(typ).Interface().(M)
-		m.SetID(c.Param(PARAM_ID)) // `GetBefore` hook need id.
+		m.SetID(c.Param(consts.PARAM_ID)) // `GetBefore` hook need id.
 
 		var err error
 		var expands []string
 		nocache := true // default disable cache.
 		depth := 1
-		if nocacheStr, ok := c.GetQuery(QUERY_NOCACHE); ok {
+		if nocacheStr, ok := c.GetQuery(consts.QUERY_NOCACHE); ok {
 			var _nocache bool
 			if _nocache, err = strconv.ParseBool(nocacheStr); err == nil {
 				nocache = _nocache
 			}
 		}
-		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+		if depthStr, ok := c.GetQuery(consts.QUERY_DEPTH); ok {
 			depth, _ = strconv.Atoi(depthStr)
 			if depth < 1 || depth > 99 {
 				depth = 1
 			}
 		}
-		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+		if expandStr, ok := c.GetQuery(consts.QUERY_EXPAND); ok {
 			var _expands []string
 			items := strings.Split(expandStr, ",")
 			if len(items) > 0 {
-				if items[0] == VALUE_ALL { // expand all feilds
+				if items[0] == consts.VALUE_ALL { // expand all feilds
 					items = m.Expands()
 				}
 			}
@@ -887,6 +879,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			}
 			// fmt.Println("expands: ", expands)
 		}
+		log.Infoz("", zap.Object(typ.Name(), m))
 
 		// 1.Perform business logic processing before get resource.
 		if err = new(service.Factory[M]).Service().GetBefore(helper.NewServiceContext(c), m); err != nil {
@@ -902,7 +895,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			WithSelect(strings.Split(selects, ",")...).
 			WithExpand(expands).
 			WithCache(!nocache).
-			Get(m, c.Param(PARAM_ID), &cache); err != nil {
+			Get(m, c.Param(consts.PARAM_ID), &cache); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -953,6 +946,365 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 	}
 }
 
+// BatchCreate
+// Example:
+/*
+Request Method: POST
+Request URL: /api/v1/users/batch
+
+Request Data:
+{
+  "items": [
+    {
+      "username": "johndoe",
+      "email": "john.doe@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "department": "Engineering"
+    },
+    {
+      "username": "janedoe",
+      "email": "jane.doe@example.com",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "department": "Marketing"
+    },
+    {
+      "username": "bobsmith",
+      "email": "bob.smith@example.com",
+      "firstName": "Bob",
+      "lastName": "Smith",
+      "department": "Finance"
+    }
+  ],
+  "options": {
+    "continueOnError": true
+  }
+}
+
+Response Data:
+{
+  "items": [
+    {
+      "id": "user-123",
+      "username": "johndoe",
+      "email": "john.doe@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "department": "Engineering",
+      "createdAt": "2025-03-06T10:15:30Z"
+    },
+    {
+      "status": "error",
+      "error": {
+        "code": 400,
+        "message": "Email already in use"
+      },
+      "request": {
+        "username": "janedoe",
+        "email": "jane.doe@example.com",
+        "firstName": "Jane",
+        "lastName": "Doe",
+        "department": "Marketing"
+      }
+    },
+    {
+      "id": "user-125",
+      "username": "bobsmith",
+      "email": "bob.smith@example.com",
+      "firstName": "Bob",
+      "lastName": "Smith",
+      "department": "Finance",
+      "createdAt": "2025-03-06T10:15:30Z"
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "succeeded": 2,
+    "failed": 1
+  }
+}
+}
+*/
+
+type requestData[M types.Model] struct {
+	Items   []M      `json:"items,omitempty"`
+	Options *options `json:"options,omitempty"`
+	Summary *summary `json:"summary,omitempty"`
+}
+
+type options struct {
+	Atomic bool `json:"atomic,omitempty"`
+	Purge  bool `json:"purge,omitempty"`
+}
+
+type summary struct {
+	Total     int `json:"total"`
+	Succeeded int `json:"succeeded"`
+	Failed    int `json:"failed"`
+}
+
+func BatchCreate[M types.Model](c *gin.Context) {
+	BatchCreateFactory[M]()(c)
+}
+
+// BatchCreateFactory
+func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	_ = handler
+	return func(c *gin.Context) {
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_CREATE)
+		var err error
+		var reqErr error
+		var req requestData[M]
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+
+		typ := reflect.TypeOf(*new(M)).Elem()
+		val := reflect.New(typ).Interface().(M)
+		_ = val
+		for _, m := range req.Items {
+			m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+			m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+			log.Infoz("batch create", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
+		}
+
+		// 1.Perform business logic processing before batch create resource.
+		if err = new(service.Factory[M]).Service().BatchCreateBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		// 2.Batch create resource in database.
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
+		}
+		// 3.Perform business logic processing after batch create resource
+		if err = new(service.Factory[M]).Service().BatchCreateAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		// TODO: write operation log
+
+		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
+
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
+			}
+		}
+		ResponseJSON(c, CodeSuccess, req)
+	}
+}
+
+// BatchDelete
+func BatchDelete[M types.Model](c *gin.Context) {
+	BatchDeleteFactory[M]()(c)
+}
+
+// BatchDeleteFactory
+func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	_ = handler
+	return func(c *gin.Context) {
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_DELETE)
+		log.Info("batch delete")
+
+		var err error
+		var reqErr error
+		var req requestData[M]
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+
+		// 1.Perform business logic processing before batch delete resources.
+		if err = new(service.Factory[M]).Service().BatchDeleteBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Batch delete resources in database.
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).WithPurge(req.Options.Purge).Delete(req.Items...); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
+		}
+		// 3.Perform business logic processing after batch delete resources.
+		if err = new(service.Factory[M]).Service().BatchDeleteAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
+			}
+		}
+		ResponseJSON(c, CodeSuccess, req)
+	}
+}
+
+// BatchUpdate
+func BatchUpdate[M types.Model](c *gin.Context) {
+	BatchUpdateFactory[M]()(c)
+}
+
+// BatchUpdateFactory
+func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	_ = handler
+	return func(c *gin.Context) {
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE)
+		log.Info("batch update")
+
+		var err error
+		var reqErr error
+		var req requestData[M]
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+
+		// 1.Perform business logic processing before batch update resource.
+		if err = new(service.Factory[M]).Service().BatchUpdateBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Batch update resource in database.
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).Update(req.Items...); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
+		}
+		// 3.Perform business logic processing after batch update resource.
+		if err = new(service.Factory[M]).Service().BatchUpdateAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
+			}
+		}
+		ResponseJSON(c, CodeSuccess, req)
+	}
+}
+
+// BatchUpdatePartial
+func BatchUpdatePartial[M types.Model](c *gin.Context) {
+	BatchUpdatePartialFactory[M]()(c)
+}
+
+// BatchUpdatePartialFactory
+func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+	handler, _ := extractConfig(cfg...)
+	_ = handler
+	return func(c *gin.Context) {
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE_PARTIAL)
+		log.Info("batch update partial")
+
+		var err error
+		var reqErr error
+		var req requestData[M]
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+		typ := reflect.TypeOf(*new(M)).Elem()
+		var shouldUpdates []M
+		for _, m := range req.Items {
+			var results []M
+			v := reflect.New(typ).Interface().(M)
+			v.SetID(m.GetID())
+			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
+				log.Error(err)
+				continue
+			}
+			if len(results) != 1 {
+				log.Warnf(fmt.Sprintf("partial update resource not found, expect 1 but got: %d", len(results)))
+				continue
+			}
+			if len(results[0].GetID()) == 0 {
+				log.Warnf("partial update resource not found, id is empty")
+				continue
+			}
+			oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
+			partialUpdateValue(log, typ, oldVal, newVal)
+			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+		}
+
+		// 1.Perform business logic processing before batch partial update resource.
+		if err = new(service.Factory[M]).Service().BatchUpdatePartialBefore(helper.NewServiceContext(c), shouldUpdates...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+		// 2.Batch partial update resource in database.
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
+		}
+		// 3.Perform business logic processing after batch partial update resource.
+		if err := new(service.Factory[M]).Service().BatchUpdatePartialAfter(helper.NewServiceContext(c), shouldUpdates...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure)
+			return
+		}
+
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
+			}
+		}
+		ResponseJSON(c, CodeSuccess, req)
+	}
+}
+
 // Export is a generic function to product gin handler to export resources to frontend.
 // The resource type deponds on the type of interface types.Model.
 //
@@ -993,22 +1345,22 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_EXPORT)
 		var page, size, limit int
 		var startTime, endTime time.Time
-		if pageStr, ok := c.GetQuery(QUERY_PAGE); ok {
+		if pageStr, ok := c.GetQuery(consts.QUERY_PAGE); ok {
 			page, _ = strconv.Atoi(pageStr)
 		}
-		if sizeStr, ok := c.GetQuery(QUERY_SIZE); ok {
+		if sizeStr, ok := c.GetQuery(consts.QUERY_SIZE); ok {
 			size, _ = strconv.Atoi(sizeStr)
 		}
-		if limitStr, ok := c.GetQuery(QUERY_LIMIT); ok {
+		if limitStr, ok := c.GetQuery(consts.QUERY_LIMIT); ok {
 			limit, _ = strconv.Atoi(limitStr)
 		}
-		columnName, _ := c.GetQuery(QUERY_COLUMN_NAME)
-		index, _ := c.GetQuery(QUERY_INDEX)
-		selects, _ := c.GetQuery(QUERY_SELECT)
-		if startTimeStr, ok := c.GetQuery(QUERY_START_TIME); ok {
+		columnName, _ := c.GetQuery(consts.QUERY_COLUMN_NAME)
+		index, _ := c.GetQuery(consts.QUERY_INDEX)
+		selects, _ := c.GetQuery(consts.QUERY_SELECT)
+		if startTimeStr, ok := c.GetQuery(consts.QUERY_START_TIME); ok {
 			startTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, startTimeStr, time.Local)
 		}
-		if endTimeStr, ok := c.GetQuery(QUERY_END_TIME); ok {
+		if endTimeStr, ok := c.GetQuery(consts.QUERY_END_TIME); ok {
 			endTime, _ = time.ParseInLocation(consts.DATE_TIME_LAYOUT, endTimeStr, time.Local)
 		}
 
@@ -1029,23 +1381,23 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		var depth int = 1
 		var expands []string
 		data := make([]M, 0)
-		if orStr, ok := c.GetQuery(QUERY_OR); ok {
+		if orStr, ok := c.GetQuery(consts.QUERY_OR); ok {
 			or, _ = strconv.ParseBool(orStr)
 		}
-		if fuzzyStr, ok := c.GetQuery(QUERY_FUZZY); ok {
+		if fuzzyStr, ok := c.GetQuery(consts.QUERY_FUZZY); ok {
 			fuzzy, _ = strconv.ParseBool(fuzzyStr)
 		}
-		if depthStr, ok := c.GetQuery(QUERY_DEPTH); ok {
+		if depthStr, ok := c.GetQuery(consts.QUERY_DEPTH); ok {
 			depth, _ = strconv.Atoi(depthStr)
 			if depth < 1 || depth > 99 {
 				depth = 1
 			}
 		}
-		if expandStr, ok := c.GetQuery(QUERY_EXPAND); ok {
+		if expandStr, ok := c.GetQuery(consts.QUERY_EXPAND); ok {
 			var _expands []string
 			items := strings.Split(expandStr, ",")
 			if len(items) > 0 {
-				if items[0] == VALUE_ALL { // expand all feilds
+				if items[0] == consts.VALUE_ALL { // expand all feilds
 					items = m.Expands()
 				}
 			}
@@ -1090,7 +1442,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		sortBy, _ := c.GetQuery(QUERY_SORTBY)
+		sortBy, _ := c.GetQuery(consts.QUERY_SORTBY)
 		_, _ = page, size
 		svc := new(service.Factory[M]).Service()
 		svcCtx := helper.NewServiceContext(c)
@@ -1205,8 +1557,8 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		// service layer already create/update the records in database, just update fields "created_by", "updated_by".
 		for i := range ml {
-			ml[i].SetCreatedBy(c.GetString(CTX_USERNAME))
-			ml[i].SetUpdatedBy(c.GetString(CTX_USERNAME))
+			ml[i].SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+			ml[i].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 		}
 		if err := handler(helper.NewDatabaseContext(c)).Update(ml...); err != nil {
 			log.Error(err)

@@ -94,7 +94,17 @@ func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error          { return n
 func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error           { return nil }
 func (Base[M]) GetBefore(*types.ServiceContext, ...M) error           { return nil }
 func (Base[M]) GetAfter(*types.ServiceContext, ...M) error            { return nil }
-func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error)  { return make([]M, 0), nil }
-func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)    { return make([]byte, 0), nil }
-func (Base[M]) Filter(_ *types.ServiceContext, m M) M                 { return m }
-func (Base[M]) FilterRaw(_ *types.ServiceContext) string              { return "" }
+
+func (Base[M]) BatchCreateBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) BatchCreateAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) BatchDeleteBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) BatchDeleteAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) BatchUpdateBefore(*types.ServiceContext, ...M) error        { return nil }
+func (Base[M]) BatchUpdateAfter(*types.ServiceContext, ...M) error         { return nil }
+func (Base[M]) BatchUpdatePartialBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M]) BatchUpdatePartialAfter(*types.ServiceContext, ...M) error  { return nil }
+
+func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
+func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)   { return make([]byte, 0), nil }
+func (Base[M]) Filter(_ *types.ServiceContext, m M) M                { return m }
+func (Base[M]) FilterRaw(_ *types.ServiceContext) string             { return "" }

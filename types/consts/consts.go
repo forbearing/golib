@@ -90,9 +90,23 @@ const (
 	PHASE_GET                   Phase = "get"
 	PHASE_GET_BEFORE            Phase = "get_before"
 	PHASE_GET_AFTER             Phase = "get_after"
-	PHASE_FILTER                Phase = "filter"
-	PHASE_IMPORT                Phase = "import"
-	PHASE_EXPORT                Phase = "export"
+
+	PHASE_BATCH_CREATE                Phase = "batch_create"
+	PHASE_BATCH_CREATE_BEFORE         Phase = "batch_create_before"
+	PHASE_BATCH_CREATE_AFTER          Phase = "batch_create_after"
+	PHASE_BATCH_DELETE                Phase = "batch_delete"
+	PHASE_BATCH_DELETE_BEFORE         Phase = "batch_delete_before"
+	PHASE_BATCH_DELETE_AFTER          Phase = "batch_delete_after"
+	PHASE_BATCH_UPDATE                Phase = "batch_update"
+	PHASE_BATCH_UPDATE_BEFORE         Phase = "batch_update_before"
+	PHASE_BATCH_UPDATE_AFTER          Phase = "batch_update_after"
+	PHASE_BATCH_UPDATE_PARTIAL        Phase = "batch_update_partial"
+	PHASE_BATCH_UPDATE_PARTIAL_BEFORE Phase = "batch_update_partial_before"
+	PHASE_BATCH_UPDATE_PARTIAL_AFTER  Phase = "batch_update_partial_after"
+
+	PHASE_FILTER Phase = "filter"
+	PHASE_IMPORT Phase = "import"
+	PHASE_EXPORT Phase = "export"
 )
 
 // HTTPVerb represents the supported HTTP operations for a resource
@@ -106,8 +120,14 @@ const (
 	UpdatePartial HTTPVerb = "update_partial" // PATCH /resource, PATCH /resource/:id
 	List          HTTPVerb = "list"           // GET /resource
 	Get           HTTPVerb = "get"            // GET /resource/:id
-	Export        HTTPVerb = "export"         // GET /resource/export
-	Import        HTTPVerb = "import"         // POST /resource/import
+
+	BatchCreate        HTTPVerb = "batch_create"         // POST /resource/batch
+	BatchDelete        HTTPVerb = "batch_delete"         // DELETE /resource/batch
+	BatchUpdate        HTTPVerb = "batch_update"         // PUT /resource/batch
+	BatchUpdatePartial HTTPVerb = "batch_update_partial" // PATCH /resource/batch
+
+	Export HTTPVerb = "export" // GET /resource/export
+	Import HTTPVerb = "import" // POST /resource/import
 
 	// Verb groups
 	Most HTTPVerb = "most" // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)

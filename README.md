@@ -101,6 +101,7 @@ type Logger interface {
 	With(fields ...string) Logger
 	WithControllerContext(*ControllerContext, consts.Phase) Logger
 	WithServiceContext(*ServiceContext, consts.Phase) Logger
+	WithDatabaseContext(*DatabaseContext, consts.Phase) Logger
 
 	StandardLogger
 	StructuredLogger
@@ -186,8 +187,6 @@ type Hooker interface {
 	DeleteAfter() error
 	UpdateBefore() error
 	UpdateAfter() error
-	UpdatePartialBefore() error
-	UpdatePartialAfter() error
 	ListBefore() error
 	ListAfter() error
 	GetBefore() error
@@ -211,8 +210,19 @@ type Service[M Model] interface {
 	ListAfter(*ServiceContext, *[]M) error
 	GetBefore(*ServiceContext, ...M) error
 	GetAfter(*ServiceContext, ...M) error
+
+	BatchCreateBefore(*ServiceContext, ...M) error
+	BatchCreateAfter(*ServiceContext, ...M) error
+	BatchDeleteBefore(*ServiceContext, ...M) error
+	BatchDeleteAfter(*ServiceContext, ...M) error
+	BatchUpdateBefore(*ServiceContext, ...M) error
+	BatchUpdateAfter(*ServiceContext, ...M) error
+	BatchUpdatePartialBefore(*ServiceContext, ...M) error
+	BatchUpdatePartialAfter(*ServiceContext, ...M) error
+
 	Import(*ServiceContext, io.Reader) ([]M, error)
 	Export(*ServiceContext, ...M) ([]byte, error)
+
 	Filter(*ServiceContext, M) M
 	FilterRaw(*ServiceContext) string
 
