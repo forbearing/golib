@@ -158,6 +158,20 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 	if verbMap[consts.Get] {
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
 	}
+
+	if verbMap[consts.BatchCreate] {
+		router.POST(path+"/batch", controller.BatchCreateFactory(cfg...))
+	}
+	if verbMap[consts.BatchDelete] {
+		router.DELETE(path+"/batch", controller.BatchDeleteFactory(cfg...))
+	}
+	if verbMap[consts.BatchUpdate] {
+		router.PUT(path+"/batch", controller.BatchUpdateFactory(cfg...))
+	}
+	if verbMap[consts.BatchUpdatePartial] {
+		router.PATCH(path+"/batch", controller.BatchUpdatePartialFactory(cfg...))
+	}
+
 	if verbMap[consts.Import] {
 		router.POST(path+"/import", controller.ImportFactory(cfg...))
 	}
@@ -197,6 +211,10 @@ func buildVerbMap(verbs ...consts.HTTPVerb) map[consts.HTTPVerb]bool {
 		verbMap[consts.UpdatePartial] = true
 		verbMap[consts.List] = true
 		verbMap[consts.Get] = true
+		verbMap[consts.BatchCreate] = true
+		verbMap[consts.BatchDelete] = true
+		verbMap[consts.BatchUpdate] = true
+		verbMap[consts.BatchUpdatePartial] = true
 	}
 	return verbMap
 }

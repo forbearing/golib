@@ -197,24 +197,21 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 // These methods implement types.Hooker interface.
 // model should create custom hook to overwrite default hooks.
-func (*Base) CreateBefore() error        { return nil }
-func (*Base) CreateAfter() error         { return nil }
-func (*Base) DeleteBefore() error        { return nil }
-func (*Base) DeleteAfter() error         { return nil }
-func (*Base) UpdateBefore() error        { return nil }
-func (*Base) UpdateAfter() error         { return nil }
-func (*Base) UpdatePartialBefore() error { return nil }
-func (*Base) UpdatePartialAfter() error  { return nil }
-func (*Base) ListBefore() error          { return nil }
-func (*Base) ListAfter() error           { return nil }
-func (*Base) GetBefore() error           { return nil }
-func (*Base) GetAfter() error            { return nil }
+func (*Base) CreateBefore() error { return nil }
+func (*Base) CreateAfter() error  { return nil }
+func (*Base) DeleteBefore() error { return nil }
+func (*Base) DeleteAfter() error  { return nil }
+func (*Base) UpdateBefore() error { return nil }
+func (*Base) UpdateAfter() error  { return nil }
+func (*Base) ListBefore() error   { return nil }
+func (*Base) ListAfter() error    { return nil }
+func (*Base) GetBefore() error    { return nil }
+func (*Base) GetAfter() error     { return nil }
 
 func SetID(m types.Model, id ...string) {
 	val := reflect.ValueOf(m).Elem()
 	idField := val.FieldByName("ID")
 	if len(idField.String()) != 0 {
-		// zap.S().Debug("id already exits, skip")
 		return
 	}
 	if len(id) == 0 {

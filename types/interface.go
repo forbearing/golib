@@ -270,9 +270,17 @@ type Service[M Model] interface {
 	ListAfter(*ServiceContext, *[]M) error  // 必须是指针类型, 因为有时候需要修改原数据
 	GetBefore(*ServiceContext, ...M) error
 	GetAfter(*ServiceContext, ...M) error
-	// Import file.
+
+	BatchCreateBefore(*ServiceContext, ...M) error
+	BatchCreateAfter(*ServiceContext, ...M) error
+	BatchDeleteBefore(*ServiceContext, ...M) error
+	BatchDeleteAfter(*ServiceContext, ...M) error
+	BatchUpdateBefore(*ServiceContext, ...M) error
+	BatchUpdateAfter(*ServiceContext, ...M) error
+	BatchUpdatePartialBefore(*ServiceContext, ...M) error
+	BatchUpdatePartialAfter(*ServiceContext, ...M) error
+
 	Import(*ServiceContext, io.Reader) ([]M, error)
-	// Export records from database and write into excel.
 	Export(*ServiceContext, ...M) ([]byte, error)
 
 	Filter(*ServiceContext, M) M
@@ -283,41 +291,15 @@ type Service[M Model] interface {
 
 // Hooker interface.
 type Hooker interface {
-	// CreateBefore is a hook that will be invoked before create records in database.
-	// For example:
-	// - Make sure the user mobile and email is valid before create in database.
-	// - Set record default value.
 	CreateBefore() error
-	// CreateAfter is a hook that will be invoked after create in database.
 	CreateAfter() error
-
-	// DeleteBefore is a hook that will be invoked before delete records in database.
 	DeleteBefore() error
-	// DeleteAfter is a hook that will be invoked after delete in database.
 	DeleteAfter() error
-
-	// UpdateBefore is a hook that will be invoked before update records in database.
 	UpdateBefore() error
-	// UpdateAfter is a hook that will be invoked after update in database.
 	UpdateAfter() error
-
-	// UpdatePartialBefore is a hook that will be invoked before update records in database.
-	UpdatePartialBefore() error
-	// UpdatePartialAfter is a hook that will be invoked after update in database.
-	UpdatePartialAfter() error
-
-	// ListBefore is a hook that will be invoked before list records in database.
 	ListBefore() error
-	// ListAfter is a hook that will be invoked after list in database.
-	// For examples:
-	// - clean user password before responsed to frontend.
 	ListAfter() error
-
-	// GetBefore is a hook that will be invoked before get records in database.
 	GetBefore() error
-	// For examples:
-	// - clean user password before responsed to frontend.
-	// GetAfter is a hook that will be invoked after get in database.
 	GetAfter() error
 }
 
