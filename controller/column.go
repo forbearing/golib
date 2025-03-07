@@ -8,6 +8,7 @@ import (
 
 	"github.com/forbearing/golib/database"
 	. "github.com/forbearing/golib/response"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -24,12 +25,12 @@ var (
 )
 
 func (cs *column) Get(c *gin.Context) {
-	switch c.Param(PARAM_ID) {
+	switch c.Param(consts.PARAM_ID) {
 	case "asset":
 		// cs.Asset(c)
 		cs.GetColumns(c, "assets", columnUser)
 	default:
-		zap.S().Warn("unknow id: ", c.Param(PARAM_ID))
+		zap.S().Warn("unknow id: ", c.Param(consts.PARAM_ID))
 		ResponseJSON(c, CodeSuccess)
 	}
 }
