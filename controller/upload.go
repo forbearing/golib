@@ -51,7 +51,7 @@ func (*upload) Put(c *gin.Context) {
 
 func (*upload) Preview(c *gin.Context) {
 	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Preview"))
-	data, err := minio.Get(c.Param(PARAM_FILE))
+	data, err := minio.Get(c.Param(consts.PARAM_FILE))
 	if err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
