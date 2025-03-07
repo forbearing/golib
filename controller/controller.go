@@ -2,7 +2,6 @@ package controller
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -12,14 +11,12 @@ import (
 
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/pkg/filetype"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/types/helper"
-	"github.com/forbearing/golib/util"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/schema"
@@ -1340,7 +1337,7 @@ func Export[M types.Model](c *gin.Context) {
 
 // ExportFactory is a factory function to export resources to frontend.
 func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_EXPORT)
 		var page, size, limit int
@@ -1478,27 +1475,27 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure)
 			return
 		}
-		// 5.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(data)
-		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-			Op:        model.OperationTypeExport,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
-		}
+		// // 5.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(data)
+		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeExport,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	Record:    util.BytesToString(record),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error("failed to write operation log to database: ", err.Error())
+		// }
 		ResponseDATA(c, exported, map[string]string{
 			"Content-Disposition": "attachment; filename=exported.xlsx",
 		})
@@ -1512,7 +1509,7 @@ func Import[M types.Model](c *gin.Context) {
 
 // ImportFactory
 func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
-	handler, db := extractConfig(cfg...)
+	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_IMPORT)
 		// NOTE:字段为 file 必须和前端协商好.
@@ -1577,28 +1574,28 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 				return
 			}
 		}
-		// record operation log to database.
-		typ := reflect.TypeOf(*new(M)).Elem()
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(ml)
-		if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-			Op:        model.OperationTypeImport,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		}); err != nil {
-			log.Error("failed to write operation log to database: ", err.Error())
-		}
+		// // record operation log to database.
+		// typ := reflect.TypeOf(*new(M)).Elem()
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(ml)
+		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
+		// 	Op:        model.OperationTypeImport,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	Record:    util.BytesToString(record),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// }); err != nil {
+		// 	log.Error("failed to write operation log to database: ", err.Error())
+		// }
 		ResponseJSON(c, CodeSuccess)
 	}
 }
