@@ -11,8 +11,8 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/elastic"
 	"github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/provider/elastic"
 	"github.com/forbearing/golib/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,20 +32,20 @@ func init() {
 }
 
 func TestIndex(t *testing.T) {
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"number_of_shards":   3,
 		"number_of_replicas": 2,
 	}
 
-	mappings := map[string]interface{}{
-		"properties": map[string]interface{}{
-			"title": map[string]interface{}{
+	mappings := map[string]any{
+		"properties": map[string]any{
+			"title": map[string]any{
 				"type": "text",
 			},
-			"content": map[string]interface{}{
+			"content": map[string]any{
 				"type": "text",
 			},
-			"date": map[string]interface{}{
+			"date": map[string]any{
 				"type": "date",
 			},
 		},

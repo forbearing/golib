@@ -8,7 +8,7 @@ import (
 
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/mqtt"
+	"github.com/forbearing/golib/provider/mqtt"
 	"github.com/forbearing/golib/util"
 	"github.com/stretchr/testify/assert"
 )
