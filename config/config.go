@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	APP_NAME         = "myproject"
+	APP_NAME         = "golib"
 	noneExpireToken  = `fake_token`
 	noneExpireUser   = "admin"
 	noneExpirePass   = "admin"
@@ -434,8 +434,8 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.pool_size", runtime.NumCPU())
-	viper.SetDefault("redis.namespace", "myproject")
-	viper.SetDefault("redis.expiration", "8h")
+	viper.SetDefault("redis.namespace", APP_NAME)
+	viper.SetDefault("redis.expiration", 0)
 	viper.SetDefault("redis.dial_timeout", 0)
 	viper.SetDefault("redis.read_timeout", 0)
 	viper.SetDefault("redis.write_timeout", 0)
@@ -443,8 +443,6 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.max_retries", 0)
 	viper.SetDefault("redis.min_retry_backoff", 0)
 	viper.SetDefault("redis.max_retry_backoff", 0)
-	viper.SetDefault("redis.idle_timeout", 0)
-	viper.SetDefault("redis.max_conn_age", 0)
 	viper.SetDefault("redis.enable_tls", false)
 	viper.SetDefault("redis.cert_file", "")
 	viper.SetDefault("redis.key_file", 0)
@@ -745,8 +743,6 @@ type RedisConfig struct {
 	MaxRetries      int           `json:"max_retries" mapstructure:"max_retries" ini:"max_retries" yaml:"max_retries"`
 	MinRetryBackoff time.Duration `json:"min_retry_backoff" mapstructure:"min_retry_backoff" ini:"min_retry_backoff" yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `json:"max_retry_backoff" mapstructure:"max_retry_backoff" ini:"max_retry_backoff" yaml:"max_retry_backoff"`
-	IdleTimeout     time.Duration `json:"idle_timeout" mapstructure:"idle_timeout" ini:"idle_timeout" yaml:"idle_timeout"`
-	MaxConnAge      time.Duration `json:"max_conn_age" mapstructure:"max_conn_age" ini:"max_conn_age" yaml:"max_conn_age"`
 
 	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
 	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
