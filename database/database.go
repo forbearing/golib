@@ -10,13 +10,12 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/lru"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/types/helper"
-
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -409,7 +408,7 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 	if q == nil {
 		q = make(map[string]string)
 	}
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		if val.Field(i).IsZero() {
 			continue
 		}
