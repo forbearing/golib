@@ -2,6 +2,8 @@ package util
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"math"
 	"net"
@@ -320,4 +322,33 @@ func IPv6ToIPv4(ipStr string) string {
 	}
 
 	return ipStr
+}
+
+// BuildTLSConfig creates a TLS configuration from the etcd config
+func BuildTLSConfig(certFile, keyFile, caFile string, insecureSkipVerify bool) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+	}
+
+	if len(certFile) > 0 && len(keyFile) > 0 {
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load x509 key pair")
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	if len(caFile) > 0 {
+		caData, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read ca file")
+		}
+		caPool := x509.NewCertPool()
+		if !caPool.AppendCertsFromPEM(caData) {
+			return nil, errors.New("failed to append ca certs")
+		}
+		tlsConfig.RootCAs = caPool
+	}
+
+	return tlsConfig, nil
 }
