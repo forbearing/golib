@@ -453,9 +453,19 @@ func SetDefaultValue() {
 	viper.SetDefault("mongo.password", "")
 	viper.SetDefault("mongo.database", "")
 	viper.SetDefault("mongo.auth_source", "admin")
-	viper.SetDefault("mongo.max_pool_size", 100)
+	viper.SetDefault("mongo.max_pool_size", 0)
 	viper.SetDefault("mongo.min_pool_size", 0)
-	viper.SetDefault("mongo.connect_timeout", 30*time.Second)
+	viper.SetDefault("mongo.connect_timeout", 0)
+	viper.SetDefault("mongo.server_selection_timeout", 0)
+	viper.SetDefault("mongo.max_conn_idle_time", 0)
+	viper.SetDefault("mongo.max_connecting", 0)
+	viper.SetDefault("mongo.read_concern", "")
+	viper.SetDefault("mongo.write_concern", "")
+	viper.SetDefault("mongo.enable_tls", false)
+	viper.SetDefault("mongo.cert_file", "")
+	viper.SetDefault("mongo.key_file", "")
+	viper.SetDefault("mongo.ca_file", "")
+	viper.SetDefault("mongo.insecure_skip_verify", false)
 	viper.SetDefault("mongo.enable", false)
 
 	viper.SetDefault("ldap.host", "127.0.0.1")
@@ -728,17 +738,58 @@ type ElasticsearchConfig struct {
 }
 
 type MongoConfig struct {
-	Host           string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
-	Port           int           `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	Username       string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password       string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	Database       string        `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
-	AuthSource     string        `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
-	MaxPoolSize    uint64        `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
-	MinPoolSize    uint64        `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
-	ConnectTimeout time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
-	Enable         bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port        int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Username    string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password    string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Database    string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	AuthSource  string `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
+	MaxPoolSize uint64 `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
+	MinPoolSize uint64 `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
+
+	ConnectTimeout         time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	ServerSelectionTimeout time.Duration `json:"server_selection_timeout" mapstructure:"server_selection_timeout" ini:"server_selection_timeout" yaml:"server_selection_timeout"`
+	MaxConnIdleTime        time.Duration `json:"max_conn_idle_time" mapstructure:"max_conn_idle_time" ini:"max_conn_idle_time" yaml:"max_conn_idle_time"`
+	MaxConnecting          uint64        `json:"max_connecting" mapstructure:"max_connecting" ini:"max_connecting" yaml:"max_connecting"`
+
+	ReadConcern  ReadConcern  `json:"read_concern" mapstructure:"read_concern" ini:"read_concern" yaml:"read_concern"`
+	WriteConcern WriteConcern `json:"write_concern" mapstructure:"write_concern" ini:"write_concern" yaml:"write_concern"`
+
+	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
+	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+
+	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+type ReadConcern string
+
+const (
+	ReadConcernLocal        ReadConcern = "local"
+	ReadConcernMajority     ReadConcern = "majority"
+	ReadConcernAvailable    ReadConcern = "available"
+	ReadConcernLinearizable ReadConcern = "linearizable"
+	ReadConcernSnapshot     ReadConcern = "snapshot"
+)
+
+type WriteConcern string
+
+const (
+	WriteConcernMajority  WriteConcern = "majority"
+	WriteConcernJournaled WriteConcern = "journaled"
+	WriteConcernW0        WriteConcern = "0"
+	WriteConcernW1        WriteConcern = "1"
+	WriteConcernW2        WriteConcern = "2"
+	WriteConcernW3        WriteConcern = "3"
+	WriteConcernW4        WriteConcern = "4"
+	WriteConcernW5        WriteConcern = "5"
+	WriteConcernW6        WriteConcern = "6"
+	WriteConcernW7        WriteConcern = "7"
+	WriteConcernW8        WriteConcern = "8"
+	WriteConcernW9        WriteConcern = "9"
+)
 
 // LdapConfig
 // For example:
