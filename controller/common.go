@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/database/redis"
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
