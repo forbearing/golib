@@ -2,15 +2,20 @@ package mongo
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/util"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 	"go.uber.org/zap"
 )
 
@@ -29,20 +34,15 @@ func Init() (err error) {
 	if !cfg.Enable {
 		return nil
 	}
-
 	mu.Lock()
 	defer mu.Unlock()
 	if initialized {
 		return nil
 	}
 
-	uri := buildURI(cfg)
-	client, err = mongo.Connect(options.Client().
-		ApplyURI(uri).
-		SetMaxPoolSize(cfg.MaxPoolSize).
-		SetMinPoolSize(cfg.MinPoolSize).
-		SetConnectTimeout(cfg.ConnectTimeout),
-	)
+	if client, err = New(cfg); err != nil {
+		return errors.Wrap(err, "failed to connect to mongodb")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err = client.Ping(ctx, readpref.Primary()); err != nil {
@@ -51,20 +51,101 @@ func Init() (err error) {
 	zap.S().Infow("successfully connect to mongodb", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 
 	initialized = true
-	return err
+	return nil
 }
 
 // New returns a new MongoDB client instance with given configuration.
 // It's the caller's responsibility to close the client,
 // caller should always call Close() when it's no longer needed.
 func New(cfg config.MongoConfig) (*mongo.Client, error) {
+	var err error
 	uri := buildURI(cfg)
-	return mongo.Connect(options.Client().
-		ApplyURI(uri).
-		SetMaxPoolSize(cfg.MaxPoolSize).
-		SetMinPoolSize(cfg.MinPoolSize).
-		SetConnectTimeout(cfg.ConnectTimeout),
-	)
+	opts := options.Client().ApplyURI(uri)
+	if cfg.MaxPoolSize > 0 {
+		opts.SetMaxPoolSize(cfg.MaxPoolSize)
+	}
+	if cfg.MinPoolSize > 0 {
+		opts.SetMinPoolSize(cfg.MinPoolSize)
+	}
+	if cfg.ConnectTimeout > 0 {
+		opts.SetConnectTimeout(cfg.ConnectTimeout)
+	}
+	if cfg.ServerSelectionTimeout > 0 {
+		opts.SetServerSelectionTimeout(cfg.ServerSelectionTimeout)
+	}
+	if cfg.MaxConnIdleTime > 0 {
+		opts.SetMaxConnIdleTime(cfg.MaxConnIdleTime)
+	}
+	if cfg.MaxConnecting > 0 {
+		opts.SetMaxConnecting(cfg.MaxConnecting)
+	}
+	if len(cfg.ReadConcern) > 0 {
+		var rc *readconcern.ReadConcern
+		switch cfg.ReadConcern {
+		case config.ReadConcernLocal:
+			rc = readconcern.Local()
+		case config.ReadConcernMajority:
+			rc = readconcern.Majority()
+		case config.ReadConcernAvailable:
+			rc = readconcern.Available()
+		case config.ReadConcernLinearizable:
+			rc = readconcern.Linearizable()
+		case config.ReadConcernSnapshot:
+			rc = readconcern.Snapshot()
+		}
+		if rc != nil {
+			opts.SetReadConcern(rc)
+		}
+	}
+	if len(cfg.WriteConcern) > 0 {
+		var wc *writeconcern.WriteConcern
+		switch cfg.WriteConcern {
+		case config.WriteConcernMajority:
+			wc = writeconcern.Majority()
+		case config.WriteConcernJournaled:
+			wc = writeconcern.Journaled()
+		case config.WriteConcernW0:
+			wc = writeconcern.Unacknowledged()
+		case config.WriteConcernW1:
+			wc = writeconcern.W1()
+		case config.WriteConcernW2:
+			wc = &writeconcern.WriteConcern{W: 2}
+		case config.WriteConcernW3:
+			wc = &writeconcern.WriteConcern{W: 3}
+		case config.WriteConcernW4:
+			wc = &writeconcern.WriteConcern{W: 4}
+		case config.WriteConcernW5:
+			wc = &writeconcern.WriteConcern{W: 5}
+		case config.WriteConcernW6:
+			wc = &writeconcern.WriteConcern{W: 6}
+		case config.WriteConcernW7:
+			wc = &writeconcern.WriteConcern{W: 7}
+		case config.WriteConcernW8:
+			wc = &writeconcern.WriteConcern{W: 8}
+		case config.WriteConcernW9:
+			wc = &writeconcern.WriteConcern{W: 9}
+		default:
+			if cfg.WriteConcern[0] >= '0' && cfg.WriteConcern[0] <= '9' {
+				var w int
+				if w, err = strconv.Atoi(string(cfg.WriteConcern)); err == nil && w > 1 {
+					wc = &writeconcern.WriteConcern{W: w}
+				}
+			} else {
+				wc = writeconcern.Custom(string(cfg.WriteConcern))
+			}
+		}
+		if wc != nil {
+			opts.SetWriteConcern(wc)
+		}
+	}
+	if cfg.EnableTLS {
+		var tlsConfig *tls.Config
+		if tlsConfig, err = util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify); err != nil {
+			return nil, errors.Wrap(err, "failed to build TLS config")
+		}
+		opts.SetTLSConfig(tlsConfig)
+	}
+	return mongo.Connect(opts)
 }
 
 func buildURI(cfg config.MongoConfig) string {
