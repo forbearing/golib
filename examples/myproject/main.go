@@ -27,6 +27,7 @@ func main() {
 	os.Setenv(config.DEBUG_ENABLE_STATSVIZ, "true")
 	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
 	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
+	os.Setenv(config.REDIS_PASSWORD, "qQk5zXWHfj4LD2Nxm9vF3YpBZt8a6JhUTdsS7RgyruGCAEebVP")
 	os.Setenv("NATS_USERNAME", "user_from_env")
 	os.Setenv("NATS_PASSWORD", "pass_from_env")
 	os.Setenv("NATS_TIMEOUT", "60s")

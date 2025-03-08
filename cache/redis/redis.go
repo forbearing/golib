@@ -4,6 +4,7 @@ package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -18,13 +19,15 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
 	redis "github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )
 
 var (
-	rdb  *redis.Client
-	once sync.Once
+	rdb         *redis.Client
+	mu          sync.Mutex
+	initialized bool
 
 	ctx = context.Background()
 
@@ -35,26 +38,96 @@ var (
 // sonic library is about 2 times faster than standard library encoding/json.
 // var json = sonic.ConfigStd
 
+// func Init() (err error) {
+// 	if !config.App.RedisConfig.Enable {
+// 		return
+// 	}
+// 	once.Do(func() {
+// 		rdb = redis.NewClient(&redis.Options{
+// 			Addr:     net.JoinHostPort(config.App.RedisConfig.Host, strconv.Itoa(int(config.App.RedisConfig.Port))),
+// 			Password: config.App.RedisConfig.Password,
+// 			DB:       config.App.RedisConfig.DB,
+// 		})
+// 		// 确保 redis 没有问题
+// 		err = rdb.Set(context.TODO(), config.App.RedisConfig.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), config.App.RedisConfig.Expiration).Err()
+// 	})
+// 	if err != nil {
+// 		return errors.Wrap(err, "failed to connect to redis")
+// 	}
+// 	zap.S().Infow("successfully connect to redis", "host", config.App.RedisConfig.Host, "port", config.App.RedisConfig.Port, "db", config.App.RedisConfig.DB)
+// 	return nil
+// }
+
 func Init() (err error) {
-	if !config.App.RedisConfig.Enable {
-		return
+	cfg := config.App.RedisConfig
+	if !cfg.Enable {
+		return nil
 	}
-	once.Do(func() {
-		// addr := net.JoinHostPort(config.App.RedisConfig.Host, strconv.Itoa(int(config.App.RedisConfig.Port)))
-		// fmt.Println("addr: ", addr)
-		rdb = redis.NewClient(&redis.Options{
-			Addr:     net.JoinHostPort(config.App.RedisConfig.Host, strconv.Itoa(int(config.App.RedisConfig.Port))),
-			Password: config.App.RedisConfig.Password,
-			DB:       config.App.RedisConfig.DB,
-		})
-		// 确保 redis 没有问题
-		err = rdb.Set(context.TODO(), config.App.RedisConfig.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), config.App.RedisConfig.Expiration).Err()
-	})
-	if err != nil {
+	mu.Lock()
+	defer mu.Unlock()
+	if initialized {
+		return nil
+	}
+
+	if rdb, err = New(cfg); err != nil {
 		return errors.Wrap(err, "failed to connect to redis")
 	}
-	zap.S().Infow("successfully connect to redis", "host", config.App.RedisConfig.Host, "port", config.App.RedisConfig.Port, "db", config.App.RedisConfig.DB)
+	if err = rdb.Set(context.TODO(), cfg.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), cfg.Expiration).Err(); err != nil {
+		return errors.Wrap(err, "failed to ping redis")
+	}
+
+	zap.S().Infow("successfully connect to redis", "host", cfg.Host, "port", cfg.Port, "db", cfg.DB)
+	initialized = true
 	return nil
+}
+
+func New(cfg config.RedisConfig) (*redis.Client, error) {
+	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(int(cfg.Port)))
+	opts := &redis.Options{
+		Addr:     addr,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+	}
+	if cfg.PoolSize > 0 {
+		opts.PoolSize = cfg.PoolSize
+	}
+	if cfg.DialTimeout > 0 {
+		opts.DialTimeout = cfg.DialTimeout
+	}
+	if cfg.ReadTimeout > 0 {
+		opts.ReadTimeout = cfg.ReadTimeout
+	}
+	if cfg.WriteTimeout > 0 {
+		opts.WriteTimeout = cfg.WriteTimeout
+	}
+	if cfg.MinIdleConns > 0 {
+		opts.MinIdleConns = cfg.MinIdleConns
+	}
+	if cfg.MaxRetries > 0 {
+		opts.MaxRetries = cfg.MaxRetries
+	}
+	if cfg.MinRetryBackoff > 0 {
+		opts.MinRetryBackoff = cfg.MinRetryBackoff
+	}
+	if cfg.MaxRetryBackoff > 0 {
+		opts.MaxRetryBackoff = cfg.MaxRetryBackoff
+	}
+	if cfg.IdleTimeout > 0 {
+		opts.IdleTimeout = cfg.IdleTimeout
+	}
+	if cfg.MaxConnAge > 0 {
+		opts.MaxConnAge = cfg.MaxConnAge
+	}
+	if cfg.EnableTLS {
+		var tlsConfig *tls.Config
+		var err error
+		if tlsConfig, err = util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify); err != nil {
+			return nil, errors.Wrap(err, "failed to build TLS config")
+		}
+		opts.TLSConfig = tlsConfig
+	}
+
+	return redis.NewClient(opts), nil
 }
 
 // Set set any data into redis with specific key.
