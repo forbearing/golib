@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/minio"
+	"github.com/forbearing/golib/provider/minio"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/types/helper"
