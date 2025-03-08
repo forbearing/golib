@@ -14,13 +14,12 @@ import (
 	"sync"
 	"time"
 
-	// redis "github.com/redis/go-redis/v9"
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
-	redis "github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -91,12 +90,6 @@ func New(cfg config.RedisConfig) (*redis.Client, error) {
 	}
 	if cfg.MaxRetryBackoff > 0 {
 		opts.MaxRetryBackoff = cfg.MaxRetryBackoff
-	}
-	if cfg.IdleTimeout > 0 {
-		opts.IdleTimeout = cfg.IdleTimeout
-	}
-	if cfg.MaxConnAge > 0 {
-		opts.MaxConnAge = cfg.MaxConnAge
 	}
 	if cfg.EnableTLS {
 		var tlsConfig *tls.Config
