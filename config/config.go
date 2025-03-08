@@ -436,6 +436,20 @@ func SetDefaultValue() {
 	viper.SetDefault("redis.pool_size", runtime.NumCPU())
 	viper.SetDefault("redis.namespace", "myproject")
 	viper.SetDefault("redis.expiration", "8h")
+	viper.SetDefault("redis.dial_timeout", 0)
+	viper.SetDefault("redis.read_timeout", 0)
+	viper.SetDefault("redis.write_timeout", 0)
+	viper.SetDefault("redis.min_idle_conns", 0)
+	viper.SetDefault("redis.max_retries", 0)
+	viper.SetDefault("redis.min_retry_backoff", 0)
+	viper.SetDefault("redis.max_retry_backoff", 0)
+	viper.SetDefault("redis.idle_timeout", 0)
+	viper.SetDefault("redis.max_conn_age", 0)
+	viper.SetDefault("redis.enable_tls", false)
+	viper.SetDefault("redis.cert_file", "")
+	viper.SetDefault("redis.key_file", 0)
+	viper.SetDefault("redis.ca_file", "")
+	viper.SetDefault("redis.insecure_skip_verify", false)
 	viper.SetDefault("redis.enable", false)
 
 	viper.SetDefault("elasticsearch.hosts", "127.0.0.1")
@@ -716,14 +730,31 @@ type SQLServerConfig struct {
 }
 
 type RedisConfig struct {
-	Host       string        `json:"host" mapstructure:"host"`
-	Port       uint          `json:"port" mapstructure:"port"`
-	DB         int           `json:"db" mapstructure:"db"`
-	Password   string        `json:"password" mapstructure:"password"`
-	PoolSize   int           `json:"pool_size" mapstructure:"pool_size"`
+	Host       string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port       uint          `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	DB         int           `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Password   string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
 	Namespace  string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
+	PoolSize   int           `json:"pool_size" mapstructure:"pool_size" ini:"pool_size" yaml:"pool_size"`
 	Expiration time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
-	Enable     bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+
+	DialTimeout     time.Duration `json:"dial_timeout" mapstructure:"dial_timeout" ini:"dial_timeout" yaml:"dial_timeout"`
+	ReadTimeout     time.Duration `json:"read_timeout" mapstructure:"read_timeout" ini:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout    time.Duration `json:"write_timeout" mapstructure:"write_timeout" ini:"write_timeout" yaml:"write_timeout"`
+	MinIdleConns    int           `json:"min_idle_conns" mapstructure:"min_idle_conns" ini:"min_idle_conns" yaml:"min_idle_conns"`
+	MaxRetries      int           `json:"max_retries" mapstructure:"max_retries" ini:"max_retries" yaml:"max_retries"`
+	MinRetryBackoff time.Duration `json:"min_retry_backoff" mapstructure:"min_retry_backoff" ini:"min_retry_backoff" yaml:"min_retry_backoff"`
+	MaxRetryBackoff time.Duration `json:"max_retry_backoff" mapstructure:"max_retry_backoff" ini:"max_retry_backoff" yaml:"max_retry_backoff"`
+	IdleTimeout     time.Duration `json:"idle_timeout" mapstructure:"idle_timeout" ini:"idle_timeout" yaml:"idle_timeout"`
+	MaxConnAge      time.Duration `json:"max_conn_age" mapstructure:"max_conn_age" ini:"max_conn_age" yaml:"max_conn_age"`
+
+	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
+	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+
+	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type ElasticsearchConfig struct {
