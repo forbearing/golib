@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/forbearing/golib/bootstrap"
+	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	pkgcontroller "github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
@@ -59,6 +61,12 @@ func main() {
 	// Register task and cronjob after bootstrap.
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 	cronjob.Register(SayGoodbye, "*/1 * * * * *", "say goodbye")
+
+	if err := redis.SetM[*model.Group]("group01", &model.Group{
+		Name: fmt.Sprintf("group-%d", time.Now().Unix()),
+	}); err != nil {
+		panic(err)
+	}
 
 	//
 	//
