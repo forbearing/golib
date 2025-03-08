@@ -38,26 +38,6 @@ var (
 // sonic library is about 2 times faster than standard library encoding/json.
 // var json = sonic.ConfigStd
 
-// func Init() (err error) {
-// 	if !config.App.RedisConfig.Enable {
-// 		return
-// 	}
-// 	once.Do(func() {
-// 		rdb = redis.NewClient(&redis.Options{
-// 			Addr:     net.JoinHostPort(config.App.RedisConfig.Host, strconv.Itoa(int(config.App.RedisConfig.Port))),
-// 			Password: config.App.RedisConfig.Password,
-// 			DB:       config.App.RedisConfig.DB,
-// 		})
-// 		// 确保 redis 没有问题
-// 		err = rdb.Set(context.TODO(), config.App.RedisConfig.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), config.App.RedisConfig.Expiration).Err()
-// 	})
-// 	if err != nil {
-// 		return errors.Wrap(err, "failed to connect to redis")
-// 	}
-// 	zap.S().Infow("successfully connect to redis", "host", config.App.RedisConfig.Host, "port", config.App.RedisConfig.Port, "db", config.App.RedisConfig.DB)
-// 	return nil
-// }
-
 func Init() (err error) {
 	cfg := config.App.RedisConfig
 	if !cfg.Enable {
