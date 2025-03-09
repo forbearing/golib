@@ -429,13 +429,14 @@ func SetDefaultValue() {
 	viper.SetDefault("sqlserver.app_name", "golib")
 	viper.SetDefault("sqlserver.enable", false)
 
-	viper.SetDefault("redis.host", "127.0.0.1")
-	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.addr", "127.0.0.1:6379")
+	viper.SetDefault("redis.addrs", []string{"127.0.0.1:6379"})
 	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.pool_size", runtime.NumCPU())
 	viper.SetDefault("redis.namespace", APP_NAME)
 	viper.SetDefault("redis.expiration", 0)
+	viper.SetDefault("redis.cluster_mode", false)
 	viper.SetDefault("redis.dial_timeout", 0)
 	viper.SetDefault("redis.read_timeout", 0)
 	viper.SetDefault("redis.write_timeout", 0)
@@ -728,13 +729,14 @@ type SQLServerConfig struct {
 }
 
 type RedisConfig struct {
-	Host       string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
-	Port       uint          `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	DB         int           `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
-	Password   string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	Namespace  string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
-	PoolSize   int           `json:"pool_size" mapstructure:"pool_size" ini:"pool_size" yaml:"pool_size"`
-	Expiration time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
+	Addr        string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
+	Addrs       []string      `json:"addrs" mapstructure:"addrs" ini:"addrs" yaml:"addrs"`
+	DB          int           `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
+	Password    string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Namespace   string        `json:"namespace" mapstructure:"namespace" ini:"namespace" yaml:"namespace"`
+	PoolSize    int           `json:"pool_size" mapstructure:"pool_size" ini:"pool_size" yaml:"pool_size"`
+	Expiration  time.Duration `json:"expiration" mapstructure:"expiration" ini:"expiration" yaml:"expiration"`
+	ClusterMode bool          `json:"cluster_mode" mapstructure:"cluster_mode" ini:"cluster_mode" yaml:"cluster_mode"`
 
 	DialTimeout     time.Duration `json:"dial_timeout" mapstructure:"dial_timeout" ini:"dial_timeout" yaml:"dial_timeout"`
 	ReadTimeout     time.Duration `json:"read_timeout" mapstructure:"read_timeout" ini:"read_timeout" yaml:"read_timeout"`
