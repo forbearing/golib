@@ -1,7 +1,10 @@
 package bootstrap
 
 import (
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/lru"
@@ -90,7 +93,16 @@ func Bootstrap() error {
 		cronjob.Init,
 	)
 
+	RegisterExitHandler(redis.Close)
+
 	initialized = true
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+		<-sigCh
+		Cleanup()
+	}()
 	return Init()
 }
 
