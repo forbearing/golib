@@ -125,7 +125,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	// db.shouldAutoMigrate = true
-	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
+	if strings.ToLower(config.App.Logger.Level) == "debug" {
 		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
 	} else {
 		db.db = _db.WithContext(context.TODO()).Limit(defaultLimit)
@@ -1122,7 +1122,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
 		// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
 		var _db *gorm.DB
-		if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
+		if strings.ToLower(config.App.Logger.Level) == "debug" {
 			_db = DB.Debug()
 		} else {
 			_db = DB
@@ -2237,7 +2237,7 @@ func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 			gctx = helper.NewGormContext(dbctx)
 		}
 	}
-	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
+	if strings.ToLower(config.App.Logger.Level) == "debug" {
 		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
 	}
 	return &database[M]{db: DB.WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
@@ -2291,16 +2291,16 @@ func (db *database[M]) trace(op string) func(error) {
 //
 // More details see reference: https://gorm.io/docs/sql_builder.html
 func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
-	prefix = strings.Join([]string{config.App.RedisConfig.Namespace, stmt.Table}, ":")
+	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
 	switch strings.ToLower(action) {
 	case "get":
 		if len(id) > 0 {
-			key = strings.Join([]string{config.App.RedisConfig.Namespace, stmt.Table, action, id[0]}, ":")
+			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, id[0]}, ":")
 		} else {
-			key = strings.Join([]string{config.App.RedisConfig.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
+			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
 		}
 	default:
-		key = strings.Join([]string{config.App.RedisConfig.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
+		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
 	}
 	return
 }

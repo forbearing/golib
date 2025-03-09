@@ -25,7 +25,7 @@ var (
 )
 
 func Init() (err error) {
-	cfg := config.App.MqttConfig
+	cfg := config.App.Mqtt
 	if !cfg.Enable {
 		return nil
 	}
@@ -55,7 +55,7 @@ func Init() (err error) {
 	return nil
 }
 
-func New(cfg config.MqttConfig) (mqtt.Client, error) {
+func New(cfg config.Mqtt) (mqtt.Client, error) {
 	opts, err := buildOptions(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build mqtt options")
@@ -63,7 +63,7 @@ func New(cfg config.MqttConfig) (mqtt.Client, error) {
 	return mqtt.NewClient(opts), nil
 }
 
-func buildOptions(cfg config.MqttConfig) (*mqtt.ClientOptions, error) {
+func buildOptions(cfg config.Mqtt) (*mqtt.ClientOptions, error) {
 	clientId = fmt.Sprintf("%s-%d",
 		defaultIfEmpty(cfg.ClientPrefix, "mqtt-client"),
 		rand.New(rand.NewSource(time.Now().UnixNano())).Int(),
@@ -106,7 +106,7 @@ func buildOptions(cfg config.MqttConfig) (*mqtt.ClientOptions, error) {
 
 func connect(client mqtt.Client) error {
 	token := client.Connect()
-	if !token.WaitTimeout(config.App.MqttConfig.ConnectTimeout) {
+	if !token.WaitTimeout(config.App.Mqtt.ConnectTimeout) {
 		return fmt.Errorf("connect timeout")
 	}
 	if err := token.Error(); err != nil {
@@ -238,7 +238,7 @@ func Publish(topic string, payload any, opts ...PublishOption) error {
 		logger.Mqtt.Errorw("publish failed",
 			"error", err,
 			"topic", topic,
-			"addr", config.App.MqttConfig.Addr,
+			"addr", config.App.Mqtt.Addr,
 		)
 		return err
 	}
@@ -284,7 +284,7 @@ func Subscribe(topic string, handler MessageHandler, opts ...SubscribeOption) er
 		logger.Mqtt.Errorw("subscribe failed",
 			"error", err,
 			"topic", topic,
-			"addr", config.App.MqttConfig.Addr,
+			"addr", config.App.Mqtt.Addr,
 		)
 		return err
 	}

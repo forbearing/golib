@@ -23,8 +23,8 @@ var (
 // It checks if Clickhouse is enabled and selected as the default database.
 // If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
-	cfg := config.App.ClickhouseConfig
-	if !cfg.Enable || config.App.ServerConfig.DB != config.DBClickHouse {
+	cfg := config.App.Clickhouse
+	if !cfg.Enable || config.App.Server.DB != config.DBClickHouse {
 		return
 	}
 
@@ -36,10 +36,10 @@ func Init() (err error) {
 	}
 	// It will fix error: "Cannot create column with type 'FixedString(10240)' because fixed string with size > 256 is suspicious. Set setting allow_suspicious_fixed_string_types = 1 in order to allow it"
 	db.Exec("SET allow_suspicious_fixed_string_types = 1")
-	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
-	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
-	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(config.App.DatabaseConfig.ConnMaxIdleTime)
+	db.SetMaxIdleConns(config.App.Database.MaxIdleConns)
+	db.SetMaxOpenConns(config.App.Database.MaxOpenConns)
+	db.SetConnMaxLifetime(config.App.Database.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.App.Database.ConnMaxIdleTime)
 
 	zap.S().Infow("successfully connect to clickhouse", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 	return helper.InitDatabase(Default, dbmap)
@@ -47,11 +47,11 @@ func Init() (err error) {
 
 // New creates and returns a new Clickhouse database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
-func New(cfg config.ClickhouseConfig) (*gorm.DB, error) {
+func New(cfg config.Clickhouse) (*gorm.DB, error) {
 	return gorm.Open(clickhouse.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func buildDSN(cfg config.ClickhouseConfig) string {
+func buildDSN(cfg config.Clickhouse) string {
 	// return "clickhouse://default:clickhouse@localhost:9010/default?debug=true?compress=false?read_timeout=5s?write_timeout=5s?dial_timeout=5s"
 	return fmt.Sprintf("clickhouse://%s:%s@%s:%d/%s?debug=%t?compress=%t?read_timeout=%s?write_timeout=%s?dial_timeout=%s",
 		cfg.Username, cfg.Password,

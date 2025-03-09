@@ -226,13 +226,13 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 
 func initVar() {
 	mode = config.App.Mode
-	logFile = config.App.LoggerConfig.File
-	logLevel = config.App.LoggerConfig.Level
-	logFormat = config.App.LoggerConfig.Format
-	logEncoder = config.App.LoggerConfig.Encoder
-	logMaxAge = int(config.App.LoggerConfig.MaxAge)
-	logMaxSize = int(config.App.LoggerConfig.MaxSize)
-	logMaxBackups = int(config.App.LoggerConfig.MaxBackups)
+	logFile = config.App.Logger.File
+	logLevel = config.App.Logger.Level
+	logFormat = config.App.Logger.Format
+	logEncoder = config.App.Logger.Encoder
+	logMaxAge = int(config.App.Logger.MaxAge)
+	logMaxSize = int(config.App.Logger.MaxSize)
+	logMaxBackups = int(config.App.Logger.MaxBackups)
 }
 
 // colorfulLevelEncoder 自定义 Level Encoder，为不同的日志级别添加颜色

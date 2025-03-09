@@ -13,21 +13,21 @@ func Init() (err error) {
 	return nil
 }
 
-func New(cfg config.LdapConfig) (*ldap.Conn, error) {
+func New(cfg config.Ldap) (*ldap.Conn, error) {
 	return newConn(cfg)
 }
 
 // SearchUser search user in ldap.
 // If the length of attribute is 0, attribute default to []string{"cn"}.
 func SearchUser(username string, attribute []string) (*ldap.Conn, []*ldap.Entry, error) {
-	conn, err := newConn(config.App.LdapConfig)
+	conn, err := newConn(config.App.Ldap)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(attribute) == 0 {
 		attribute = []string{"cn"}
 	}
-	cfg := config.App.LdapConfig
+	cfg := config.App.Ldap
 	if err = conn.Bind(cfg.BindDN, cfg.BindPassword); err != nil {
 		conn.Close()
 		return nil, nil, err
@@ -44,7 +44,7 @@ func SearchUser(username string, attribute []string) (*ldap.Conn, []*ldap.Entry,
 
 // AuthUser checks that username and password matched.
 func AuthUser(username, password string) bool {
-	if username == config.App.AuthConfig.NoneExpireUsername && password == config.App.AuthConfig.NoneExpirePassword {
+	if username == config.App.Auth.NoneExpireUsername && password == config.App.Auth.NoneExpirePassword {
 		return true
 	}
 
@@ -67,7 +67,7 @@ func AuthUser(username, password string) bool {
 }
 
 // newConn creates a ldap connection, and it's your responsebility to close the connection.
-func newConn(cfg config.LdapConfig) (conn *ldap.Conn, err error) {
+func newConn(cfg config.Ldap) (conn *ldap.Conn, err error) {
 	schema := "ldap"
 	if cfg.UseSsl {
 		schema = "ldaps"

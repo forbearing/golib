@@ -7,6 +7,6 @@ import (
 
 func BaseAuth() gin.HandlerFunc {
 	return gin.BasicAuth(gin.Accounts{
-		config.App.AuthConfig.BaseAuthUsername: config.App.AuthConfig.BaseAuthPassword,
+		config.App.Auth.BaseAuthUsername: config.App.Auth.BaseAuthPassword,
 	})
 }

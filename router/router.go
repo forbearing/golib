@@ -52,7 +52,7 @@ func Init() error {
 
 func Run() error {
 	log := zap.S()
-	addr := net.JoinHostPort(config.App.ServerConfig.Listen, strconv.Itoa(config.App.ServerConfig.Port))
+	addr := net.JoinHostPort(config.App.Server.Listen, strconv.Itoa(config.App.Server.Port))
 	log.Infow("backend server started", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
 	for _, r := range Base.Routes() {
 		log.Debugw("", "method", r.Method, "path", r.Path)

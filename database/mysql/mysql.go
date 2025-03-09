@@ -23,8 +23,8 @@ var (
 // It checks if MySQL is enabled and selected as the default database.
 // If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
-	cfg := config.App.MySQLConfig
-	if !cfg.Enable || config.App.ServerConfig.DB != config.DBMySQL {
+	cfg := config.App.MySQL
+	if !cfg.Enable || config.App.Server.DB != config.DBMySQL {
 		return
 	}
 
@@ -34,10 +34,10 @@ func Init() (err error) {
 	if db, err = Default.DB(); err != nil {
 		return errors.Wrap(err, "failed to get mysql db")
 	}
-	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
-	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
-	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(config.App.DatabaseConfig.ConnMaxIdleTime)
+	db.SetMaxIdleConns(config.App.Database.MaxIdleConns)
+	db.SetMaxOpenConns(config.App.Database.MaxOpenConns)
+	db.SetConnMaxLifetime(config.App.Database.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.App.Database.ConnMaxIdleTime)
 
 	zap.S().Infow("successfully connect to mysql", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 	return helper.InitDatabase(Default, dbmap)
@@ -45,11 +45,11 @@ func Init() (err error) {
 
 // New creates and returns a new MySQL database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
-func New(cfg config.MySQLConfig) (*gorm.DB, error) {
+func New(cfg config.MySQL) (*gorm.DB, error) {
 	return gorm.Open(mysql.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func buildDSN(cfg config.MySQLConfig) string {
+func buildDSN(cfg config.MySQL) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset,
 	)

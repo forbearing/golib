@@ -43,7 +43,7 @@ var (
 // If elasticsearch not enabled, it returns nil.
 // The functions also starts a background goroutines to ensure connection health.
 func Init() (err error) {
-	cfg := config.App.ElasticsearchConfig
+	cfg := config.App.Elasticsearch
 	if !cfg.Enable {
 		return nil
 	}
@@ -62,11 +62,11 @@ func Init() (err error) {
 }
 
 // New creates a new elasticsearch client instance with the given configuration.
-func New(cfg config.ElasticsearchConfig) (*elasticsearch.Client, error) {
+func New(cfg config.Elasticsearch) (*elasticsearch.Client, error) {
 	return elasticsearch.NewClient(makeESConfig(cfg))
 }
 
-func makeESConfig(cfg config.ElasticsearchConfig) elasticsearch.Config {
+func makeESConfig(cfg config.Elasticsearch) elasticsearch.Config {
 	return elasticsearch.Config{
 		Addresses:              strings.Split(cfg.Hosts, ","),
 		Username:               cfg.Username,

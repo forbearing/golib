@@ -38,7 +38,7 @@ var (
 // var json = sonic.ConfigStd
 
 func Init() (err error) {
-	cfg := config.App.RedisConfig
+	cfg := config.App.Redis
 	if !cfg.Enable {
 		return nil
 	}
@@ -72,7 +72,7 @@ func Init() (err error) {
 	return nil
 }
 
-func New(cfg config.RedisConfig) (*redis.Client, error) {
+func New(cfg config.Redis) (*redis.Client, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -114,7 +114,7 @@ func New(cfg config.RedisConfig) (*redis.Client, error) {
 	return redis.NewClient(opts), nil
 }
 
-func NewCluster(cfg config.RedisConfig) (*redis.ClusterClient, error) {
+func NewCluster(cfg config.Redis) (*redis.ClusterClient, error) {
 	opts := &redis.ClusterOptions{
 		Addrs:    cfg.Addrs,
 		Password: cfg.Password,
@@ -178,15 +178,15 @@ func Close() {
 // Set set any data into redis with specific key.
 // If the data type is custom type or structure, you must implement the interface encoding.BinaryMarshaler.
 func Set(key string, data any, expiration ...time.Duration) error {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
-	_expiration := config.App.RedisConfig.Expiration
+	_expiration := config.App.Redis.Expiration
 	if len(expiration) > 0 {
 		_expiration = expiration[0]
 	}
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		return cluster.Set(ctx, key, data, _expiration).Err()
 	}
 	return client.Set(ctx, key, data, _expiration).Err()
@@ -194,15 +194,15 @@ func Set(key string, data any, expiration ...time.Duration) error {
 
 // SetM set types.Model into redis with specific key.
 func SetM[M types.Model](key string, m M, expiration ...time.Duration) error {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
-	_expiration := config.App.RedisConfig.Expiration
+	_expiration := config.App.Redis.Expiration
 	if len(expiration) > 0 {
 		_expiration = expiration[0]
 	}
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		return cluster.Set(ctx, key, modelMarshaler[M]{Model: m}, _expiration).Err()
 	}
 	return client.Set(ctx, key, modelMarshaler[M]{Model: m}, _expiration).Err()
@@ -210,11 +210,11 @@ func SetM[M types.Model](key string, m M, expiration ...time.Duration) error {
 
 // SetML set one or multiple types.Model into redis with specific key.
 func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
-	_expiration := config.App.RedisConfig.Expiration
+	_expiration := config.App.Redis.Expiration
 	if len(expiration) > 0 {
 		_expiration = expiration[0]
 	}
@@ -222,7 +222,7 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 	for i := range ml {
 		bl = append(bl, modelMarshaler[M]{Model: ml[i]})
 	}
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		return cluster.Set(ctx, key, modelMarshalerList[M](bl), _expiration).Err()
 	}
 	return client.Set(ctx, key, modelMarshalerList[M](bl), _expiration).Err()
@@ -230,16 +230,16 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 
 // SetSession wrapped Set function to set session data to redis, only for session.
 func SetSession(sessionId string, data []byte) error {
-	return Set(fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId), data, config.App.AuthConfig.AccessTokenExpireDuration)
+	return Set(fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionId), data, config.App.Auth.AccessTokenExpireDuration)
 }
 
 // Get will get raw cache([]byte) from redis.
 func Get(key string) (cache []byte, err error) {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return make([]byte, 0), nil
 	}
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		cache, err = cluster.Get(ctx, key).Bytes()
 	} else {
 		cache, err = client.Get(ctx, key).Bytes()
@@ -252,13 +252,13 @@ func Get(key string) (cache []byte, err error) {
 
 // GetInt get cache from redis and decode into integer.
 func GetInt(key string) (int64, error) {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return 0, nil
 	}
 	var cache string
 	var err error
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		cache, err = cluster.Get(ctx, key).Result()
 	} else {
 		cache, err = client.Get(ctx, key).Result()
@@ -275,13 +275,13 @@ func GetInt(key string) (int64, error) {
 
 // GetM will get cache from redis and decode into types.Model.
 func GetM[M types.Model](key string) (M, error) {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return *new(M), nil
 	}
 	var data []byte
 	var err error
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		data, err = cluster.Get(ctx, key).Bytes()
 	} else {
 		data, err = client.Get(ctx, key).Bytes()
@@ -304,13 +304,13 @@ func GetM[M types.Model](key string) (M, error) {
 
 // GetML will get cache from redis and decode into []types.Model.
 func GetML[M types.Model](key string) ([]M, error) {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return make([]M, 0), nil
 	}
 	var data []byte
 	var err error
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		data, err = cluster.Get(ctx, key).Bytes()
 	} else {
 		data, err = client.Get(ctx, key).Bytes()
@@ -338,16 +338,16 @@ func GetML[M types.Model](key string) ([]M, error) {
 
 // Getsession wrapped Get function to get session data from cache
 func GetSession[M types.Model](sessionId string) ([]byte, error) {
-	key := fmt.Sprintf("%s:session:%s", config.App.RedisConfig.Namespace, sessionId)
+	key := fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionId)
 	return Get(key)
 }
 
 func Remove(keys ...string) error {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
-	if config.App.RedisConfig.ClusterMode {
+	if config.App.Redis.ClusterMode {
 		return cluster.Del(ctx, keys...).Err()
 	}
 	return client.Del(ctx, keys...).Err()
@@ -356,7 +356,7 @@ func Remove(keys ...string) error {
 // RemovePrefix will scan and delete all redis key that matchs the `prefix`.
 // for example: myprefix*
 func RemovePrefix(prefix string) (err error) {
-	if !config.App.RedisConfig.Enable {
+	if !config.App.Redis.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
@@ -365,7 +365,7 @@ func RemovePrefix(prefix string) (err error) {
 	}
 	iter := client.Scan(ctx, 0, prefix, 0).Iterator()
 	for iter.Next(ctx) {
-		if config.App.RedisConfig.ClusterMode {
+		if config.App.Redis.ClusterMode {
 			err = cluster.Del(ctx, iter.Val()).Err()
 		} else {
 			err = client.Del(ctx, iter.Val()).Err()

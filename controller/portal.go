@@ -20,9 +20,9 @@ func (p *portal) Tick(c *gin.Context) {
 	feishuAuthUrl := "https://open.feishu.cn/open-apis/authen/v1/user_auth_page_beta?app_id=%s&redirect_uri="
 	targetUrl := "%s/api/feishu/qrlogin"
 	// redirectUrl := fmt.Sprintf(feishuAuthUrl, config.App.FeishuConfig.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, config.App.ServerConfig.Domain))
-	redirectUrl := fmt.Sprintf(feishuAuthUrl, config.App.FeishuConfig.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, config.App.ServerConfig.Domain))
+	redirectUrl := fmt.Sprintf(feishuAuthUrl, config.App.Feishu.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, config.App.Server.Domain))
 	if config.App.Mode == config.ModeDev {
-		redirectUrl = fmt.Sprintf(feishuAuthUrl, config.App.FeishuConfig.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, "http://172.31.8.8:8001"))
+		redirectUrl = fmt.Sprintf(feishuAuthUrl, config.App.Feishu.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, "http://172.31.8.8:8001"))
 	}
 	fmt.Println("============= redirect: ", redirectUrl)
 

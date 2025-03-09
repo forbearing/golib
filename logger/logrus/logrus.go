@@ -162,13 +162,13 @@ func initLogFormat(logger ...*logrus.Logger) {
 }
 
 func initVar() {
-	logFile = config.App.LoggerConfig.File
-	logLevel = config.App.LoggerConfig.Level
-	logFormat = config.App.LoggerConfig.Format
-	logEncoder = config.App.LoggerConfig.Encoder
-	logMaxAge = int(config.App.LoggerConfig.MaxAge)
-	logMaxSize = int(config.App.LoggerConfig.MaxSize)
-	logMaxBackups = int(config.App.LoggerConfig.MaxBackups)
+	logFile = config.App.Logger.File
+	logLevel = config.App.Logger.Level
+	logFormat = config.App.Logger.Format
+	logEncoder = config.App.Logger.Encoder
+	logMaxAge = int(config.App.Logger.MaxAge)
+	logMaxSize = int(config.App.Logger.MaxSize)
+	logMaxBackups = int(config.App.Logger.MaxBackups)
 }
 
 func callerPrettyfier(frame *runtime.Frame) (function, file string) {
