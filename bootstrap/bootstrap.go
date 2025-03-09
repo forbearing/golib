@@ -20,10 +20,14 @@ import (
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
+	"github.com/forbearing/golib/provider/cassandra"
 	"github.com/forbearing/golib/provider/elastic"
+	"github.com/forbearing/golib/provider/etcd"
+	"github.com/forbearing/golib/provider/kafka"
 	"github.com/forbearing/golib/provider/minio"
 	"github.com/forbearing/golib/provider/mongo"
 	"github.com/forbearing/golib/provider/mqtt"
+	"github.com/forbearing/golib/provider/nats"
 	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
@@ -61,6 +65,10 @@ func Bootstrap() error {
 		elastic.Init,
 		mongo.Init,
 		minio.Init,
+		etcd.Init,
+		kafka.Init,
+		nats.Init,
+		cassandra.Init,
 		mqtt.Init,
 		rbac.Init,
 		service.Init,
