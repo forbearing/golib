@@ -155,6 +155,26 @@ func NewCluster(cfg config.RedisConfig) (*redis.ClusterClient, error) {
 	return redis.NewClusterClient(opts), nil
 }
 
+func Close() {
+	if client != nil {
+		if err := client.Close(); err != nil {
+			zap.S().Errorw("failed to close Redis client", "error", err)
+		} else {
+			zap.S().Infow("successfully close Redis client")
+		}
+		client = nil
+	}
+
+	if cluster != nil {
+		if err := cluster.Close(); err != nil {
+			zap.S().Errorw("failed to close Redis cluster client", "error", err)
+		} else {
+			zap.S().Infow("successfully close Redis cluster client")
+		}
+		cluster = nil
+	}
+}
+
 // Set set any data into redis with specific key.
 // If the data type is custom type or structure, you must implement the interface encoding.BinaryMarshaler.
 func Set(key string, data any, expiration ...time.Duration) error {
