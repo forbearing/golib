@@ -493,11 +493,26 @@ func setDefaultValue() {
 
 	cv.SetDefault("influxdb.host", "127.0.0.1")
 	cv.SetDefault("influxdb.port", 8086)
-	cv.SetDefault("influxdb.admin_password", "")
-	cv.SetDefault("influxdb.admin_token", "")
-	cv.SetDefault("influxdb.admin_org", "")
+	cv.SetDefault("influxdb.token", "")
+	cv.SetDefault("influxdb.org", "")
 	cv.SetDefault("influxdb.bucket", "")
-	cv.SetDefault("influxdb.write_interval", 1*time.Minute)
+	cv.SetDefault("influxdb.batch_size", 0)
+	cv.SetDefault("influxdb.flush_interval", 0)
+	cv.SetDefault("influxdb.retry_interval", 0)
+	cv.SetDefault("influxdb.max_retries", 0)
+	cv.SetDefault("influxdb.retry_buffer_limit", 0)
+	cv.SetDefault("influxdb.max_retry_interval", 0)
+	cv.SetDefault("influxdb.max_retry_time", 0)
+	cv.SetDefault("influxdb.exponential_base", 0)
+	cv.SetDefault("influxdb.precision", 0)
+	cv.SetDefault("influxdb.use_gzip", false)
+	cv.SetDefault("influxdb.default_tags", nil)
+	cv.SetDefault("influxdb.app_name", "")
+	cv.SetDefault("influxdb.enable_tls", false)
+	cv.SetDefault("influxdb.cert_file", "")
+	cv.SetDefault("influxdb.key_file", 0)
+	cv.SetDefault("influxdb.ca_file", "")
+	cv.SetDefault("influxdb.insecure_skip_verify", false)
 	cv.SetDefault("influxdb.enable", false)
 
 	cv.SetDefault("minio.endpoint", "127.0.0.1:9000")
@@ -842,27 +857,37 @@ type Ldap struct {
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-// Influxdb is the configuration of influxdb.
-// For example:
-// [influxdb]
-// admin_password = mypass
-// admin_token = mytoken
-// admin_org = example.com
-// bucket = mybucket
 type Influxdb struct {
-	// - INFLUXDB_HTTP_AUTH_ENABLED=true
-	// - INFLUXDB_ADMIN_USER_PASSWORD=7MXsrGqj3AuEt9rgSq7U
-	// - INFLUXDB_ADMIN_USER_TOKEN=7MXsrGqj3AuEt9rgSq7U
-	// - INFLUXDB_USER_BUCKET=mybucket
-	// - INFLUXDB_ADMIN_ORG=example.com
-	Host          string        `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
-	Port          uint          `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	AdminPassword string        `json:"admin_password" mapstructure:"admin_password" ini:"admin_password" yaml:"admin_password"`
-	AdminToken    string        `json:"admin_token" mapstructure:"admin_token" ini:"admin_token" yaml:"admin_token"`
-	AdminOrg      string        `json:"admin_org" mapstructure:"admin_org" ini:"admin_org" yaml:"admin_org"`
-	Bucket        string        `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
-	WriteInterval time.Duration `json:"write_interval" mapstructure:"write_interval" ini:"write_interval" yaml:"write_interval"`
-	Enable        bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+	Host   string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port   uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Token  string `json:"token" mapstructure:"token" ini:"token" yaml:"token"`
+	Org    string `json:"org" mapstructure:"org" ini:"org" yaml:"org"`
+	Bucket string `json:"bucket" mapstructure:"bucket" ini:"bucket" yaml:"bucket"`
+
+	// Write options
+	BatchSize        uint          `json:"batch_size" mapstructure:"batch_size" ini:"batch_size" yaml:"batch_size"`
+	FlushInterval    time.Duration `json:"flush_interval" mapstructure:"flush_interval" ini:"flush_interval" yaml:"flush_interval"`
+	RetryInterval    time.Duration `json:"retry_interval" mapstructure:"retry_interval" ini:"retry_interval" yaml:"retry_interval"`
+	MaxRetries       uint          `json:"max_retries" mapstructure:"max_retries" ini:"max_retries" yaml:"max_retries"`
+	RetryBufferLimit uint          `json:"retry_buffer_limit" mapstructure:"retry_buffer_limit" ini:"retry_buffer_limit" yaml:"retry_buffer_limit"`
+	MaxRetryInterval time.Duration `json:"max_retry_interval" mapstructure:"max_retry_interval" ini:"max_retry_interval" yaml:"max_retry_interval"`
+	MaxRetryTime     time.Duration `json:"max_retry_time" mapstructure:"max_retry_time" ini:"max_retry_time" yaml:"max_retry_time"`
+	ExponentialBase  uint          `json:"exponential_base" mapstructure:"exponential_base" ini:"exponential_base" yaml:"exponential_base"`
+	Precision        time.Duration `json:"precision" mapstructure:"precision" ini:"precision" yaml:"precision"`
+	UseGZip          bool          `json:"use_gzip" mapstructure:"use_gzip" ini:"use_gzip" yaml:"use_gzip"`
+
+	// TLS configuration
+	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
+	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+
+	// Advanced options
+	DefaultTags map[string]string `json:"default_tags" mapstructure:"default_tags" ini:"default_tags" yaml:"default_tags"`
+	AppName     string            `json:"app_name" mapstructure:"app_name" ini:"app_name" yaml:"app_name"`
+
+	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
 type Minio struct {
