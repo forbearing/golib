@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,7 +23,8 @@ import (
 )
 
 var (
-	rdb         *redis.Client
+	client      *redis.Client
+	cluster     *redis.ClusterClient
 	mu          sync.Mutex
 	initialized bool
 
@@ -48,22 +48,33 @@ func Init() (err error) {
 		return nil
 	}
 
-	if rdb, err = New(cfg); err != nil {
-		return errors.Wrap(err, "failed to connect to redis")
-	}
-	if err = rdb.Set(context.TODO(), cfg.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), cfg.Expiration).Err(); err != nil {
-		return errors.Wrap(err, "failed to ping redis")
+	if cfg.ClusterMode {
+		if cluster, err = NewCluster(cfg); err != nil {
+			return errors.Wrap(err, "failed to connect to redis")
+		}
+		if err = cluster.Set(context.TODO(), cfg.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), cfg.Expiration).Err(); err != nil {
+			return errors.Wrap(err, "failed to ping redis")
+		}
+		zap.S().Infow("successfully connect to redis", "addrs", cfg.Addrs, "cluster_mode", cfg.ClusterMode)
+		return nil
+	} else {
+		if client, err = New(cfg); err != nil {
+			return errors.Wrap(err, "failed to connect to redis")
+		}
+		if err = client.Set(context.TODO(), cfg.Namespace+"_"+"now", time.Now().Format(consts.DATE_TIME_LAYOUT), cfg.Expiration).Err(); err != nil {
+			return errors.Wrap(err, "failed to ping redis")
+		}
+		zap.S().Infow("successfully connect to redis", "addr", cfg.Addr, "db", cfg.DB, "cluster_mode", cfg.ClusterMode)
+
 	}
 
-	zap.S().Infow("successfully connect to redis", "host", cfg.Host, "port", cfg.Port, "db", cfg.DB)
 	initialized = true
 	return nil
 }
 
 func New(cfg config.RedisConfig) (*redis.Client, error) {
-	addr := net.JoinHostPort(cfg.Host, strconv.Itoa(int(cfg.Port)))
 	opts := &redis.Options{
-		Addr:     addr,
+		Addr:     cfg.Addr,
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	}
@@ -103,6 +114,47 @@ func New(cfg config.RedisConfig) (*redis.Client, error) {
 	return redis.NewClient(opts), nil
 }
 
+func NewCluster(cfg config.RedisConfig) (*redis.ClusterClient, error) {
+	opts := &redis.ClusterOptions{
+		Addrs:    cfg.Addrs,
+		Password: cfg.Password,
+	}
+	if cfg.PoolSize > 0 {
+		opts.PoolSize = cfg.PoolSize
+	}
+	if cfg.DialTimeout > 0 {
+		opts.DialTimeout = cfg.DialTimeout
+	}
+	if cfg.ReadTimeout > 0 {
+		opts.ReadTimeout = cfg.ReadTimeout
+	}
+	if cfg.WriteTimeout > 0 {
+		opts.WriteTimeout = cfg.WriteTimeout
+	}
+	if cfg.MinIdleConns > 0 {
+		opts.MinIdleConns = cfg.MinIdleConns
+	}
+	if cfg.MaxRetries > 0 {
+		opts.MaxRetries = cfg.MaxRetries
+	}
+	if cfg.MinRetryBackoff > 0 {
+		opts.MinRetryBackoff = cfg.MinRetryBackoff
+	}
+	if cfg.MaxRetryBackoff > 0 {
+		opts.MaxRetryBackoff = cfg.MaxRetryBackoff
+	}
+	if cfg.EnableTLS {
+		var tlsConfig *tls.Config
+		var err error
+		if tlsConfig, err = util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify); err != nil {
+			return nil, errors.Wrap(err, "failed to build TLS config")
+		}
+		opts.TLSConfig = tlsConfig
+	}
+
+	return redis.NewClusterClient(opts), nil
+}
+
 // Set set any data into redis with specific key.
 // If the data type is custom type or structure, you must implement the interface encoding.BinaryMarshaler.
 func Set(key string, data any, expiration ...time.Duration) error {
@@ -114,7 +166,10 @@ func Set(key string, data any, expiration ...time.Duration) error {
 	if len(expiration) > 0 {
 		_expiration = expiration[0]
 	}
-	return rdb.Set(ctx, key, data, _expiration).Err()
+	if config.App.RedisConfig.ClusterMode {
+		return cluster.Set(ctx, key, data, _expiration).Err()
+	}
+	return client.Set(ctx, key, data, _expiration).Err()
 }
 
 // SetM set types.Model into redis with specific key.
@@ -127,7 +182,10 @@ func SetM[M types.Model](key string, m M, expiration ...time.Duration) error {
 	if len(expiration) > 0 {
 		_expiration = expiration[0]
 	}
-	return rdb.Set(ctx, key, modelMarshaler[M]{Model: m}, _expiration).Err()
+	if config.App.RedisConfig.ClusterMode {
+		return cluster.Set(ctx, key, modelMarshaler[M]{Model: m}, _expiration).Err()
+	}
+	return client.Set(ctx, key, modelMarshaler[M]{Model: m}, _expiration).Err()
 }
 
 // SetML set one or multiple types.Model into redis with specific key.
@@ -144,7 +202,10 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 	for i := range ml {
 		bl = append(bl, modelMarshaler[M]{Model: ml[i]})
 	}
-	return rdb.Set(ctx, key, modelMarshalerList[M](bl), _expiration).Err()
+	if config.App.RedisConfig.ClusterMode {
+		return cluster.Set(ctx, key, modelMarshalerList[M](bl), _expiration).Err()
+	}
+	return client.Set(ctx, key, modelMarshalerList[M](bl), _expiration).Err()
 }
 
 // SetSession wrapped Set function to set session data to redis, only for session.
@@ -153,12 +214,16 @@ func SetSession(sessionId string, data []byte) error {
 }
 
 // Get will get raw cache([]byte) from redis.
-func Get(key string) ([]byte, error) {
+func Get(key string) (cache []byte, err error) {
 	if !config.App.RedisConfig.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return make([]byte, 0), nil
 	}
-	cache, err := rdb.Get(ctx, key).Bytes()
+	if config.App.RedisConfig.ClusterMode {
+		cache, err = cluster.Get(ctx, key).Bytes()
+	} else {
+		cache, err = client.Get(ctx, key).Bytes()
+	}
 	if errors.Is(err, redis.Nil) {
 		return nil, ErrKeyNotExists
 	}
@@ -171,7 +236,13 @@ func GetInt(key string) (int64, error) {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return 0, nil
 	}
-	cache, err := rdb.Get(ctx, key).Result()
+	var cache string
+	var err error
+	if config.App.RedisConfig.ClusterMode {
+		cache, err = cluster.Get(ctx, key).Result()
+	} else {
+		cache, err = client.Get(ctx, key).Result()
+	}
 	if errors.Is(err, redis.Nil) {
 		return 0, ErrKeyNotExists
 	}
@@ -188,7 +259,13 @@ func GetM[M types.Model](key string) (M, error) {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return *new(M), nil
 	}
-	data, err := rdb.Get(ctx, key).Bytes()
+	var data []byte
+	var err error
+	if config.App.RedisConfig.ClusterMode {
+		data, err = cluster.Get(ctx, key).Bytes()
+	} else {
+		data, err = client.Get(ctx, key).Bytes()
+	}
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return *new(M), ErrKeyNotExists
@@ -211,7 +288,13 @@ func GetML[M types.Model](key string) ([]M, error) {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return make([]M, 0), nil
 	}
-	data, err := rdb.Get(ctx, key).Bytes()
+	var data []byte
+	var err error
+	if config.App.RedisConfig.ClusterMode {
+		data, err = cluster.Get(ctx, key).Bytes()
+	} else {
+		data, err = client.Get(ctx, key).Bytes()
+	}
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, ErrKeyNotExists
@@ -244,12 +327,15 @@ func Remove(keys ...string) error {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
 	}
-	return rdb.Del(ctx, keys...).Err()
+	if config.App.RedisConfig.ClusterMode {
+		return cluster.Del(ctx, keys...).Err()
+	}
+	return client.Del(ctx, keys...).Err()
 }
 
 // RemovePrefix will scan and delete all redis key that matchs the `prefix`.
 // for example: myprefix*
-func RemovePrefix(prefix string) error {
+func RemovePrefix(prefix string) (err error) {
 	if !config.App.RedisConfig.Enable {
 		zap.S().Warn(ErrRedisIsDisabled.Error())
 		return nil
@@ -257,9 +343,14 @@ func RemovePrefix(prefix string) error {
 	if !strings.HasSuffix(prefix, "*") {
 		prefix = prefix + "*"
 	}
-	iter := rdb.Scan(ctx, 0, prefix, 0).Iterator()
+	iter := client.Scan(ctx, 0, prefix, 0).Iterator()
 	for iter.Next(ctx) {
-		if err := rdb.Del(ctx, iter.Val()).Err(); err != nil {
+		if config.App.RedisConfig.ClusterMode {
+			err = cluster.Del(ctx, iter.Val()).Err()
+		} else {
+			err = client.Del(ctx, iter.Val()).Err()
+		}
+		if err != nil {
 			zap.S().Error(err)
 			return err
 		}
