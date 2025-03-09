@@ -16,6 +16,7 @@ import (
 	"github.com/forbearing/golib/debug/gops"
 	"github.com/forbearing/golib/debug/pprof"
 	"github.com/forbearing/golib/debug/statsviz"
+	"github.com/forbearing/golib/grpc"
 	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
@@ -54,14 +55,20 @@ func Bootstrap() error {
 		zap.Init,
 		logrus.Init,
 		metrics.Init,
+
+		// cache
 		lru.Init,
 		cmap.Init,
+		redis.Init,
+
+		// database
 		sqlite.Init,
 		postgres.Init,
 		mysql.Init,
 		clickhouse.Init,
 		sqlserver.Init,
-		redis.Init,
+
+		// provider
 		elastic.Init,
 		mongo.Init,
 		minio.Init,
@@ -70,10 +77,15 @@ func Bootstrap() error {
 		nats.Init,
 		cassandra.Init,
 		mqtt.Init,
+
+		// service
 		rbac.Init,
 		service.Init,
 		router.Init,
+		grpc.Init,
 		jwt.Init,
+
+		// job
 		task.Init,
 		cronjob.Init,
 	)
@@ -85,6 +97,7 @@ func Bootstrap() error {
 func Run() error {
 	RegisterGo(
 		router.Run,
+		grpc.Run,
 		statsviz.Run,
 		pprof.Run,
 		gops.Run,
