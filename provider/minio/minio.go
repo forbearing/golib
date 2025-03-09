@@ -24,7 +24,7 @@ var (
 // It reads Minio configuration from config.App.MinioConfig
 // It returns nil if minio is not enabled.
 func Init() (err error) {
-	cfg := config.App.MinioConfig
+	cfg := config.App.Minio
 	if !cfg.Enable {
 		return nil
 	}
@@ -39,11 +39,11 @@ func Init() (err error) {
 }
 
 // New creates a new Minio client instance with the given configuration.
-func New(cfg config.MinioConfig) (*minio.Client, error) {
+func New(cfg config.Minio) (*minio.Client, error) {
 	return minio.New(cfg.Endpoint, buildOptions(cfg))
 }
 
-func buildOptions(cfg config.MinioConfig) *minio.Options {
+func buildOptions(cfg config.Minio) *minio.Options {
 	return &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSsl,
@@ -51,15 +51,15 @@ func buildOptions(cfg config.MinioConfig) *minio.Options {
 }
 
 func Put(reader io.Reader, size int64) (filename string, err error) {
-	region := config.App.MinioConfig.Region
-	bucket := config.App.MinioConfig.Bucket
+	region := config.App.Minio.Region
+	bucket := config.App.Minio.Bucket
 	if len(region) > 0 {
 		err = cli.MakeBucket(ctx, bucket, minio.MakeBucketOptions{Region: region})
 	} else {
 		err = cli.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 	}
 	if err != nil {
-		exists, errBucketExists := cli.BucketExists(ctx, config.App.MinioConfig.Bucket)
+		exists, errBucketExists := cli.BucketExists(ctx, config.App.Minio.Bucket)
 		if errBucketExists == nil && exists {
 			goto CONTINUE
 		}
@@ -74,7 +74,7 @@ CONTINUE:
 }
 
 func Get(filename string) ([]byte, error) {
-	object, err := cli.GetObject(ctx, config.App.MinioConfig.Bucket, filename, minio.GetObjectOptions{})
+	object, err := cli.GetObject(ctx, config.App.Minio.Bucket, filename, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}

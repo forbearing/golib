@@ -67,7 +67,7 @@ var RBAC = new(rbac)
 // https://blog.csdn.net/LeoForBest/article/details/133610889
 // https://juejin.cn/post/7269563694676819968
 func Init() (err error) {
-	if !config.App.ServerConfig.EnableRBAC {
+	if !config.App.Server.EnableRBAC {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func Init() (err error) {
 	// 	username := args[0].(string)
 	// 	return RBAC.enforcer.HasRoleForUser(username, "root")
 	// })
-	if strings.ToLower(config.App.LoggerConfig.Level) == "debug" {
+	if strings.ToLower(config.App.Logger.Level) == "debug" {
 		RBAC.enforcer.EnableLog(true)
 	}
 

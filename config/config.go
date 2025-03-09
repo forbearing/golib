@@ -39,6 +39,7 @@ var (
 
 	inited bool
 	mu     sync.RWMutex
+	cv     = viper.New()
 )
 
 type (
@@ -67,23 +68,23 @@ const (
 // 2. Configuration file
 // 3. Default values
 func Init() (err error) {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	SetDefaultValue()
+	cv.AutomaticEnv()
+	cv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	setDefaultValue()
 
 	if len(configFile) > 0 {
-		viper.SetConfigFile(configFile)
+		cv.SetConfigFile(configFile)
 	} else {
-		viper.SetConfigName(configName)
-		viper.SetConfigType(configType)
+		cv.SetConfigName(configName)
+		cv.SetConfigType(configType)
 	}
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/")
+	cv.AddConfigPath(".")
+	cv.AddConfigPath("/etc/")
 	for _, path := range configPaths {
-		viper.AddConfigPath(path)
+		cv.AddConfigPath(path)
 	}
 
-	if err = viper.ReadInConfig(); err != nil {
+	if err = cv.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			var tempdir string
 			if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
@@ -96,7 +97,7 @@ func Init() (err error) {
 			return errors.Wrap(err, "failed to read config file")
 		}
 	}
-	if err = viper.Unmarshal(App); err != nil {
+	if err = cv.Unmarshal(App); err != nil {
 		return errors.Wrap(err, "failed to unmarshal config")
 	}
 
@@ -177,7 +178,7 @@ func registerType(name string, typ reflect.Type) {
 	setDefaultDurationFields(typ, reflect.ValueOf(cfg).Elem())
 
 	// Set config value from config file.
-	if err := viper.UnmarshalKey(name, cfg); err != nil {
+	if err := cv.UnmarshalKey(name, cfg); err != nil {
 		zap.S().Warnw("failed to unmarshal config", "name", name, "type", typ, "error", err)
 	}
 
@@ -186,7 +187,7 @@ func registerType(name string, typ reflect.Type) {
 	envPrefix := strings.ToUpper(name) + "_"
 	v := reflect.ValueOf(envCfg).Elem()
 	t := v.Type()
-	for i := 0; i < t.NumField(); i++ {
+	for i := range t.NumField() {
 		field := t.Field(i)
 		mapstructureTag := field.Tag.Get("mapstructure")
 		if len(mapstructureTag) == 0 {
@@ -352,198 +353,198 @@ func Get[T any](name string) (t T) {
 	return t
 }
 
-// SetDefaultValue will set config default value
-func SetDefaultValue() {
-	viper.SetDefault("server.mode", ModeDev)
-	viper.SetDefault("server.listen", "")
-	viper.SetDefault("server.port", 9000)
-	viper.SetDefault("server.db", DBSqlite)
-	viper.SetDefault("server.domain", "")
-	viper.SetDefault("server.enable_rbac", false)
+// setDefaultValue will set config default value
+func setDefaultValue() {
+	cv.SetDefault("server.mode", ModeDev)
+	cv.SetDefault("server.listen", "")
+	cv.SetDefault("server.port", 9000)
+	cv.SetDefault("server.db", DBSqlite)
+	cv.SetDefault("server.domain", "")
+	cv.SetDefault("server.enable_rbac", false)
 
-	viper.SetDefault("auth.none_expire_token", noneExpireToken)
-	viper.SetDefault("auth.none_expire_username", noneExpireUser)
-	viper.SetDefault("auth.none_expire_passord", noneExpirePass)
-	viper.SetDefault("auth.base_auth_username", baseAuthUsername)
-	viper.SetDefault("auth.base_auth_password", baseAuthPassword)
-	viper.SetDefault("auth.access_token_expire_duration", "2h")
-	viper.SetDefault("auth.refresh_token_expire_duration", "168h")
+	cv.SetDefault("auth.none_expire_token", noneExpireToken)
+	cv.SetDefault("auth.none_expire_username", noneExpireUser)
+	cv.SetDefault("auth.none_expire_passord", noneExpirePass)
+	cv.SetDefault("auth.base_auth_username", baseAuthUsername)
+	cv.SetDefault("auth.base_auth_password", baseAuthPassword)
+	cv.SetDefault("auth.access_token_expire_duration", "2h")
+	cv.SetDefault("auth.refresh_token_expire_duration", "168h")
 
-	viper.SetDefault("logger.dir", "./logs")
-	viper.SetDefault("logger.prefix", "")
-	viper.SetDefault("logger.file", "")
-	viper.SetDefault("logger.level", "info")
-	viper.SetDefault("logger.format", "json")
-	viper.SetDefault("logger.encoder", "json")
-	viper.SetDefault("logger.max_age", 30)
-	viper.SetDefault("logger.max_size", 100)
-	viper.SetDefault("logger.max_backups", 1)
+	cv.SetDefault("logger.dir", "./logs")
+	cv.SetDefault("logger.prefix", "")
+	cv.SetDefault("logger.file", "")
+	cv.SetDefault("logger.level", "info")
+	cv.SetDefault("logger.format", "json")
+	cv.SetDefault("logger.encoder", "json")
+	cv.SetDefault("logger.max_age", 30)
+	cv.SetDefault("logger.max_size", 100)
+	cv.SetDefault("logger.max_backups", 1)
 
-	viper.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
-	viper.SetDefault("database.max_idle_conns", 10)
-	viper.SetDefault("database.max_open_conns", 100)
-	viper.SetDefault("database.conn_max_lifetime", 1*time.Hour)
-	viper.SetDefault("database.conn_max_idle_time", 10*time.Minute)
+	cv.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
+	cv.SetDefault("database.max_idle_conns", 10)
+	cv.SetDefault("database.max_open_conns", 100)
+	cv.SetDefault("database.conn_max_lifetime", 1*time.Hour)
+	cv.SetDefault("database.conn_max_idle_time", 10*time.Minute)
 
-	viper.SetDefault("sqlite.path", "./data.db")
-	viper.SetDefault("sqlite.database", "main")
-	viper.SetDefault("sqlite.is_memory", false)
-	viper.SetDefault("sqlite.enable", true)
+	cv.SetDefault("sqlite.path", "./data.db")
+	cv.SetDefault("sqlite.database", "main")
+	cv.SetDefault("sqlite.is_memory", false)
+	cv.SetDefault("sqlite.enable", true)
 
-	viper.SetDefault("postgres.host", "127.0.0.1")
-	viper.SetDefault("postgres.port", 5432)
-	viper.SetDefault("postgres.database", "postgres")
-	viper.SetDefault("postgres.username", "postgres")
-	viper.SetDefault("postgres.password", "")
-	viper.SetDefault("postgres.sslmode", "disable")
-	viper.SetDefault("postgres.timezone", "UTC")
-	viper.SetDefault("postgres.enable", true)
+	cv.SetDefault("postgres.host", "127.0.0.1")
+	cv.SetDefault("postgres.port", 5432)
+	cv.SetDefault("postgres.database", "postgres")
+	cv.SetDefault("postgres.username", "postgres")
+	cv.SetDefault("postgres.password", "")
+	cv.SetDefault("postgres.sslmode", "disable")
+	cv.SetDefault("postgres.timezone", "UTC")
+	cv.SetDefault("postgres.enable", true)
 
-	viper.SetDefault("mysql.host", "127.0.0.1")
-	viper.SetDefault("mysql.port", 3306)
-	viper.SetDefault("mysql.database", "")
-	viper.SetDefault("mysql.username", "root")
-	viper.SetDefault("mysql.password", "toor")
-	viper.SetDefault("mysql.charset", "utf8mb4")
-	viper.SetDefault("mysql.enable", true)
+	cv.SetDefault("mysql.host", "127.0.0.1")
+	cv.SetDefault("mysql.port", 3306)
+	cv.SetDefault("mysql.database", "")
+	cv.SetDefault("mysql.username", "root")
+	cv.SetDefault("mysql.password", "toor")
+	cv.SetDefault("mysql.charset", "utf8mb4")
+	cv.SetDefault("mysql.enable", true)
 
-	viper.SetDefault("clickhouse.host", "127.0.0.1")
-	viper.SetDefault("clickhouse.port", 9000)
-	viper.SetDefault("clickhouse.database", "default")
-	viper.SetDefault("clickhouse.username", "default")
-	viper.SetDefault("clickhouse.password", "")
-	viper.SetDefault("clickhouse.dial_timeout", "5s")
-	viper.SetDefault("clickhouse.read_timeout", "30s")
-	viper.SetDefault("clickhouse.write_timeout", "30s")
-	viper.SetDefault("clickhouse.compress", false)
-	viper.SetDefault("clickhouse.debug", false)
-	viper.SetDefault("clickhouse.enable", false)
+	cv.SetDefault("clickhouse.host", "127.0.0.1")
+	cv.SetDefault("clickhouse.port", 9000)
+	cv.SetDefault("clickhouse.database", "default")
+	cv.SetDefault("clickhouse.username", "default")
+	cv.SetDefault("clickhouse.password", "")
+	cv.SetDefault("clickhouse.dial_timeout", "5s")
+	cv.SetDefault("clickhouse.read_timeout", "30s")
+	cv.SetDefault("clickhouse.write_timeout", "30s")
+	cv.SetDefault("clickhouse.compress", false)
+	cv.SetDefault("clickhouse.debug", false)
+	cv.SetDefault("clickhouse.enable", false)
 
-	viper.SetDefault("sqlserver.host", "127.0.0.1")
-	viper.SetDefault("sqlserver.port", 1433)
-	viper.SetDefault("sqlserver.database", "")
-	viper.SetDefault("sqlserver.username", "sa")
-	viper.SetDefault("sqlserver.password", "")
-	viper.SetDefault("sqlserver.encrypt", false)
-	viper.SetDefault("sqlserver.trust_server", true)
-	viper.SetDefault("sqlserver.app_name", "golib")
-	viper.SetDefault("sqlserver.enable", false)
+	cv.SetDefault("sqlserver.host", "127.0.0.1")
+	cv.SetDefault("sqlserver.port", 1433)
+	cv.SetDefault("sqlserver.database", "")
+	cv.SetDefault("sqlserver.username", "sa")
+	cv.SetDefault("sqlserver.password", "")
+	cv.SetDefault("sqlserver.encrypt", false)
+	cv.SetDefault("sqlserver.trust_server", true)
+	cv.SetDefault("sqlserver.app_name", "golib")
+	cv.SetDefault("sqlserver.enable", false)
 
-	viper.SetDefault("redis.addr", "127.0.0.1:6379")
-	viper.SetDefault("redis.addrs", []string{"127.0.0.1:6379"})
-	viper.SetDefault("redis.db", 0)
-	viper.SetDefault("redis.password", "")
-	viper.SetDefault("redis.pool_size", runtime.NumCPU())
-	viper.SetDefault("redis.namespace", APP_NAME)
-	viper.SetDefault("redis.expiration", 0)
-	viper.SetDefault("redis.cluster_mode", false)
-	viper.SetDefault("redis.dial_timeout", 0)
-	viper.SetDefault("redis.read_timeout", 0)
-	viper.SetDefault("redis.write_timeout", 0)
-	viper.SetDefault("redis.min_idle_conns", 0)
-	viper.SetDefault("redis.max_retries", 0)
-	viper.SetDefault("redis.min_retry_backoff", 0)
-	viper.SetDefault("redis.max_retry_backoff", 0)
-	viper.SetDefault("redis.enable_tls", false)
-	viper.SetDefault("redis.cert_file", "")
-	viper.SetDefault("redis.key_file", 0)
-	viper.SetDefault("redis.ca_file", "")
-	viper.SetDefault("redis.insecure_skip_verify", false)
-	viper.SetDefault("redis.enable", false)
+	cv.SetDefault("redis.addr", "127.0.0.1:6379")
+	cv.SetDefault("redis.addrs", []string{"127.0.0.1:6379"})
+	cv.SetDefault("redis.db", 0)
+	cv.SetDefault("redis.password", "")
+	cv.SetDefault("redis.pool_size", runtime.NumCPU())
+	cv.SetDefault("redis.namespace", APP_NAME)
+	cv.SetDefault("redis.expiration", 0)
+	cv.SetDefault("redis.cluster_mode", false)
+	cv.SetDefault("redis.dial_timeout", 0)
+	cv.SetDefault("redis.read_timeout", 0)
+	cv.SetDefault("redis.write_timeout", 0)
+	cv.SetDefault("redis.min_idle_conns", 0)
+	cv.SetDefault("redis.max_retries", 0)
+	cv.SetDefault("redis.min_retry_backoff", 0)
+	cv.SetDefault("redis.max_retry_backoff", 0)
+	cv.SetDefault("redis.enable_tls", false)
+	cv.SetDefault("redis.cert_file", "")
+	cv.SetDefault("redis.key_file", 0)
+	cv.SetDefault("redis.ca_file", "")
+	cv.SetDefault("redis.insecure_skip_verify", false)
+	cv.SetDefault("redis.enable", false)
 
-	viper.SetDefault("elasticsearch.hosts", "127.0.0.1")
-	viper.SetDefault("elasticsearch.username", "")
-	viper.SetDefault("elasticsearch.password", "")
-	viper.SetDefault("elasticsearch.cloud_id", "")
-	viper.SetDefault("elasticsearch.api_key", "")
-	viper.SetDefault("elasticsearch.service_token", "")
-	viper.SetDefault("elasticsearch.certificate_fingerprint", "")
-	viper.SetDefault("elasticsearch.enable", false)
+	cv.SetDefault("elasticsearch.hosts", "127.0.0.1")
+	cv.SetDefault("elasticsearch.username", "")
+	cv.SetDefault("elasticsearch.password", "")
+	cv.SetDefault("elasticsearch.cloud_id", "")
+	cv.SetDefault("elasticsearch.api_key", "")
+	cv.SetDefault("elasticsearch.service_token", "")
+	cv.SetDefault("elasticsearch.certificate_fingerprint", "")
+	cv.SetDefault("elasticsearch.enable", false)
 
-	viper.SetDefault("mongo.host", "127.0.0.1")
-	viper.SetDefault("mongo.port", 27017)
-	viper.SetDefault("mongo.username", "")
-	viper.SetDefault("mongo.password", "")
-	viper.SetDefault("mongo.database", "")
-	viper.SetDefault("mongo.auth_source", "admin")
-	viper.SetDefault("mongo.max_pool_size", 0)
-	viper.SetDefault("mongo.min_pool_size", 0)
-	viper.SetDefault("mongo.connect_timeout", 0)
-	viper.SetDefault("mongo.server_selection_timeout", 0)
-	viper.SetDefault("mongo.max_conn_idle_time", 0)
-	viper.SetDefault("mongo.max_connecting", 0)
-	viper.SetDefault("mongo.read_concern", "")
-	viper.SetDefault("mongo.write_concern", "")
-	viper.SetDefault("mongo.enable_tls", false)
-	viper.SetDefault("mongo.cert_file", "")
-	viper.SetDefault("mongo.key_file", "")
-	viper.SetDefault("mongo.ca_file", "")
-	viper.SetDefault("mongo.insecure_skip_verify", false)
-	viper.SetDefault("mongo.enable", false)
+	cv.SetDefault("mongo.host", "127.0.0.1")
+	cv.SetDefault("mongo.port", 27017)
+	cv.SetDefault("mongo.username", "")
+	cv.SetDefault("mongo.password", "")
+	cv.SetDefault("mongo.database", "")
+	cv.SetDefault("mongo.auth_source", "admin")
+	cv.SetDefault("mongo.max_pool_size", 0)
+	cv.SetDefault("mongo.min_pool_size", 0)
+	cv.SetDefault("mongo.connect_timeout", 0)
+	cv.SetDefault("mongo.server_selection_timeout", 0)
+	cv.SetDefault("mongo.max_conn_idle_time", 0)
+	cv.SetDefault("mongo.max_connecting", 0)
+	cv.SetDefault("mongo.read_concern", "")
+	cv.SetDefault("mongo.write_concern", "")
+	cv.SetDefault("mongo.enable_tls", false)
+	cv.SetDefault("mongo.cert_file", "")
+	cv.SetDefault("mongo.key_file", "")
+	cv.SetDefault("mongo.ca_file", "")
+	cv.SetDefault("mongo.insecure_skip_verify", false)
+	cv.SetDefault("mongo.enable", false)
 
-	viper.SetDefault("ldap.host", "127.0.0.1")
-	viper.SetDefault("ldap.port", 389)
-	viper.SetDefault("ldap.use_ssl", false)
-	viper.SetDefault("ldap.bind_dn", "")
-	viper.SetDefault("ldap.bind_password", "")
-	viper.SetDefault("ldap.base_dn", "")
-	viper.SetDefault("ldap.search_filter", "")
-	viper.SetDefault("ldap.enable", false)
+	cv.SetDefault("ldap.host", "127.0.0.1")
+	cv.SetDefault("ldap.port", 389)
+	cv.SetDefault("ldap.use_ssl", false)
+	cv.SetDefault("ldap.bind_dn", "")
+	cv.SetDefault("ldap.bind_password", "")
+	cv.SetDefault("ldap.base_dn", "")
+	cv.SetDefault("ldap.search_filter", "")
+	cv.SetDefault("ldap.enable", false)
 
-	viper.SetDefault("influxdb.host", "127.0.0.1")
-	viper.SetDefault("influxdb.port", 8086)
-	viper.SetDefault("influxdb.admin_password", "")
-	viper.SetDefault("influxdb.admin_token", "")
-	viper.SetDefault("influxdb.admin_org", "")
-	viper.SetDefault("influxdb.bucket", "")
-	viper.SetDefault("influxdb.write_interval", 1*time.Minute)
-	viper.SetDefault("influxdb.enable", false)
+	cv.SetDefault("influxdb.host", "127.0.0.1")
+	cv.SetDefault("influxdb.port", 8086)
+	cv.SetDefault("influxdb.admin_password", "")
+	cv.SetDefault("influxdb.admin_token", "")
+	cv.SetDefault("influxdb.admin_org", "")
+	cv.SetDefault("influxdb.bucket", "")
+	cv.SetDefault("influxdb.write_interval", 1*time.Minute)
+	cv.SetDefault("influxdb.enable", false)
 
-	viper.SetDefault("minio.endpoint", "127.0.0.1:9000")
-	viper.SetDefault("minio.region", "")
-	viper.SetDefault("minio.access_key", "")
-	viper.SetDefault("minio.secret_key", "")
-	viper.SetDefault("minio.bucket", "")
-	viper.SetDefault("minio.use_ssl", false)
-	viper.SetDefault("minio.enable", false)
+	cv.SetDefault("minio.endpoint", "127.0.0.1:9000")
+	cv.SetDefault("minio.region", "")
+	cv.SetDefault("minio.access_key", "")
+	cv.SetDefault("minio.secret_key", "")
+	cv.SetDefault("minio.bucket", "")
+	cv.SetDefault("minio.use_ssl", false)
+	cv.SetDefault("minio.enable", false)
 
-	viper.SetDefault("s3.endpoint", "")
-	viper.SetDefault("s3.region", "")
-	viper.SetDefault("s3.access_key_id", "")
-	viper.SetDefault("s3.secret_access_key", "")
-	viper.SetDefault("s3.bucket", "")
-	viper.SetDefault("s3.use_ssl", false)
-	viper.SetDefault("s3.enable", false)
+	cv.SetDefault("s3.endpoint", "")
+	cv.SetDefault("s3.region", "")
+	cv.SetDefault("s3.access_key_id", "")
+	cv.SetDefault("s3.secret_access_key", "")
+	cv.SetDefault("s3.bucket", "")
+	cv.SetDefault("s3.use_ssl", false)
+	cv.SetDefault("s3.enable", false)
 
-	viper.SetDefault("mqtt.addr", "127.0.0.1:1883")
-	viper.SetDefault("mqtt.username", "")
-	viper.SetDefault("mqtt.password", "")
-	viper.SetDefault("mqtt.client_prefix", "")
-	viper.SetDefault("mqtt.connect_timeout", 10*time.Second)
-	viper.SetDefault("mqtt.keepalive", 1*time.Minute)
-	viper.SetDefault("mqtt.clean_session", true)
-	viper.SetDefault("mqtt.auto_reconnect", true)
-	viper.SetDefault("mqtt.use_tls", false)
-	viper.SetDefault("mqtt.cert_file", "")
-	viper.SetDefault("mqtt.key_file", "")
-	viper.SetDefault("mqtt.insecure_skip_verify", true)
-	viper.SetDefault("mqtt.enable", false)
+	cv.SetDefault("mqtt.addr", "127.0.0.1:1883")
+	cv.SetDefault("mqtt.username", "")
+	cv.SetDefault("mqtt.password", "")
+	cv.SetDefault("mqtt.client_prefix", "")
+	cv.SetDefault("mqtt.connect_timeout", 10*time.Second)
+	cv.SetDefault("mqtt.keepalive", 1*time.Minute)
+	cv.SetDefault("mqtt.clean_session", true)
+	cv.SetDefault("mqtt.auto_reconnect", true)
+	cv.SetDefault("mqtt.use_tls", false)
+	cv.SetDefault("mqtt.cert_file", "")
+	cv.SetDefault("mqtt.key_file", "")
+	cv.SetDefault("mqtt.insecure_skip_verify", true)
+	cv.SetDefault("mqtt.enable", false)
 
-	viper.SetDefault("feishu.app_id", "")
-	viper.SetDefault("feishu.app_secret", "")
-	viper.SetDefault("feishu.msg_app_id", "")
-	viper.SetDefault("feishu.msg_app_secret", "")
-	viper.SetDefault("feishu.enable", false)
+	cv.SetDefault("feishu.app_id", "")
+	cv.SetDefault("feishu.app_secret", "")
+	cv.SetDefault("feishu.msg_app_id", "")
+	cv.SetDefault("feishu.msg_app_secret", "")
+	cv.SetDefault("feishu.enable", false)
 
-	viper.SetDefault("debug.enable_statsviz", false)
-	viper.SetDefault("debug.enable_pprof", false)
-	viper.SetDefault("debug.enable_gops", false)
-	viper.SetDefault("debug.statsviz_listen", "127.0.0.1")
-	viper.SetDefault("debug.pprof_listen", "127.0.0.1")
-	viper.SetDefault("debug.gops_listen", "127.0.0.1")
-	viper.SetDefault("debug.statsviz_port", 10000)
-	viper.SetDefault("debug.pprof_port", 10001)
-	viper.SetDefault("debug.gops_port", 10002)
+	cv.SetDefault("debug.enable_statsviz", false)
+	cv.SetDefault("debug.enable_pprof", false)
+	cv.SetDefault("debug.enable_gops", false)
+	cv.SetDefault("debug.statsviz_listen", "127.0.0.1")
+	cv.SetDefault("debug.pprof_listen", "127.0.0.1")
+	cv.SetDefault("debug.gops_listen", "127.0.0.1")
+	cv.SetDefault("debug.statsviz_port", 10000)
+	cv.SetDefault("debug.pprof_port", 10001)
+	cv.SetDefault("debug.gops_port", 10002)
 }
 
 // SetConfigFile set the config file path.
@@ -581,32 +582,32 @@ func AddPath(paths ...string) {
 
 // Save config instance to file.
 func Save(filename string) error {
-	return viper.WriteConfigAs(filename)
+	return cv.WriteConfigAs(filename)
 }
 
 type Config struct {
-	ServerConfig        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
-	AuthConfig          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
-	DatabaseConfig      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
-	SqliteConfig        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
-	PostgreConfig       `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
-	MySQLConfig         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
-	SQLServerConfig     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
-	ClickhouseConfig    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
-	RedisConfig         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
-	ElasticsearchConfig `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
-	MongoConfig         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
-	MinioConfig         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
-	S3Config            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
-	LoggerConfig        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
-	LdapConfig          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
-	InfluxdbConfig      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
-	MqttConfig          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
-	FeishuConfig        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
-	DebugConfig         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
+	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	Database      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Sqlite        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
+	Postgres      `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
+	MySQL         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
+	SQLServer     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
+	Clickhouse    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
+	Redis         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	Elasticsearch `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
+	Mongo         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
+	Minio         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
+	S3            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
+	Logger        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
+	Ldap          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
+	Influxdb      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
+	Mqtt          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
+	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
 }
 
-type ServerConfig struct {
+type Server struct {
 	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
 	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
 	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
@@ -615,7 +616,7 @@ type ServerConfig struct {
 	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
 
-type AuthConfig struct {
+type Auth struct {
 	NoneExpireToken            string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
 	NoneExpireUsername         string        `json:"none_expire_username" mapstructure:"none_expire_username" ini:"none_expire_username" yaml:"none_expire_username"`
 	NoneExpirePassword         string        `json:"none_expire_passord" mapstructure:"none_expire_passord" ini:"none_expire_passord" yaml:"none_expire_passord"`
@@ -625,9 +626,9 @@ type AuthConfig struct {
 	RefreshTokenExpireDuration time.Duration `json:"refresh_token_expire_duration" mapstructure:"refresh_token_expire_duration" ini:"refresh_token_expire_duration" yaml:"refresh_token_expire_duration"`
 }
 
-// LoggerConfig represents section "logger" for client-side or server-side configuration,
+// Logger represents section "logger" for client-side or server-side configuration,
 // and there is only one copy during the application entire lifetime.
-type LoggerConfig struct {
+type Logger struct {
 	// Dir specifies which direcotory log to.
 	Dir string `json:"dir" ini:"dir" yaml:"dir" mapstructure:"dir"`
 
@@ -666,7 +667,7 @@ type LoggerConfig struct {
 	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 }
 
-type DatabaseConfig struct {
+type Database struct {
 	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
 	MaxIdleConns       int           `json:"max_idle_conns" mapstructure:"max_idle_conns" ini:"max_idle_conns" yaml:"max_idle_conns"`
 	MaxOpenConns       int           `json:"max_open_conns" mapstructure:"max_open_conns" ini:"max_open_conns" yaml:"max_open_conns"`
@@ -674,14 +675,14 @@ type DatabaseConfig struct {
 	ConnMaxIdleTime    time.Duration `json:"conn_max_idle_time" mapstructure:"conn_max_idle_time" ini:"conn_max_idle_time" yaml:"conn_max_idle_time"`
 }
 
-type SqliteConfig struct {
+type Sqlite struct {
 	Path     string `json:"path" mapstructure:"path" ini:"path" yaml:"path"`
 	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
 	IsMemory bool   `json:"is_memory" mapstructure:"is_memory" ini:"is_memory" yaml:"is_memory"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type PostgreConfig struct {
+type Postgres struct {
 	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port     uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
@@ -692,7 +693,7 @@ type PostgreConfig struct {
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type MySQLConfig struct {
+type MySQL struct {
 	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port     uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
@@ -702,7 +703,7 @@ type MySQLConfig struct {
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type ClickhouseConfig struct {
+type Clickhouse struct {
 	Host         string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port         uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	Database     string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
@@ -716,7 +717,7 @@ type ClickhouseConfig struct {
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type SQLServerConfig struct {
+type SQLServer struct {
 	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port        uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	Database    string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
@@ -728,7 +729,7 @@ type SQLServerConfig struct {
 	Enable      bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type RedisConfig struct {
+type Redis struct {
 	Addr        string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
 	Addrs       []string      `json:"addrs" mapstructure:"addrs" ini:"addrs" yaml:"addrs"`
 	DB          int           `json:"db" mapstructure:"db" ini:"db" yaml:"db"`
@@ -755,7 +756,7 @@ type RedisConfig struct {
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type ElasticsearchConfig struct {
+type Elasticsearch struct {
 	Hosts                  string `json:"hosts" mapstructure:"hosts" ini:"hosts" yaml:"hosts"`
 	Username               string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
 	Password               string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
@@ -766,7 +767,7 @@ type ElasticsearchConfig struct {
 	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type MongoConfig struct {
+type Mongo struct {
 	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port        int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	Username    string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
@@ -820,7 +821,7 @@ const (
 	WriteConcernW9        WriteConcern = "9"
 )
 
-// LdapConfig
+// Ldap
 // For example:
 // [ldap]
 // host = example.cn
@@ -830,7 +831,7 @@ const (
 // bind_password = mypass
 // base_dn = my_base_dn
 // search_filter = (sAMAccountName=%s)
-type LdapConfig struct {
+type Ldap struct {
 	Host         string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port         uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
 	UseSsl       bool   `json:"use_ssl" mapstructure:"use_ssl" ini:"use_ssl" yaml:"use_ssl"`
@@ -841,14 +842,14 @@ type LdapConfig struct {
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-// InfluxdbConfig is the configuration of influxdb.
+// Influxdb is the configuration of influxdb.
 // For example:
 // [influxdb]
 // admin_password = mypass
 // admin_token = mytoken
 // admin_org = example.com
 // bucket = mybucket
-type InfluxdbConfig struct {
+type Influxdb struct {
 	// - INFLUXDB_HTTP_AUTH_ENABLED=true
 	// - INFLUXDB_ADMIN_USER_PASSWORD=7MXsrGqj3AuEt9rgSq7U
 	// - INFLUXDB_ADMIN_USER_TOKEN=7MXsrGqj3AuEt9rgSq7U
@@ -864,7 +865,7 @@ type InfluxdbConfig struct {
 	Enable        bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type MinioConfig struct {
+type Minio struct {
 	Endpoint  string `json:"endpoint" mapstructure:"endpoint" ini:"endpoint" yaml:"endpoint"`
 	Region    string `json:"region" mapstructure:"region" ini:"region" yaml:"region"`
 	AccessKey string `json:"access_key" mapstructure:"access_key" ini:"access_key" yaml:"access_key"`
@@ -874,7 +875,7 @@ type MinioConfig struct {
 	Enable    bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type S3Config struct {
+type S3 struct {
 	Endpoint        string `json:"endpoint" mapstructure:"endpoint" ini:"endpoint" yaml:"endpoint"`
 	Region          string `json:"region" mapstructure:"region" ini:"region" yaml:"region"`
 	AccessKeyID     string `json:"access_key_id" mapstructure:"access_key_id" ini:"access_key_id" yaml:"access_key_id"`
@@ -884,7 +885,7 @@ type S3Config struct {
 	Enable          bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type MqttConfig struct {
+type Mqtt struct {
 	Addr               string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
 	Username           string        `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
 	Password           string        `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
@@ -900,15 +901,13 @@ type MqttConfig struct {
 	Enable             bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type FeishuConfig struct {
-	AppID        string `json:"app_id" mapstructure:"app_id" ini:"app_id" yaml:"app_id"`
-	AppSecret    string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
-	MsgAppID     string `json:"msg_app_id" mapstructure:"msg_app_id" ini:"msg_app_id" yaml:"msg_app_id"`
-	MsgAppSecret string `json:"msg_app_secret" mapstructure:"msg_app_secret" ini:"msg_app_secret" yaml:"msg_app_secret"`
-	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+type Feishu struct {
+	AppID     string `json:"app_id" mapstructure:"app_id" ini:"app_id" yaml:"app_id"`
+	AppSecret string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
+	Enable    bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type DebugConfig struct {
+type Debug struct {
 	EnableStatsviz bool   `json:"enable_statsviz" mapstructure:"enable_statsviz" ini:"enable_statsviz" yaml:"enable_statsviz"`
 	StatsvizListen string `json:"statsviz_listen" mapstructure:"statsviz_listen" ini:"statsviz_listen" yaml:"statsviz_listen"`
 	StatsvizPort   int    `json:"statsviz_port" mapstructure:"statsviz_port" ini:"statsviz_port" yaml:"statsviz_port"`

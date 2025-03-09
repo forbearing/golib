@@ -113,7 +113,7 @@ func main() {
 	// router.API.GET("/group/export", controller.Export[*Group])
 	// router.API.POST("/group/import", controller.Import[*Group])
 
-	cfg := config.MySQLConfig{}
+	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
 	cfg.Port = 3306
 	cfg.Database = "golib"

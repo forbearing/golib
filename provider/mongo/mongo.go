@@ -30,7 +30,7 @@ var (
 // If MongoDB is not enabled, it returns nil.
 // The function is thread-safe and ensures the client is initialized only once.
 func Init() (err error) {
-	cfg := config.App.MongoConfig
+	cfg := config.App.Mongo
 	if !cfg.Enable {
 		return nil
 	}
@@ -57,7 +57,7 @@ func Init() (err error) {
 // New returns a new MongoDB client instance with given configuration.
 // It's the caller's responsibility to close the client,
 // caller should always call Close() when it's no longer needed.
-func New(cfg config.MongoConfig) (*mongo.Client, error) {
+func New(cfg config.Mongo) (*mongo.Client, error) {
 	var err error
 	uri := buildURI(cfg)
 	opts := options.Client().ApplyURI(uri)
@@ -148,7 +148,7 @@ func New(cfg config.MongoConfig) (*mongo.Client, error) {
 	return mongo.Connect(opts)
 }
 
-func buildURI(cfg config.MongoConfig) string {
+func buildURI(cfg config.Mongo) string {
 	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port,
 		cfg.Database, cfg.AuthSource,

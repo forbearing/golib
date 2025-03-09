@@ -23,8 +23,8 @@ var (
 // It checks if PostgreSQL is enabled and selected as the default database.
 // If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
-	cfg := config.App.PostgreConfig
-	if !cfg.Enable || config.App.ServerConfig.DB != config.DBPostgre {
+	cfg := config.App.Postgres
+	if !cfg.Enable || config.App.Server.DB != config.DBPostgre {
 		return
 	}
 
@@ -34,10 +34,10 @@ func Init() (err error) {
 	if db, err = Default.DB(); err != nil {
 		return errors.Wrap(err, "failed to get postgres db")
 	}
-	db.SetMaxIdleConns(config.App.DatabaseConfig.MaxIdleConns)
-	db.SetMaxOpenConns(config.App.DatabaseConfig.MaxOpenConns)
-	db.SetConnMaxLifetime(config.App.DatabaseConfig.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(config.App.DatabaseConfig.ConnMaxIdleTime)
+	db.SetMaxIdleConns(config.App.Database.MaxIdleConns)
+	db.SetMaxOpenConns(config.App.Database.MaxOpenConns)
+	db.SetConnMaxLifetime(config.App.Database.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(config.App.Database.ConnMaxIdleTime)
 
 	zap.S().Infow("successfully connect to postgres", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database, "sslmode", cfg.SSLMode, "timezone", cfg.TimeZone)
 	return helper.InitDatabase(Default, dbmap)
@@ -45,11 +45,11 @@ func Init() (err error) {
 
 // New creates and returns a new PostgreSQL database connection with the given configuration.
 // Returns (*gorm.DB, error) where error is non-nil if the connection fails.
-func New(cfg config.PostgreConfig) (*gorm.DB, error) {
+func New(cfg config.Postgres) (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(buildDSN(cfg)), &gorm.Config{Logger: logger.Gorm})
 }
 
-func buildDSN(cfg config.PostgreConfig) string {
+func buildDSN(cfg config.Postgres) string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, cfg.SSLMode, cfg.TimeZone,
 	)
