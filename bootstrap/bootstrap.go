@@ -27,6 +27,7 @@ import (
 	"github.com/forbearing/golib/provider/cassandra"
 	"github.com/forbearing/golib/provider/elastic"
 	"github.com/forbearing/golib/provider/etcd"
+	"github.com/forbearing/golib/provider/influxdb"
 	"github.com/forbearing/golib/provider/kafka"
 	"github.com/forbearing/golib/provider/minio"
 	"github.com/forbearing/golib/provider/mongo"
@@ -80,6 +81,7 @@ func Bootstrap() error {
 		nats.Init,
 		cassandra.Init,
 		mqtt.Init,
+		influxdb.Init,
 
 		// service
 		rbac.Init,
@@ -94,15 +96,16 @@ func Bootstrap() error {
 	)
 
 	RegisterExitHandler(redis.Close)
+	RegisterExitHandler(influxdb.Close)
 
 	initialized = true
-
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 		<-sigCh
 		Cleanup()
 	}()
+
 	return Init()
 }
 
