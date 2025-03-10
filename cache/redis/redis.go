@@ -5,7 +5,6 @@ package redis
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -18,9 +17,12 @@ import (
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var (
 	client      *redis.Client
