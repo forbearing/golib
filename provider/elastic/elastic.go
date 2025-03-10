@@ -51,13 +51,20 @@ func Init() (err error) {
 	if client, err = elasticsearch.NewClient(esConfig); err != nil {
 		return errors.Wrap(err, "failed to create elasticsearch client")
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
+		return errors.Wrap(err, "failed to ping elasticsearch")
+	}
+
 	ticker := time.NewTicker(timeout + 10*time.Second)
 	go func() {
 		for range ticker.C {
 			_ensureConnection()
 		}
 	}()
-	zap.S().Infow("successfully connect to elasticsearch", "hosts", cfg.Hosts)
+	zap.S().Infow("successfully connect to elasticsearch", "hosts", cfg.Addrs)
 	return nil
 }
 
@@ -68,7 +75,7 @@ func New(cfg config.Elasticsearch) (*elasticsearch.Client, error) {
 
 func makeESConfig(cfg config.Elasticsearch) elasticsearch.Config {
 	return elasticsearch.Config{
-		Addresses:              strings.Split(cfg.Hosts, ","),
+		Addresses:              cfg.Addrs,
 		Username:               cfg.Username,
 		Password:               cfg.Password,
 		CloudID:                cfg.CloudID,
@@ -85,7 +92,7 @@ func _ensureConnection() {
 	logger.Elastic.Info("check elasticsearch connection")
 	defer cancel()
 	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
-		logger.Elastic.Warn("elasticsearch connection maybe broken, try to reconnect: %v", err)
+		logger.Elastic.Warnf("elasticsearch connection maybe broken, try to reconnect: %v", err)
 		if newClient, err := elasticsearch.NewClient(esConfig); err != nil {
 			logger.Elastic.Error("reconnect to elasticsearch error: %v", err)
 		} else {
