@@ -355,211 +355,25 @@ func Get[T any](name string) (t T) {
 
 // setDefaultValue will set config default value
 func setDefaultValue() {
-	cv.SetDefault("server.mode", ModeDev)
-	cv.SetDefault("server.listen", "")
-	cv.SetDefault("server.port", 9000)
-	cv.SetDefault("server.db", DBSqlite)
-	cv.SetDefault("server.domain", "")
-	cv.SetDefault("server.enable_rbac", false)
-
-	cv.SetDefault("auth.none_expire_token", noneExpireToken)
-	cv.SetDefault("auth.none_expire_username", noneExpireUser)
-	cv.SetDefault("auth.none_expire_passord", noneExpirePass)
-	cv.SetDefault("auth.base_auth_username", baseAuthUsername)
-	cv.SetDefault("auth.base_auth_password", baseAuthPassword)
-	cv.SetDefault("auth.access_token_expire_duration", "2h")
-	cv.SetDefault("auth.refresh_token_expire_duration", "168h")
-
-	cv.SetDefault("logger.dir", "./logs")
-	cv.SetDefault("logger.prefix", "")
-	cv.SetDefault("logger.file", "")
-	cv.SetDefault("logger.level", "info")
-	cv.SetDefault("logger.format", "json")
-	cv.SetDefault("logger.encoder", "json")
-	cv.SetDefault("logger.max_age", 30)
-	cv.SetDefault("logger.max_size", 100)
-	cv.SetDefault("logger.max_backups", 1)
-
-	cv.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
-	cv.SetDefault("database.max_idle_conns", 10)
-	cv.SetDefault("database.max_open_conns", 100)
-	cv.SetDefault("database.conn_max_lifetime", 1*time.Hour)
-	cv.SetDefault("database.conn_max_idle_time", 10*time.Minute)
-
-	cv.SetDefault("sqlite.path", "./data.db")
-	cv.SetDefault("sqlite.database", "main")
-	cv.SetDefault("sqlite.is_memory", false)
-	cv.SetDefault("sqlite.enable", true)
-
-	cv.SetDefault("postgres.host", "127.0.0.1")
-	cv.SetDefault("postgres.port", 5432)
-	cv.SetDefault("postgres.database", "postgres")
-	cv.SetDefault("postgres.username", "postgres")
-	cv.SetDefault("postgres.password", "")
-	cv.SetDefault("postgres.sslmode", "disable")
-	cv.SetDefault("postgres.timezone", "UTC")
-	cv.SetDefault("postgres.enable", true)
-
-	cv.SetDefault("mysql.host", "127.0.0.1")
-	cv.SetDefault("mysql.port", 3306)
-	cv.SetDefault("mysql.database", "")
-	cv.SetDefault("mysql.username", "root")
-	cv.SetDefault("mysql.password", "toor")
-	cv.SetDefault("mysql.charset", "utf8mb4")
-	cv.SetDefault("mysql.enable", true)
-
-	cv.SetDefault("clickhouse.host", "127.0.0.1")
-	cv.SetDefault("clickhouse.port", 9000)
-	cv.SetDefault("clickhouse.database", "default")
-	cv.SetDefault("clickhouse.username", "default")
-	cv.SetDefault("clickhouse.password", "")
-	cv.SetDefault("clickhouse.dial_timeout", "5s")
-	cv.SetDefault("clickhouse.read_timeout", "30s")
-	cv.SetDefault("clickhouse.write_timeout", "30s")
-	cv.SetDefault("clickhouse.compress", false)
-	cv.SetDefault("clickhouse.debug", false)
-	cv.SetDefault("clickhouse.enable", false)
-
-	cv.SetDefault("sqlserver.host", "127.0.0.1")
-	cv.SetDefault("sqlserver.port", 1433)
-	cv.SetDefault("sqlserver.database", "")
-	cv.SetDefault("sqlserver.username", "sa")
-	cv.SetDefault("sqlserver.password", "")
-	cv.SetDefault("sqlserver.encrypt", false)
-	cv.SetDefault("sqlserver.trust_server", true)
-	cv.SetDefault("sqlserver.app_name", "golib")
-	cv.SetDefault("sqlserver.enable", false)
-
-	cv.SetDefault("redis.addr", "127.0.0.1:6379")
-	cv.SetDefault("redis.addrs", []string{"127.0.0.1:6379"})
-	cv.SetDefault("redis.db", 0)
-	cv.SetDefault("redis.password", "")
-	cv.SetDefault("redis.pool_size", runtime.NumCPU())
-	cv.SetDefault("redis.namespace", APP_NAME)
-	cv.SetDefault("redis.expiration", 0)
-	cv.SetDefault("redis.cluster_mode", false)
-	cv.SetDefault("redis.dial_timeout", 0)
-	cv.SetDefault("redis.read_timeout", 0)
-	cv.SetDefault("redis.write_timeout", 0)
-	cv.SetDefault("redis.min_idle_conns", 0)
-	cv.SetDefault("redis.max_retries", 0)
-	cv.SetDefault("redis.min_retry_backoff", 0)
-	cv.SetDefault("redis.max_retry_backoff", 0)
-	cv.SetDefault("redis.enable_tls", false)
-	cv.SetDefault("redis.cert_file", "")
-	cv.SetDefault("redis.key_file", 0)
-	cv.SetDefault("redis.ca_file", "")
-	cv.SetDefault("redis.insecure_skip_verify", false)
-	cv.SetDefault("redis.enable", false)
-
-	cv.SetDefault("elasticsearch.hosts", "127.0.0.1")
-	cv.SetDefault("elasticsearch.username", "")
-	cv.SetDefault("elasticsearch.password", "")
-	cv.SetDefault("elasticsearch.cloud_id", "")
-	cv.SetDefault("elasticsearch.api_key", "")
-	cv.SetDefault("elasticsearch.service_token", "")
-	cv.SetDefault("elasticsearch.certificate_fingerprint", "")
-	cv.SetDefault("elasticsearch.enable", false)
-
-	cv.SetDefault("mongo.host", "127.0.0.1")
-	cv.SetDefault("mongo.port", 27017)
-	cv.SetDefault("mongo.username", "")
-	cv.SetDefault("mongo.password", "")
-	cv.SetDefault("mongo.database", "")
-	cv.SetDefault("mongo.auth_source", "admin")
-	cv.SetDefault("mongo.max_pool_size", 0)
-	cv.SetDefault("mongo.min_pool_size", 0)
-	cv.SetDefault("mongo.connect_timeout", 0)
-	cv.SetDefault("mongo.server_selection_timeout", 0)
-	cv.SetDefault("mongo.max_conn_idle_time", 0)
-	cv.SetDefault("mongo.max_connecting", 0)
-	cv.SetDefault("mongo.read_concern", "")
-	cv.SetDefault("mongo.write_concern", "")
-	cv.SetDefault("mongo.enable_tls", false)
-	cv.SetDefault("mongo.cert_file", "")
-	cv.SetDefault("mongo.key_file", "")
-	cv.SetDefault("mongo.ca_file", "")
-	cv.SetDefault("mongo.insecure_skip_verify", false)
-	cv.SetDefault("mongo.enable", false)
-
-	cv.SetDefault("ldap.host", "127.0.0.1")
-	cv.SetDefault("ldap.port", 389)
-	cv.SetDefault("ldap.use_ssl", false)
-	cv.SetDefault("ldap.bind_dn", "")
-	cv.SetDefault("ldap.bind_password", "")
-	cv.SetDefault("ldap.base_dn", "")
-	cv.SetDefault("ldap.search_filter", "")
-	cv.SetDefault("ldap.enable", false)
-
-	cv.SetDefault("influxdb.host", "127.0.0.1")
-	cv.SetDefault("influxdb.port", 8086)
-	cv.SetDefault("influxdb.token", "")
-	cv.SetDefault("influxdb.org", "")
-	cv.SetDefault("influxdb.bucket", "")
-	cv.SetDefault("influxdb.batch_size", 0)
-	cv.SetDefault("influxdb.flush_interval", 0)
-	cv.SetDefault("influxdb.retry_interval", 0)
-	cv.SetDefault("influxdb.max_retries", 0)
-	cv.SetDefault("influxdb.retry_buffer_limit", 0)
-	cv.SetDefault("influxdb.max_retry_interval", 0)
-	cv.SetDefault("influxdb.max_retry_time", 0)
-	cv.SetDefault("influxdb.exponential_base", 0)
-	cv.SetDefault("influxdb.precision", 0)
-	cv.SetDefault("influxdb.use_gzip", false)
-	cv.SetDefault("influxdb.default_tags", nil)
-	cv.SetDefault("influxdb.app_name", "")
-	cv.SetDefault("influxdb.enable_tls", false)
-	cv.SetDefault("influxdb.cert_file", "")
-	cv.SetDefault("influxdb.key_file", 0)
-	cv.SetDefault("influxdb.ca_file", "")
-	cv.SetDefault("influxdb.insecure_skip_verify", false)
-	cv.SetDefault("influxdb.enable", false)
-
-	cv.SetDefault("minio.endpoint", "127.0.0.1:9000")
-	cv.SetDefault("minio.region", "")
-	cv.SetDefault("minio.access_key", "")
-	cv.SetDefault("minio.secret_key", "")
-	cv.SetDefault("minio.bucket", "")
-	cv.SetDefault("minio.use_ssl", false)
-	cv.SetDefault("minio.enable", false)
-
-	cv.SetDefault("s3.endpoint", "")
-	cv.SetDefault("s3.region", "")
-	cv.SetDefault("s3.access_key_id", "")
-	cv.SetDefault("s3.secret_access_key", "")
-	cv.SetDefault("s3.bucket", "")
-	cv.SetDefault("s3.use_ssl", false)
-	cv.SetDefault("s3.enable", false)
-
-	cv.SetDefault("mqtt.addr", "127.0.0.1:1883")
-	cv.SetDefault("mqtt.username", "")
-	cv.SetDefault("mqtt.password", "")
-	cv.SetDefault("mqtt.client_prefix", "")
-	cv.SetDefault("mqtt.connect_timeout", 10*time.Second)
-	cv.SetDefault("mqtt.keepalive", 1*time.Minute)
-	cv.SetDefault("mqtt.clean_session", true)
-	cv.SetDefault("mqtt.auto_reconnect", true)
-	cv.SetDefault("mqtt.use_tls", false)
-	cv.SetDefault("mqtt.cert_file", "")
-	cv.SetDefault("mqtt.key_file", "")
-	cv.SetDefault("mqtt.insecure_skip_verify", true)
-	cv.SetDefault("mqtt.enable", false)
-
-	cv.SetDefault("feishu.app_id", "")
-	cv.SetDefault("feishu.app_secret", "")
-	cv.SetDefault("feishu.msg_app_id", "")
-	cv.SetDefault("feishu.msg_app_secret", "")
-	cv.SetDefault("feishu.enable", false)
-
-	cv.SetDefault("debug.enable_statsviz", false)
-	cv.SetDefault("debug.enable_pprof", false)
-	cv.SetDefault("debug.enable_gops", false)
-	cv.SetDefault("debug.statsviz_listen", "127.0.0.1")
-	cv.SetDefault("debug.pprof_listen", "127.0.0.1")
-	cv.SetDefault("debug.gops_listen", "127.0.0.1")
-	cv.SetDefault("debug.statsviz_port", 10000)
-	cv.SetDefault("debug.pprof_port", 10001)
-	cv.SetDefault("debug.gops_port", 10002)
+	new(Server).setDefault()
+	new(Auth).setDefault()
+	new(Logger).setDefault()
+	new(Database).setDefault()
+	new(Sqlite).setDefault()
+	new(Postgres).setDefault()
+	new(MySQL).setDefault()
+	new(Clickhouse).setDefault()
+	new(SQLServer).setDefault()
+	new(Redis).setDefault()
+	new(Elasticsearch).setDefault()
+	new(Mongo).setDefault()
+	new(Ldap).setDefault()
+	new(Influxdb).setDefault()
+	new(Minio).setDefault()
+	new(S3).setDefault()
+	new(Mqtt).setDefault()
+	new(Feishu).setDefault()
+	new(Debug).setDefault()
 }
 
 // SetConfigFile set the config file path.
@@ -622,6 +436,15 @@ type Config struct {
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
 }
 
+const (
+	SERVER_DOMAIN      = "SERVER_DOMAIN"
+	SERVER_MODE        = "SERVER_MODE"
+	SERVER_LISTEN      = "SERVER_LISTEN"
+	SERVER_PORT        = "SERVER_PORT"
+	SERVER_DB          = "SERVER_DB"
+	SERVER_ENABLE_RBAC = "SERVER_ENABLE_RBAC"
+)
+
 type Server struct {
 	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
 	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
@@ -630,6 +453,25 @@ type Server struct {
 	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
 }
+
+func (*Server) setDefault() {
+	cv.SetDefault("server.mode", ModeDev)
+	cv.SetDefault("server.listen", "")
+	cv.SetDefault("server.port", 9000)
+	cv.SetDefault("server.db", DBSqlite)
+	cv.SetDefault("server.domain", "")
+	cv.SetDefault("server.enable_rbac", false)
+}
+
+const (
+	AUTH_NONE_EXPIRE_TOKEN             = "AUTH_NONE_EXPIRE_TOKEN"
+	AUTH_NONE_EXPIRE_USERNAME          = "AUTH_NONE_EXPIRE_USERNAME"
+	AUTH_NONE_EXPIRE_PASSWORD          = "AUTH_NONE_EXPIRE_PASSORD"
+	AUTH_BASE_AUTH_USERNAME            = "AUTH_BASE_AUTH_USERNAME"
+	AUTH_BASE_AUTH_PASSWORD            = "AUTH_BASE_AUTH_PASSWORD"
+	AUTH_ACCESS_TOKEN_EXPIRE_DURATION  = "AUTH_ACCESS_TOKEN_EXPIRE_DURATION"
+	AUTH_REFRESH_TOKEN_EXPIRE_DURATION = "AUTH_REFRESH_TOKEN_EXPIRE_DURATION"
+)
 
 type Auth struct {
 	NoneExpireToken            string        `json:"none_expire_token" mapstructure:"none_expire_token" ini:"none_expire_token" yaml:"none_expire_token"`
@@ -640,6 +482,28 @@ type Auth struct {
 	AccessTokenExpireDuration  time.Duration `json:"access_token_expire_duration" mapstructure:"access_token_expire_duration" ini:"access_token_expire_duration" yaml:"access_token_expire_duration"`
 	RefreshTokenExpireDuration time.Duration `json:"refresh_token_expire_duration" mapstructure:"refresh_token_expire_duration" ini:"refresh_token_expire_duration" yaml:"refresh_token_expire_duration"`
 }
+
+func (*Auth) setDefault() {
+	cv.SetDefault("auth.none_expire_token", noneExpireToken)
+	cv.SetDefault("auth.none_expire_username", noneExpireUser)
+	cv.SetDefault("auth.none_expire_passord", noneExpirePass)
+	cv.SetDefault("auth.base_auth_username", baseAuthUsername)
+	cv.SetDefault("auth.base_auth_password", baseAuthPassword)
+	cv.SetDefault("auth.access_token_expire_duration", "2h")
+	cv.SetDefault("auth.refresh_token_expire_duration", "168h")
+}
+
+const (
+	LOGGER_DIR         = "LOGGER_DIR"
+	LOGGER_PREFIX      = "LOGGER_PREFIX"
+	LOGGER_FILE        = "LOGGER_FILE"
+	LOGGER_LEVEL       = "LOGGER_LEVEL"
+	LOGGER_FORMAT      = "LOGGER_FORMAT"
+	LOGGER_ENCODER     = "LOGGER_ENCODER"
+	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"
+	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"
+	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS"
+)
 
 // Logger represents section "logger" for client-side or server-side configuration,
 // and there is only one copy during the application entire lifetime.
@@ -682,6 +546,26 @@ type Logger struct {
 	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 }
 
+func (*Logger) setDefault() {
+	cv.SetDefault("logger.dir", "./logs")
+	cv.SetDefault("logger.prefix", "")
+	cv.SetDefault("logger.file", "")
+	cv.SetDefault("logger.level", "info")
+	cv.SetDefault("logger.format", "json")
+	cv.SetDefault("logger.encoder", "json")
+	cv.SetDefault("logger.max_age", 30)
+	cv.SetDefault("logger.max_size", 100)
+	cv.SetDefault("logger.max_backups", 1)
+}
+
+const (
+	DATABASE_SLOW_QUERY_THRESHOLD = "DATABASE_SLOW_QUERY_THRESHOLD"
+	DATABASE_MAX_IDLE_CONNS       = "DATABASE_MAX_IDLE_CONNS"
+	DATABASE_MAX_OPEN_CONNS       = "DATABASE_MAX_OPEN_CONNS"
+	DATABASE_CONN_MAX_LIFETIME    = "DATABASE_CONN_MAX_LIFETIME"
+	DATABASE_CONN_MAX_IDLE_TIME   = "DATABASE_CONN_MAX_IDLE_TIME"
+)
+
 type Database struct {
 	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
 	MaxIdleConns       int           `json:"max_idle_conns" mapstructure:"max_idle_conns" ini:"max_idle_conns" yaml:"max_idle_conns"`
@@ -690,12 +574,45 @@ type Database struct {
 	ConnMaxIdleTime    time.Duration `json:"conn_max_idle_time" mapstructure:"conn_max_idle_time" ini:"conn_max_idle_time" yaml:"conn_max_idle_time"`
 }
 
+func (*Database) setDefault() {
+	cv.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
+	cv.SetDefault("database.max_idle_conns", 10)
+	cv.SetDefault("database.max_open_conns", 100)
+	cv.SetDefault("database.conn_max_lifetime", 1*time.Hour)
+	cv.SetDefault("database.conn_max_idle_time", 10*time.Minute)
+}
+
+const (
+	SQLITE_PATH      = "SQLITE_PATH"
+	SQLITE_DATABASE  = "SQLITE_DATABASE"
+	SQLITE_IS_MEMORY = "SQLITE_IS_MEMORY"
+	SQLITE_ENABLE    = "SQLITE_ENABLE"
+)
+
 type Sqlite struct {
 	Path     string `json:"path" mapstructure:"path" ini:"path" yaml:"path"`
 	Database string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
 	IsMemory bool   `json:"is_memory" mapstructure:"is_memory" ini:"is_memory" yaml:"is_memory"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*Sqlite) setDefault() {
+	cv.SetDefault("sqlite.path", "./data.db")
+	cv.SetDefault("sqlite.database", "main")
+	cv.SetDefault("sqlite.is_memory", false)
+	cv.SetDefault("sqlite.enable", true)
+}
+
+const (
+	POSTGRES_HOST     = "POSTGRES_HOST"
+	POSTGRES_PORT     = "POSTGRES_PORT"
+	POSTGRES_DATABASE = "POSTGRES_DATABASE"
+	POSTGRES_USERNAME = "POSTGRES_USERNAME"
+	POSTGRES_PASSWORD = "POSTGRES_PASSWORD"
+	POSTGRES_SSLMODE  = "POSTGRES_SSLMODE"
+	POSTGRES_TIMEZONE = "POSTGRES_TIMEZONE"
+	POSTGRES_ENABLE   = "POSTGRES_ENABLE"
+)
 
 type Postgres struct {
 	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
@@ -708,6 +625,27 @@ type Postgres struct {
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Postgres) setDefault() {
+	cv.SetDefault("postgres.host", "127.0.0.1")
+	cv.SetDefault("postgres.port", 5432)
+	cv.SetDefault("postgres.database", "postgres")
+	cv.SetDefault("postgres.username", "postgres")
+	cv.SetDefault("postgres.password", "")
+	cv.SetDefault("postgres.sslmode", "disable")
+	cv.SetDefault("postgres.timezone", "UTC")
+	cv.SetDefault("postgres.enable", true)
+}
+
+const (
+	MYSQL_HOST     = "MYSQL_HOST"
+	MYSQL_PORT     = "MYSQL_PORT"
+	MYSQL_DATABASE = "MYSQL_DATABASE"
+	MYSQL_USERNAME = "MYSQL_USERNAME"
+	MYSQL_PASSWORD = "MYSQL_PASSWORD"
+	MYSQL_CHARSET  = "MYSQL_CHARSET"
+	MYSQL_ENABLE   = "MYSQL_ENABLE"
+)
+
 type MySQL struct {
 	Host     string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port     uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
@@ -717,6 +655,30 @@ type MySQL struct {
 	Charset  string `json:"charset" mapstructure:"charset" ini:"charset" yaml:"charset"`
 	Enable   bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*MySQL) setDefault() {
+	cv.SetDefault("mysql.host", "127.0.0.1")
+	cv.SetDefault("mysql.port", 3306)
+	cv.SetDefault("mysql.database", "")
+	cv.SetDefault("mysql.username", "root")
+	cv.SetDefault("mysql.password", "toor")
+	cv.SetDefault("mysql.charset", "utf8mb4")
+	cv.SetDefault("mysql.enable", true)
+}
+
+const (
+	CLICKHOUSE_HOST          = "CLICKHOUSE_HOST"
+	CLICKHOUSE_PORT          = "CLICKHOUSE_PORT"
+	CLICKHOUSE_DATABASE      = "CLICKHOUSE_DATABASE"
+	CLICKHOUSE_USERNAME      = "CLICKHOUSE_USERNAME"
+	CLICKHOUSE_PASSWORD      = "CLICKHOUSE_PASSWORD"
+	CLICKHOUSE_DIAL_TIMEOUT  = "CLICKHOUSE_DIAL_TIMEOUT"
+	CLICKHOUSE_READ_TIMEOUT  = "CLICKHOUSE_READ_TIMEOUT"
+	CLICKHOUSE_WRITE_TIMEOUT = "CLICKHOUSE_WRITE_TIMEOUT"
+	CLICKHOUSE_COMPRESS      = "CLICKHOUSE_COMPRESS"
+	CLICKHOUSE_DEBUG         = "CLICKHOUSE_DEBUG"
+	CLICKHOUSE_ENABLE        = "CLICKHOUSE_ENABLE"
+)
 
 type Clickhouse struct {
 	Host         string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
@@ -732,6 +694,32 @@ type Clickhouse struct {
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Clickhouse) setDefault() {
+	cv.SetDefault("clickhouse.host", "127.0.0.1")
+	cv.SetDefault("clickhouse.port", 9000)
+	cv.SetDefault("clickhouse.database", "default")
+	cv.SetDefault("clickhouse.username", "default")
+	cv.SetDefault("clickhouse.password", "")
+	cv.SetDefault("clickhouse.dial_timeout", "5s")
+	cv.SetDefault("clickhouse.read_timeout", "30s")
+	cv.SetDefault("clickhouse.write_timeout", "30s")
+	cv.SetDefault("clickhouse.compress", false)
+	cv.SetDefault("clickhouse.debug", false)
+	cv.SetDefault("clickhouse.enable", false)
+}
+
+const (
+	SQLSERVER_HOST         = "SQLSERVER_HOST"
+	SQLSERVER_PORT         = "SQLSERVER_PORT"
+	SQLSERVER_DATABASE     = "SQLSERVER_DATABASE"
+	SQLSERVER_USERNAME     = "SQLSERVER_USERNAME"
+	SQLSERVER_PASSWORD     = "SQLSERVER_PASSWORD"
+	SQLSERVER_ENCRYPT      = "SQLSERVER_ENCRYPT"
+	SQLSERVER_TRUST_SERVER = "SQLSERVER_TRUST_SERVER"
+	SQLSERVER_APP_NAME     = "SQLSERVER_APP_NAME"
+	SQLSERVER_ENABLE       = "SQLSERVER_ENABLE"
+)
+
 type SQLServer struct {
 	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
 	Port        uint   `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
@@ -743,6 +731,45 @@ type SQLServer struct {
 	AppName     string `json:"app_name" mapstructure:"app_name" ini:"app_name" yaml:"app_name"`
 	Enable      bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*SQLServer) setDefault() {
+	cv.SetDefault("sqlserver.host", "127.0.0.1")
+	cv.SetDefault("sqlserver.port", 1433)
+	cv.SetDefault("sqlserver.database", "")
+	cv.SetDefault("sqlserver.username", "sa")
+	cv.SetDefault("sqlserver.password", "")
+	cv.SetDefault("sqlserver.encrypt", false)
+	cv.SetDefault("sqlserver.trust_server", true)
+	cv.SetDefault("sqlserver.app_name", "golib")
+	cv.SetDefault("sqlserver.enable", false)
+}
+
+const (
+	REDIS_ADDR         = "REDIS_ADDR"
+	REDIS_ADDRS        = "REDIS_ADDRS"
+	REDIS_DB           = "REDIS_DB"
+	REDIS_PASSWORD     = "REDIS_PASSWORD"
+	REDIS_NAMESPACE    = "REDIS_NAMESPACE"
+	REDIS_POOL_SIZE    = "REDIS_POOL_SIZE"
+	REDIS_EXPIRATION   = "REDIS_EXPIRATION"
+	REDIS_CLUSTER_MODE = "REDIS_CLUSTER_MODE"
+
+	REDIS_DIAL_TIMEOUT      = "REDIS_DIAL_TIMEOUT"
+	REDIS_READ_TIMEOUT      = "REDIS_READ_TIMEOUT"
+	REDIS_WRITE_TIMEOUT     = "REDIS_WRITE_TIMEOUT"
+	REDIS_MIN_IDLE_CONNS    = "REDIS_MIN_IDLE_CONNS"
+	REDIS_MAX_RETRIES       = "REDIS_MAX_RETRIES"
+	REDIS_MIN_RETRY_BACKOFF = "REDIS_MIN_RETRY_BACKOFF"
+	REDIS_MAX_RETRY_BACKOFF = "REDIS_MAX_RETRY_BACKOFF"
+
+	REDIS_ENABLE_TLS           = "REDIS_ENABLE_TLS"
+	REDIS_CERT_FILE            = "REDIS_CERT_FILE"
+	REDIS_KEY_FILE             = "REDIS_KEY_FILE"
+	REDIS_CA_FILE              = "REDIS_CA_FILE"
+	REDIS_INSECURE_SKIP_VERIFY = "REDIS_INSECURE_SKIP_VERIFY"
+
+	REDIS_ENABLE = "REDIS_ENABLE"
+)
 
 type Redis struct {
 	Addr        string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
@@ -771,6 +798,44 @@ type Redis struct {
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Redis) setDefault() {
+	cv.SetDefault("redis.addr", "127.0.0.1:6379")
+	cv.SetDefault("redis.addrs", []string{"127.0.0.1:6379"})
+	cv.SetDefault("redis.db", 0)
+	cv.SetDefault("redis.password", "")
+	cv.SetDefault("redis.pool_size", runtime.NumCPU())
+	cv.SetDefault("redis.namespace", APP_NAME)
+	cv.SetDefault("redis.expiration", 0)
+	cv.SetDefault("redis.cluster_mode", false)
+
+	cv.SetDefault("redis.dial_timeout", 0)
+	cv.SetDefault("redis.read_timeout", 0)
+	cv.SetDefault("redis.write_timeout", 0)
+	cv.SetDefault("redis.min_idle_conns", 0)
+	cv.SetDefault("redis.max_retries", 0)
+	cv.SetDefault("redis.min_retry_backoff", 0)
+	cv.SetDefault("redis.max_retry_backoff", 0)
+
+	cv.SetDefault("redis.enable_tls", false)
+	cv.SetDefault("redis.cert_file", "")
+	cv.SetDefault("redis.key_file", 0)
+	cv.SetDefault("redis.ca_file", "")
+	cv.SetDefault("redis.insecure_skip_verify", false)
+
+	cv.SetDefault("redis.enable", false)
+}
+
+const (
+	ELASTICSEARCH_HOSTS                   = "ELASTICSEARCH_HOSTS"
+	ELASTICSEARCH_USERNAME                = "ELASTICSEARCH_USERNAME"
+	ELASTICSEARCH_PASSWORD                = "ELASTICSEARCH_PASSWORD"
+	ELASTICSEARCH_CLOUD_ID                = "ELASTICSEARCH_CLOUD_ID"
+	ELASTICSEARCH_API_KEY                 = "ELASTICSEARCH_API_KEY"
+	ELASTICSEARCH_SERVICE_TOKEN           = "ELASTICSEARCH_SERVICE_TOKEN"
+	ELASTICSEARCH_CERTIFICATE_FINGERPRINT = "ELASTICSEARCH_CERTIFICATE_FINGERPRINT"
+	ELASTICSEARCH_ENABLE                  = "ELASTICSEARCH_ENABLE"
+)
+
 type Elasticsearch struct {
 	Hosts                  string `json:"hosts" mapstructure:"hosts" ini:"hosts" yaml:"hosts"`
 	Username               string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
@@ -782,31 +847,15 @@ type Elasticsearch struct {
 	Enable                 bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
-type Mongo struct {
-	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
-	Port        int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	Username    string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
-	Password    string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
-	Database    string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
-	AuthSource  string `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
-	MaxPoolSize uint64 `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
-	MinPoolSize uint64 `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
-
-	ConnectTimeout         time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
-	ServerSelectionTimeout time.Duration `json:"server_selection_timeout" mapstructure:"server_selection_timeout" ini:"server_selection_timeout" yaml:"server_selection_timeout"`
-	MaxConnIdleTime        time.Duration `json:"max_conn_idle_time" mapstructure:"max_conn_idle_time" ini:"max_conn_idle_time" yaml:"max_conn_idle_time"`
-	MaxConnecting          uint64        `json:"max_connecting" mapstructure:"max_connecting" ini:"max_connecting" yaml:"max_connecting"`
-
-	ReadConcern  ReadConcern  `json:"read_concern" mapstructure:"read_concern" ini:"read_concern" yaml:"read_concern"`
-	WriteConcern WriteConcern `json:"write_concern" mapstructure:"write_concern" ini:"write_concern" yaml:"write_concern"`
-
-	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
-	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
-	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
-	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
-	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
-
-	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+func (*Elasticsearch) setDefault() {
+	cv.SetDefault("elasticsearch.hosts", "127.0.0.1")
+	cv.SetDefault("elasticsearch.username", "")
+	cv.SetDefault("elasticsearch.password", "")
+	cv.SetDefault("elasticsearch.cloud_id", "")
+	cv.SetDefault("elasticsearch.api_key", "")
+	cv.SetDefault("elasticsearch.service_token", "")
+	cv.SetDefault("elasticsearch.certificate_fingerprint", "")
+	cv.SetDefault("elasticsearch.enable", false)
 }
 
 type ReadConcern string
@@ -836,6 +885,98 @@ const (
 	WriteConcernW9        WriteConcern = "9"
 )
 
+const (
+	MONGO_HOST          = "MONGO_HOST"
+	MONGO_PORT          = "MONGO_PORT"
+	MONGO_USERNAME      = "MONGO_USERNAME"
+	MONGO_PASSWORD      = "MONGO_PASSWORD"
+	MONGO_DATABASE      = "MONGO_DATABASE"
+	MONGO_AUTH_SOURCE   = "MONGO_AUTH_SOURCE"
+	MONGO_MAX_POOL_SIZE = "MONGO_MAX_POOL_SIZE"
+	MONGO_MIN_POOL_SIZE = "MONGO_MIN_POOL_SIZE"
+
+	MONGO_CONNECT_TIMEOUT          = "MONGO_CONNECT_TIMEOUT"
+	MONGO_SERVER_SELECTION_TIMEOUT = "MONGO_SERVER_SELECTION_TIMEOUT"
+	MONGO_MAX_CONN_IDLE_TIME       = "MONGO_MAX_CONN_IDLE_TIME"
+	MONGO_MAX_CONNECTING           = "MONGO_MAX_CONNECTING"
+
+	MONGO_READ_CONCERN  = "MONGO_READ_CONCERN"
+	MONGO_WRITE_CONCERN = "MONGO_WRITE_CONCERN"
+
+	MONGO_ENABLE_TLS           = "MONGO_ENABLE_TLS"
+	MONGO_CERT_FILE            = "MONGO_CERT_FILE"
+	MONGO_KEY_FILE             = "MONGO_KEY_FILE"
+	MONGO_CA_FILE              = "MONGO_CA_FILE"
+	MONGO_INSECURE_SKIP_VERIFY = "MONGO_INSECURE_SKIP_VERIFY"
+
+	MONGO_ENABLE = "MONGO_ENABLE"
+)
+
+type Mongo struct {
+	Host        string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
+	Port        int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Username    string `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password    string `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Database    string `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	AuthSource  string `json:"auth_source" mapstructure:"auth_source" ini:"auth_source" yaml:"auth_source"`
+	MaxPoolSize uint64 `json:"max_pool_size" mapstructure:"max_pool_size" ini:"max_pool_size" yaml:"max_pool_size"`
+	MinPoolSize uint64 `json:"min_pool_size" mapstructure:"min_pool_size" ini:"min_pool_size" yaml:"min_pool_size"`
+
+	ConnectTimeout         time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	ServerSelectionTimeout time.Duration `json:"server_selection_timeout" mapstructure:"server_selection_timeout" ini:"server_selection_timeout" yaml:"server_selection_timeout"`
+	MaxConnIdleTime        time.Duration `json:"max_conn_idle_time" mapstructure:"max_conn_idle_time" ini:"max_conn_idle_time" yaml:"max_conn_idle_time"`
+	MaxConnecting          uint64        `json:"max_connecting" mapstructure:"max_connecting" ini:"max_connecting" yaml:"max_connecting"`
+
+	ReadConcern  ReadConcern  `json:"read_concern" mapstructure:"read_concern" ini:"read_concern" yaml:"read_concern"`
+	WriteConcern WriteConcern `json:"write_concern" mapstructure:"write_concern" ini:"write_concern" yaml:"write_concern"`
+
+	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
+	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+
+	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+func (*Mongo) setDefault() {
+	cv.SetDefault("mongo.host", "127.0.0.1")
+	cv.SetDefault("mongo.port", 27017)
+	cv.SetDefault("mongo.username", "")
+	cv.SetDefault("mongo.password", "")
+	cv.SetDefault("mongo.database", "")
+	cv.SetDefault("mongo.auth_source", "admin")
+	cv.SetDefault("mongo.max_pool_size", 0)
+	cv.SetDefault("mongo.min_pool_size", 0)
+
+	cv.SetDefault("mongo.connect_timeout", 0)
+	cv.SetDefault("mongo.server_selection_timeout", 0)
+	cv.SetDefault("mongo.max_conn_idle_time", 0)
+	cv.SetDefault("mongo.max_connecting", 0)
+
+	cv.SetDefault("mongo.read_concern", "")
+	cv.SetDefault("mongo.write_concern", "")
+
+	cv.SetDefault("mongo.enable_tls", false)
+	cv.SetDefault("mongo.cert_file", "")
+	cv.SetDefault("mongo.key_file", "")
+	cv.SetDefault("mongo.ca_file", "")
+	cv.SetDefault("mongo.insecure_skip_verify", false)
+
+	cv.SetDefault("mongo.enable", false)
+}
+
+const (
+	LDAP_HOST          = "LDAP_HOST"
+	LDAP_PORT          = "LDAP_PORT"
+	LDAP_USE_SSL       = "LDAP_USE_SSL"
+	LDAP_BIND_DN       = "LDAP_BIND_DN"
+	LDAP_BIND_PASSWORD = "LDAP_BIND_PASSWORD"
+	LDAP_BASE_DN       = "LDAP_BASE_DN"
+	LDAP_SEARCH_FILTER = "LDAP_SEARCH_FILTER"
+	LDAP_ENABLE        = "LDAP_ENABLE"
+)
+
 // Ldap
 // For example:
 // [ldap]
@@ -856,6 +997,47 @@ type Ldap struct {
 	SearchFilter string `json:"search_filter" mapstructure:"search_filter" ini:"search_filter" yaml:"search_filter"`
 	Enable       bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*Ldap) setDefault() {
+	cv.SetDefault("ldap.host", "127.0.0.1")
+	cv.SetDefault("ldap.port", 389)
+	cv.SetDefault("ldap.use_ssl", false)
+	cv.SetDefault("ldap.bind_dn", "")
+	cv.SetDefault("ldap.bind_password", "")
+	cv.SetDefault("ldap.base_dn", "")
+	cv.SetDefault("ldap.search_filter", "")
+	cv.SetDefault("ldap.enable", false)
+}
+
+const (
+	INFLUXDB_HOST   = "INFLUXDB_HOST"
+	INFLUXDB_PORT   = "INFLUXDB_PORT"
+	INFLUXDB_TOKEN  = "INFLUXDB_TOKEN"
+	INFLUXDB_ORG    = "INFLUXDB_ORG"
+	INFLUXDB_BUCKET = "INFLUXDB_BUCKET"
+
+	INFLUXDB_BATCH_SIZE         = "INFLUXDB_BATCH_SIZE"
+	INFLUXDB_FLUSH_INTERVAL     = "INFLUXDB_FLUSH_INTERVAL"
+	INFLUXDB_RETRY_INTERVAL     = "INFLUXDB_RETRY_INTERVAL"
+	INFLUXDB_MAX_RETRIES        = "INFLUXDB_MAX_RETRIES"
+	INFLUXDB_RETRY_BUFFER_LIMIT = "INFLUXDB_RETRY_BUFFER_LIMIT"
+	INFLUXDB_MAX_RETRY_INTERVAL = "INFLUXDB_MAX_RETRY_INTERVAL"
+	INFLUXDB_MAX_RETRY_TIME     = "INFLUXDB_MAX_RETRY_TIME"
+	INFLUXDB_EXPONENTIAL_BASE   = "INFLUXDB_EXPONENTIAL_BASE"
+	INFLUXDB_PRECISION          = "INFLUXDB_PRECISION"
+	INFLUXDB_USE_GZIP           = "INFLUXDB_USE_GZIP"
+
+	INFLUXDB_ENABLE_TLS           = "INFLUXDB_ENABLE_TLS"
+	INFLUXDB_CERT_FILE            = "INFLUXDB_CERT_FILE"
+	INFLUXDB_KEY_FILE             = "INFLUXDB_KEY_FILE"
+	INFLUXDB_CA_FILE              = "INFLUXDB_CA_FILE"
+	INFLUXDB_INSECURE_SKIP_VERIFY = "INFLUXDB_INSECURE_SKIP_VERIFY"
+
+	INFLUXDB_DEFAULT_TAGS = "INFLUXDB_DEFAULT_TAGS" // format：key1=value1,key2=value2
+	INFLUXDB_APP_NAME     = "INFLUXDB_APP_NAME"
+
+	INFLUXDB_ENABLE = "INFLUXDB_ENABLE"
+)
 
 type Influxdb struct {
 	Host   string `json:"host" mapstructure:"host" ini:"host" yaml:"host"`
@@ -890,6 +1072,46 @@ type Influxdb struct {
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Influxdb) setDefault() {
+	cv.SetDefault("influxdb.host", "127.0.0.1")
+	cv.SetDefault("influxdb.port", 8086)
+	cv.SetDefault("influxdb.token", "")
+	cv.SetDefault("influxdb.org", "")
+	cv.SetDefault("influxdb.bucket", "")
+
+	cv.SetDefault("influxdb.batch_size", 0)
+	cv.SetDefault("influxdb.flush_interval", 0)
+	cv.SetDefault("influxdb.retry_interval", 0)
+	cv.SetDefault("influxdb.max_retries", 0)
+	cv.SetDefault("influxdb.retry_buffer_limit", 0)
+	cv.SetDefault("influxdb.max_retry_interval", 0)
+	cv.SetDefault("influxdb.max_retry_time", 0)
+	cv.SetDefault("influxdb.exponential_base", 0)
+	cv.SetDefault("influxdb.precision", 0)
+	cv.SetDefault("influxdb.use_gzip", false)
+
+	cv.SetDefault("influxdb.enable_tls", false)
+	cv.SetDefault("influxdb.cert_file", "")
+	cv.SetDefault("influxdb.key_file", 0)
+	cv.SetDefault("influxdb.ca_file", "")
+	cv.SetDefault("influxdb.insecure_skip_verify", false)
+
+	cv.SetDefault("influxdb.default_tags", nil)
+	cv.SetDefault("influxdb.app_name", "")
+
+	cv.SetDefault("influxdb.enable", false)
+}
+
+const (
+	MINIO_ENDPOINT   = "MINIO_ENDPOINT"
+	MINIO_REGION     = "MINIO_REGION"
+	MINIO_ACCESS_KEY = "MINIO_ACCESS_KEY"
+	MINIO_SECRET_KEY = "MINIO_SECRET_KEY"
+	MINIO_BUCKET     = "MINIO_BUCKET"
+	MINIO_USE_SSL    = "MINIO_USE_SSL"
+	MINIO_ENABLE     = "MINIO_ENABLE"
+)
+
 type Minio struct {
 	Endpoint  string `json:"endpoint" mapstructure:"endpoint" ini:"endpoint" yaml:"endpoint"`
 	Region    string `json:"region" mapstructure:"region" ini:"region" yaml:"region"`
@@ -900,6 +1122,26 @@ type Minio struct {
 	Enable    bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Minio) setDefault() {
+	cv.SetDefault("minio.endpoint", "127.0.0.1:9000")
+	cv.SetDefault("minio.region", "")
+	cv.SetDefault("minio.access_key", "")
+	cv.SetDefault("minio.secret_key", "")
+	cv.SetDefault("minio.bucket", "")
+	cv.SetDefault("minio.use_ssl", false)
+	cv.SetDefault("minio.enable", false)
+}
+
+const (
+	S3_ENDPOINT          = "S3_ENDPOINT"
+	S3_REGION            = "S3_REGION"
+	S3_ACCESS_KEY_ID     = "S3_ACCESS_KEY_ID"
+	S3_SECRET_ACCESS_KEY = "S3_SECRET_ACCESS_KEY"
+	S3_BUCKET            = "S3_BUCKET"
+	S3_USE_SSL           = "S3_USE_SSL"
+	S3_ENABLE            = "S3_ENABLE"
+)
+
 type S3 struct {
 	Endpoint        string `json:"endpoint" mapstructure:"endpoint" ini:"endpoint" yaml:"endpoint"`
 	Region          string `json:"region" mapstructure:"region" ini:"region" yaml:"region"`
@@ -909,6 +1151,32 @@ type S3 struct {
 	UseSsl          bool   `json:"use_ssl" mapstructure:"use_ssl" ini:"use_ssl" yaml:"use_ssl"`
 	Enable          bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*S3) setDefault() {
+	cv.SetDefault("s3.endpoint", "")
+	cv.SetDefault("s3.region", "")
+	cv.SetDefault("s3.access_key_id", "")
+	cv.SetDefault("s3.secret_access_key", "")
+	cv.SetDefault("s3.bucket", "")
+	cv.SetDefault("s3.use_ssl", false)
+	cv.SetDefault("s3.enable", false)
+}
+
+const (
+	MQTT_ADDR                 = "MQTT_ADDR"
+	MQTT_USERNAME             = "MQTT_USERNAME"
+	MQTT_PASSWORD             = "MQTT_PASSWORD"
+	MQTT_CLIENT_PREFIX        = "MQTT_CLIENT_PREFIX"
+	MQTT_CONNECT_TIMEOUT      = "MQTT_CONNECT_TIMEOUT"
+	MQTT_KEEPALIVE            = "MQTT_KEEPALIVE"
+	MQTT_CLEAN_SESSION        = "MQTT_CLEAN_SESSION"
+	MQTT_AUTO_RECONNECT       = "MQTT_AUTO_RECONNECT"
+	MQTT_USE_TLS              = "MQTT_USE_TLS"
+	MQTT_CERT_FILE            = "MQTT_CERT_FILE"
+	MQTT_KEY_FILE             = "MQTT_KEY_FILE"
+	MQTT_INSECURE_SKIP_VERIFY = "MQTT_INSECURE_SKIP_VERIFY"
+	MQTT_ENABLE               = "MQTT_ENABLE"
+)
 
 type Mqtt struct {
 	Addr               string        `json:"addr" mapstructure:"addr" ini:"addr" yaml:"addr"`
@@ -926,11 +1194,53 @@ type Mqtt struct {
 	Enable             bool          `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
 
+func (*Mqtt) setDefault() {
+	cv.SetDefault("mqtt.addr", "127.0.0.1:1883")
+	cv.SetDefault("mqtt.username", "")
+	cv.SetDefault("mqtt.password", "")
+	cv.SetDefault("mqtt.client_prefix", "")
+	cv.SetDefault("mqtt.connect_timeout", 10*time.Second)
+	cv.SetDefault("mqtt.keepalive", 1*time.Minute)
+	cv.SetDefault("mqtt.clean_session", true)
+	cv.SetDefault("mqtt.auto_reconnect", true)
+	cv.SetDefault("mqtt.use_tls", false)
+	cv.SetDefault("mqtt.cert_file", "")
+	cv.SetDefault("mqtt.key_file", "")
+	cv.SetDefault("mqtt.insecure_skip_verify", true)
+	cv.SetDefault("mqtt.enable", false)
+}
+
+const (
+	FEISHU_APP_ID     = "FEISHU_APP_ID"
+	FEISHU_APP_SECRET = "FEISHU_APP_SECRET"
+	FEISHU_ENABLE     = "FEISHU_ENABLE"
+)
+
 type Feishu struct {
 	AppID     string `json:"app_id" mapstructure:"app_id" ini:"app_id" yaml:"app_id"`
 	AppSecret string `json:"app_secret" mapstructure:"app_secret" ini:"app_secret" yaml:"app_secret"`
 	Enable    bool   `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 }
+
+func (*Feishu) setDefault() {
+	cv.SetDefault("feishu.app_id", "")
+	cv.SetDefault("feishu.app_secret", "")
+	cv.SetDefault("feishu.enable", false)
+}
+
+const (
+	DEBUG_ENABLE_STATSVIZ = "DEBUG_ENABLE_STATSVIZ"
+	DEBUG_ENABLE_PPROF    = "DEBUG_ENABLE_PPROF"
+	DEBUG_ENABLE_GOPS     = "DEBUG_ENABLE_GOPS"
+
+	DEBUG_STATSVIZ_LISTEN = "DEBUG_STATSVIZ_LISTEN"
+	DEBUG_PPROF_LISTEN    = "DEBUG_PPROF_LISTEN"
+	DEBUG_GOPS_LISTEN     = "DEBUG_GOPS_LISTEN"
+
+	DEBUG_STATSVIZ_PORT = "DEBUG_STATSVIZ_PORT"
+	DEBUG_PPROF_PORT    = "DEBUG_PPROF_PORT"
+	DEBUG_GOPS_PORT     = "DEBUG_GOPS_PORT"
+)
 
 type Debug struct {
 	EnableStatsviz bool   `json:"enable_statsviz" mapstructure:"enable_statsviz" ini:"enable_statsviz" yaml:"enable_statsviz"`
@@ -944,4 +1254,18 @@ type Debug struct {
 	EnableGops bool   `json:"enable_gops" mapstructure:"enable_gops" ini:"enable_gops" yaml:"enable_gops"`
 	GopsListen string `json:"gops_listen" mapstructure:"gops_listen" ini:"gops_listen" yaml:"gops_listen"`
 	GopsPort   int    `json:"gops_port" mapstructure:"gops_port" ini:"gops_port" yaml:"gops_port"`
+}
+
+func (*Debug) setDefault() {
+	cv.SetDefault("debug.enable_statsviz", false)
+	cv.SetDefault("debug.statsviz_listen", "127.0.0.1")
+	cv.SetDefault("debug.statsviz_port", 10000)
+
+	cv.SetDefault("debug.enable_pprof", false)
+	cv.SetDefault("debug.pprof_listen", "127.0.0.1")
+	cv.SetDefault("debug.gops_listen", "127.0.0.1")
+
+	cv.SetDefault("debug.enable_gops", false)
+	cv.SetDefault("debug.pprof_port", 10001)
+	cv.SetDefault("debug.gops_port", 10002)
 }
