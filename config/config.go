@@ -414,7 +414,7 @@ type Config struct {
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
 }
 
-// setDefaultValue will set config default value
+// setDefault will set config default value
 func (*Config) setDefault() {
 	new(Server).setDefault()
 	new(Auth).setDefault()
