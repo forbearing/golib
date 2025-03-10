@@ -160,18 +160,18 @@ func NewCluster(cfg config.Redis) (*redis.ClusterClient, error) {
 func Close() {
 	if client != nil {
 		if err := client.Close(); err != nil {
-			zap.S().Errorw("failed to close Redis client", "error", err)
+			zap.S().Errorw("failed to close redis client", "error", err)
 		} else {
-			zap.S().Infow("successfully close Redis client")
+			zap.S().Infow("successfully close redis client")
 		}
 		client = nil
 	}
 
 	if cluster != nil {
 		if err := cluster.Close(); err != nil {
-			zap.S().Errorw("failed to close Redis cluster client", "error", err)
+			zap.S().Errorw("failed to close redis cluster client", "error", err)
 		} else {
-			zap.S().Infow("successfully close Redis cluster client")
+			zap.S().Infow("successfully close redis cluster client")
 		}
 		cluster = nil
 	}
