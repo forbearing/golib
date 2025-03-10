@@ -82,6 +82,7 @@ func Bootstrap() error {
 		cassandra.Init,
 		mqtt.Init,
 		influxdb.Init,
+		nats.Init,
 
 		// service
 		rbac.Init,
@@ -97,6 +98,7 @@ func Bootstrap() error {
 
 	RegisterExitHandler(redis.Close)
 	RegisterExitHandler(influxdb.Close)
+	RegisterExitHandler(nats.Close)
 
 	initialized = true
 	go func() {
