@@ -12,8 +12,6 @@ import (
 )
 
 // Logger implements types.Logger interface.
-// https://github.com/moul/zapgorm2 may be the alternative choice.
-// eg: gorm.Open(mysql.Open(dsnAsset), &gorm.Config{Logger: zapgorm2.New(pkgzap.NewZap("./logs/gorm_asset.log"))})
 type Logger struct {
 	zlog *zap.Logger
 }
@@ -101,7 +99,7 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 	)
 }
 
-// LoggerWithServiceContext creates a new logger with service context fields.
+// WithServiceContext creates a new logger with service context fields.
 // It extends the base logger with phase, username, user ID, and request ID from *types.ServiceContext.
 //
 // examples:
@@ -116,6 +114,12 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 	)
 }
 
+// WithDatabaseContext creates a new logger with database context fields.
+// It extends the base logger with phase, username, user ID, and request ID from *types.DatabaseContext.
+//
+// examples:
+//
+// log := logger.Database.WithDatabaseContext(ctx, consts.PHASE_LIST_BEFORE)
 func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Phase) (clone types.Logger) {
 	return l.With(
 		consts.PHASE, string(phase),
@@ -138,9 +142,9 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	username, _ := ctx.Value(consts.CTX_USERNAME).(string)
 	userId, _ := ctx.Value(consts.CTX_USER_ID).(string)
 	traceId, _ := ctx.Value(consts.TRACE_ID).(string)
-
 	elapsed := time.Since(begin)
 	sql, rows := fc()
+
 	if err != nil {
 		g.l.Errorz("", zap.String("sql", sql), zap.Int64("rows", rows), zap.String("elapsed", elapsed.String()), zap.Error(err))
 	} else {
