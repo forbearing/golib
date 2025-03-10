@@ -101,6 +101,9 @@ func main() {
 	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
 	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
 
+	os.Setenv(config.KAFKA_ENABLE, "true")
+	os.Setenv(config.KAFKA_BROKERS, "127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094")
+
 	// os.Setenv("NATS_USERNAME", "user_from_env")
 	// os.Setenv("NATS_PASSWORD", "pass_from_env")
 	// os.Setenv("NATS_TIMEOUT", "60s")
