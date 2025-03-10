@@ -105,6 +105,7 @@ func main() {
 	// os.Setenv("NATS_PASSWORD", "pass_from_env")
 	// os.Setenv("NATS_TIMEOUT", "60s")
 
+	os.Setenv(config.NATS_ADDRS, "nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224")
 	os.Setenv(config.NATS_ENABLE, "true")
 
 	config.SetConfigFile("./config.ini")

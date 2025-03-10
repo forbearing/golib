@@ -70,7 +70,7 @@ const (
 func Init() (err error) {
 	cv.AutomaticEnv()
 	cv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	setDefaultValue()
+	new(Config).setDefault()
 
 	if len(configFile) > 0 {
 		cv.SetConfigFile(configFile)
@@ -353,29 +353,6 @@ func Get[T any](name string) (t T) {
 	return t
 }
 
-// setDefaultValue will set config default value
-func setDefaultValue() {
-	new(Server).setDefault()
-	new(Auth).setDefault()
-	new(Logger).setDefault()
-	new(Database).setDefault()
-	new(Sqlite).setDefault()
-	new(Postgres).setDefault()
-	new(MySQL).setDefault()
-	new(Clickhouse).setDefault()
-	new(SQLServer).setDefault()
-	new(Redis).setDefault()
-	new(Elasticsearch).setDefault()
-	new(Mongo).setDefault()
-	new(Ldap).setDefault()
-	new(Influxdb).setDefault()
-	new(Minio).setDefault()
-	new(S3).setDefault()
-	new(Mqtt).setDefault()
-	new(Feishu).setDefault()
-	new(Debug).setDefault()
-}
-
 // SetConfigFile set the config file path.
 // You should always call this funtion before `Init`.
 func SetConfigFile(file string) {
@@ -432,8 +409,33 @@ type Config struct {
 	Ldap          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
 	Influxdb      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
 	Mqtt          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
+	Nats          `json:"nats" mapstructure:"nats" ini:"nats" yaml:"nats"`
 	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
+}
+
+// setDefaultValue will set config default value
+func (*Config) setDefault() {
+	new(Server).setDefault()
+	new(Auth).setDefault()
+	new(Logger).setDefault()
+	new(Database).setDefault()
+	new(Sqlite).setDefault()
+	new(Postgres).setDefault()
+	new(MySQL).setDefault()
+	new(Clickhouse).setDefault()
+	new(SQLServer).setDefault()
+	new(Redis).setDefault()
+	new(Elasticsearch).setDefault()
+	new(Mongo).setDefault()
+	new(Ldap).setDefault()
+	new(Influxdb).setDefault()
+	new(Minio).setDefault()
+	new(S3).setDefault()
+	new(Mqtt).setDefault()
+	new(Nats).setDefault()
+	new(Feishu).setDefault()
+	new(Debug).setDefault()
 }
 
 const (
@@ -1208,6 +1210,87 @@ func (*Mqtt) setDefault() {
 	cv.SetDefault("mqtt.key_file", "")
 	cv.SetDefault("mqtt.insecure_skip_verify", true)
 	cv.SetDefault("mqtt.enable", false)
+}
+
+const (
+	NATS_ADDRS       = "NATS_ADDRS"
+	NATS_CLIENT_NAME = "NATS_CLIENT_NAME"
+	NATS_USERNAME    = "NATS_USERNAME"
+	NATS_PASSWORD    = "NATS_PASSWORD"
+	NATS_TOKEN       = "NATS_TOKEN"
+	NATS_CREDENTIALS = "NATS_CREDENTIALS"
+	NATS_NKEY_FILE   = "NATS_NKEY_FILE"
+
+	NATS_MAX_RECONNECTS       = "NATS_MAX_RECONNECTS"
+	NATS_RECONNECT_WAIT       = "NATS_RECONNECT_WAIT"
+	NATS_RECONNECT_JITTER     = "NATS_RECONNECT_JITTER"
+	NATS_RECONNECT_JITTER_TLS = "NATS_RECONNECT_JITTER_TLS"
+
+	NATS_CONNECT_TIMEOUT       = "NATS_CONNECT_TIMEOUT"
+	NATS_PING_INTERVAL         = "NATS_PING_INTERVAL"
+	NATS_MAX_PINGS_OUTSTANDING = "NATS_MAX_PINGS_OUTSTANDING"
+
+	NATS_ENABLE_TLS           = "NATS_ENABLE_TLS"
+	NATS_CERT_FILE            = "NATS_CERT_FILE"
+	NATS_KEY_FILE             = "NATS_KEY_FILE"
+	NATS_CA_FILE              = "NATS_CA_FILE"
+	NATS_INSECURE_SKIP_VERIFY = "NATS_INSECURE_SKIP_VERIFY"
+
+	NATS_ENABLE = "NATS_ENABLE"
+)
+
+type Nats struct {
+	Addrs           []string `json:"addrs" mapstructure:"addrs" ini:"addrs" yaml:"addrs"`
+	ClientName      string   `json:"client_name" mapstructure:"client_name" ini:"client_name" yaml:"client_name"`
+	Username        string   `json:"username" mapstructure:"username" ini:"username" yaml:"username"`
+	Password        string   `json:"password" mapstructure:"password" ini:"password" yaml:"password"`
+	Token           string   `json:"token" mapstructure:"token" ini:"token" yaml:"token"`
+	CredentialsFile string   `json:"credentials_file" mapstructure:"credentials_file" ini:"credentials_file" yaml:"credentials_file"`
+	NKeyFile        string   `json:"nkey_file" mapstructure:"nkey_file" ini:"nkey_file" yaml:"nkey_file"`
+
+	MaxReconnects      int           `json:"max_reconnects" mapstructure:"max_reconnects" ini:"max_reconnects" yaml:"max_reconnects"`
+	ReconnectWait      time.Duration `json:"reconnect_wait" mapstructure:"reconnect_wait" ini:"reconnect_wait" yaml:"reconnect_wait"`
+	ReconnectJitter    time.Duration `json:"reconnect_jitter" mapstructure:"reconnect_jitter" ini:"reconnect_jitter" yaml:"reconnect_jitter"`
+	ReconnectJitterTLS time.Duration `json:"reconnect_jitter_tls" mapstructure:"reconnect_jitter_tls" ini:"reconnect_jitter_tls" yaml:"reconnect_jitter_tls"`
+
+	ConnectTimeout      time.Duration `json:"connect_timeout" mapstructure:"connect_timeout" ini:"connect_timeout" yaml:"connect_timeout"`
+	PingInterval        time.Duration `json:"ping_interval" mapstructure:"ping_interval" ini:"ping_interval" yaml:"ping_interval"`
+	MaxPingsOutstanding int           `json:"max_pings_outstanding" mapstructure:"max_pings_outstanding" ini:"max_pings_outstanding" yaml:"max_pings_outstanding"`
+
+	EnableTLS          bool   `json:"enable_tls" mapstructure:"enable_tls" ini:"enable_tls" yaml:"enable_tls"`
+	CertFile           string `json:"cert_file" mapstructure:"cert_file" ini:"cert_file" yaml:"cert_file"`
+	KeyFile            string `json:"key_file" mapstructure:"key_file" ini:"key_file" yaml:"key_file"`
+	CAFile             string `json:"ca_file" mapstructure:"ca_file" ini:"ca_file" yaml:"ca_file"`
+	InsecureSkipVerify bool   `json:"insecure_skip_verify" mapstructure:"insecure_skip_verify" ini:"insecure_skip_verify" yaml:"insecure_skip_verify"`
+
+	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
+}
+
+func (*Nats) setDefault() {
+	cv.SetDefault("nats.addrs", []string{"nats://127.0.0.1:4222"})
+	cv.SetDefault("nats.client_name", "")
+	cv.SetDefault("nats.username", "")
+	cv.SetDefault("nats.password", "")
+	cv.SetDefault("nats.token", "")
+	cv.SetDefault("nats.credentials_file", "")
+	cv.SetDefault("nats.nkey_file", "")
+
+	cv.SetDefault("nats.max_reconnects", 5)
+	cv.SetDefault("nats.reconnect_wait", 1*time.Second)
+	cv.SetDefault("nats.reconnect_jitter", 0)
+	cv.SetDefault("nats.reconnect_jitter_tls", 0)
+
+	cv.SetDefault("nats.connect_timeout", 2*time.Second)
+	cv.SetDefault("nats.ping_interval", 2*time.Minute)
+	cv.SetDefault("nats.max_pings_outstanding", 2)
+
+	cv.SetDefault("nats.enable_tls", false)
+	cv.SetDefault("nats.cert_file", "")
+	cv.SetDefault("nats.key_file", "")
+	cv.SetDefault("nats.ca_file", "")
+	cv.SetDefault("nats.insecure_skip_verify", false)
+
+	cv.SetDefault("nats.enable", false)
 }
 
 const (
