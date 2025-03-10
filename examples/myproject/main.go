@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -15,11 +17,13 @@ import (
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/middleware"
 	pkgmodel "github.com/forbearing/golib/model"
+	pkgnats "github.com/forbearing/golib/provider/nats"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 
 	_ "github.com/forbearing/golib/examples/myproject/service"
@@ -97,9 +101,11 @@ func main() {
 	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
 	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
 
-	os.Setenv("NATS_USERNAME", "user_from_env")
-	os.Setenv("NATS_PASSWORD", "pass_from_env")
-	os.Setenv("NATS_TIMEOUT", "60s")
+	// os.Setenv("NATS_USERNAME", "user_from_env")
+	// os.Setenv("NATS_PASSWORD", "pass_from_env")
+	// os.Setenv("NATS_TIMEOUT", "60s")
+
+	os.Setenv(config.NATS_ENABLE, "true")
 
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
@@ -121,9 +127,9 @@ func main() {
 	//
 
 	// Register config after bootstrap.
-	config.Register[*NatsConfig]("nats")
+	// config.Register[*NatsConfig]("nats")
 	zap.S().Infof("%+v", config.Get[*WechatConfig]("wechat"))
-	zap.S().Infof("%+v", config.Get[*NatsConfig]("nats"))
+	// zap.S().Infof("%+v", config.Get[*NatsConfig]("nats"))
 
 	// Register task and cronjob after bootstrap.
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
@@ -142,6 +148,35 @@ func main() {
 		}
 	}
 	// influxdb
+
+	// nats
+	{
+		nc := pkgnats.Conn()
+		// 订阅主题
+		sub, err := nc.Subscribe("greetings", func(msg *nats.Msg) {
+			fmt.Printf("Received: %s\n", string(msg.Data))
+			msg.Respond([]byte("Hello back!"))
+		})
+		if err != nil {
+			panic(err)
+		}
+		defer sub.Unsubscribe()
+
+		// 发布消息
+		if err = nc.Publish("greetings", []byte("Hello NATS!")); err != nil {
+			panic(err)
+		}
+
+		// 发送请求
+		reply, err := nc.Request("greetings", []byte("Hello"), time.Second)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Reply: %s\n", string(reply.Data))
+
+		// 让程序运行一会儿
+		time.Sleep(time.Second)
+	}
 
 	//
 	//
@@ -212,10 +247,10 @@ type WechatConfig struct {
 	Enable    bool   `json:"enable" mapstructure:"enable"`
 }
 
-type NatsConfig struct {
-	URL      string        `json:"url" mapstructure:"url" default:"nats://127.0.0.1:4222"`
-	Username string        `json:"username" mapstructure:"username" default:"nats"`
-	Password string        `json:"password" mapstructure:"password" default:"nats"`
-	Timeout  time.Duration `json:"timeout" mapstructure:"timeout" default:"5s"`
-	Enable   bool          `json:"enable" mapstructure:"enable"`
-}
+// type NatsConfig struct {
+// 	URL      string        `json:"url" mapstructure:"url" default:"nats://127.0.0.1:4222"`
+// 	Username string        `json:"username" mapstructure:"username" default:"nats"`
+// 	Password string        `json:"password" mapstructure:"password" default:"nats"`
+// 	Timeout  time.Duration `json:"timeout" mapstructure:"timeout" default:"5s"`
+// 	Enable   bool          `json:"enable" mapstructure:"enable"`
+// }
