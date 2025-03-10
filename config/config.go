@@ -60,6 +60,57 @@ const (
 	DBClickHouse = "clickhouse"
 )
 
+type Config struct {
+	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
+	Database      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Sqlite        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
+	Postgres      `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
+	MySQL         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
+	SQLServer     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
+	Clickhouse    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
+	Redis         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	Elasticsearch `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
+	Mongo         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
+	Kafka         `json:"kafka" mapstructure:"kafka" ini:"kafka" yaml:"kafka"`
+	Minio         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
+	S3            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
+	Logger        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
+	Ldap          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
+	Influxdb      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
+	Mqtt          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
+	Nats          `json:"nats" mapstructure:"nats" ini:"nats" yaml:"nats"`
+	Cassandra     `json:"cassandra" mapstructure:"cassandra" ini:"cassandra" yaml:"cassandra"`
+	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
+	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
+}
+
+// setDefault will set config default value
+func (*Config) setDefault() {
+	new(Server).setDefault()
+	new(Auth).setDefault()
+	new(Logger).setDefault()
+	new(Database).setDefault()
+	new(Sqlite).setDefault()
+	new(Postgres).setDefault()
+	new(MySQL).setDefault()
+	new(Clickhouse).setDefault()
+	new(SQLServer).setDefault()
+	new(Redis).setDefault()
+	new(Elasticsearch).setDefault()
+	new(Mongo).setDefault()
+	new(Kafka).setDefault()
+	new(Ldap).setDefault()
+	new(Influxdb).setDefault()
+	new(Minio).setDefault()
+	new(S3).setDefault()
+	new(Mqtt).setDefault()
+	new(Nats).setDefault()
+	new(Cassandra).setDefault()
+	new(Feishu).setDefault()
+	new(Debug).setDefault()
+}
+
 // Init initializes the application configuration
 //
 // Configuration priority (from highest to lowest):
@@ -388,53 +439,4 @@ func AddPath(paths ...string) {
 // Save config instance to file.
 func Save(filename string) error {
 	return cv.WriteConfigAs(filename)
-}
-
-type Config struct {
-	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
-	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
-	Database      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
-	Sqlite        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
-	Postgres      `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
-	MySQL         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
-	SQLServer     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
-	Clickhouse    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
-	Redis         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
-	Elasticsearch `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
-	Mongo         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
-	Kafka         `json:"kafka" mapstructure:"kafka" ini:"kafka" yaml:"kafka"`
-	Minio         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
-	S3            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
-	Logger        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
-	Ldap          `json:"ldap" mapstructure:"ldap" ini:"ldap" yaml:"ldap"`
-	Influxdb      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
-	Mqtt          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
-	Nats          `json:"nats" mapstructure:"nats" ini:"nats" yaml:"nats"`
-	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
-	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
-}
-
-// setDefault will set config default value
-func (*Config) setDefault() {
-	new(Server).setDefault()
-	new(Auth).setDefault()
-	new(Logger).setDefault()
-	new(Database).setDefault()
-	new(Sqlite).setDefault()
-	new(Postgres).setDefault()
-	new(MySQL).setDefault()
-	new(Clickhouse).setDefault()
-	new(SQLServer).setDefault()
-	new(Redis).setDefault()
-	new(Elasticsearch).setDefault()
-	new(Mongo).setDefault()
-	new(Kafka).setDefault()
-	new(Ldap).setDefault()
-	new(Influxdb).setDefault()
-	new(Minio).setDefault()
-	new(S3).setDefault()
-	new(Mqtt).setDefault()
-	new(Nats).setDefault()
-	new(Feishu).setDefault()
-	new(Debug).setDefault()
 }

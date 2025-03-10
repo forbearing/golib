@@ -104,6 +104,10 @@ func main() {
 	os.Setenv(config.KAFKA_ENABLE, "true")
 	os.Setenv(config.KAFKA_BROKERS, "127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094")
 
+	os.Setenv(config.CASSANDRA_ENABLE, "true")
+	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
+	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
+
 	// os.Setenv("NATS_USERNAME", "user_from_env")
 	// os.Setenv("NATS_PASSWORD", "pass_from_env")
 	// os.Setenv("NATS_TIMEOUT", "60s")

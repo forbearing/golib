@@ -76,14 +76,13 @@ func Bootstrap() error {
 		elastic.Init,
 		mongo.Init,
 		minio.Init,
-		etcd.Init,
-		kafka.Init,
 		nats.Init,
-		cassandra.Init,
 		mqtt.Init,
-		influxdb.Init,
+		etcd.Init,
 		nats.Init,
 		kafka.Init,
+		cassandra.Init,
+		influxdb.Init,
 
 		// service
 		rbac.Init,
