@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/forbearing/golib/bootstrap"
@@ -25,15 +25,77 @@ import (
 	_ "github.com/forbearing/golib/examples/myproject/service"
 )
 
+var redisCluster = []string{
+	"127.0.0.1:6379",
+	"127.0.0.1:6380",
+	"127.0.0.1:6381",
+	"127.0.0.1:6382",
+	"127.0.0.1:6383",
+	"127.0.0.1:6384",
+}
+
 func main() {
-	os.Setenv(config.DEBUG_ENABLE_STATSVIZ, "true")
-	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
-	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
-	os.Setenv(config.REDIS_PASSWORD, "qQk5zXWHfj4LD2Nxm9vF3YpBZt8a6JhUTdsS7RgyruGCAEebVP")
+	os.Setenv(config.SERVER_PORT, "8002")
+	os.Setenv(config.SERVER_DB, config.DBMySQL)
+	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, "-")
+	os.Setenv(config.LOGGER_DIR, "/tmp/myproject/logs")
+	os.Setenv(config.DATABASE_MAX_IDLE_CONNS, "100")
+	os.Setenv(config.DATABASE_MAX_OPEN_CONNS, "1000")
+	os.Setenv(config.SQLITE_PATH, "/tmp/myproject/data.db")
+
+	os.Setenv(config.POSTGRES_ENABLE, "true")
+	os.Setenv(config.POSTGRES_PORT, "15432")
+	os.Setenv(config.POSTGRES_USERNAME, "postgres")
+	os.Setenv(config.POSTGRES_PASSWORD, "admin")
+
+	os.Setenv(config.MYSQL_ENABLE, "true")
+	os.Setenv(config.MYSQL_DATABASE, "myproject")
+	os.Setenv(config.MYSQL_USERNAME, "myproject")
+	os.Setenv(config.MYSQL_PASSWORD, "myproject")
+
+	os.Setenv(config.CLICKHOUSE_ENABLE, "true")
+	os.Setenv(config.CLICKHOUSE_DATABASE, "default")
+	os.Setenv(config.CLICKHOUSE_USERNAME, "default")
+	os.Setenv(config.CLICKHOUSE_PASSWORD, "clickhouse")
+
+	os.Setenv(config.SQLSERVER_ENABLE, "true")
+	os.Setenv(config.SQLSERVER_DATABASE, "myproject")
+	os.Setenv(config.SQLSERVER_USERNAME, "sa")
+	os.Setenv(config.SQLSERVER_PASSWORD, "Passw0rd")
+
+	os.Setenv(config.ELASTICSEARCH_ENABLE, "true")
+	os.Setenv(config.ELASTICSEARCH_ADDRS, "http://127.0.0.1:9200")
+	os.Setenv(config.ELASTICSEARCH_USERNAME, "elastic")
+	os.Setenv(config.ELASTICSEARCH_PASSWORD, "changeme")
+
+	os.Setenv(config.REDIS_ENABLE, "true")
+	os.Setenv(config.REDIS_CLUSTER_MODE, "false")
+	os.Setenv(config.REDIS_PASSWORD, "password123")
+	os.Setenv(config.REDIS_EXPIRATION, "8h")
+	os.Setenv(config.REDIS_ADDRS, strings.Join(redisCluster, ","))
+	os.Setenv(config.REDIS_ADDR, "127.0.0.1:6378")
+
+	os.Setenv(config.MONGO_ENABLE, "true")
+	os.Setenv(config.MONGO_USERNAME, "mongo")
+	os.Setenv(config.MONGO_PASSWORD, "changeme")
+
+	os.Setenv(config.MINIO_ENABLE, "false")
+	os.Setenv(config.MINIO_ENDPOINT, "localhost:9000")
+	os.Setenv(config.MINIO_ACCESS_KEY, "my_access_key")
+	os.Setenv(config.MINIO_SECRET_KEY, "my_secret_key")
+	os.Setenv(config.MINIO_REGION, "myregion")
+	os.Setenv(config.MINIO_USE_SSL, "false")
+
+	os.Setenv(config.MQTT_ENABLE, "true")
+	os.Setenv(config.MQTT_CLIENT_PREFIX, "golib")
 
 	os.Setenv(config.INFLUXDB_ENABLE, "true")
 	os.Setenv(config.INFLUXDB_TOKEN, "influxdb")
 	os.Setenv(config.INFLUXDB_ORG, "golib.com")
+
+	os.Setenv(config.DEBUG_ENABLE_STATSVIZ, "true")
+	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
+	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
 
 	os.Setenv("NATS_USERNAME", "user_from_env")
 	os.Setenv("NATS_PASSWORD", "pass_from_env")
@@ -67,11 +129,19 @@ func main() {
 	task.Register(SayGoodbye, 1*time.Second, "say goodbye")
 	cronjob.Register(SayGoodbye, "*/1 * * * * *", "say goodbye")
 
-	if err := redis.SetM[*model.Group]("group01", &model.Group{
-		Name: fmt.Sprintf("group-%d", time.Now().Unix()),
-	}); err != nil {
-		panic(err)
+	// redis
+	{
+		g1 := &model.Group{Name: "group01"}
+		g2 := &model.Group{Name: "group02"}
+		groups := []*model.Group{g1, g2}
+		if err := redis.SetM("group", g1); err != nil {
+			panic(err)
+		}
+		if err := redis.SetML("groups", groups); err != nil {
+			panic(err)
+		}
 	}
+	// influxdb
 
 	//
 	//
