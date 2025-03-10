@@ -403,6 +403,7 @@ type Config struct {
 	Redis         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
 	Elasticsearch `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
 	Mongo         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
+	Kafka         `json:"kafka" mapstructure:"kafka" ini:"kafka" yaml:"kafka"`
 	Minio         `json:"minio" mapstructure:"minio" ini:"minio" yaml:"minio"`
 	S3            `json:"s3" mapstructure:"s3" ini:"s3" yaml:"s3"`
 	Logger        `json:"logger" mapstructure:"logger" ini:"logger" yaml:"logger"`
@@ -428,6 +429,7 @@ func (*Config) setDefault() {
 	new(Redis).setDefault()
 	new(Elasticsearch).setDefault()
 	new(Mongo).setDefault()
+	new(Kafka).setDefault()
 	new(Ldap).setDefault()
 	new(Influxdb).setDefault()
 	new(Minio).setDefault()

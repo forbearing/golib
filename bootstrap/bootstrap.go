@@ -83,6 +83,7 @@ func Bootstrap() error {
 		mqtt.Init,
 		influxdb.Init,
 		nats.Init,
+		kafka.Init,
 
 		// service
 		rbac.Init,
@@ -99,6 +100,7 @@ func Bootstrap() error {
 	RegisterExitHandler(redis.Close)
 	RegisterExitHandler(influxdb.Close)
 	RegisterExitHandler(nats.Close)
+	RegisterExitHandler(kafka.Close)
 
 	initialized = true
 	go func() {
