@@ -37,7 +37,7 @@ type option struct {
 // Init will initial global *zap.Logger according to Server/Client configurations.
 // log file default to config.Server.LoggerConfig.LogFile or config.Client.LoggerConfig.LogFile.
 func Init() error {
-	initVar()
+	readConf()
 	zap.ReplaceGlobals(zap.New(
 		zapcore.NewCore(newLogEncoder(), newLogWriter(), newLogLevel()),
 		zap.AddCaller(),
@@ -69,7 +69,7 @@ func Init() error {
 // New returns *Logger instance that contains *zap.Logger and *zap.SugaredLogger
 // and implements types.Logger.
 func New(filename ...string) *Logger {
-	initVar()
+	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
 			logFile = filename[0]
@@ -87,7 +87,7 @@ func New(filename ...string) *Logger {
 // NewGorm returns a *GormLogger instance that implements gorm logger.Interface.
 // The difference between NewGorm and NewLogger is the `zap.AddCallerSkip()`
 func NewGorm(filename ...string) *GormLogger {
-	initVar()
+	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
 			logFile = filename[0]
@@ -105,7 +105,7 @@ func NewGorm(filename ...string) *GormLogger {
 // NewGin returns a *Logger instance that contains *zap.Logger.
 // The difference between NewGin and New is disable fields "caller", "level" and "msg".
 func NewGin(filename ...string) *zap.Logger {
-	initVar()
+	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
 			logFile = filename[0]
@@ -124,7 +124,7 @@ func NewStdLog() *log.Logger {
 // log file default to config.Server.LoggerConfig.LogFile or config.Client.LoggerConfig.LogFile,
 // you can create a custom *zap.Logger by pass log filename to this function.
 func NewZap(filename ...string) *zap.Logger {
-	initVar()
+	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
 			logFile = filename[0]
@@ -141,7 +141,7 @@ func NewZap(filename ...string) *zap.Logger {
 // log file default to config.Server.LoggerConfig.LogFile or config.Client.LoggerConfig.LogFile,
 // you can create a custom *zap.SugaredLogger by pass log filename to this function.
 func NewSugared(filename ...string) *zap.SugaredLogger {
-	initVar()
+	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
 			logFile = filename[0]
@@ -224,7 +224,7 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 	}
 }
 
-func initVar() {
+func readConf() {
 	mode = config.App.Mode
 	logFile = config.App.Logger.File
 	logLevel = config.App.Logger.Level
