@@ -3,12 +3,14 @@ package task
 import (
 	"context"
 	"fmt"
+	"os"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
-	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 var (
@@ -27,7 +29,7 @@ type task struct {
 }
 
 func Init() error {
-	Register(visitor, 60*time.Second, "runtime visitor")
+	Register(runtimestats, 60*time.Second, "runtime stats")
 
 	for _, t := range tasks {
 		register(t)
@@ -98,19 +100,110 @@ func register(t *task) {
 	}()
 }
 
-func visitor() error {
-	logger.Visitor.Info("==================== config ====================")
-	logger.Visitor.Infof("%+v", config.App)
-
-	logger.Visitor.Info("==================== runtime ====================")
+func runtimestats() error {
 	rtm := new(runtime.MemStats)
 	runtime.ReadMemStats(rtm)
-	logger.Visitor.Infow("",
+
+	// 基本运行时信息
+	logger.Runtime.Infow("Basic Runtime Info",
+		"GoVersion", runtime.Version(),
+		"GOMAXPROCS", runtime.GOMAXPROCS(0),
+		"NumCPU", runtime.NumCPU(),
 		"Goroutines", runtime.NumGoroutine(),
-		"Mallocs", rtm.Mallocs, "Frees", rtm.Frees,
-		"LiveObjects", rtm.Mallocs-rtm.Frees, "PauseTotalNs", rtm.PauseTotalNs,
-		"NumGC", rtm.NumGC, "LastGC", time.UnixMilli(int64(rtm.LastGC/1_000_000)),
-		"HeapObjects", rtm.HeapObjects, "HeapAlloc", rtm.HeapAlloc,
+		"CGOCalls", runtime.NumCgoCall(),
+		"OS", runtime.GOOS,
+		"Arch", runtime.GOARCH,
+		"Compiler", runtime.Compiler,
 	)
+
+	// 内存分配和GC统计
+	logger.Runtime.Infow("Memory Allocation Stats",
+		"Mallocs", rtm.Mallocs,
+		"Frees", rtm.Frees,
+		"LiveObjects", rtm.Mallocs-rtm.Frees,
+		"TotalAlloc", rtm.TotalAlloc,
+		"Sys", rtm.Sys,
+		"Lookups", rtm.Lookups,
+		"Alloc", rtm.Alloc, // 当前分配的内存
+	)
+
+	// 堆内存统计
+	logger.Runtime.Infow("Heap Memory Stats",
+		"HeapAlloc", rtm.HeapAlloc,
+		"HeapSys", rtm.HeapSys,
+		"HeapIdle", rtm.HeapIdle,
+		"HeapInuse", rtm.HeapInuse,
+		"HeapReleased", rtm.HeapReleased,
+		"HeapObjects", rtm.HeapObjects,
+	)
+
+	// 栈内存统计
+	logger.Runtime.Infow("Stack Memory Stats",
+		"StackInuse", rtm.StackInuse,
+		"StackSys", rtm.StackSys,
+		"MSpanInuse", rtm.MSpanInuse,
+		"MSpanSys", rtm.MSpanSys,
+		"MCacheInuse", rtm.MCacheInuse,
+		"MCacheSys", rtm.MCacheSys,
+	)
+
+	// GC统计
+	logger.Runtime.Infow("GC Stats",
+		"NumGC", rtm.NumGC,
+		"LastGC", time.UnixMilli(int64(rtm.LastGC/1_000_000)),
+		"PauseTotalNs", rtm.PauseTotalNs,
+		"PauseNs", rtm.PauseNs[(rtm.NumGC%256)], // 最近一次GC暂停时间
+		"PauseEnd", rtm.PauseEnd[(rtm.NumGC%256)], // 最近一次GC暂停结束时间
+		"GCCPUFraction", rtm.GCCPUFraction, // GC占用CPU时间的比例
+		"EnableGC", rtm.EnableGC,
+		"DebugGC", rtm.DebugGC,
+		"NumForcedGC", rtm.NumForcedGC, // 强制GC的次数
+	)
+
+	// GC暂停历史记录（最近几次）
+	gcHistory := make(map[string]any)
+	for i := 0; i < int(rtm.NumGC) && i < 5; i++ {
+		idx := int(rtm.NumGC-uint32(i)) % 256
+		gcHistory[fmt.Sprintf("GC-%d-PauseNs", i+1)] = rtm.PauseNs[idx]
+		gcHistory[fmt.Sprintf("GC-%d-End", i+1)] = time.UnixMilli(int64(rtm.PauseEnd[idx] / 1_000_000))
+	}
+	logger.Runtime.Infow("Recent GC History", "gcHistory", gcHistory)
+
+	// 其他内存统计
+	logger.Runtime.Infow("Other Memory Stats",
+		"BuckHashSys", rtm.BuckHashSys,
+		"GCSys", rtm.GCSys,
+		"OtherSys", rtm.OtherSys,
+		"NextGC", rtm.NextGC,
+	)
+
+	// 进程信息
+	var rusage syscall.Rusage
+	if err := syscall.Getrusage(syscall.RUSAGE_SELF, &rusage); err == nil {
+		logger.Runtime.Infow("Process Stats",
+			"UserTime", time.Duration(rusage.Utime.Sec)*time.Second+time.Duration(rusage.Utime.Usec)*time.Microsecond,
+			"SystemTime", time.Duration(rusage.Stime.Sec)*time.Second+time.Duration(rusage.Stime.Usec)*time.Microsecond,
+			"MaxRSS", rusage.Maxrss, // 最大驻留集大小
+			"PageFaults", rusage.Majflt, // 主缺页错误
+			"IOIn", rusage.Inblock, // 输入操作
+			"IOOut", rusage.Oublock, // 输出操作
+		)
+	}
+
+	// 应用启动时间
+	var startTime time.Time
+	if info, err := process.NewProcess(int32(os.Getpid())); err == nil {
+		if ctime, err := info.CreateTime(); err == nil {
+			startTime = time.Unix(ctime/1000, (ctime%1000)*int64(time.Millisecond))
+			logger.Runtime.Infow("Application Uptime",
+				"StartTime", startTime,
+				"Uptime", time.Since(startTime).String(),
+			)
+		}
+	}
+
+	// 互斥锁争用情况（仅在设置了GODEBUG=mutexprofile=1时可用）
+	logger.Runtime.Info("Note: For mutex contention profiling, run with GODEBUG=mutexprofile=1")
+
 	return nil
 }
