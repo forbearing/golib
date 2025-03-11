@@ -39,6 +39,8 @@ func Init() (err error) {
 
 	// Check connection status
 	if !conn.IsConnected() {
+		conn.Close()
+		conn = nil
 		return errors.New("failed to connect to nats: connection status check failed")
 	}
 	zap.S().Infow("successfully connect to nats", "url", cfg.Addrs, "client_name", cfg.ClientName)
