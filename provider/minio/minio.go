@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	once sync.Once
-	cli  *minio.Client
-	ctx  = context.Background()
+	once   sync.Once
+	client *minio.Client
+	ctx    = context.Background()
 )
 
 // Init initializes the MiniIO clients as a singleton.
@@ -29,7 +29,7 @@ func Init() (err error) {
 		return nil
 	}
 	once.Do(func() {
-		cli, err = New(cfg)
+		client, err = New(cfg)
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create minio client")
@@ -54,12 +54,12 @@ func Put(reader io.Reader, size int64) (filename string, err error) {
 	region := config.App.Minio.Region
 	bucket := config.App.Minio.Bucket
 	if len(region) > 0 {
-		err = cli.MakeBucket(ctx, bucket, minio.MakeBucketOptions{Region: region})
+		err = client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{Region: region})
 	} else {
-		err = cli.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
+		err = client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 	}
 	if err != nil {
-		exists, errBucketExists := cli.BucketExists(ctx, config.App.Minio.Bucket)
+		exists, errBucketExists := client.BucketExists(ctx, config.App.Minio.Bucket)
 		if errBucketExists == nil && exists {
 			goto CONTINUE
 		}
@@ -67,14 +67,14 @@ func Put(reader io.Reader, size int64) (filename string, err error) {
 	}
 CONTINUE:
 	filename = util.UUID()
-	_, err = cli.PutObject(ctx, bucket, filename, reader, size, minio.PutObjectOptions{
+	_, err = client.PutObject(ctx, bucket, filename, reader, size, minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	})
 	return
 }
 
 func Get(filename string) ([]byte, error) {
-	object, err := cli.GetObject(ctx, config.App.Minio.Bucket, filename, minio.GetObjectOptions{})
+	object, err := client.GetObject(ctx, config.App.Minio.Bucket, filename, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
