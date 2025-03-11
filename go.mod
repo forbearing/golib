@@ -1,8 +1,8 @@
 module github.com/forbearing/golib
 
-go 1.23.0
+go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/IBM/sarama v1.45.1
@@ -36,7 +36,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.11
-	github.com/minio/minio-go/v7 v7.0.87
+	github.com/minio/minio-go/v7 v7.0.88
 	github.com/mssola/useragent v1.0.0
 	github.com/nats-io/nats.go v1.39.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
@@ -47,14 +47,14 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/segmentio/ksuid v1.0.4
-	github.com/shirou/gopsutil/v3 v3.23.12
+	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	github.com/stoewer/go-strcase v1.3.0
 	github.com/stretchr/testify v1.10.0
-	github.com/sunshineplan/imgconv v1.1.13
+	github.com/sunshineplan/imgconv v1.1.14
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	go.etcd.io/etcd/client/v3 v3.5.12
+	go.etcd.io/etcd/client/v3 v3.5.19
 	go.mongodb.org/mongo-driver/v2 v2.1.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/multierr v1.11.0
@@ -79,6 +79,7 @@ require (
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.2 // indirect
+	github.com/HugoSmits86/nativewebp v1.1.0 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -119,7 +120,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -197,14 +198,14 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.12 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.12 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.19 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.19 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	golang.org/x/arch v0.13.0 // indirect
-	golang.org/x/image v0.23.0 // indirect
+	golang.org/x/image v0.25.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
