@@ -15,7 +15,7 @@ import (
 )
 
 func Run() error {
-	if !config.App.EnablePprof {
+	if !config.App.PprofEnable {
 		return nil
 	}
 

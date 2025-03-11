@@ -12,7 +12,7 @@ import (
 )
 
 func Run() error {
-	if !config.App.EnableGops {
+	if !config.App.GopsEnable {
 		return nil
 	}
 	log := zap.S()
