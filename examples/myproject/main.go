@@ -90,12 +90,10 @@ func main() {
 	os.Setenv(config.MONGO_USERNAME, "mongo")
 	os.Setenv(config.MONGO_PASSWORD, "changeme")
 
-	os.Setenv(config.MINIO_ENABLE, "false")
+	os.Setenv(config.MINIO_ENABLE, "true")
 	os.Setenv(config.MINIO_ENDPOINT, "localhost:9000")
-	os.Setenv(config.MINIO_ACCESS_KEY, "my_access_key")
-	os.Setenv(config.MINIO_SECRET_KEY, "my_secret_key")
-	os.Setenv(config.MINIO_REGION, "myregion")
-	os.Setenv(config.MINIO_USE_SSL, "false")
+	os.Setenv(config.MINIO_ACCESS_KEY, "minio-access-key")
+	os.Setenv(config.MINIO_SECRET_KEY, "minio-secret-key")
 
 	os.Setenv(config.MQTT_ENABLE, "true")
 	os.Setenv(config.MQTT_CLIENT_PREFIX, "golib")
