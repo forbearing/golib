@@ -100,13 +100,13 @@ func Bootstrap() error {
 		cronjob.Init,
 	)
 
-	RegisterExitHandler(redis.Close)
-	RegisterExitHandler(kafka.Close)
-	RegisterExitHandler(etcd.Close)
-	RegisterExitHandler(nats.Close)
-	RegisterExitHandler(cassandra.Close)
-	RegisterExitHandler(influxdb.Close)
-	RegisterExitHandler(ldap.Close)
+	RegisterCleanup(redis.Close)
+	RegisterCleanup(kafka.Close)
+	RegisterCleanup(etcd.Close)
+	RegisterCleanup(nats.Close)
+	RegisterCleanup(cassandra.Close)
+	RegisterCleanup(influxdb.Close)
+	RegisterCleanup(ldap.Close)
 
 	initialized = true
 	go func() {
