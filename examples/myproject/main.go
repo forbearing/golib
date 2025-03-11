@@ -134,6 +134,8 @@ func main() {
 	os.Setenv(config.LDAP_CONN_TIMEOUT, "5s")
 	os.Setenv(config.LDAP_HEARTBEAT, "30s")
 
+	os.Setenv(config.GRPC_ENABLE, "true")
+
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
 	config.SetConfigType("ini")
