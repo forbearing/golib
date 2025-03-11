@@ -55,7 +55,7 @@ func Init() error {
 	logger.Mongo = New("mongo.log")
 	logger.Mqtt = New("mqtt.log")
 	logger.Task = New("task.log")
-	logger.Visitor = New("visitor.log")
+	logger.Runtime = New("runtime.log")
 	logger.Cronjob = New("cronjob.log")
 	logger.Job = New("job.log")
 	logger.Protocol = New("protocol.log")

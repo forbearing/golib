@@ -19,7 +19,7 @@ var (
 	Mongo      types.Logger
 	Mqtt       types.Logger
 	Task       types.Logger
-	Visitor    types.Logger
+	Runtime    types.Logger
 	Cronjob    types.Logger
 	Job        types.Logger
 
