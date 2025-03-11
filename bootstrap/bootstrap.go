@@ -100,6 +100,7 @@ func Bootstrap() error {
 	RegisterExitHandler(influxdb.Close)
 	RegisterExitHandler(nats.Close)
 	RegisterExitHandler(kafka.Close)
+	RegisterExitHandler(etcd.Close)
 
 	initialized = true
 	go func() {
