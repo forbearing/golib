@@ -40,6 +40,7 @@ func Init() (err error) {
 		return errors.Wrap(err, "failed to create mqtt client")
 	}
 	if err := connect(client); err != nil {
+		client = nil
 		return errors.Wrap(err, "failed to connect to mqtt broker")
 	}
 	zap.S().Infow("successfully connect to mqtt broker",
