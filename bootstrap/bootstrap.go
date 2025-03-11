@@ -30,6 +30,7 @@ import (
 	"github.com/forbearing/golib/provider/feishu"
 	"github.com/forbearing/golib/provider/influxdb"
 	"github.com/forbearing/golib/provider/kafka"
+	"github.com/forbearing/golib/provider/ldap"
 	"github.com/forbearing/golib/provider/minio"
 	"github.com/forbearing/golib/provider/mongo"
 	"github.com/forbearing/golib/provider/mqtt"
@@ -85,6 +86,7 @@ func Bootstrap() error {
 		cassandra.Init,
 		influxdb.Init,
 		feishu.Init,
+		ldap.Init,
 
 		// service
 		rbac.Init,
@@ -104,6 +106,7 @@ func Bootstrap() error {
 	RegisterExitHandler(nats.Close)
 	RegisterExitHandler(cassandra.Close)
 	RegisterExitHandler(influxdb.Close)
+	RegisterExitHandler(ldap.Close)
 
 	initialized = true
 	go func() {
