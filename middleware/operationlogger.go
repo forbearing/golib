@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // OperationLogger 中间件必须放在最后一个.
@@ -39,7 +39,7 @@ func OperationLogger() gin.HandlerFunc {
 				URI:       c.Request.RequestURI,
 				UserAgent: c.Request.UserAgent(),
 			}); err != nil {
-				logger.Global.Error(err)
+				zap.S().Error(err)
 				return
 			}
 		}
