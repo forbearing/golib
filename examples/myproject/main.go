@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/forbearing/golib/examples/myproject/model"
 	"github.com/forbearing/golib/middleware"
 	pkgmodel "github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/provider/etcd"
 	pkgnats "github.com/forbearing/golib/provider/nats"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
@@ -23,6 +25,7 @@ import (
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 
 	_ "github.com/forbearing/golib/examples/myproject/service"
@@ -154,7 +157,6 @@ func main() {
 			zap.S().Error(err)
 		}
 	}
-	// influxdb
 
 	// nats
 	{
@@ -182,8 +184,32 @@ func main() {
 			fmt.Printf("Reply: %s\n", string(reply.Data))
 		}
 
-		// 让程序运行一会儿
 		time.Sleep(time.Second)
+	}
+	// etcd
+	{
+		if _, err := etcd.Client().Put(context.TODO(), "key1", "value1"); err != nil {
+			zap.S().Fatal(err)
+		}
+		fmt.Println("Successfully put key1")
+		getResp, err := etcd.Client().Get(context.TODO(), "key1")
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+		fmt.Printf("%+v\n", getResp.Kvs)
+
+		if _, err := etcd.Client().Put(context.TODO(), "prefix/key1", "prefixed-value1"); err != nil {
+			zap.S().Fatal(err)
+		}
+		if _, err := etcd.Client().Put(context.TODO(), "prefix/key2", "prefixed-value2"); err != nil {
+			zap.S().Fatal(err)
+		}
+		getResp, err = etcd.Client().Get(context.TODO(), "prefix/", clientv3.WithPrefix())
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+		fmt.Printf("%+v\n", getResp.Kvs)
+
 	}
 
 	//
