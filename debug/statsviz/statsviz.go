@@ -15,7 +15,7 @@ import (
 )
 
 func Run() error {
-	if !config.App.EnableStatsviz {
+	if !config.App.StatsvizEnable {
 		return nil
 	}
 

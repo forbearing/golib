@@ -41,6 +41,10 @@ var redisCluster = []string{
 }
 
 func main() {
+	os.Setenv(config.DEBUG_PPROF_ENABLE, "true")
+	os.Setenv(config.DEBUG_STATSVIZ_ENABLE, "true")
+	os.Setenv(config.DEBUG_GOPS_ENABLE, "true")
+
 	os.Setenv(config.SERVER_PORT, "8002")
 	os.Setenv(config.SERVER_DB, config.DBMySQL)
 	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, "-")
@@ -99,10 +103,6 @@ func main() {
 	os.Setenv(config.INFLUXDB_ENABLE, "true")
 	os.Setenv(config.INFLUXDB_TOKEN, "influxdb")
 	os.Setenv(config.INFLUXDB_ORG, "golib.com")
-
-	os.Setenv(config.DEBUG_ENABLE_STATSVIZ, "true")
-	os.Setenv(config.DEBUG_ENABLE_PPROF, "true")
-	os.Setenv(config.DEBUG_ENABLE_GOPS, "true")
 
 	os.Setenv(config.KAFKA_ENABLE, "true")
 	os.Setenv(config.KAFKA_BROKERS, "127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094")
