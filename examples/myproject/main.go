@@ -67,6 +67,7 @@ func main() {
 	os.Setenv(config.SQLSERVER_PASSWORD, "Passw0rd")
 
 	os.Setenv(config.ELASTICSEARCH_ENABLE, "true")
+	os.Setenv(config.ELASTICSEARCH_ENABLE_DEBUG_LOGGER, "true")
 	os.Setenv(config.ELASTICSEARCH_ADDRS, "http://127.0.0.1:9200")
 	os.Setenv(config.ELASTICSEARCH_USERNAME, "elastic")
 	os.Setenv(config.ELASTICSEARCH_PASSWORD, "changeme")
