@@ -34,6 +34,8 @@ func Init() (err error) {
 	// Check connection
 	brokers := client.Brokers()
 	if len(brokers) == 0 {
+		client.Close()
+		client = nil
 		return errors.New("failed to connect to kafka: no brokers available")
 	}
 
