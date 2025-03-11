@@ -50,10 +50,14 @@ func Init() (err error) {
 
 	health, err := client.Health(ctx)
 	if err != nil {
+		client.Close()
+		client = nil
 		return errors.Wrap(err, "failed to check influxdb health")
 	}
 
 	if health.Status != domain.HealthCheckStatusPass {
+		client.Close()
+		client = nil
 		return errors.Newf("influxdb health check failed: %s", health.Status)
 	}
 
@@ -190,10 +194,6 @@ func QueryAPI() api.QueryAPI {
 func Close() {
 	mu.Lock()
 	defer mu.Unlock()
-
-	if !initialized {
-		return
-	}
 
 	if client != nil {
 		client.Close()
