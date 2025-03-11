@@ -6,9 +6,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -16,6 +18,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 )
 
@@ -30,9 +33,9 @@ type (
 )
 
 var (
-	client   *elasticsearch.Client
-	esConfig elasticsearch.Config
-	timeout  = 10 * time.Second
+	initialized bool
+	client      *elasticsearch.Client
+	mu          sync.RWMutex
 
 	Document = new(document)
 	Index    = new(index)
@@ -47,59 +50,125 @@ func Init() (err error) {
 	if !cfg.Enable {
 		return nil
 	}
-	esConfig = makeESConfig(cfg)
-	if client, err = elasticsearch.NewClient(esConfig); err != nil {
+
+	if client, err = New(cfg); err != nil {
 		return errors.Wrap(err, "failed to create elasticsearch client")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
+		client = nil
 		return errors.Wrap(err, "failed to ping elasticsearch")
 	}
 
-	ticker := time.NewTicker(timeout + 10*time.Second)
-	go func() {
-		for range ticker.C {
-			_ensureConnection()
-		}
-	}()
+	// ticker := time.NewTicker(timeout + 10*time.Second)
+	// go func() {
+	// 	for range ticker.C {
+	// 		_ensureConnection()
+	// 	}
+	// }()
+
 	zap.S().Infow("successfully connect to elasticsearch", "hosts", cfg.Addrs)
 	return nil
 }
 
-// New creates a new elasticsearch client instance with the given configuration.
+// New returns a new Elasticsearch client with given configuration.
+// It's the caller's responsibility to ensure proper usage of the client.
 func New(cfg config.Elasticsearch) (*elasticsearch.Client, error) {
-	return elasticsearch.NewClient(makeESConfig(cfg))
-}
+	// Create the Elasticsearch configuration
+	esCfg := elasticsearch.Config{Addresses: cfg.Addrs}
 
-func makeESConfig(cfg config.Elasticsearch) elasticsearch.Config {
-	return elasticsearch.Config{
-		Addresses:              cfg.Addrs,
-		Username:               cfg.Username,
-		Password:               cfg.Password,
-		CloudID:                cfg.CloudID,
-		APIKey:                 cfg.APIKey,
-		ServiceToken:           cfg.ServiceToken,
-		CertificateFingerprint: cfg.CertificateFingerprint,
-		Transport:              &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	// Set basic authentication if provided
+	if cfg.Username != "" && cfg.Password != "" {
+		esCfg.Username = cfg.Username
+		esCfg.Password = cfg.Password
 	}
-}
 
-// _ensureConnection checks the connection and reconnects if necessary
-func _ensureConnection() {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	logger.Elastic.Info("check elasticsearch connection")
-	defer cancel()
-	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
-		logger.Elastic.Warnf("elasticsearch connection maybe broken, try to reconnect: %v", err)
-		if newClient, err := elasticsearch.NewClient(esConfig); err != nil {
-			logger.Elastic.Error("reconnect to elasticsearch error: %v", err)
-		} else {
-			client = newClient
+	// Set CloudID if provided
+	if cfg.CloudID != "" {
+		esCfg.CloudID = cfg.CloudID
+	}
+
+	// Set API Key if provided
+	if cfg.APIKey != "" {
+		esCfg.APIKey = cfg.APIKey
+	}
+
+	// Configure retries
+	if !cfg.DisableRetries {
+		esCfg.RetryOnStatus = cfg.RetryOnStatus
+		esCfg.MaxRetries = cfg.MaxRetries
+
+		if cfg.RetryBackoff {
+			esCfg.RetryBackoff = func(attempt int) time.Duration {
+				// Calculate exponential backoff with min and max bounds
+				retryDelay := min(cfg.RetryBackoffMin*time.Duration(1<<uint(attempt)), cfg.RetryBackoffMax)
+				return retryDelay
+			}
 		}
+	} else {
+		esCfg.DisableRetry = true
 	}
+
+	// Configure compression
+	esCfg.CompressRequestBody = cfg.Compress
+
+	// Configure discovery interval
+	if cfg.DiscoveryInterval > 0 {
+		esCfg.DiscoverNodesInterval = cfg.DiscoveryInterval
+	}
+
+	// Configure metrics
+	esCfg.EnableMetrics = cfg.EnableMetrics
+
+	// Configure debug logger
+	if cfg.EnableDebugLogger {
+		esCfg.Logger = &elasticLogger{logger.Elastic}
+	}
+
+	// Configure transport
+	transport := &http.Transport{
+		MaxIdleConnsPerHost:   cfg.ConnectionPoolSize,
+		ResponseHeaderTimeout: cfg.ResponseHeaderTimeout,
+		DialContext: (&net.Dialer{
+			Timeout:   cfg.DialTimeout,
+			KeepAlive: cfg.KeepAliveInterval,
+		}).DialContext,
+	}
+
+	// Configure TLS if enabled
+	if cfg.EnableTLS {
+		var tlsConfig *tls.Config
+		tlsConfig, err := util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to build TLS config")
+		}
+		transport.TLSClientConfig = tlsConfig
+	}
+	esCfg.Transport = transport
+
+	// Create the client
+	cli, err := elasticsearch.NewClient(esCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create elasticsearch client")
+	}
+	return cli, nil
 }
+
+// // _ensureConnection checks the connection and reconnects if necessary
+// func _ensureConnection() {
+// 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+// 	logger.Elastic.Info("check elasticsearch connection")
+// 	defer cancel()
+// 	if _, err := client.Ping(client.Ping.WithContext(ctx)); err != nil {
+// 		logger.Elastic.Warnf("elasticsearch connection maybe broken, try to reconnect: %v", err)
+// 		if newClient, err := elasticsearch.NewClient(esCfg); err != nil {
+// 			logger.Elastic.Error("reconnect to elasticsearch error: %v", err)
+// 		} else {
+// 			client = newClient
+// 		}
+// 	}
+// }
 
 // _check will check the client and return an error if it's nil or invalid.
 func _check() error {
