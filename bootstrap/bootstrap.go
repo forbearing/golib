@@ -78,9 +78,9 @@ func Bootstrap() error {
 		minio.Init,
 		nats.Init,
 		mqtt.Init,
+		kafka.Init,
 		etcd.Init,
 		nats.Init,
-		kafka.Init,
 		cassandra.Init,
 		influxdb.Init,
 
@@ -97,10 +97,11 @@ func Bootstrap() error {
 	)
 
 	RegisterExitHandler(redis.Close)
-	RegisterExitHandler(influxdb.Close)
-	RegisterExitHandler(nats.Close)
 	RegisterExitHandler(kafka.Close)
 	RegisterExitHandler(etcd.Close)
+	RegisterExitHandler(nats.Close)
+	RegisterExitHandler(cassandra.Close)
+	RegisterExitHandler(influxdb.Close)
 
 	initialized = true
 	go func() {
