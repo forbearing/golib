@@ -146,3 +146,75 @@ func (u *user) GetAfter(ctx *types.ServiceContext, users ...*model.User) error {
 	// =============================
 	return nil
 }
+
+func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_BEFORE)
+	log.Info("user batch create before")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_AFTER)
+	log.Info("user batch create after")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchDeleteBefore(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_DELETE_BEFORE)
+	log.Info("user batch delete before")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchDeleteAfter(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_DELETE_AFTER)
+	log.Info("user batch delete after")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchUpdateBefore(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_BEFORE)
+	log.Info("user batch update before")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchUpdateAfter(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_AFTER)
+	log.Info("user batch update after")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchUpdatePartialBefore(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE)
+	log.Info("user batch update partial before")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
+
+func (u *user) BatchUpdatePartialAfter(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_AFTER)
+	log.Info("user batch update partial after")
+	// =============================
+	// Add your business logic here.
+	// =============================
+	return nil
+}
