@@ -8,20 +8,27 @@ import (
 )
 
 var (
-	Global     types.Logger
-	Internal   types.Logger
+	Runtime types.Logger
+	Cronjob types.Logger
+	Task    types.Logger
+
 	Controller types.Logger
 	Service    types.Logger
 	Database   types.Logger
 	Cache      types.Logger
 	Redis      types.Logger
-	Elastic    types.Logger
-	Mongo      types.Logger
-	Mqtt       types.Logger
-	Task       types.Logger
-	Runtime    types.Logger
-	Cronjob    types.Logger
-	Job        types.Logger
+
+	Cassandra types.Logger
+	Elastic   types.Logger
+	Etcd      types.Logger
+	Feishu    types.Logger
+	Influxdb  types.Logger
+	Kafka     types.Logger
+	Ldap      types.Logger
+	Minio     types.Logger
+	Mongo     types.Logger
+	Mqtt      types.Logger
+	Nats      types.Logger
 
 	Protocol types.Logger
 	Binary   types.Logger

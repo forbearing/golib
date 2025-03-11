@@ -44,22 +44,31 @@ func Init() error {
 		zap.AddStacktrace(zapcore.FatalLevel),
 	))
 
-	logger.Global = New()
-	logger.Internal = New("internal.log")
+	logger.Runtime = New("runtime.log")
+	logger.Cronjob = New("cronjob.log")
+	logger.Task = New("task.log")
+
 	logger.Controller = New("controller.log")
 	logger.Service = New("service.log")
 	logger.Database = New("database.log")
 	logger.Cache = New("cache.log")
 	logger.Redis = New("redis.log")
+
+	logger.Cassandra = New("cassandra.log")
 	logger.Elastic = New("elastic.log")
+	logger.Etcd = New("etcd.log")
+	logger.Feishu = New("feishu.log")
+	logger.Influxdb = New("influxdb.log")
+	logger.Kafka = New("kafka.log")
+	logger.Ldap = New("ldap.log")
+	logger.Minio = New("minio.log")
 	logger.Mongo = New("mongo.log")
 	logger.Mqtt = New("mqtt.log")
-	logger.Task = New("task.log")
-	logger.Runtime = New("runtime.log")
-	logger.Cronjob = New("cronjob.log")
-	logger.Job = New("job.log")
+	logger.Nats = New("nats.log")
+
 	logger.Protocol = New("protocol.log")
 	logger.Binary = New("binary.log")
+
 	logger.Gin = NewGin("access.log")
 	logger.Gorm = NewGorm("gorm.log")
 
