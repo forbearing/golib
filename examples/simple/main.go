@@ -12,19 +12,6 @@ import (
 )
 
 func main() {
-	// Verify existence of `config.ini` in the current directory. Empty configuration is permitted.
-	// To specify an alternative config file, use config.SetConfigPath, e.g.:
-	//
-	// config.SetConfigFile("path/to/config.ini")
-
-	/*
-		// more config usage:
-		// SetConfigFile("config.ini") is equivalent to SetConfigName("config") + SetConfigType("ini")
-		config.SetConfigName("config")      // set the config name.
-		config.SetConfigType("ini")         // set the config type.
-		config.AddPath("/etc", "/", "/tmp") // add config search path.
-	*/
-
 	// Bootstrap all initializers
 	util.RunOrDie(bootstrap.Bootstrap)
 
