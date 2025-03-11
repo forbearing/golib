@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"context"
 	"time"
 
 	"demo/model"
 
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/database/mysql"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -18,8 +18,7 @@ type user struct{}
 var User = new(user)
 
 func (*user) List(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx := new(types.DatabaseContext)
 
 	user := new(model.User)
 	users := make([]*model.User, 0)

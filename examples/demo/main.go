@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"demo/model"
@@ -11,29 +13,73 @@ import (
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/mysql"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/util"
+	. "github.com/forbearing/golib/util"
+	"go.uber.org/zap"
 )
 
 func main() {
-	// Ensure config file `config.init` exists in the current directory, empty config is permitted.
-	// Alternatively, specify a custom config file path:
+	// Default config is searched in current directory with supported formats(ini,json,yaml,etc.)
+	// To specify a custom config file path instead:
 	//     config.SetConfigFile("path/to/config.ini")
+	// Note: Missing configuration file will not prevent program execution.
 
-	// NOTE: task must register before application bootstrap.
-	task.Register(TaskSayHello, 1*time.Second, "task say hello")
-	task.Register(TaskSayBye, 1*time.Second, "task say bye")
+	// Set environment variables to override config that read from file and default config value.
+	os.Setenv(config.MYSQL_ENABLE, "true")
+	os.Setenv(config.MYSQL_DATABASE, "golib")
+	os.Setenv(config.MYSQL_USERNAME, "golib")
+	os.Setenv(config.MYSQL_PASSWORD, "golib")
+	os.Setenv("WECHAT_APP_ID", "id1234567")
+	os.Setenv("WECHAT_APP_SECRET", "secret1234567")
+	os.Setenv("ALIPAY_APP_ID", "id1234567")
+	os.Setenv("ALIPAY_APP_SECRET", "secret1234567")
 
-	util.RunOrDie(bootstrap.Bootstrap)
+	// Register cronjob/task before application bootstrap.
+	cronjob.Register(func() error { zap.S().Info("cronjob register before bootstrap"); return nil }, "*/1 * * * * *", "cronjob1")
+	task.Register(func() error { zap.S().Info("task register before bootstrap"); return nil }, 1*time.Second, "task1")
+	// Register custom config before application bootstrap.
+	config.Register[WechatConfig]("wechat") // Register accepts either WechatConfig or *WechatConfig as generic type.
 
-	// // set base auth config.
-	// config.App.AuthConfig.BaseAuthUsername = "admin"
-	// config.App.AuthConfig.BaseAuthPassword = "admin"
+	//
+	//
+	//
+	RunOrDie(bootstrap.Bootstrap) // Application Bootstrap.
+	//
+	//
+	//
+
+	// Register cronjob/task after application bootstrap.
+	cronjob.Register(func() error { zap.S().Info("cronjob register after bootstrap"); return nil }, "*/1 * * * * *", "cronjob2")
+	task.Register(func() error { zap.S().Info("task register after bootstrap"); return nil }, 1*time.Second, "task2")
+	// Register custom config after application bootstrap.
+	config.Register[*AlipayConfig]("alipay") // Register accepts either AlipayConfig or *AlipayConfig as generic type.
+
+	//
+	//
+	// Get custom config must after application bootstrap.
+	wechat := config.Get[*WechatConfig]("wechat") // Get accepts either WechatConfig or *WechatConfig as generic type.
+	alipay := config.Get[AlipayConfig]("alipay")  // Get accepts either AlipayConfig or *AlipayConfig as generic type.
+
+	// WechatConfig.AppId and WechatConfig.AppSecret use values from "default" struct tags
+	// These defaults can be overridden by environment variables or config file settings
+	fmt.Printf("%+v\n", wechat)
+	// Output
+	// &{AppId:id1234567 AppSecret:secret1234567}
+
+	// Alipay.AppId and AlipayConfig.AppSecret use values from "default" struct tags
+	// These defaults can be overridden by environment variables or config file settings
+	fmt.Printf("%+v\n", alipay)
+	// Output
+	// {AppId:id1234567 AppSecret:secret1234567}
+	//
+	//
+	//
 
 	// use middleware.
 	router.API.Use(
@@ -43,6 +89,8 @@ func main() {
 		// middleware.Gzip(),
 
 		// // setup config.App.AuthConfig.BaseAuthUsername and config.App.AuthConfig.BaseAuthPassword before use this middleware
+		// // config.App.Auth.BaseAuthUsername = "admin"
+		// // config.App.Auth.BaseAuthPassword = "admin"
 		// middleware.BaseAuth(),
 	)
 
@@ -138,7 +186,7 @@ func main() {
 	router.Register[*model_instance.Certificate](instance, "certificate") // route: /api/instance/certificate
 
 	// With seperate mysql instance
-	cfg := config.MySQLConfig{}
+	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
 	cfg.Port = 3306
 	cfg.Database = "test"
@@ -154,5 +202,14 @@ func main() {
 	router.RegisterWithConfig(&types.ControllerConfig[*model.User]{DB: db, TableName: "users"}, external, "/user")
 	router.RegisterWithConfig(&types.ControllerConfig[*model.Category]{DB: db, TableName: "groups"}, external, "category")
 
-	util.RunOrDie(router.Run)
+	RunOrDie(router.Run)
+}
+
+type WechatConfig struct {
+	AppId     string `json:"app_id" yaml:"app_id" mapstructure:"app_id" ini:"app_id" default:"myid"`
+	AppSecret string `json:"app_secret" yaml:"app_secret" mapstructure:"app_secret" ini:"app_secret" default:"mysecret"`
+}
+type AlipayConfig struct {
+	AppId     string `json:"app_id" yaml:"app_id" mapstructure:"app_id" ini:"app_id" default:"myid"`
+	AppSecret string `json:"app_secret" yaml:"app_secret" mapstructure:"app_secret" ini:"app_secret" default:"mysecret"`
 }

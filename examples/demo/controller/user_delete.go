@@ -1,18 +1,15 @@
 package controller
 
 import (
-	"context"
-	"time"
-
 	"demo/model"
 
 	"github.com/forbearing/golib/database"
+	"github.com/forbearing/golib/types"
 	"github.com/gin-gonic/gin"
 )
 
 func (*user) Delete(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx := new(types.DatabaseContext)
 
 	user := new(model.User)
 	users := make([]*model.User, 0)
