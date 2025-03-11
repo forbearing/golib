@@ -80,6 +80,7 @@ type Config struct {
 	Influxdb      `json:"influxdb" mapstructure:"influxdb" ini:"influxdb" yaml:"influxdb"`
 	Mqtt          `json:"mqtt" mapstructure:"mqtt" ini:"mqtt" yaml:"mqtt"`
 	Nats          `json:"nats" mapstructure:"nats" ini:"nats" yaml:"nats"`
+	Etcd          `json:"etcd" mapstructure:"etcd" ini:"etcd" yaml:"etcd"`
 	Cassandra     `json:"cassandra" mapstructure:"cassandra" ini:"cassandra" yaml:"cassandra"`
 	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
@@ -106,6 +107,7 @@ func (*Config) setDefault() {
 	new(S3).setDefault()
 	new(Mqtt).setDefault()
 	new(Nats).setDefault()
+	new(Etcd).setDefault()
 	new(Cassandra).setDefault()
 	new(Feishu).setDefault()
 	new(Debug).setDefault()

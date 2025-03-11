@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -104,16 +103,15 @@ func main() {
 	os.Setenv(config.KAFKA_ENABLE, "true")
 	os.Setenv(config.KAFKA_BROKERS, "127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094")
 
-	os.Setenv(config.CASSANDRA_ENABLE, "true")
-	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
-	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
-
-	// os.Setenv("NATS_USERNAME", "user_from_env")
-	// os.Setenv("NATS_PASSWORD", "pass_from_env")
-	// os.Setenv("NATS_TIMEOUT", "60s")
+	os.Setenv(config.ETCD_ENABLE, "true")
+	os.Setenv(config.ETCD_ENDPOINTS, "127.0.0.1:2379,127.0.0.1:12379,127.0.0.1:32379")
 
 	os.Setenv(config.NATS_ADDRS, "nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224")
 	os.Setenv(config.NATS_ENABLE, "true")
+
+	os.Setenv(config.CASSANDRA_ENABLE, "true")
+	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
+	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
 
 	config.SetConfigFile("./config.ini")
 	config.SetConfigName("config")
@@ -149,10 +147,10 @@ func main() {
 		g2 := &model.Group{Name: "group02"}
 		groups := []*model.Group{g1, g2}
 		if err := redis.SetM("group", g1); err != nil {
-			panic(err)
+			zap.S().Error(err)
 		}
 		if err := redis.SetML("groups", groups); err != nil {
-			panic(err)
+			zap.S().Error(err)
 		}
 	}
 	// influxdb
@@ -166,21 +164,22 @@ func main() {
 			msg.Respond([]byte("Hello back!"))
 		})
 		if err != nil {
-			panic(err)
+			zap.S().Error(err)
 		}
 		defer sub.Unsubscribe()
 
 		// 发布消息
 		if err = nc.Publish("greetings", []byte("Hello NATS!")); err != nil {
-			panic(err)
+			zap.S().Error(err)
 		}
 
 		// 发送请求
 		reply, err := nc.Request("greetings", []byte("Hello"), time.Second)
 		if err != nil {
-			log.Fatal(err)
+			zap.S().Error(err)
+		} else {
+			fmt.Printf("Reply: %s\n", string(reply.Data))
 		}
-		fmt.Printf("Reply: %s\n", string(reply.Data))
 
 		// 让程序运行一会儿
 		time.Sleep(time.Second)
