@@ -27,6 +27,7 @@ import (
 	"github.com/forbearing/golib/provider/cassandra"
 	"github.com/forbearing/golib/provider/elastic"
 	"github.com/forbearing/golib/provider/etcd"
+	"github.com/forbearing/golib/provider/feishu"
 	"github.com/forbearing/golib/provider/influxdb"
 	"github.com/forbearing/golib/provider/kafka"
 	"github.com/forbearing/golib/provider/minio"
@@ -83,6 +84,7 @@ func Bootstrap() error {
 		nats.Init,
 		cassandra.Init,
 		influxdb.Init,
+		feishu.Init,
 
 		// service
 		rbac.Init,
