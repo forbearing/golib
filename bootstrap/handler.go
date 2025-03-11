@@ -19,7 +19,7 @@ func runHandler(handler func()) {
 
 func runHandlers() {
 	for _, handler := range handlers {
-		runHandler(handler)
+		go runHandler(handler)
 	}
 }
 
