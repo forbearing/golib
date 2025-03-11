@@ -62,6 +62,7 @@ const (
 
 type Config struct {
 	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
+	Grpc          `json:"grpc" mapstructure:"grpc" ini:"grpc" yaml:"grpc"`
 	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
 	Database      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
 	Sqlite        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
@@ -89,6 +90,7 @@ type Config struct {
 // setDefault will set config default value
 func (*Config) setDefault() {
 	new(Server).setDefault()
+	new(Grpc).setDefault()
 	new(Auth).setDefault()
 	new(Logger).setDefault()
 	new(Database).setDefault()
