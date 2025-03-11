@@ -3,10 +3,10 @@ package model
 import (
 	"fmt"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/database"
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/util"
-	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 )
 
