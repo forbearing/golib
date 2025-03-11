@@ -3,7 +3,6 @@ package minio
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -46,7 +45,6 @@ func Init() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	fmt.Println("---- bucket", cfg.Bucket)
 	if len(cfg.Bucket) > 0 {
 		// Check if bucket exists
 		exists, err := client.BucketExists(ctx, cfg.Bucket)
