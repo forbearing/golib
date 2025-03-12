@@ -23,7 +23,7 @@ func Run() error {
 		return nil
 	}
 
-	tempDir = config.GetTempdir()
+	tempDir = config.Tempdir()
 	if len(tempDir) == 0 {
 		tempDir = "/tmp/gops"
 	} else {
