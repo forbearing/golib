@@ -22,7 +22,7 @@ import (
 	"github.com/forbearing/golib/grpc"
 	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger/logrus"
-	"github.com/forbearing/golib/logger/zap"
+	pkgzap "github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/provider/cassandra"
@@ -41,6 +41,7 @@ import (
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
 	"go.uber.org/automaxprocs/maxprocs"
+	"go.uber.org/zap"
 )
 
 var (
@@ -49,7 +50,7 @@ var (
 )
 
 func Bootstrap() error {
-	maxprocs.Set(maxprocs.Logger(zap.New().Infof))
+	maxprocs.Set(maxprocs.Logger(pkgzap.New().Infof))
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -59,7 +60,7 @@ func Bootstrap() error {
 
 	Register(
 		config.Init,
-		zap.Init,
+		pkgzap.Init,
 		logrus.Init,
 		metrics.Init,
 
@@ -102,6 +103,7 @@ func Bootstrap() error {
 		cronjob.Init,
 	)
 
+	RegisterCleanup(config.Clean)
 	RegisterCleanup(redis.Close)
 	RegisterCleanup(kafka.Close)
 	RegisterCleanup(etcd.Close)
@@ -111,17 +113,13 @@ func Bootstrap() error {
 	RegisterCleanup(ldap.Close)
 
 	initialized = true
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-		<-sigCh
-		Cleanup()
-	}()
 
 	return Init()
 }
 
 func Run() error {
+	defer Cleanup()
+
 	RegisterGo(
 		router.Run,
 		grpc.Run,
@@ -129,5 +127,25 @@ func Run() error {
 		pprof.Run,
 		gops.Run,
 	)
-	return Go()
+
+	RegisterCleanup(router.Stop)
+	RegisterCleanup(grpc.Stop)
+	RegisterCleanup(statsviz.Stop)
+	RegisterCleanup(pprof.Stop)
+	RegisterCleanup(gops.Stop)
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- Go()
+	}()
+	select {
+	case sig := <-sigCh:
+		zap.S().Infow("cancancel by signal", "signal", sig)
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }

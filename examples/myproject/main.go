@@ -94,6 +94,8 @@ func main() {
 	os.Setenv(config.MINIO_ENDPOINT, "localhost:9000")
 	os.Setenv(config.MINIO_ACCESS_KEY, "minio-access-key")
 	os.Setenv(config.MINIO_SECRET_KEY, "minio-secret-key")
+	os.Setenv(config.MINIO_BUCKET, "")
+	os.Setenv(config.MINIO_REGION, "")
 
 	os.Setenv(config.MQTT_ENABLE, "true")
 	os.Setenv(config.MQTT_CLIENT_PREFIX, "golib")
@@ -217,10 +219,10 @@ func main() {
 		}
 		fmt.Printf("%+v\n", getResp.Kvs)
 
-		if _, err := etcd.Client().Put(context.TODO(), "prefix/key1", "prefixed-value1"); err != nil {
+		if _, err = etcd.Client().Put(context.TODO(), "prefix/key1", "prefixed-value1"); err != nil {
 			zap.S().Fatal(err)
 		}
-		if _, err := etcd.Client().Put(context.TODO(), "prefix/key2", "prefixed-value2"); err != nil {
+		if _, err = etcd.Client().Put(context.TODO(), "prefix/key2", "prefixed-value2"); err != nil {
 			zap.S().Fatal(err)
 		}
 		getResp, err = etcd.Client().Get(context.TODO(), "prefix/", clientv3.WithPrefix())

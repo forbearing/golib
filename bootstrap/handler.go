@@ -1,11 +1,18 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"sync"
+
+	"golang.org/x/sync/errgroup"
 )
 
-var handlers = []func(){}
+var (
+	handlers = []func(){}
+	once     sync.Once
+)
 
 // Exit will call all registered cleanup handlers and then exit.
 func Exit(code int) {
@@ -26,16 +33,18 @@ func DeferCleanup(handler func()) {
 
 // Cleanup will call all registered cleanup handlers.
 func Cleanup() {
-	runHandlers()
+	once.Do(runHandlers)
 }
 
 func runHandlers() {
+	g, _ := errgroup.WithContext(context.Background())
 	for _, handler := range handlers {
-		go safeRun(handler)
+		g.Go(func() error { runSafe(handler); return nil })
 	}
+	g.Wait()
 }
 
-func safeRun(handler func()) {
+func runSafe(handler func()) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: cleanup handler error:", err)
