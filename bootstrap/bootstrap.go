@@ -24,6 +24,7 @@ import (
 	"github.com/forbearing/golib/logger/logrus"
 	"github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
+	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/provider/cassandra"
 	"github.com/forbearing/golib/provider/elastic"
 	"github.com/forbearing/golib/provider/etcd"
@@ -91,6 +92,7 @@ func Bootstrap() error {
 		// service
 		rbac.Init,
 		service.Init,
+		middleware.Init,
 		router.Init,
 		grpc.Init,
 		jwt.Init,
