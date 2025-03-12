@@ -4,11 +4,8 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/forbearing/golib/config"
@@ -24,6 +21,8 @@ import (
 var (
 	Base *gin.Engine
 	API  *gin.RouterGroup
+
+	server *http.Server
 )
 
 func Init() error {
@@ -58,7 +57,7 @@ func Run() error {
 		log.Debugw("", "method", r.Method, "path", r.Path)
 	}
 
-	server := &http.Server{
+	server = &http.Server{
 		Addr:           addr,
 		Handler:        Base,
 		ReadTimeout:    15 * time.Second,
@@ -66,24 +65,27 @@ func Run() error {
 		IdleTimeout:    60 * time.Second,
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Errorw("failed to start server", "err", err)
-		}
-	}()
 
-	sig := <-quit
-	log.Infow("backend server shutdown initiated", "signal", sig)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		log.Errorw("backend server shutdown failed", "err", err, "signal", sig)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Errorw("failed to start server", "err", err)
 		return err
 	}
-	log.Infow("backend server shutdown completed", "signal", sig)
 	return nil
+}
+
+func Stop() {
+	if server == nil {
+		return
+	}
+	zap.S().Infow("backend server shutdown initiated")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		zap.S().Errorw("backend server shutdown failed", "err", err)
+	} else {
+		zap.S().Infow("backend server shutdown completed")
+	}
+	server = nil
 }
 
 // Register registers HTTP routes for a given model type with specified verbs
