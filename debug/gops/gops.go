@@ -2,39 +2,58 @@ package gops
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"path/filepath"
+	"sync"
 
 	"github.com/forbearing/golib/config"
 	"github.com/google/gops/agent"
 	"go.uber.org/zap"
 )
 
+var (
+	tempDir string
+	running bool
+	mu      sync.Mutex
+)
+
 func Run() error {
+	mu.Lock()
+	defer mu.Unlock()
 	if !config.App.GopsEnable {
 		return nil
 	}
-	log := zap.S()
-	err := agent.Listen(agent.Options{
-		Addr:            fmt.Sprintf("%s:%d", config.App.GopsListen, config.App.GopsPort),
-		ShutdownCleanup: true,
-		ConfigDir:       "/tmp/gops",
-	})
-	if err != nil {
-		log.Errorw("gops agent startup failed", "err", err)
+
+	tempDir = config.GetTempdir()
+	if len(tempDir) == 0 {
+		tempDir = "/tmp/gops"
+	} else {
+		tempDir = filepath.Join(tempDir, "gops")
+	}
+
+	if err := agent.Listen(agent.Options{
+		Addr: fmt.Sprintf("%s:%d", config.App.GopsListen, config.App.GopsPort),
+		// 千万千万别将 ShutdownCleanup 设置为 true, 如果设置为 true, gops 捕捉信号并 os.Exit(1) 调试了我一下午.
+		ShutdownCleanup: false,
+		ConfigDir:       tempDir,
+	}); err != nil {
+		zap.S().Errorw("gops agent startup failed", "err", err)
 		return err
 	}
 
-	log.Infow("gops agent started", "listen", config.App.GopsListen, "port", config.App.GopsPort)
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	sig := <-quit
-	log.Infow("gops agent shutdown initiated", "signal", sig)
-	agent.Close()
-	log.Infow("gops agent shutdown completed", "signal", sig)
-
+	running = true
+	zap.S().Infow("gops agent started", "listen", config.App.GopsListen, "port", config.App.GopsPort)
 	return nil
+}
+
+func Stop() {
+	mu.Lock()
+	defer mu.Unlock()
+	if !running {
+		return
+	}
+
+	zap.S().Infow("gops agent shutdown initiated")
+	agent.Close()
+	running = false
+	zap.S().Infow("gops agent shutdown completed")
 }
