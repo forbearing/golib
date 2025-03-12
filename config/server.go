@@ -44,7 +44,7 @@ type CircuitBreaker struct {
 func (*Server) setDefault() {
 	cv.SetDefault("server.mode", ModeDev)
 	cv.SetDefault("server.listen", "")
-	cv.SetDefault("server.port", 9000)
+	cv.SetDefault("server.port", 8080)
 	cv.SetDefault("server.db", DBSqlite)
 	cv.SetDefault("server.domain", "")
 	cv.SetDefault("server.enable_rbac", false)

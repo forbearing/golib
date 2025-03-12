@@ -36,9 +36,10 @@ var (
 	registeredConfigs = make(map[string]any)
 	registeredTypes   = make(map[string]reflect.Type)
 
-	inited bool
-	mu     sync.RWMutex
-	cv     = viper.New()
+	inited  bool
+	tempdir string
+	mu      sync.RWMutex
+	cv      = viper.New()
 )
 
 type (
@@ -123,6 +124,7 @@ func (*Config) setDefault() {
 // 3. Default values
 func Init() (err error) {
 	cv.AutomaticEnv()
+	cv.AllowEmptyEnv(true)
 	cv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	new(Config).setDefault()
 
@@ -140,10 +142,11 @@ func Init() (err error) {
 
 	if err = cv.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			var tempdir string
 			if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
 				return errors.Wrap(err, "failed to create temp dir")
 			}
+			// logger not initialized using fmt.Println instead.
+			fmt.Fprintf(os.Stdout, "create temp dir: %s\n", tempdir)
 			if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
 				return errors.Wrap(err, "failed to create config file")
 			}
@@ -161,6 +164,18 @@ func Init() (err error) {
 	inited = true
 
 	return nil
+}
+
+func Clean() {
+	if err := os.RemoveAll(tempdir); err != nil {
+		zap.S().Errorw("failed to remove temp dir", "error", err, "dir", tempdir)
+	} else {
+		zap.S().Infow("successfully remove temp dir", "dir", tempdir)
+	}
+}
+
+func Tempdir() string {
+	return tempdir
 }
 
 // Register registers a configuration type with the given name.
