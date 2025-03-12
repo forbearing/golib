@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -163,6 +160,9 @@ func Init() error {
 
 // Run 启动 gRPC 服务器并阻塞直到收到终止信号
 func Run() error {
+	mu.Lock()
+	defer mu.Unlock()
+
 	if !initialized || server == nil {
 		if err := Init(); err != nil {
 			return err
@@ -174,54 +174,56 @@ func Run() error {
 		return nil
 	}
 
-	// 设置信号处理
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
 	errCh := make(chan error, 1)
 
-	// 启动服务器
+	// 启动 gRPC 服务器
 	go func() {
-		zap.S().Infow("grpc server started", "addr", listener.Addr().String())
+		zap.S().Infow("gRPC server started", "addr", listener.Addr().String())
 		if err := server.Serve(listener); err != nil {
 			errCh <- errors.Wrap(err, "failed to serve")
 		}
 	}()
 
-	// 等待终止信号或错误
+	// 监听启动错误
 	select {
-	case sig := <-quit:
-		zap.S().Infow("grpc server shutdown initiated", "signal", sig)
-
-		// 优雅停机
-		gracefulStopCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		done := make(chan struct{})
-		go func() {
-			server.GracefulStop()
-			close(done)
-		}()
-
-		select {
-		case <-done:
-			zap.S().Infow("grpc server shutdown completed gracefully")
-		case <-gracefulStopCtx.Done():
-			zap.S().Warnw("grpc server shutdown timeout, forcing shutdown")
-			server.Stop()
-		}
-
-		// 重置状态
-		mu.Lock()
-		server = nil
-		listener = nil
-		initialized = false
-		mu.Unlock()
-
-		return nil
 	case err := <-errCh:
 		return err
+	default:
+		return nil
 	}
+}
+
+func Stop() {
+	mu.Lock()
+	defer mu.Unlock()
+	if server == nil {
+		return
+	}
+
+	zap.S().Infow("gRPC server shutdown initiated")
+
+	// 优雅停机
+	gracefulStopCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		server.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		zap.S().Infow("gRPC server shutdown completed gracefully")
+	case <-gracefulStopCtx.Done():
+		zap.S().Warnw("gRPC server shutdown timeout, forcing shutdown")
+		server.Stop()
+	}
+
+	// 重置状态
+	server = nil
+	listener = nil
+	initialized = false
 }
 
 // LoggingUnaryInterceptor 用于记录一元RPC调用的日志
