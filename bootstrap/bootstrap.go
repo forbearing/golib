@@ -104,6 +104,7 @@ func Bootstrap() error {
 	)
 
 	RegisterCleanup(config.Clean)
+	RegisterCleanup(pkgzap.Clean)
 	RegisterCleanup(redis.Close)
 	RegisterCleanup(kafka.Close)
 	RegisterCleanup(etcd.Close)
