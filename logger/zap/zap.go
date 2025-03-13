@@ -10,10 +10,12 @@ import (
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	gorml "gorm.io/gorm/logger"
 )
 
 var (
@@ -73,6 +75,57 @@ func Init() error {
 	logger.Gorm = NewGorm("gorm.log")
 
 	return nil
+}
+
+func Clean() {
+	// types.Logger
+	zap.L().Sync()
+	logs := []types.Logger{
+		logger.Runtime,
+		logger.Cronjob,
+		logger.Task,
+
+		logger.Controller,
+		logger.Service,
+		logger.Database,
+		logger.Cache,
+		logger.Redis,
+
+		logger.Cassandra,
+		logger.Elastic,
+		logger.Etcd,
+		logger.Feishu,
+		logger.Influxdb,
+		logger.Kafka,
+		logger.Ldap,
+		logger.Minio,
+		logger.Mongo,
+		logger.Mqtt,
+		logger.Nats,
+
+		logger.Protocol,
+		logger.Binary,
+	}
+	for _, log := range logs {
+		if l, ok := log.(*Logger); ok {
+			l.zlog.Sync()
+		}
+	}
+
+	// Gin logger
+	logger.Gin.Sync()
+
+	// gorm logger
+	gormLogs := []gorml.Interface{
+		logger.Gorm,
+	}
+	for _, glog := range gormLogs {
+		if log, ok := glog.(*GormLogger); ok {
+			if l, ok := log.l.(*Logger); ok {
+				l.zlog.Sync()
+			}
+		}
+	}
 }
 
 // New returns *Logger instance that contains *zap.Logger and *zap.SugaredLogger
