@@ -24,7 +24,7 @@ var (
 // If the connection is successful, it initializes the database and returns nil.
 func Init() (err error) {
 	cfg := config.App.SQLServer
-	if !cfg.Enable || config.App.Server.DB != config.DBSQLServer {
+	if !cfg.Enable || config.App.Database.Type != config.DBSQLServer {
 		return
 	}
 

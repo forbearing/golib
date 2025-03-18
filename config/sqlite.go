@@ -17,6 +17,6 @@ type Sqlite struct {
 func (*Sqlite) setDefault() {
 	cv.SetDefault("sqlite.path", "./data.db")
 	cv.SetDefault("sqlite.database", "main")
-	cv.SetDefault("sqlite.is_memory", false)
+	cv.SetDefault("sqlite.is_memory", true)
 	cv.SetDefault("sqlite.enable", true)
 }
