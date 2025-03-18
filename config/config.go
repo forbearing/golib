@@ -42,25 +42,6 @@ var (
 	cv      = viper.New()
 )
 
-type (
-	Mode string
-	DB   string
-)
-
-const (
-	ModeProd = "prod"
-	ModeStg  = "stg"
-	ModeDev  = "dev"
-)
-
-const (
-	DBSqlite     = "sqlite"
-	DBPostgre    = "postgres"
-	DBMySQL      = "mysql"
-	DBSQLServer  = "sqlserver"
-	DBClickHouse = "clickhouse"
-)
-
 type Config struct {
 	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	Grpc          `json:"grpc" mapstructure:"grpc" ini:"grpc" yaml:"grpc"`

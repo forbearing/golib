@@ -2,7 +2,18 @@ package config
 
 import "time"
 
+type DBType string
+
 const (
+	DBSqlite     DBType = "sqlite"
+	DBPostgres   DBType = "postgres"
+	DBMySQL      DBType = "mysql"
+	DBSQLServer  DBType = "sqlserver"
+	DBClickHouse DBType = "clickhouse"
+)
+
+const (
+	DATABASE_TYPE                 = "DATABASE_TYPE"
 	DATABASE_SLOW_QUERY_THRESHOLD = "DATABASE_SLOW_QUERY_THRESHOLD"
 	DATABASE_MAX_IDLE_CONNS       = "DATABASE_MAX_IDLE_CONNS"
 	DATABASE_MAX_OPEN_CONNS       = "DATABASE_MAX_OPEN_CONNS"
@@ -11,6 +22,7 @@ const (
 )
 
 type Database struct {
+	Type               DBType        `json:"type" mapstructure:"type" ini:"type" yaml:"type"`
 	SlowQueryThreshold time.Duration `json:"slow_query_threshold" mapstructure:"slow_query_threshold" ini:"slow_query_threshold" yaml:"slow_query_threshold"`
 	MaxIdleConns       int           `json:"max_idle_conns" mapstructure:"max_idle_conns" ini:"max_idle_conns" yaml:"max_idle_conns"`
 	MaxOpenConns       int           `json:"max_open_conns" mapstructure:"max_open_conns" ini:"max_open_conns" yaml:"max_open_conns"`
@@ -19,6 +31,7 @@ type Database struct {
 }
 
 func (*Database) setDefault() {
+	cv.SetDefault("database.type", DBSqlite)
 	cv.SetDefault("database.slow_query_threshold", 500*time.Millisecond)
 	cv.SetDefault("database.max_idle_conns", 10)
 	cv.SetDefault("database.max_open_conns", 100)
