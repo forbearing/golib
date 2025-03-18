@@ -46,7 +46,7 @@ func main() {
 	os.Setenv(config.DEBUG_GOPS_ENABLE, "true")
 
 	os.Setenv(config.SERVER_PORT, "8002")
-	os.Setenv(config.SERVER_DB, config.DBMySQL)
+	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
 	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, "-")
 	os.Setenv(config.LOGGER_DIR, "/tmp/myproject/logs")
 	os.Setenv(config.DATABASE_MAX_IDLE_CONNS, "100")
