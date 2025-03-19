@@ -11,6 +11,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
@@ -257,7 +258,7 @@ func newLogEncoder(opt ...option) zapcore.Encoder {
 	// encConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	// encConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
 	// encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
-	encConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02|15:04:05")
+	encConfig.EncodeTime = zapcore.TimeEncoderOfLayout(consts.LayoutTimeEncoder)
 	encConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 	// encConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	// encConfig.EncodeLevel = zapcore.LowercaseColorLevelEncoder
