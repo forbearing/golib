@@ -42,6 +42,8 @@ func (l *Logger) Warnz(msg string, fields ...zap.Field)  { l.zlog.Warn(msg, fiel
 func (l *Logger) Errorz(msg string, fields ...zap.Field) { l.zlog.Error(msg, fields...) }
 func (l *Logger) Fatalz(msg string, fields ...zap.Field) { l.zlog.Fatal(msg, fields...) }
 
+func (l *Logger) ZapLogger() *zap.Logger { return l.zlog }
+
 // With creates a new logger with additional string key-value pairs.
 // Each pair of arguments must be a key(string) followed by its value(string).
 // If an odd number of arguments is provided, an empty string will be appended as the last value.
