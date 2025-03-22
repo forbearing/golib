@@ -7,6 +7,8 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/logger"
+	pkgzap "github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/util"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
@@ -65,6 +67,7 @@ func New(cfg config.Etcd) (*clientv3.Client, error) {
 	etcdConfig := clientv3.Config{
 		Endpoints:   cfg.Endpoints,
 		DialTimeout: cfg.DialTimeout,
+		Logger:      logger.Etcd.(*pkgzap.Logger).ZapLogger(),
 	}
 
 	// Set username and password authentication if provided
