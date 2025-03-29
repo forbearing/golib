@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"runtime"
 	"time"
 
 	"github.com/forbearing/golib/config"
@@ -17,6 +18,8 @@ func Run() error {
 	if !config.App.PprofEnable {
 		return nil
 	}
+	runtime.SetMutexProfileFraction(1)
+	runtime.SetBlockProfileRate(1)
 
 	server = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", config.App.PprofListen, config.App.PprofPort),
