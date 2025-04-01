@@ -124,6 +124,8 @@ func main() {
 	os.Setenv(config.SCYLLA_ENABLE, "false")
 	os.Setenv(config.RETHINKDB_ENABLE, "true")
 	os.Setenv(config.RETHINKDB_HOSTS, "127.0.0.1:28015,127.0.0.1:28016,127.0.0.1:28017")
+	os.Setenv(config.ROCKETMQ_ENABLE, "false")
+	os.Setenv(config.ROCKETMQ_NAMESRV_ADDRS, "127.0.0.1:15672")
 
 	os.Setenv(config.LDAP_ENABLE, "true")
 	os.Setenv(config.LDAP_PORT, "1389")

@@ -47,7 +47,7 @@ func runHandlers() {
 func runSafe(handler func()) {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintln(os.Stderr, "Error: cleanup handler error:", err)
+			fmt.Fprintln(os.Stderr, "cleanup handler error:", err)
 		}
 	}()
 
