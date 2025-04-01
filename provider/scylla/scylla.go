@@ -175,9 +175,7 @@ type batchObserver struct{}
 
 func (o *batchObserver) ObserveBatch(ctx context.Context, batch gocql.ObservedBatch) {
 	statements := make([]string, 0, len(batch.Statements))
-	for _, stmt := range batch.Statements {
-		statements = append(statements, stmt)
-	}
+	statements = append(statements, batch.Statements...)
 
 	logger.Scylla.Infow("ScyllaDB batch",
 		"statements", statements,
