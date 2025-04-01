@@ -32,6 +32,7 @@ import (
 	"github.com/forbearing/golib/provider/influxdb"
 	"github.com/forbearing/golib/provider/kafka"
 	"github.com/forbearing/golib/provider/ldap"
+	"github.com/forbearing/golib/provider/memcached"
 	"github.com/forbearing/golib/provider/minio"
 	"github.com/forbearing/golib/provider/mongo"
 	"github.com/forbearing/golib/provider/mqtt"
@@ -87,6 +88,7 @@ func Bootstrap() error {
 		nats.Init,
 		cassandra.Init,
 		influxdb.Init,
+		memcached.Init,
 		feishu.Init,
 		ldap.Init,
 
@@ -111,6 +113,7 @@ func Bootstrap() error {
 	RegisterCleanup(nats.Close)
 	RegisterCleanup(cassandra.Close)
 	RegisterCleanup(influxdb.Close)
+	RegisterCleanup(memcached.Close)
 	RegisterCleanup(ldap.Close)
 
 	initialized = true

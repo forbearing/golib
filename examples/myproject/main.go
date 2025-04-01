@@ -18,6 +18,7 @@ import (
 	"github.com/forbearing/golib/middleware"
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/provider/etcd"
+	"github.com/forbearing/golib/provider/memcached"
 	pkgnats "github.com/forbearing/golib/provider/nats"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
@@ -116,6 +117,8 @@ func main() {
 	os.Setenv(config.CASSANDRA_ENABLE, "true")
 	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
 	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
+
+	os.Setenv(config.MEMCACHED_ENABLE, "true")
 
 	os.Setenv(config.LDAP_ENABLE, "true")
 	os.Setenv(config.LDAP_PORT, "1389")
@@ -231,6 +234,16 @@ func main() {
 		}
 		fmt.Printf("%+v\n", getResp.Kvs)
 
+	}
+	// memcached
+	{
+		memcached.Set("key1", []byte("value1"), 0)
+		memcached.Set("key2", []byte("value2"), 0)
+		value, err := memcached.Get("key1")
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+		fmt.Printf("[memcached] value: %s\n", value)
 	}
 
 	//
