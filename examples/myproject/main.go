@@ -20,6 +20,7 @@ import (
 	"github.com/forbearing/golib/provider/etcd"
 	"github.com/forbearing/golib/provider/memcached"
 	pkgnats "github.com/forbearing/golib/provider/nats"
+	"github.com/forbearing/golib/provider/rethinkdb"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
@@ -28,6 +29,7 @@ import (
 	"github.com/nats-io/nats.go"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
 
 	_ "github.com/forbearing/golib/examples/myproject/service"
 )
@@ -114,12 +116,14 @@ func main() {
 	os.Setenv(config.NATS_ADDRS, "nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224")
 	os.Setenv(config.NATS_ENABLE, "true")
 
-	os.Setenv(config.CASSANDRA_ENABLE, "true")
+	os.Setenv(config.CASSANDRA_ENABLE, "false")
 	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
 	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
 
 	os.Setenv(config.MEMCACHED_ENABLE, "true")
 	os.Setenv(config.SCYLLA_ENABLE, "false")
+	os.Setenv(config.RETHINKDB_ENABLE, "true")
+	os.Setenv(config.RETHINKDB_HOSTS, "127.0.0.1:28015,127.0.0.1:28016,127.0.0.1:28017")
 
 	os.Setenv(config.LDAP_ENABLE, "true")
 	os.Setenv(config.LDAP_PORT, "1389")
@@ -245,6 +249,76 @@ func main() {
 			zap.S().Fatal(err)
 		}
 		fmt.Printf("[memcached] value: %s\n", value)
+	}
+	// rethinkdb
+	{
+		type User struct {
+			ID      string `rethinkdb:"id,omitempty"`
+			Name    string `rethinkdb:"name"`
+			Email   string `rethinkdb:"email"`
+			Age     int    `rethinkdb:"age"`
+			IsAdmin bool   `rethinkdb:"is_admin"`
+		}
+		session, err := rethinkdb.Session()
+		if err != nil {
+			panic(err)
+		}
+
+		//
+		// create database
+		//
+		dbName := "example_db"
+		cursor, err := r.DBList().Contains(dbName).Run(session)
+		if err != nil {
+			panic(err)
+		}
+		var exists bool
+		if err = cursor.One(&exists); err != nil {
+			panic(err)
+		}
+		if !exists {
+			if _, err = r.DBCreate(dbName).RunWrite(session); err != nil {
+				panic(err)
+			}
+		}
+		cursor.Close()
+		fmt.Println("[rethinkdb] successfully create database", dbName)
+
+		//
+		// create table
+		tableName := "users"
+		cursor, err = r.DB(dbName).TableList().Contains(tableName).Run(session)
+		if err != nil {
+			panic(err)
+		}
+		if err = cursor.One(&exists); err != nil {
+			panic(err)
+		}
+		if !exists {
+			if _, err = r.DB(dbName).TableCreate(tableName).RunWrite(session); err != nil {
+				panic(err)
+			}
+		}
+		cursor.Close()
+		fmt.Println("[rethinkdb] successfully create table", tableName)
+
+		//
+		// create records
+		user := User{
+			Name:    "John Doe",
+			Email:   "john.doe@example.com",
+			Age:     30,
+			IsAdmin: false,
+		}
+		resp, err := r.DB(dbName).Table(tableName).Insert(user).RunWrite(session)
+		if err != nil {
+			panic(err)
+		}
+		if len(resp.GeneratedKeys) == 0 {
+			panic("no ID was generated for the record")
+		}
+		fmt.Println("[rethinkdb] successfully create user records:", resp.GeneratedKeys)
+
 	}
 
 	//
