@@ -82,9 +82,6 @@ func New(cfg config.RethinkDB) (*r.Session, error) {
 	if cfg.KeepAliveTime > 0 {
 		opts.KeepAlivePeriod = cfg.KeepAliveTime
 	}
-	if opts.NumRetries > 0 {
-		opts.NumRetries = cfg.NumRetries
-	}
 
 	if cfg.EnableTLS {
 		var tlsConfig *tls.Config

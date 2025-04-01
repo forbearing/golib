@@ -71,6 +71,7 @@ func Init() error {
 	logger.Nats = New("nats.log")
 	logger.Scylla = New("scylla.log")
 	logger.RethinkDB = New("rethinkdb.log")
+	logger.RocketMQ = New("rocketmq.log")
 
 	logger.Protocol = New("protocol.log")
 	logger.Binary = New("binary.log")
@@ -109,6 +110,7 @@ func Clean() {
 		logger.Nats,
 		logger.Scylla,
 		logger.RethinkDB,
+		logger.RocketMQ,
 
 		logger.Protocol,
 		logger.Binary,
