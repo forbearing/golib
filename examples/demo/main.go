@@ -202,7 +202,7 @@ func main() {
 	router.RegisterWithConfig(&types.ControllerConfig[*model.User]{DB: db, TableName: "users"}, external, "/user")
 	router.RegisterWithConfig(&types.ControllerConfig[*model.Category]{DB: db, TableName: "groups"}, external, "category")
 
-	RunOrDie(router.Run)
+	RunOrDie(bootstrap.Go)
 }
 
 type WechatConfig struct {
