@@ -16,6 +16,7 @@ require (
 	github.com/allegro/bigcache v1.2.1
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/arl/statsviz v0.6.0
+	github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874
 	github.com/casbin/casbin/v2 v2.104.0
 	github.com/casbin/gorm-adapter/v3 v3.32.0
 	github.com/cloverstd/tcping v0.1.1

@@ -25,6 +25,7 @@ var (
 	Influxdb  types.Logger
 	Kafka     types.Logger
 	Ldap      types.Logger
+	Memcached types.Logger
 	Minio     types.Logger
 	Mongo     types.Logger
 	Mqtt      types.Logger
