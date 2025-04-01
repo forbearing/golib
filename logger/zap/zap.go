@@ -69,6 +69,7 @@ func Init() error {
 	logger.Mongo = New("mongo.log")
 	logger.Mqtt = New("mqtt.log")
 	logger.Nats = New("nats.log")
+	logger.Scylla = New("scylla.log")
 
 	logger.Protocol = New("protocol.log")
 	logger.Binary = New("binary.log")
@@ -105,6 +106,7 @@ func Clean() {
 		logger.Mongo,
 		logger.Mqtt,
 		logger.Nats,
+		logger.Scylla,
 
 		logger.Protocol,
 		logger.Binary,

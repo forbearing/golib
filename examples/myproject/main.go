@@ -119,6 +119,7 @@ func main() {
 	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
 
 	os.Setenv(config.MEMCACHED_ENABLE, "true")
+	os.Setenv(config.SCYLLA_ENABLE, "false")
 
 	os.Setenv(config.LDAP_ENABLE, "true")
 	os.Setenv(config.LDAP_PORT, "1389")

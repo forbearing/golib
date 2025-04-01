@@ -54,6 +54,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
+	github.com/scylladb/gocqlx/v3 v3.0.1
 	github.com/segmentio/fasthash v1.0.3
 	github.com/segmentio/ksuid v1.0.4
 	github.com/shirou/gopsutil/v3 v3.24.5
@@ -189,6 +190,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
+	github.com/scylladb/go-reflectx v1.0.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
