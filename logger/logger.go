@@ -30,6 +30,7 @@ var (
 	Mongo     types.Logger
 	Mqtt      types.Logger
 	Nats      types.Logger
+	RethinkDB types.Logger
 	Scylla    types.Logger
 
 	Protocol types.Logger

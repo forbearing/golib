@@ -68,6 +68,7 @@ type Config struct {
 	Cassandra     `json:"cassandra" mapstructure:"cassandra" ini:"cassandra" yaml:"cassandra"`
 	Scylla        `json:"scylla" mapstructure:"scylla" ini:"scylla" yaml:"scylla"`
 	Memcached     `json:"memcached" mapstructure:"memcached" ini:"memcached" yaml:"memcached"`
+	RethinkDB     `json:"rethinkdb" mapstructure:"rethinkdb" ini:"rethinkdb" yaml:"rethinkdb"`
 	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
 }
@@ -98,6 +99,7 @@ func (*Config) setDefault() {
 	new(Cassandra).setDefault()
 	new(Scylla).setDefault()
 	new(Memcached).setDefault()
+	new(RethinkDB).setDefault()
 	new(Feishu).setDefault()
 	new(Debug).setDefault()
 }
