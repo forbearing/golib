@@ -54,7 +54,7 @@ func main() {
 	os.Setenv(config.SERVER_PORT, "8002")
 	os.Setenv(config.LOGGER_DIR, "/tmp/logs")
 	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, fakeToken)
-	os.Setenv(config.SERVER_DB, config.DBMySQL)
+	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
 	os.Setenv(config.MYSQL_DATABASE, "bench")
 	os.Setenv(config.MYSQL_USERNAME, "bench")
 	os.Setenv(config.MYSQL_PASSWORD, "bench")

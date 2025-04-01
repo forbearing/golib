@@ -20,5 +20,5 @@ func main() {
 	router.API.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 	router.Register[*model.User](router.API, "user")
 
-	util.RunOrDie(bootstrap.Go)
+	util.RunOrDie(bootstrap.Run)
 }
