@@ -12,6 +12,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/creasty/defaults"
+	"github.com/go-viper/encoding/ini"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -39,7 +40,7 @@ var (
 	inited  bool
 	tempdir string
 	mu      sync.RWMutex
-	cv      = viper.New()
+	cv      *viper.Viper
 )
 
 type Config struct {
@@ -104,9 +105,15 @@ func (*Config) setDefault() {
 // 2. Configuration file
 // 3. Default values
 func Init() (err error) {
+	// Breaking change:
+	// https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-hcl-java-properties-ini-removed-from-core
+	codecRegistry := viper.NewCodecRegistry()
+	codecRegistry.RegisterCodec("ini", ini.Codec{})
+	cv = viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry))
 	cv.AutomaticEnv()
 	cv.AllowEmptyEnv(true)
 	cv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
 	new(Config).setDefault()
 
 	if len(configFile) > 0 {

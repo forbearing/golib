@@ -138,9 +138,9 @@ func main() {
 
 	os.Setenv(config.GRPC_ENABLE, "true")
 
-	config.SetConfigFile("./config.ini")
-	config.SetConfigName("config")
-	config.SetConfigType("ini")
+	// config.SetConfigFile("./config.ini")
+	// config.SetConfigName("config")
+	// config.SetConfigType("ini")
 
 	// Register config before bootstrap.
 	config.Register[WechatConfig]("wechat")
