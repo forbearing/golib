@@ -7,6 +7,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/util"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
@@ -107,17 +108,17 @@ func New(cfg config.Nats) (*nats.Conn, error) {
 	// Add connection handlers
 	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 		if err != nil {
-			zap.S().Warnw("disconnected from nats", "error", err)
+			logger.Nats.Warnw("disconnected from nats", "error", err)
 		}
 	}))
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
-		zap.S().Infow("reconnected to nats", "url", nc.ConnectedUrl())
+		logger.Nats.Infow("reconnected to nats", "url", nc.ConnectedUrl())
 	}))
 	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
-		zap.S().Warnw("nats connection closed")
+		logger.Nats.Warnw("nats connection closed")
 	}))
 	opts = append(opts, nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
-		zap.S().Errorw("nats error", "error", err, "subject", sub.Subject)
+		logger.Nats.Errorw("nats error", "error", err, "subject", sub.Subject)
 	}))
 
 	return nats.Connect(strings.Join(cfg.Addrs, ","), opts...)
