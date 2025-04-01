@@ -20,6 +20,5 @@ func main() {
 	router.API.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 	router.Register[*model.User](router.API, "user")
 
-	// Any router panic, exit, or error will cause program termination.
-	util.RunOrDie(router.Run)
+	util.RunOrDie(bootstrap.Go)
 }
