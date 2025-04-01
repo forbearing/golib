@@ -66,6 +66,7 @@ type Config struct {
 	Nats          `json:"nats" mapstructure:"nats" ini:"nats" yaml:"nats"`
 	Etcd          `json:"etcd" mapstructure:"etcd" ini:"etcd" yaml:"etcd"`
 	Cassandra     `json:"cassandra" mapstructure:"cassandra" ini:"cassandra" yaml:"cassandra"`
+	Scylla        `json:"scylla" mapstructure:"scylla" ini:"scylla" yaml:"scylla"`
 	Memcached     `json:"memcached" mapstructure:"memcached" ini:"memcached" yaml:"memcached"`
 	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
@@ -95,6 +96,7 @@ func (*Config) setDefault() {
 	new(Nats).setDefault()
 	new(Etcd).setDefault()
 	new(Cassandra).setDefault()
+	new(Scylla).setDefault()
 	new(Memcached).setDefault()
 	new(Feishu).setDefault()
 	new(Debug).setDefault()
