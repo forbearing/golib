@@ -9,16 +9,15 @@ import (
 var _initializer = new(initializer)
 
 type initializer struct {
-	fns []initFunc // run init function in current goroutine.
-	gos []initFunc // run init function in new goroutine and receive error in channel.
+	fns []func() error // run init function in current goroutine.
+	gos []func() error // run init function in new goroutine and receive error in channel.
 }
-type initFunc func() error
 
-func (i *initializer) Register(fn ...initFunc) {
+func (i *initializer) Register(fn ...func() error) {
 	i.fns = append(i.fns, fn...)
 }
 
-func (i *initializer) RegisterGo(fn ...initFunc) {
+func (i *initializer) RegisterGo(fn ...func() error) {
 	i.gos = append(i.gos, fn...)
 }
 
@@ -47,7 +46,7 @@ func (i *initializer) Go() error {
 	return g.Wait()
 }
 
-func Register(fn ...initFunc)   { _initializer.Register(fn...) }
-func RegisterGo(fn ...initFunc) { _initializer.RegisterGo(fn...) }
-func Init() (err error)         { return _initializer.Init() }
-func Go() (err error)           { return _initializer.Go() }
+func Register(fn ...func() error)   { _initializer.Register(fn...) }
+func RegisterGo(fn ...func() error) { _initializer.RegisterGo(fn...) }
+func Init() (err error)             { return _initializer.Init() }
+func Go() (err error)               { return _initializer.Go() }
