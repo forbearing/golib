@@ -95,6 +95,7 @@ func (l *Logger) With(fields ...string) types.Logger {
 func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase consts.Phase) types.Logger {
 	return l.With(
 		consts.PHASE, string(phase),
+		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
 		consts.TRACE_ID, ctx.TraceId,
@@ -110,6 +111,7 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phase) types.Logger {
 	return l.With(
 		consts.PHASE, string(phase),
+		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
 		consts.TRACE_ID, ctx.TraceId,
@@ -125,6 +127,7 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Phase) (clone types.Logger) {
 	return l.With(
 		consts.PHASE, string(phase),
+		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
 		consts.TRACE_ID, ctx.TraceId,

@@ -18,6 +18,7 @@ func Logger(filename ...string) gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
+		c.Set(consts.CTX_ROUTE, path)
 		c.Next()
 
 		metrics.HttpRequestsTotal.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Inc()

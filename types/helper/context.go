@@ -14,6 +14,7 @@ func NewControllerContext(c *gin.Context) *types.ControllerContext {
 		return new(types.ControllerContext)
 	}
 	return &types.ControllerContext{
+		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
@@ -27,6 +28,7 @@ func NewDatabaseContext(c *gin.Context) *types.DatabaseContext {
 		return new(types.DatabaseContext)
 	}
 	return &types.DatabaseContext{
+		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
@@ -47,6 +49,7 @@ func NewServiceContext(c *gin.Context) *types.ServiceContext {
 		ClientIP:     c.ClientIP(),
 		UserAgent:    c.Request.UserAgent(),
 
+		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		SessionId: c.GetString(consts.CTX_SESSION_ID),
