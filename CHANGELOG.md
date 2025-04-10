@@ -1,6 +1,15 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- **deps:** upgrade dependencies to latest version
+
+### Docs
+- add CHANGELOG.md and .chglog configuration
+
+### Refactor
+- **boostrap:** replace custom initFunc with func() error
+
 
 <a name="v0.4.2"></a>
 ## [v0.4.2] - 2025-04-01
