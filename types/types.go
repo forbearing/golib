@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-
-	"golang.org/x/net/context"
 )
 
 type sortByCreatedTime[M Model] []M
@@ -55,6 +53,7 @@ func Sort[M Model](order Order, data []M, reverse ...bool) {
 type ControllerContext struct {
 	Username string // currrent login user.
 	UserId   string // currrent login user id
+	Route    string
 
 	RequestId string
 	TraceId   string
@@ -66,6 +65,7 @@ type ControllerContext struct {
 type DatabaseContext struct {
 	Username string // currrent login user.
 	UserId   string // currrent login user id
+	Route    string
 
 	RequestId string
 	TraceId   string
@@ -86,7 +86,7 @@ type ServiceContext struct {
 	SessionId string // session id
 	Username  string // currrent login user.
 	UserId    string // currrent login user id
-	Context   context.Context
+	Route     string
 
 	RequestId string
 	TraceId   string

@@ -8,6 +8,7 @@ const (
 )
 
 const (
+	CTX_ROUTE      = "route"
 	CTX_USERNAME   = "username"
 	CTX_USER_ID    = "user_id"
 	CTX_SESSION_ID = "session_id"
