@@ -909,7 +909,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// It will returns a empty types.Model if found nothing from database,
 		// we should response status code "CodeNotFound".
 		if !cached {
-			if len(m.GetID()) == 0 {
+			if len(m.GetID()) == 0 || (m.GetCreatedAt().Equal(time.Time{})) {
 				log.Error(CodeNotFound)
 				ResponseJSON(c, CodeNotFound)
 				return
