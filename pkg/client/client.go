@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httputil"
 	"reflect"
@@ -286,9 +287,7 @@ func (c *Client) request(action action, payload any) ([]byte, error) {
 	if len(c.token) > 0 {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
-	for k, v := range c.header {
-		req.Header[k] = v
-	}
+	maps.Copy(req.Header, c.header)
 
 	if c.debug {
 		dump, _ := httputil.DumpRequest(req, true)
