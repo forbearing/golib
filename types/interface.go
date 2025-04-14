@@ -47,6 +47,10 @@ type ZapLogger interface {
 
 type Logger interface {
 	With(fields ...string) Logger
+
+	WithObject(name string, obj zapcore.ObjectMarshaler) Logger
+	WithArray(name string, arr zapcore.ArrayMarshaler) Logger
+
 	WithControllerContext(*ControllerContext, consts.Phase) Logger
 	WithServiceContext(*ServiceContext, consts.Phase) Logger
 	WithDatabaseContext(*DatabaseContext, consts.Phase) Logger

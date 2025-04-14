@@ -851,7 +851,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			}
 			// fmt.Println("_expends: ", _expands)
 			fieldsMap := make(map[string]reflect.Kind)
-			for i := 0; i < typ.NumField(); i++ {
+			for i := range typ.NumField() {
 				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
 			}
 			for _, e := range _expands {
@@ -868,7 +868,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 					continue
 				}
 				t := make([]string, depth)
-				for i := 0; i < depth; i++ {
+				for i := range depth {
 					t[i] = e
 				}
 				// If expand="Children" and depth=3, the depth expanded is "Children.Children.Children"
@@ -909,7 +909,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		// It will returns a empty types.Model if found nothing from database,
 		// we should response status code "CodeNotFound".
 		if !cached {
-			if len(m.GetID()) == 0 {
+			if len(m.GetID()) == 0 || (m.GetCreatedAt().Equal(time.Time{})) {
 				log.Error(CodeNotFound)
 				ResponseJSON(c, CodeNotFound)
 				return
@@ -1407,7 +1407,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			}
 			// fmt.Println("_expends: ", _expands)
 			fieldsMap := make(map[string]reflect.Kind)
-			for i := 0; i < typ.NumField(); i++ {
+			for i := range typ.NumField() {
 				fieldsMap[typ.Field(i).Name] = typ.Field(i).Type.Kind()
 			}
 			for _, e := range _expands {
@@ -1423,7 +1423,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 					continue
 				}
 				t := make([]string, depth)
-				for i := 0; i < depth; i++ {
+				for i := range depth {
 					t[i] = e
 				}
 				// fmt.Println("t: ", t)

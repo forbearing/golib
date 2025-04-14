@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -19,29 +21,30 @@ import (
 )
 
 var (
-	Base *gin.Engine
-	API  *gin.RouterGroup
+	base *gin.Engine
+	api  *gin.RouterGroup
 
 	server *http.Server
 )
 
 func Init() error {
 	gin.SetMode(gin.ReleaseMode)
-	Base = gin.New()
+	base = gin.New()
 
-	Base.Use(
+	base.Use(
 		middleware.TraceID(),
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
+		middleware.RouteParams(),
 	)
-	Base.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	Base.GET("/-/healthz", controller.Probe.Healthz)
-	Base.GET("/-/readyz", controller.Probe.Readyz)
-	Base.GET("/-/pageid", controller.PageID)
+	base.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	base.GET("/-/healthz", controller.Probe.Healthz)
+	base.GET("/-/readyz", controller.Probe.Readyz)
+	base.GET("/-/pageid", controller.PageID)
 
-	API = Base.Group("/api")
-	API.Use(
+	api = base.Group("/api")
+	api.Use(
 		// middleware.JwtAuth(),
 		// middleware.Authz(),
 		middleware.Gzip(),
@@ -53,13 +56,13 @@ func Run() error {
 	log := zap.S()
 	addr := net.JoinHostPort(config.App.Server.Listen, strconv.Itoa(config.App.Server.Port))
 	log.Infow("backend server started", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
-	for _, r := range Base.Routes() {
+	for _, r := range base.Routes() {
 		log.Debugw("", "method", r.Method, "path", r.Path)
 	}
 
 	server = &http.Server{
 		Addr:           addr,
-		Handler:        Base,
+		Handler:        base,
 		ReadTimeout:    15 * time.Second,
 		WriteTimeout:   15 * time.Second,
 		IdleTimeout:    60 * time.Second,
@@ -72,6 +75,9 @@ func Run() error {
 	}
 	return nil
 }
+
+func API() *gin.RouterGroup { return api }
+func Base() *gin.Engine     { return base }
 
 func Stop() {
 	if server == nil {
@@ -109,76 +115,157 @@ func Stop() {
 //   - GET    /{path}/:id     -> Get
 //   - POST   /{path}/import  -> Import
 //   - GET    /{path}/export  -> Export
+//   - POST   /{path}/batch   -> BatchCreate
+//   - DELETE /{path}/batch   -> BatchDelete
+//   - PUT    /{path}/batch   -> BatchUpdate
+//   - PATCH  /{path}/batch   -> BatchUpdatePartial
 //
-// For custom controller configuration, use RegisterWithConfig instead.
-func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
-	rawPath = strings.TrimSpace(rawPath)
-	if len(rawPath) == 0 {
-		zap.S().Warn("empty path, skip register routes")
-		return
+// For custom controller configuration, pass a ControllerConfig object.
+func Register[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Most), cfg...)
 	}
-	path := buildPath(rawPath)
-	verbMap := buildVerbMap(verbs...)
-
-	register[M](router, path, verbMap)
 }
 
-// RegisterWithConfig is same as Register, but with custom controller configuration.
-// The cfg parameter allow custom controller behavior.
-// more details see Register.
-func RegisterWithConfig[M types.Model](cfg *types.ControllerConfig[M], router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
+func RegisterCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Create), cfg...)
+	}
+}
+
+func RegisterDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Delete), cfg...)
+	}
+}
+
+func RegisterUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Update), cfg...)
+	}
+}
+
+func RegisterUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.UpdatePartial), cfg...)
+	}
+}
+
+func RegisterList[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.List), cfg...)
+	}
+}
+
+func RegisterGet[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Get), cfg...)
+	}
+}
+
+func RegisterImport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Import), cfg...)
+	}
+}
+
+func RegisterExport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.Export), cfg...)
+	}
+}
+
+func RegisterBatchCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.BatchCreate), cfg...)
+	}
+}
+
+func RegisterBatchDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.BatchDelete), cfg...)
+	}
+}
+
+func RegisterBatchUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdate), cfg...)
+	}
+}
+
+func RegisterBatchUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+	if validPath(rawPath) {
+		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdatePartial), cfg...)
+	}
+}
+
+func validPath(rawPath string) bool {
 	rawPath = strings.TrimSpace(rawPath)
 	if len(rawPath) == 0 {
 		zap.S().Warn("empty path, skip register routes")
-		return
+		return false
 	}
-	path := buildPath(rawPath)
-	verbMap := buildVerbMap(verbs...)
-
-	register(router, path, verbMap, cfg)
+	return true
 }
 
 func register[M types.Model](router gin.IRouter, path string, verbMap map[consts.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
+	v := reflect.ValueOf(router).Elem()
+	base := v.FieldByName("basePath").String()
 	if verbMap[consts.Create] {
 		router.POST(path, controller.CreateFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path))
 	}
 	if verbMap[consts.Delete] {
 		router.DELETE(path, controller.DeleteFactory(cfg...))
 		router.DELETE(path+"/:id", controller.DeleteFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path))
+		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
 	}
 	if verbMap[consts.Update] {
 		router.PUT(path, controller.UpdateFactory(cfg...))
 		router.PUT(path+"/:id", controller.UpdateFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path))
+		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
 	}
 	if verbMap[consts.UpdatePartial] {
 		router.PATCH(path, controller.UpdatePartialFactory(cfg...))
 		router.PATCH(path+"/:id", controller.UpdatePartialFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path))
+		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
 	}
 	if verbMap[consts.List] {
 		router.GET(path, controller.ListFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path))
 	}
 	if verbMap[consts.Get] {
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path, "/:id"))
 	}
 
 	if verbMap[consts.BatchCreate] {
 		router.POST(path+"/batch", controller.BatchCreateFactory(cfg...))
+		middleware.RouteManager.Add(filepath.Join(base, path, "/batch"))
 	}
 	if verbMap[consts.BatchDelete] {
 		router.DELETE(path+"/batch", controller.BatchDeleteFactory(cfg...))
+		middleware.RouteManager.Add(path + "/batch")
 	}
 	if verbMap[consts.BatchUpdate] {
 		router.PUT(path+"/batch", controller.BatchUpdateFactory(cfg...))
+		middleware.RouteManager.Add(path + "/batch")
 	}
 	if verbMap[consts.BatchUpdatePartial] {
 		router.PATCH(path+"/batch", controller.BatchUpdatePartialFactory(cfg...))
+		middleware.RouteManager.Add(path + "/batch")
 	}
 
 	if verbMap[consts.Import] {
 		router.POST(path+"/import", controller.ImportFactory(cfg...))
+		middleware.RouteManager.Add(path + "/import")
 	}
 	if verbMap[consts.Export] {
 		router.GET(path+"/export", controller.ExportFactory(cfg...))
+		middleware.RouteManager.Add(path + "/export")
 	}
 }
 

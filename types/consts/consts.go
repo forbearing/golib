@@ -64,7 +64,9 @@ const (
 	HEADER_SPAN_ID    = "X-Span-ID"
 	HEADER_PSPAN_ID   = "X-Pspan-ID"
 
-	PHASE = "phase"
+	PHASE  = "phase"
+	PARAMS = "params"
+	QUERY  = "query"
 
 	USER_SYSTEM = "system"
 	USER_ROOT   = "root"
