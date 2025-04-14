@@ -14,7 +14,8 @@ import (
 	pkgcontroller "github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/mysql"
-	"github.com/forbearing/golib/examples/myproject/model"
+	"github.com/forbearing/golib/examples/myproject/internal/model"
+	_ "github.com/forbearing/golib/examples/myproject/internal/service"
 	"github.com/forbearing/golib/middleware"
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/provider/etcd"
@@ -30,8 +31,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
-
-	_ "github.com/forbearing/golib/examples/myproject/service"
 )
 
 var redisCluster = []string{
@@ -327,22 +326,24 @@ func main() {
 	//
 	//
 	// router
-	router.Base.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
-	router.Base.GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
+	router.Base().GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
+	router.Base().GET("/hello", func(c *gin.Context) { c.String(http.StatusOK, "hello world!") })
 
-	router.API.POST("/login", pkgcontroller.User.Login)
-	router.API.POST("/signup", pkgcontroller.User.Signup)
-	router.API.DELETE("/logout", middleware.JwtAuth(), pkgcontroller.User.Logout)
-	router.API.POST("token/refresh", pkgcontroller.User.RefreshToken)
-	router.API.GET("/debug/debug", Debug.Debug)
+	router.API().POST("/login", pkgcontroller.User.Login)
+	router.API().POST("/signup", pkgcontroller.User.Signup)
+	router.API().DELETE("/logout", middleware.JwtAuth(), pkgcontroller.User.Logout)
+	router.API().POST("token/refresh", pkgcontroller.User.RefreshToken)
+	router.API().GET("/debug/debug", Debug.Debug)
 
-	router.API.Use(
+	router.API().Use(
 		middleware.JwtAuth(),
 		// middleware.RateLimiter(),
 	)
 
-	router.Register[*pkgmodel.User](router.API, "/user")
-	router.Register[*model.Group](router.API, "/group")
+	router.Register[*pkgmodel.User](router.API(), "/user")
+	router.Register[*model.Group](router.API(), "/group")
+	router.RegisterList[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
+	router.RegisterGet[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
 
 	// router.API.POST("/user", controller.Create[*User])
 	// router.API.DELETE("/user", controller.Delete[*User])
@@ -379,9 +380,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	_ = db
 	// It's your responsibility to ensure the table already exists.
-	router.RegisterWithConfig(&types.ControllerConfig[*pkgmodel.User]{DB: db}, router.API, "/external/user")
-	router.RegisterWithConfig(&types.ControllerConfig[*model.Group]{DB: db}, router.API, "/external/group")
+	router.Register(router.API(), "/external/user", &types.ControllerConfig[*pkgmodel.User]{DB: db})
+	router.Register(router.API(), "/external/group", &types.ControllerConfig[*model.Group]{DB: db})
 
 	RunOrDie(bootstrap.Run)
 }

@@ -854,8 +854,8 @@ func (db *database[M]) WithOrder(order string) types.Database[M] {
 	defer db.mu.Unlock()
 	// 可以多多个字段进行排序, 每个字段之间通过逗号分隔,
 	// order 的值比如: "field1, field2 desc, field3 asc"
-	items := strings.Split(order, ",")
-	for _, _order := range items {
+	items := strings.SplitSeq(order, ",")
+	for _order := range items {
 		if len(order) != 0 {
 			items := strings.Fields(_order)
 			for i := range items {

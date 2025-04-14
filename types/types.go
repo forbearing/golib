@@ -54,6 +54,8 @@ type ControllerContext struct {
 	Username string // currrent login user.
 	UserId   string // currrent login user id
 	Route    string
+	Params   map[string]string
+	Query    map[string][]string
 
 	RequestId string
 	TraceId   string
@@ -66,6 +68,8 @@ type DatabaseContext struct {
 	Username string // currrent login user.
 	UserId   string // currrent login user id
 	Route    string
+	Params   map[string]string
+	Query    map[string][]string
 
 	RequestId string
 	TraceId   string
@@ -82,6 +86,16 @@ type ServiceContext struct {
 	WriterHeader http.Header   // http writer header
 	ClientIP     string        // client ip
 	UserAgent    string        // user agent
+
+	// route parameters,
+	//
+	// eg: PUT /api/gists/:id/star
+	// Params: map[string]string{"id": "xxxxx-mygistid-xxxxx"}
+	//
+	// eg: DELETE /api/user/:userid/shelf/shelfid/book
+	// Params: map[string]string{"userid": "xxxxx-myuserid-xxxxx", "shelfid": "xxxxx-myshelfid-xxxxx"}
+	Params map[string]string
+	Query  map[string][]string
 
 	SessionId string // session id
 	Username  string // currrent login user.
