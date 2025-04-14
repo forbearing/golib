@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/forbearing/golib/examples/myproject/model"
+	"github.com/forbearing/golib/examples/myproject/internal/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
