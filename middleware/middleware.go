@@ -7,7 +7,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var cb *gobreaker.CircuitBreaker
+var (
+	cb           *gobreaker.CircuitBreaker
+	RouteManager *routeParamsManager
+)
 
 func Init() error {
 	cbCfg := config.App.Server.CircuitBreaker
@@ -49,5 +52,7 @@ func Init() error {
 		"interval", cbCfg.Interval,
 		"timeout", cbCfg.Timeout,
 	)
+
+	RouteManager = NewRouteParamsManager()
 	return nil
 }
