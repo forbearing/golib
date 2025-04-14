@@ -13,12 +13,20 @@ func NewControllerContext(c *gin.Context) *types.ControllerContext {
 	if c == nil {
 		return new(types.ControllerContext)
 	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
 	return &types.ControllerContext{
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
 		TraceId:   c.GetString(consts.TRACE_ID),
+		Params:    params,
+		Query:     c.Request.URL.Query(),
 	}
 }
 
@@ -27,18 +35,35 @@ func NewDatabaseContext(c *gin.Context) *types.DatabaseContext {
 	if c == nil {
 		return new(types.DatabaseContext)
 	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
 	return &types.DatabaseContext{
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserId:    c.GetString(consts.CTX_USER_ID),
 		RequestId: c.GetString(consts.REQUEST_ID),
 		TraceId:   c.GetString(consts.TRACE_ID),
+		Params:    params,
+		Query:     c.Request.URL.Query(),
 	}
 }
 
 // NewServiceContext creates ServiceContext from gin.Context.
 // Including request details, headers and user information.
 func NewServiceContext(c *gin.Context) *types.ServiceContext {
+	if c == nil {
+		return new(types.ServiceContext)
+	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
 	return &types.ServiceContext{
 		Request: c.Request,
 
@@ -48,6 +73,8 @@ func NewServiceContext(c *gin.Context) *types.ServiceContext {
 		WriterHeader: c.Writer.Header(),
 		ClientIP:     c.ClientIP(),
 		UserAgent:    c.Request.UserAgent(),
+		Params:       params,
+		Query:        c.Request.URL.Query(),
 
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),

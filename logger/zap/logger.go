@@ -2,12 +2,14 @@ package zap
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
 )
 
@@ -43,6 +45,14 @@ func (l *Logger) Errorz(msg string, fields ...zap.Field) { l.zlog.Error(msg, fie
 func (l *Logger) Fatalz(msg string, fields ...zap.Field) { l.zlog.Fatal(msg, fields...) }
 
 func (l *Logger) ZapLogger() *zap.Logger { return l.zlog }
+
+func (l *Logger) WithObject(name string, obj zapcore.ObjectMarshaler) types.Logger {
+	return &Logger{zlog: l.zlog.With(zap.Object(name, obj))}
+}
+
+func (l *Logger) WithArray(name string, arr zapcore.ArrayMarshaler) types.Logger {
+	return &Logger{zlog: l.zlog.With(zap.Array(name, arr))}
+}
 
 // With creates a new logger with additional string key-value pairs.
 // Each pair of arguments must be a key(string) followed by its value(string).
@@ -98,8 +108,9 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId,
-	)
+		consts.TRACE_ID, ctx.TraceId).
+		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
+		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
 
 // WithServiceContext creates a new logger with service context fields.
@@ -114,8 +125,9 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId,
-	)
+		consts.TRACE_ID, ctx.TraceId).
+		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
+		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
 
 // WithDatabaseContext creates a new logger with database context fields.
@@ -130,8 +142,9 @@ func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Ph
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId,
-	)
+		consts.TRACE_ID, ctx.TraceId).
+		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
+		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
 
 // GormLogger implements gorm logger.Interface
@@ -172,4 +185,28 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 				zap.Int64("rows", rows))
 		}
 	}
+}
+
+type paramsObject map[string]string
+
+func (o paramsObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if o == nil {
+		return nil
+	}
+	for k, v := range o {
+		enc.AddString(k, v)
+	}
+	return nil
+}
+
+type queryObject map[string][]string
+
+func (o queryObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if o == nil {
+		return nil
+	}
+	for k, v := range o {
+		enc.AddString(k, strings.Join(v, ","))
+	}
+	return nil
 }
