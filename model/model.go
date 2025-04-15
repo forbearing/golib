@@ -183,7 +183,7 @@ func (b *Base) SetUpdatedBy(s string)      { b.UpdatedBy = s }
 func (b *Base) SetCreatedAt(t time.Time)   { b.CreatedAt = &t }
 func (b *Base) SetUpdatedAt(t time.Time)   { b.UpdatedAt = &t }
 func (b *Base) GetID() string              { return b.ID }
-func (b *Base) SetID(id ...string)         { SetID(b, id...) }
+func (b *Base) SetID(id ...string)         { setID(b, id...) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -208,7 +208,7 @@ func (*Base) ListAfter() error    { return nil }
 func (*Base) GetBefore() error    { return nil }
 func (*Base) GetAfter() error     { return nil }
 
-func SetID(m types.Model, id ...string) {
+func setID(m types.Model, id ...string) {
 	val := reflect.ValueOf(m).Elem()
 	idField := val.FieldByName("ID")
 	if len(idField.String()) != 0 {
