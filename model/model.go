@@ -210,7 +210,7 @@ func (*Base) GetAfter() error     { return nil }
 
 func setID(m types.Model, id ...string) {
 	val := reflect.ValueOf(m).Elem()
-	idField := val.FieldByName("ID")
+	idField := val.FieldByName(consts.FIELD_ID)
 	if len(idField.String()) != 0 {
 		return
 	}
