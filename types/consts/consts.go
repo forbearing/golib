@@ -64,6 +64,8 @@ const (
 	HEADER_SPAN_ID    = "X-Span-ID"
 	HEADER_PSPAN_ID   = "X-Pspan-ID"
 
+	FIELD_ID = "ID"
+
 	PHASE  = "phase"
 	PARAMS = "params"
 	QUERY  = "query"
