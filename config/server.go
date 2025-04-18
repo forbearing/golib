@@ -9,6 +9,8 @@ type (
 const (
 	ModeProd = "prod"
 	ModeStg  = "stg"
+	ModePre  = "pre"
+	ModeTest = "test"
 	ModeDev  = "dev"
 )
 
