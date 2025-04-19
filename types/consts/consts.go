@@ -1,5 +1,7 @@
 package consts
 
+import "strings"
+
 type AppSide string
 
 const (
@@ -72,6 +74,9 @@ const (
 
 	USER_SYSTEM = "system"
 	USER_ROOT   = "root"
+
+	TAG_JSON   = "json"
+	TAG_SCHEMA = "schema"
 )
 
 type Phase string
@@ -138,6 +143,10 @@ const (
 	Most HTTPVerb = "most" // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
 	All  HTTPVerb = "all"  // All operations including Import and Export
 )
+
+func (v HTTPVerb) String() string {
+	return strings.ReplaceAll(string(v), "_", " ")
+}
 
 const (
 	ROOT  = "root"

@@ -5,21 +5,21 @@ import (
 )
 
 type User struct {
-	Name         string `json:"name,omitempty"`
-	EnName       string `json:"en_name,omitempty"`
-	Password     string `json:"password,omitempty"`
-	RePassword   string `json:"re_password,omitempty" gorm:"-"`
-	NewPassword  string `json:"new_password,omitempty" gorm:"-"`
-	Email        string `json:"email,omitempty"`
-	Avatar       string `json:"avatar,omitempty"`
-	AvatarUrl    string `json:"avatar_url,omitempty"`    // 用户头像
-	AvatarThumb  string `json:"avatar_thumb,omitempty"`  // 用户头像 72x72
-	AvatarMiddle string `json:"avatar_middle,omitempty"` // 用户头像 240x240
-	AvatarBig    string `json:"avatar_big,omitempty"`    // 用户头像 640x640
-	Mobile       string `json:"mobile,omitempty"`
-	Nickname     string `json:"nickname,omitempty"`
-	Introduction string `json:"introduction,omitempty"`
-	Status       uint   `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
+	Name         string  `json:"name,omitempty"`
+	EnName       string  `json:"en_name,omitempty"`
+	Password     string  `json:"password,omitempty"`
+	RePassword   string  `json:"re_password,omitempty" gorm:"-"`
+	NewPassword  string  `json:"new_password,omitempty" gorm:"-"`
+	Email        string  `json:"email,omitempty"`
+	Avatar       *string `json:"avatar,omitempty"`
+	AvatarUrl    string  `json:"avatar_url,omitempty"`    // 用户头像
+	AvatarThumb  string  `json:"avatar_thumb,omitempty"`  // 用户头像 72x72
+	AvatarMiddle string  `json:"avatar_middle,omitempty"` // 用户头像 240x240
+	AvatarBig    string  `json:"avatar_big,omitempty"`    // 用户头像 640x640
+	Mobile       string  `json:"mobile,omitempty"`
+	Nickname     string  `json:"nickname,omitempty"`
+	Introduction string  `json:"introduction,omitempty"`
+	Status       uint    `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
 	// State 员工状态
 	// 1 在职
 	// 2 离职
