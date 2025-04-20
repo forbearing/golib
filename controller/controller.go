@@ -1025,8 +1025,13 @@ Response Data:
 */
 
 type requestData[M types.Model] struct {
-	Items   []M      `json:"items,omitempty"`
+	// Ids is the id list that should be batch delete.
+	Ids []string `json:"ids,omitempty"`
+	// Items is the resource list that should be batch create/update/partial update.
+	Items []M `json:"items,omitempty"`
+	// Options is the batch operation options.
 	Options *options `json:"options,omitempty"`
+	// Summary is the batch operation result summary.
 	Summary *summary `json:"summary,omitempty"`
 }
 
@@ -1135,6 +1140,13 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		}
 
 		// 1.Perform business logic processing before batch delete resources.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		req.Items = make([]M, 0, len(req.Ids))
+		for _, id := range req.Ids {
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
+			req.Items = append(req.Items, m)
+		}
 		if err = new(service.Factory[M]).Service().BatchDeleteBefore(helper.NewServiceContext(c), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
@@ -1162,7 +1174,11 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 				Failed:    0,
 			}
 		}
-		ResponseJSON(c, CodeSuccess, req)
+		req.Ids = nil
+		req.Items = nil
+		req.Options = nil
+		// not response req.
+		ResponseJSON(c, CodeSuccess)
 	}
 }
 
