@@ -1,14 +1,39 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.4.3"></a>
+## [v0.4.3] - 2025-04-20
+### Chg
+- **model:** use constant for ID field name
+- **model:** make SetID function priviate
+
 ### Chore
+- update example/myproject
 - **deps:** upgrade dependencies to latest version
 
 ### Docs
+- update CHANGELOG.md with recent changes
 - add CHANGELOG.md and .chglog configuration
 
+### Feat
+- enhance project with OpenAPI support
+- **config:** add pre-release and test server mode constants
+- **controller:** enhance batch delete with "ids" support
+- **logger:** add log entry "params", "query" for ControllerContext,ServiceContext,DatabaseContext
+- **logger:** add router information to log context
+- **middleware:** add RouteParams
+
+### Fix
+- **controller:** improve resource existence in GetFactory
+
 ### Refactor
+- use modern go APIs(strings.SplitSeq and maps.Copy)
 - **boostrap:** replace custom initFunc with func() error
+- **controller:** use range-based loop syntax for numeric iterations
+
+### Pull Requests
+- Merge pull request [#2](https://github.com/forbearing/golib/issues/2) from forbearing/dev
 
 
 <a name="v0.4.2"></a>
@@ -1071,7 +1096,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.4.3...HEAD
+[v0.4.3]: https://github.com/forbearing/golib/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/forbearing/golib/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/forbearing/golib/compare/v0.4.0...v0.4.1
 [v0.4.0]: https://github.com/forbearing/golib/compare/v0.3.4...v0.4.0
