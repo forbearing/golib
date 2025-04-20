@@ -10,6 +10,7 @@ const (
 	AUTH_BASE_AUTH_PASSWORD            = "AUTH_BASE_AUTH_PASSWORD"
 	AUTH_ACCESS_TOKEN_EXPIRE_DURATION  = "AUTH_ACCESS_TOKEN_EXPIRE_DURATION"
 	AUTH_REFRESH_TOKEN_EXPIRE_DURATION = "AUTH_REFRESH_TOKEN_EXPIRE_DURATION"
+	AUTH_RBAC_ENABLE                   = "AUTH_RBAC_ENABLE"
 )
 
 type Auth struct {
@@ -20,6 +21,8 @@ type Auth struct {
 	BaseAuthPassword           string        `json:"base_auth_password" mapstructure:"base_auth_password" ini:"base_auth_password" yaml:"base_auth_password"`
 	AccessTokenExpireDuration  time.Duration `json:"access_token_expire_duration" mapstructure:"access_token_expire_duration" ini:"access_token_expire_duration" yaml:"access_token_expire_duration"`
 	RefreshTokenExpireDuration time.Duration `json:"refresh_token_expire_duration" mapstructure:"refresh_token_expire_duration" ini:"refresh_token_expire_duration" yaml:"refresh_token_expire_duration"`
+
+	RBACEnable bool `json:"rbac_enable" mapstructure:"rbac_enable" ini:"rbac_enable" yaml:"rbac_enable"`
 }
 
 func (*Auth) setDefault() {
@@ -30,4 +33,6 @@ func (*Auth) setDefault() {
 	cv.SetDefault("auth.base_auth_password", baseAuthPassword)
 	cv.SetDefault("auth.access_token_expire_duration", "2h")
 	cv.SetDefault("auth.refresh_token_expire_duration", "168h")
+
+	cv.SetDefault("auth.rbac_enable", false)
 }

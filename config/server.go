@@ -15,11 +15,10 @@ const (
 )
 
 const (
-	SERVER_DOMAIN      = "SERVER_DOMAIN"
-	SERVER_MODE        = "SERVER_MODE"
-	SERVER_LISTEN      = "SERVER_LISTEN"
-	SERVER_PORT        = "SERVER_PORT"
-	SERVER_ENABLE_RBAC = "SERVER_ENABLE_RBAC"
+	SERVER_DOMAIN = "SERVER_DOMAIN"
+	SERVER_MODE   = "SERVER_MODE"
+	SERVER_LISTEN = "SERVER_LISTEN"
+	SERVER_PORT   = "SERVER_PORT"
 
 	// Circuit breaker related environment variables
 	SERVER_CIRCUIT_BREAKER_NAME         = "SERVER_CIRCUIT_BREAKER_NAME"
@@ -32,11 +31,10 @@ const (
 )
 
 type Server struct {
-	Mode       Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
-	Listen     string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
-	Port       int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
-	Domain     string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
-	EnableRBAC bool   `json:"enable_rbac" mapstructure:"enable_rbac" ini:"enable_rbac" yaml:"enable_rbac"`
+	Mode   Mode   `json:"mode" mapstructure:"mode" ini:"mode" yaml:"mode"`
+	Listen string `json:"listen" mapstructure:"listen" ini:"listen" yaml:"listen"`
+	Port   int    `json:"port" mapstructure:"port" ini:"port" yaml:"port"`
+	Domain string `json:"domain" mapstructure:"domain" ini:"domain" yaml:"domain"`
 
 	CircuitBreaker CircuitBreaker `json:"circuit_breaker" mapstructure:"circuit_breaker" ini:"circuit_breaker" yaml:"circuit_breaker"`
 }
@@ -56,7 +54,6 @@ func (*Server) setDefault() {
 	cv.SetDefault("server.listen", "")
 	cv.SetDefault("server.port", 8080)
 	cv.SetDefault("server.domain", "")
-	cv.SetDefault("server.enable_rbac", false)
 
 	// Circuit breaker defaults
 	cv.SetDefault("server.circuit_breaker.name", "backend-server")
