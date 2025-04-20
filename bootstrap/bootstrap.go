@@ -7,8 +7,8 @@ import (
 	"syscall"
 
 	"github.com/forbearing/golib/authn/jwt"
-	"github.com/forbearing/golib/authz/basic"
-	"github.com/forbearing/golib/authz/tenant"
+	"github.com/forbearing/golib/authz/rbac/basic"
+	"github.com/forbearing/golib/authz/rbac/tenant"
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/redis"
