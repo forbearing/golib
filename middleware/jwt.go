@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/forbearing/golib/jwt"
+	"github.com/forbearing/golib/authn/jwt"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
