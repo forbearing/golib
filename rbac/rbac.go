@@ -67,7 +67,7 @@ var RBAC = new(rbac)
 // https://blog.csdn.net/LeoForBest/article/details/133610889
 // https://juejin.cn/post/7269563694676819968
 func Init() (err error) {
-	if !config.App.Server.EnableRBAC {
+	if !config.App.Auth.RBACEnable {
 		return nil
 	}
 
