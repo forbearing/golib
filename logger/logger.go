@@ -2,6 +2,7 @@
 package logger
 
 import (
+	"github.com/casbin/casbin/v2/log"
 	"github.com/forbearing/golib/types"
 	"go.uber.org/zap"
 	gorml "gorm.io/gorm/logger"
@@ -37,6 +38,7 @@ var (
 	Protocol types.Logger
 	Binary   types.Logger
 
-	Gin  *zap.Logger
-	Gorm gorml.Interface
+	Gin    *zap.Logger
+	Gorm   gorml.Interface
+	Casbin log.Logger
 )
