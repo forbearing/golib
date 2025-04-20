@@ -153,7 +153,7 @@ func Run() error {
 	}()
 	select {
 	case sig := <-sigCh:
-		zap.S().Infow("cancancel by signal", "signal", sig)
+		zap.S().Infow("cancelled by signal", "signal", sig)
 		return nil
 	case err := <-errCh:
 		return err
