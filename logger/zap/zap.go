@@ -58,6 +58,7 @@ func Init() error {
 	logger.Cache = New("cache.log")
 	logger.Redis = New("redis.log")
 
+	logger.Authz = New("authz.log")
 	logger.Cassandra = New("cassandra.log")
 	logger.Elastic = New("elastic.log")
 	logger.Etcd = New("etcd.log")
@@ -98,6 +99,7 @@ func Clean() {
 		logger.Cache,
 		logger.Redis,
 
+		logger.Authz,
 		logger.Cassandra,
 		logger.Elastic,
 		logger.Etcd,

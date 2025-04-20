@@ -19,6 +19,7 @@ var (
 	Cache      types.Logger
 	Redis      types.Logger
 
+	Authz     types.Logger
 	Cassandra types.Logger
 	Elastic   types.Logger
 	Etcd      types.Logger
