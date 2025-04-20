@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/forbearing/golib/authn/jwt"
 	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/jwt"
 	. "github.com/forbearing/golib/response"
 	"github.com/gin-gonic/gin"
 )

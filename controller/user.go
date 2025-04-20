@@ -8,9 +8,9 @@ import (
 	"unicode"
 
 	"github.com/cockroachdb/errors"
+	"github.com/forbearing/golib/authn/jwt"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/response"

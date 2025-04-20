@@ -6,6 +6,9 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/forbearing/golib/authn/jwt"
+	"github.com/forbearing/golib/authz/basic"
+	"github.com/forbearing/golib/authz/tenant"
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/redis"
@@ -20,7 +23,6 @@ import (
 	"github.com/forbearing/golib/debug/pprof"
 	"github.com/forbearing/golib/debug/statsviz"
 	"github.com/forbearing/golib/grpc"
-	"github.com/forbearing/golib/jwt"
 	"github.com/forbearing/golib/logger/logrus"
 	pkgzap "github.com/forbearing/golib/logger/zap"
 	"github.com/forbearing/golib/metrics"
@@ -39,7 +41,6 @@ import (
 	"github.com/forbearing/golib/provider/nats"
 	"github.com/forbearing/golib/provider/rethinkdb"
 	"github.com/forbearing/golib/provider/rocketmq"
-	"github.com/forbearing/golib/rbac"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/task"
@@ -96,13 +97,16 @@ func Bootstrap() error {
 		feishu.Init,
 		ldap.Init,
 
+		// Authorization and Authentication
+		basic.Init,
+		tenant.Init,
+		jwt.Init,
+
 		// service
-		rbac.Init,
 		service.Init,
 		middleware.Init,
 		router.Init,
 		grpc.Init,
-		jwt.Init,
 
 		// job
 		task.Init,
