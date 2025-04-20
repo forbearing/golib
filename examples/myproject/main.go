@@ -46,6 +46,8 @@ func main() {
 	os.Setenv(config.DEBUG_PPROF_ENABLE, "true")
 	os.Setenv(config.DEBUG_STATSVIZ_ENABLE, "true")
 	os.Setenv(config.DEBUG_GOPS_ENABLE, "true")
+	os.Setenv(config.AUTH_BASE_AUTH_USERNAME, "admin")
+	os.Setenv(config.AUTH_BASE_AUTH_PASSWORD, "admin")
 
 	os.Setenv(config.SERVER_PORT, "8002")
 	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
@@ -61,6 +63,8 @@ func main() {
 	os.Setenv(config.POSTGRES_PASSWORD, "admin")
 
 	os.Setenv(config.MYSQL_ENABLE, "true")
+	os.Setenv(config.MYSQL_HOST, "127.0.0.1")
+	os.Setenv(config.MYSQL_PORT, "3307")
 	os.Setenv(config.MYSQL_DATABASE, "myproject")
 	os.Setenv(config.MYSQL_USERNAME, "myproject")
 	os.Setenv(config.MYSQL_PASSWORD, "myproject")
@@ -75,58 +79,58 @@ func main() {
 	os.Setenv(config.SQLSERVER_USERNAME, "sa")
 	os.Setenv(config.SQLSERVER_PASSWORD, "Passw0rd")
 
-	os.Setenv(config.ELASTICSEARCH_ENABLE, "true")
+	os.Setenv(config.ELASTICSEARCH_ENABLE, "false")
 	os.Setenv(config.ELASTICSEARCH_ENABLE_DEBUG_LOGGER, "true")
 	os.Setenv(config.ELASTICSEARCH_ADDRS, "http://127.0.0.1:9200")
 	os.Setenv(config.ELASTICSEARCH_USERNAME, "elastic")
 	os.Setenv(config.ELASTICSEARCH_PASSWORD, "changeme")
 
-	os.Setenv(config.REDIS_ENABLE, "true")
+	os.Setenv(config.REDIS_ENABLE, "false")
 	os.Setenv(config.REDIS_CLUSTER_MODE, "false")
 	os.Setenv(config.REDIS_PASSWORD, "password123")
 	os.Setenv(config.REDIS_EXPIRATION, "8h")
 	os.Setenv(config.REDIS_ADDRS, strings.Join(redisCluster, ","))
 	os.Setenv(config.REDIS_ADDR, "127.0.0.1:6378")
 
-	os.Setenv(config.MONGO_ENABLE, "true")
+	os.Setenv(config.MONGO_ENABLE, "false")
 	os.Setenv(config.MONGO_USERNAME, "mongo")
 	os.Setenv(config.MONGO_PASSWORD, "changeme")
 
-	os.Setenv(config.MINIO_ENABLE, "true")
+	os.Setenv(config.MINIO_ENABLE, "false")
 	os.Setenv(config.MINIO_ENDPOINT, "localhost:9000")
 	os.Setenv(config.MINIO_ACCESS_KEY, "minio-access-key")
 	os.Setenv(config.MINIO_SECRET_KEY, "minio-secret-key")
 	os.Setenv(config.MINIO_BUCKET, "")
 	os.Setenv(config.MINIO_REGION, "")
 
-	os.Setenv(config.MQTT_ENABLE, "true")
+	os.Setenv(config.MQTT_ENABLE, "false")
 	os.Setenv(config.MQTT_CLIENT_PREFIX, "golib")
 
-	os.Setenv(config.INFLUXDB_ENABLE, "true")
+	os.Setenv(config.INFLUXDB_ENABLE, "false")
 	os.Setenv(config.INFLUXDB_TOKEN, "influxdb")
 	os.Setenv(config.INFLUXDB_ORG, "golib.com")
 
-	os.Setenv(config.KAFKA_ENABLE, "true")
+	os.Setenv(config.KAFKA_ENABLE, "false")
 	os.Setenv(config.KAFKA_BROKERS, "127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094")
 
-	os.Setenv(config.ETCD_ENABLE, "true")
+	os.Setenv(config.ETCD_ENABLE, "false")
 	os.Setenv(config.ETCD_ENDPOINTS, "127.0.0.1:2379,127.0.0.1:12379,127.0.0.1:32379")
 
 	os.Setenv(config.NATS_ADDRS, "nats://127.0.0.1:4222,nats://127.0.0.1:4223,nats://127.0.0.1:4224")
-	os.Setenv(config.NATS_ENABLE, "true")
+	os.Setenv(config.NATS_ENABLE, "false")
 
 	os.Setenv(config.CASSANDRA_ENABLE, "false")
 	os.Setenv(config.CASSANDRA_USERNAME, "cassandra")
 	os.Setenv(config.CASSANDRA_PASSWORD, "cassandra")
 
-	os.Setenv(config.MEMCACHED_ENABLE, "true")
+	os.Setenv(config.MEMCACHED_ENABLE, "false")
 	os.Setenv(config.SCYLLA_ENABLE, "false")
-	os.Setenv(config.RETHINKDB_ENABLE, "true")
+	os.Setenv(config.RETHINKDB_ENABLE, "false")
 	os.Setenv(config.RETHINKDB_HOSTS, "127.0.0.1:28015,127.0.0.1:28016,127.0.0.1:28017")
 	os.Setenv(config.ROCKETMQ_ENABLE, "false")
 	os.Setenv(config.ROCKETMQ_NAMESRV_ADDRS, "127.0.0.1:15672")
 
-	os.Setenv(config.LDAP_ENABLE, "true")
+	os.Setenv(config.LDAP_ENABLE, "false")
 	os.Setenv(config.LDAP_PORT, "1389")
 	os.Setenv(config.LDAP_BASE_DN, "dc=example,dc=org")
 	os.Setenv(config.LDAP_BIND_DN, "cn=admin,dc=example,dc=org")
@@ -189,7 +193,8 @@ func main() {
 	}
 
 	// nats
-	{
+	if config.App.Nats.Enable {
+
 		nc := pkgnats.Conn()
 		// 订阅主题
 		sub, err := nc.Subscribe("greetings", func(msg *nats.Msg) {
@@ -217,7 +222,7 @@ func main() {
 		time.Sleep(time.Second)
 	}
 	// etcd
-	{
+	if config.App.Etcd.Enable {
 		if _, err := etcd.Client().Put(context.TODO(), "key1", "value1"); err != nil {
 			zap.S().Fatal(err)
 		}
@@ -242,7 +247,7 @@ func main() {
 
 	}
 	// memcached
-	{
+	if config.App.Memcached.Enable {
 		memcached.Set("key1", []byte("value1"), 0)
 		memcached.Set("key2", []byte("value2"), 0)
 		value, err := memcached.Get("key1")
@@ -252,7 +257,7 @@ func main() {
 		fmt.Printf("[memcached] value: %s\n", value)
 	}
 	// rethinkdb
-	{
+	if config.App.RethinkDB.Enable {
 		type User struct {
 			ID      string `rethinkdb:"id,omitempty"`
 			Name    string `rethinkdb:"name"`
@@ -336,8 +341,8 @@ func main() {
 	router.API().GET("/debug/debug", Debug.Debug)
 
 	router.API().Use(
-		middleware.JwtAuth(),
-		// middleware.RateLimiter(),
+	// middleware.JwtAuth(),
+	// middleware.RateLimiter(),
 	)
 
 	router.Register[*pkgmodel.User](router.API(), "/user")
@@ -371,7 +376,7 @@ func main() {
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
-	cfg.Port = 3306
+	cfg.Port = 3307
 	cfg.Database = "golib"
 	cfg.Username = "golib"
 	cfg.Password = "golib"

@@ -108,6 +108,10 @@ func (r Code) Status() int {
 	return val.Status
 }
 
+func (r Code) Code() int {
+	return int(r)
+}
+
 func NewCode(status int, msg string) Code {
 	code := -1
 	codeValueMap[Code(code)] = codeValue{

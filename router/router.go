@@ -12,11 +12,14 @@ import (
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/internal/openapigen"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
@@ -42,6 +45,8 @@ func Init() error {
 	base.GET("/-/healthz", controller.Probe.Healthz)
 	base.GET("/-/readyz", controller.Probe.Readyz)
 	base.GET("/-/pageid", controller.PageID)
+	base.GET("/api.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
+	base.GET("/api/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/api.json")))
 
 	api = base.Group("/api")
 	api.Use(
@@ -124,78 +129,91 @@ func Stop() {
 func Register[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Most), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Most)
 	}
 }
 
 func RegisterCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Create), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Create)
 	}
 }
 
 func RegisterDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Delete), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Delete)
 	}
 }
 
 func RegisterUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Update), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Update)
 	}
 }
 
 func RegisterUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.UpdatePartial), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.UpdatePartial)
 	}
 }
 
 func RegisterList[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.List), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.List)
 	}
 }
 
 func RegisterGet[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Get), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Get)
 	}
 }
 
 func RegisterImport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Import), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Import)
 	}
 }
 
 func RegisterExport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Export), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.Export)
 	}
 }
 
 func RegisterBatchCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchCreate), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.BatchCreate)
 	}
 }
 
 func RegisterBatchDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchDelete), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.BatchDelete)
 	}
 }
 
 func RegisterBatchUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdate), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.BatchUpdate)
 	}
 }
 
 func RegisterBatchUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdatePartial), cfg...)
+		openapigen.Set[M](buildPath(rawPath), consts.BatchUpdatePartial)
 	}
 }
 
