@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	casbinl "github.com/casbin/casbin/v2/log"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
@@ -147,6 +148,30 @@ func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Ph
 		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
 
+type paramsObject map[string]string
+
+func (o paramsObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if o == nil {
+		return nil
+	}
+	for k, v := range o {
+		enc.AddString(k, v)
+	}
+	return nil
+}
+
+type queryObject map[string][]string
+
+func (o queryObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if o == nil {
+		return nil
+	}
+	for k, v := range o {
+		enc.AddString(k, strings.Join(v, ","))
+	}
+	return nil
+}
+
 // GormLogger implements gorm logger.Interface
 type GormLogger struct{ l types.Logger }
 
@@ -187,26 +212,53 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	}
 }
 
-type paramsObject map[string]string
-
-func (o paramsObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if o == nil {
-		return nil
-	}
-	for k, v := range o {
-		enc.AddString(k, v)
-	}
-	return nil
+type CasbinLogger struct {
+	l       types.Logger
+	enabled bool
 }
 
-type queryObject map[string][]string
+var _ casbinl.Logger = (*CasbinLogger)(nil)
 
-func (o queryObject) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if o == nil {
-		return nil
+func (c *CasbinLogger) EnableLog(enabled bool) {
+	c.enabled = enabled
+}
+
+func (c *CasbinLogger) IsEnabled() bool {
+	return c.enabled
+}
+
+func (c *CasbinLogger) LogModel(mode [][]string) {
+	if !c.enabled {
+		return
 	}
-	for k, v := range o {
-		enc.AddString(k, strings.Join(v, ","))
+	c.l.Infow("", zap.Any("mode", mode))
+}
+
+func (c *CasbinLogger) LogEnforce(matcher string, request []any, result bool, explains [][]string) {
+	if !c.enabled {
+		return
 	}
-	return nil
+	c.l.Infow("", zap.Bool("result", result), zap.Any("request", request), zap.Any("explains", explains), zap.String("matcher", matcher))
+}
+
+func (c *CasbinLogger) LogPolicy(policy map[string][][]string) {
+	if !c.enabled {
+		return
+	}
+	for k, vl := range policy {
+		for _, v := range vl {
+			c.l.Infow("policy", k, v)
+		}
+	}
+}
+
+func (c *CasbinLogger) LogRole(roles []string) {
+	if !c.enabled {
+		return
+	}
+	c.l.Infow("", zap.Any("roles", roles))
+}
+
+func (c *CasbinLogger) LogError(err error, msg ...string) {
+	c.l.Error(err, msg)
 }

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	casbinl "github.com/casbin/casbin/v2/log"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
@@ -78,6 +79,7 @@ func Init() error {
 
 	logger.Gin = NewGin("access.log")
 	logger.Gorm = NewGorm("gorm.log")
+	logger.Casbin = NewCasbin("casbin.log")
 
 	return nil
 }
@@ -135,6 +137,18 @@ func Clean() {
 			}
 		}
 	}
+
+	// casbin logger
+	casbinLogs := []casbinl.Logger{
+		logger.Casbin,
+	}
+	for _, clog := range casbinLogs {
+		if log, ok := clog.(*CasbinLogger); ok {
+			if l, ok := log.l.(*Logger); ok {
+				l.zlog.Sync()
+			}
+		}
+	}
 }
 
 // New returns *Logger instance that contains *zap.Logger and *zap.SugaredLogger
@@ -156,8 +170,7 @@ func New(filename ...string) *Logger {
 }
 
 // NewGorm returns a *GormLogger instance that implements gorm logger.Interface.
-// The difference between NewGorm and NewLogger is the `zap.AddCallerSkip()`
-func NewGorm(filename ...string) *GormLogger {
+func NewGorm(filename ...string) gorml.Interface {
 	readConf()
 	if len(filename) > 0 {
 		if len(filename[0]) > 0 {
@@ -173,8 +186,23 @@ func NewGorm(filename ...string) *GormLogger {
 	return &GormLogger{l: &Logger{zlog: logger}}
 }
 
+// NewCasbin returns a *GormLogger instance that implements casbin Logger interface.
+// This logger without 'caller' field.
+func NewCasbin(filename ...string) casbinl.Logger {
+	readConf()
+	if len(filename) > 0 {
+		if len(filename[0]) > 0 {
+			logFile = filename[0]
+		}
+	}
+	logger := zap.New(
+		zapcore.NewCore(newLogEncoder(), newLogWriter(), newLogLevel()),
+		zap.AddStacktrace(zapcore.FatalLevel),
+	)
+	return &CasbinLogger{l: &Logger{zlog: logger}}
+}
+
 // NewGin returns a *Logger instance that contains *zap.Logger.
-// The difference between NewGin and New is disable fields "caller", "level" and "msg".
 func NewGin(filename ...string) *zap.Logger {
 	readConf()
 	if len(filename) > 0 {
@@ -185,7 +213,7 @@ func NewGin(filename ...string) *zap.Logger {
 	return zap.New(zapcore.NewCore(newLogEncoder(option{disableMsg: true, disableLevel: true}), newLogWriter(), newLogLevel()))
 }
 
-// NewStdLog
+// NewStdLog returns a *log.Logger instance that contains *zap.Logger.
 func NewStdLog() *log.Logger {
 	return zap.NewStdLog(NewZap())
 }
