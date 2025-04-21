@@ -48,6 +48,7 @@ func main() {
 	os.Setenv(config.DEBUG_GOPS_ENABLE, "true")
 	os.Setenv(config.AUTH_BASE_AUTH_USERNAME, "admin")
 	os.Setenv(config.AUTH_BASE_AUTH_PASSWORD, "admin")
+	os.Setenv(config.AUTH_RBAC_ENABLE, "true")
 
 	os.Setenv(config.SERVER_PORT, "8002")
 	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
@@ -341,38 +342,17 @@ func main() {
 	router.API().GET("/debug/debug", Debug.Debug)
 
 	router.API().Use(
-	// middleware.JwtAuth(),
-	// middleware.RateLimiter(),
+		// middleware.JwtAuth(),
+		// middleware.RateLimiter(),
+		middleware.JwtAuth(),
+		middleware.Authz(),
 	)
 
 	router.Register[*pkgmodel.User](router.API(), "/user")
 	router.Register[*model.Group](router.API(), "/group")
 	router.RegisterList[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
 	router.RegisterGet[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-
-	// router.API.POST("/user", controller.Create[*User])
-	// router.API.DELETE("/user", controller.Delete[*User])
-	// router.API.DELETE("/user/:id", controller.Delete[*User])
-	// router.API.PUT("/user", controller.Update[*User])
-	// router.API.PUT("/user/:id", controller.Update[*User])
-	// router.API.PATCH("/user", controller.UpdatePartial[*User])
-	// router.API.PATCH("/user/:id", controller.UpdatePartial[*User])
-	// router.API.GET("/user", controller.List[*User])
-	// router.API.GET("/user/:id", controller.Get[*User])
-	// router.API.GET("/user/export", controller.Export[*User])
-	// router.API.POST("/user/import", controller.Import[*User])
-
-	// router.API.POST("/group", controller.Create[*Group])
-	// router.API.DELETE("/group", controller.Delete[*Group])
-	// router.API.DELETE("/group/:id", controller.Delete[*Group])
-	// router.API.PUT("/group", controller.Update[*Group])
-	// router.API.PUT("/group/:id", controller.Update[*Group])
-	// router.API.PATCH("/group", controller.UpdatePartial[*Group])
-	// router.API.PATCH("/group/:id", controller.UpdatePartial[*Group])
-	// router.API.GET("/group", controller.List[*Group])
-	// router.API.GET("/group/:id", controller.Get[*Group])
-	// router.API.GET("/group/export", controller.Export[*Group])
-	// router.API.POST("/group/import", controller.Import[*Group])
+	router.RegisterList[*pkgmodel.CasbinRule](router.API(), "casbin_rule")
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
