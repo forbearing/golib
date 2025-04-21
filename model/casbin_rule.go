@@ -20,14 +20,6 @@ type CasbinRule struct {
 	V4    string `json:"v4,omitempty" gorm:"size:100" schema:"v4"`
 	V5    string `json:"v5,omitempty" gorm:"size:100" schema:"v5"`
 
-	// 当 Ptype 为 g 时, V0 就是用户名, V1 就是角色名
-	// 当 Ptype 为 p 时, V0 就是角色名, V1 就是资源, V2 就是操作
-	Username    string `json:"username" schema:"username"`
-	RoleName    string `json:"role_name" schema:"role_name"`
-	MenuName    string `json:"menu_name" schema:"menu_name"`
-	IsMenu      bool   `json:"is_menu" schema:"is_menu"` // 这个 casbin_rule 是否是根据菜单创建出来的.
-	Description string `json:"description"`
-
 	Base
 }
 
