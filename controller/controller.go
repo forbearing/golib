@@ -72,19 +72,24 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
+		var err error
+		var reqErr error
 		req := *new(M)
-		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Error(err)
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam)
 			return
 		}
-
-		req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
-		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-		log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		} else {
+			req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+			log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+		}
 
 		// 1.Perform business logic processing before create resource.
-		if err := new(service.Factory[M]).Service().CreateBefore(helper.NewServiceContext(c), req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateBefore(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -94,13 +99,15 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
 		// NOTE: WithExpand(req.Expands()...) is not a good choices.
 		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-		if err := handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure)
-			return
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure)
+				return
+			}
 		}
 		// 3.Perform business logic processing after create resource
-		if err := new(service.Factory[M]).Service().CreateAfter(helper.NewServiceContext(c), req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateAfter(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure)
 			return
@@ -1053,7 +1060,6 @@ func BatchCreate[M types.Model](c *gin.Context) {
 // BatchCreateFactory
 func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
-	_ = handler
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_CREATE)
 		var err error
@@ -1070,7 +1076,6 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 
 		typ := reflect.TypeOf(*new(M)).Elem()
 		val := reflect.New(typ).Interface().(M)
-		_ = val
 		for _, m := range req.Items {
 			m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
 			m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
@@ -1122,7 +1127,6 @@ func BatchDelete[M types.Model](c *gin.Context) {
 // BatchDeleteFactory
 func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
-	_ = handler
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_DELETE)
 		log.Info("batch delete")
@@ -1190,7 +1194,6 @@ func BatchUpdate[M types.Model](c *gin.Context) {
 // BatchUpdateFactory
 func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
-	_ = handler
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE)
 		log.Info("batch update")
@@ -1247,7 +1250,6 @@ func BatchUpdatePartial[M types.Model](c *gin.Context) {
 // BatchUpdatePartialFactory
 func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
-	_ = handler
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE_PARTIAL)
 		log.Info("batch update partial")
