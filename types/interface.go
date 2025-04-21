@@ -352,6 +352,18 @@ type Cache[T any] interface {
 	// Decrement(key string, delta int64) (int64, error)
 }
 
+// RBAC interface
+type RBAC interface {
+	AddRole(name string) error
+	RemoveRole(name string) error
+
+	GrantPermission(role string, resource string, action string) error
+	RevokePermission(role string, resource string, action string) error
+
+	AssignRole(subject string, role string) error
+	UnassignRole(subject string, role string) error
+}
+
 // ESDocumenter represents a document that can be indexed into Elasticsearch.
 // Types implementing this interface should be able to convert themselves
 // into a document format suitable for Elasticsearch indexing.

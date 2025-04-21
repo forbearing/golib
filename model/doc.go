@@ -16,8 +16,10 @@ package model
   2.不要重写 GetD() 和 SetID() 方法
 5.如果要 UpdatePartial, 修改的字段如果是基本类型,比如 int, string 等, 如果修改的值是默认值(zero value),
   那么必须该类型改成指针类型,否则无法修改.
-
-5.外键只允许多集关系的表,并且这种表的 children 也是自己
+6.外键只允许多集关系的表,并且这种表的 children 也是自己
+7.直接完全继承另外一个model,则可以完成操作另外一个model的数据库表,参考 CasbinRule
+6.重写 SetID() 函数为一个空的函数, 可以让 ID 只为 integer 并且为自增类型, 参考 CasbinRule
+7.尽量别在 model 的结构体字段上加上 binding:"required" tag
 
 rbac
 	g hybfkuf admin                  // hybfkuf 属于 admin 组
