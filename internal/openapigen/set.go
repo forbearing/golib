@@ -989,7 +989,7 @@ func exampleValue(code response.Code) map[string]any {
 	}
 }
 
-// setupExample will remove field "created_at", "created_by", "updated_at", "updated_by"
+// setupExample will remove field "created_at", "created_by", "updated_at", "updated_by", "id".
 //
 // Before:
 //
@@ -1010,7 +1010,6 @@ func exampleValue(code response.Code) map[string]any {
 //
 //	{
 //	  "desc": "string",
-//	  "id": "string",
 //	  "member_count": 0,
 //	  "name": "string",
 //	  "order": 0,
@@ -1026,7 +1025,7 @@ func setupExample(schemaRef *openapi3.SchemaRef) {
 	props := schemaRef.Value.Properties
 	examples := make(map[string]any)
 	for k, v := range props {
-		if k == "created_at" || k == "created_by" || k == "updated_at" || k == "updated_by" {
+		if k == "created_at" || k == "created_by" || k == "updated_at" || k == "updated_by" || k == "id" {
 			continue
 		}
 		if v.Value.Type.Is(openapi3.TypeString) {
