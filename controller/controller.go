@@ -77,7 +77,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		req := *new(M)
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
-			ResponseJSON(c, CodeInvalidParam)
+			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 			return
 		}
 		if reqErr == io.EOF {

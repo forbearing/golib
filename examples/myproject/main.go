@@ -352,7 +352,11 @@ func main() {
 	router.Register[*model.Group](router.API(), "/group")
 	router.RegisterList[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
 	router.RegisterGet[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-	router.RegisterList[*pkgmodel.CasbinRule](router.API(), "casbin_rule")
+	// router.RegisterList[*pkgmodel.CasbinRule](router.API(), "casbin_rule")
+	router.RegisterList[*pkgmodel.Rolebinding](router.API(), "rolebinding")
+	router.RegisterList[*pkgmodel.Role](router.API(), "role")
+	router.RegisterCreate[*pkgmodel.Role](router.API(), "role")
+	router.RegisterDelete[*pkgmodel.Role](router.API(), "role")
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
