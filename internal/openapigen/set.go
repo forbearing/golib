@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
@@ -123,7 +124,7 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Post)
+	addHeaderParameters(pathItem.Post)
 }
 
 func setDelete[M types.Model](pathItem *openapi3.PathItem) {
@@ -177,7 +178,7 @@ func setDelete[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Delete)
+	addHeaderParameters(pathItem.Delete)
 }
 
 func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
@@ -248,7 +249,7 @@ func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Put)
+	addHeaderParameters(pathItem.Put)
 }
 
 func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
@@ -319,7 +320,7 @@ func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Patch)
+	addHeaderParameters(pathItem.Patch)
 }
 
 func setList[M types.Model](pathItem *openapi3.PathItem) {
@@ -334,44 +335,42 @@ func setList[M types.Model](pathItem *openapi3.PathItem) {
 	}
 	doc.Components.Schemas[name] = schemaRef
 
-	// TODO: 从 schema 字段中读取查询信息
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.List, typ),
 		Summary:     summary(consts.List, typ),
 		Description: description(consts.List, typ),
 		Tags:        tags(consts.List, typ),
-		// TODO: query parameters get from schema tags
-		Parameters: []*openapi3.ParameterRef{
-			{
-				Value: &openapi3.Parameter{
-					Name:     "page",
-					In:       "query",
-					Required: false,
-					Schema: &openapi3.SchemaRef{
-						Value: &openapi3.Schema{
-							Type:    &openapi3.Types{openapi3.TypeInteger},
-							Default: 1,
-						},
-					},
-					Description: "Page number",
-				},
-			},
-			{
-				Value: &openapi3.Parameter{
-					Name:     "pageSize",
-					In:       "query",
-					Required: false,
-					Schema: &openapi3.SchemaRef{
-						Value: &openapi3.Schema{
-							Type:    &openapi3.Types{openapi3.TypeInteger},
-							Default: 10,
-						},
-					},
-					Description: "Number of items per page",
-				},
-			},
-			// 可扩展更多 query 参数，例如过滤字段、排序等
-		},
+		// Parameters: []*openapi3.ParameterRef{
+		// 	{
+		// 		Value: &openapi3.Parameter{
+		// 			Name:     "page",
+		// 			In:       "query",
+		// 			Required: false,
+		// 			Schema: &openapi3.SchemaRef{
+		// 				Value: &openapi3.Schema{
+		// 					Type:    &openapi3.Types{openapi3.TypeInteger},
+		// 					Default: 1,
+		// 				},
+		// 			},
+		// 			Description: "Page number",
+		// 		},
+		// 	},
+		// 	{
+		// 		Value: &openapi3.Parameter{
+		// 			Name:     "pageSize",
+		// 			In:       "query",
+		// 			Required: false,
+		// 			Schema: &openapi3.SchemaRef{
+		// 				Value: &openapi3.Schema{
+		// 					Type:    &openapi3.Types{openapi3.TypeInteger},
+		// 					Default: 10,
+		// 				},
+		// 			},
+		// 			Description: "Number of items per page",
+		// 		},
+		// 	},
+		// 	// 可扩展更多 query 参数，例如过滤字段、排序等
+		// },
 		Responses: func() *openapi3.Responses {
 			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[M]), nil)
 			if err != nil {
@@ -414,7 +413,8 @@ func setList[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Get)
+	addQueryParameters[M](pathItem.Get)
+	addHeaderParameters(pathItem.Get)
 }
 
 func setGet[M types.Model](pathItem *openapi3.PathItem) {
@@ -479,7 +479,7 @@ func setGet[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Get)
+	addHeaderParameters(pathItem.Get)
 }
 
 func setImport[M types.Model](pathItem *openapi3.PathItem) {
@@ -581,7 +581,7 @@ func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Post)
+	addHeaderParameters(pathItem.Post)
 }
 
 func setBatchDelete[M types.Model](pathItem *openapi3.PathItem) {
@@ -659,7 +659,7 @@ func setBatchDelete[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Delete)
+	addHeaderParameters(pathItem.Delete)
 }
 
 func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
@@ -728,7 +728,7 @@ func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Put)
+	addHeaderParameters(pathItem.Put)
 }
 
 func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
@@ -797,10 +797,10 @@ func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 			return resp
 		}(),
 	}
-	addDefaultHeaders(pathItem.Patch)
+	addHeaderParameters(pathItem.Patch)
 }
 
-func addDefaultHeaders(op *openapi3.Operation) {
+func addHeaderParameters(op *openapi3.Operation) {
 	headers := []*openapi3.ParameterRef{
 		{
 			Value: &openapi3.Parameter{
@@ -867,6 +867,91 @@ func addDefaultHeaders(op *openapi3.Operation) {
 	for _, header := range headers {
 		if header.Value != nil && !existing[header.Value.Name] {
 			op.Parameters = append(op.Parameters, header)
+		}
+	}
+}
+
+func addQueryParameters[M types.Model](op *openapi3.Operation) {
+	queries := make([]*openapi3.ParameterRef, 0)
+
+	typ := reflect.TypeOf(*new(M)).Elem()
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		schemaTag := getFieldTag(field, consts.TAG_SCHEMA)
+		if len(schemaTag) == 0 {
+			continue
+		}
+		queries = append(queries, &openapi3.ParameterRef{
+			Value: &openapi3.Parameter{
+				Name:     schemaTag,
+				In:       "query",
+				Required: false,
+				Schema:   &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+			},
+		})
+	}
+
+	baseType := reflect.TypeOf(*new(model.Base))
+	for i := range baseType.NumField() {
+		field := baseType.Field(i)
+		schemaTag := getFieldTag(field, consts.TAG_SCHEMA)
+		if len(schemaTag) == 0 {
+			continue
+		}
+
+		queries = append(queries, &openapi3.ParameterRef{
+			Value: &openapi3.Parameter{
+				Name:     schemaTag,
+				In:       "query",
+				Required: false,
+				Schema:   &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+			},
+		})
+
+	}
+
+	// queries := []*openapi3.ParameterRef{
+	// 	{
+	// 		Value: &openapi3.Parameter{
+	// 			Name:     "page",
+	// 			In:       "query",
+	// 			Required: false,
+	// 			Schema: &openapi3.SchemaRef{
+	// 				Value: &openapi3.Schema{
+	// 					Type:    &openapi3.Types{openapi3.TypeInteger},
+	// 					Default: 1,
+	// 				},
+	// 			},
+	// 			Description: "Page number",
+	// 		},
+	// 	},
+	// 	{
+	// 		Value: &openapi3.Parameter{
+	// 			Name:     "size",
+	// 			In:       "query",
+	// 			Required: false,
+	// 			Schema: &openapi3.SchemaRef{
+	// 				Value: &openapi3.Schema{
+	// 					Type:    &openapi3.Types{openapi3.TypeInteger},
+	// 					Default: 10,
+	// 				},
+	// 			},
+	// 			Description: "Number of items per page",
+	// 		},
+	// 	},
+	// }
+
+	// 避免重复添加
+	existing := map[string]bool{}
+	for _, p := range op.Parameters {
+		if p.Value != nil {
+			existing[p.Value.Name] = true
+		}
+	}
+
+	for _, query := range queries {
+		if query.Value != nil && !existing[query.Value.Name] {
+			op.Parameters = append(op.Parameters, query)
 		}
 	}
 }
@@ -1004,6 +1089,34 @@ func setupExample(schemaRef *openapi3.SchemaRef) {
 //	    }
 //	  ]
 //	}
+
+func fieldType2openapiType(field reflect.StructField) *openapi3.Types {
+	typ := field.Type
+
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	switch typ.Kind() {
+	case reflect.String:
+		return &openapi3.Types{openapi3.TypeString}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return &openapi3.Types{openapi3.TypeInteger}
+	case reflect.Float32, reflect.Float64:
+		return &openapi3.Types{openapi3.TypeNumber}
+	case reflect.Bool:
+		return &openapi3.Types{openapi3.TypeBoolean}
+	case reflect.Array:
+		return &openapi3.Types{openapi3.TypeArray}
+	case reflect.Struct:
+		fmt.Println("----- field name", field.Name, field.Type.Kind())
+		return &openapi3.Types{openapi3.TypeObject}
+	default:
+		fmt.Println("----- field name", field.Name, field.Type.Kind())
+		return &openapi3.Types{openapi3.TypeNull}
+	}
+}
+
 func setupBatchExample(schemaRef *openapi3.SchemaRef) {
 	if schemaRef == nil {
 		return
