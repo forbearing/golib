@@ -35,16 +35,25 @@ func Write(filename string) error {
 }
 
 func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
+	getOrCreate := func(p string) *openapi3.PathItem {
+		if v := doc.Paths.Value(p); v != nil {
+			return v
+		}
+		newPathItem := &openapi3.PathItem{}
+		doc.Paths.Set(p, newPathItem)
+		return newPathItem
+	}
+
 	pathid := path + "/{id}"
 	pathbatch := path + "/batch"
 	pathipt := path + "/import"
 	pathexpt := path + "/export"
 
-	pathItem := &openapi3.PathItem{}
-	pathidItem := &openapi3.PathItem{}
-	pathbatchItem := &openapi3.PathItem{}
-	pathiptItem := &openapi3.PathItem{}
-	pathexptItem := &openapi3.PathItem{}
+	pathItem := getOrCreate(path)
+	pathidItem := getOrCreate(pathid)
+	pathbatchItem := getOrCreate(pathbatch)
+	pathiptItem := getOrCreate(pathipt)
+	pathexptItem := getOrCreate(pathexpt)
 
 	for _, verb := range buildVerbs(verb...) {
 		switch verb {
