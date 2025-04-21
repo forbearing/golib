@@ -113,6 +113,12 @@ func (*Config) setDefault() {
 // 2. Configuration file
 // 3. Default values
 func Init() (err error) {
+	if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
+		return errors.Wrap(err, "failed to create temp dir")
+	}
+	// logger not initialized using fmt.Println instead.
+	fmt.Fprintf(os.Stdout, "create temp dir: %s\n", tempdir)
+
 	// Breaking change:
 	// https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-hcl-java-properties-ini-removed-from-core
 	codecRegistry := viper.NewCodecRegistry()
@@ -138,11 +144,6 @@ func Init() (err error) {
 
 	if err = cv.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
-				return errors.Wrap(err, "failed to create temp dir")
-			}
-			// logger not initialized using fmt.Println instead.
-			fmt.Fprintf(os.Stdout, "create temp dir: %s\n", tempdir)
 			if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
 				return errors.Wrap(err, "failed to create config file")
 			}
