@@ -1119,6 +1119,12 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// If record already exists, Update method update all fields but exlcude "created_at" by
 	// mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should update the "created_at" field manually.
 	for i := range objs {
+		// 有些 model 重写 SetID 为一个空函数, 则 GetID() 的值为空字符串. 更新 created_at 则会报错
+		// 例如 casbin_rule 表/结构体: 这张表的 ID 总是 integer 类型, 并且有 autoincrement 属性, 所以必须重写 SetID.
+		if len(objs[i].GetID()) == 0 {
+			continue
+		}
+
 		// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
 		// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
 		var _db *gorm.DB
@@ -1128,7 +1134,6 @@ func (db *database[M]) Create(objs ...M) (err error) {
 			_db = DB
 		}
 		createdAt := time.Now()
-		// if err = _db.Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", time.Now()).Error; err != nil {
 		if err = _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
 			return err
 		}
