@@ -96,6 +96,10 @@ func (r Code) Msg() string {
 	return val.Msg
 }
 
+func (r Code) WithErr(err error) Code {
+	return NewCode(r.Status(), err.Error())
+}
+
 func (r Code) String() string {
 	return r.Msg()
 }
