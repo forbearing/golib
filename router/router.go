@@ -12,6 +12,7 @@ import (
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
+	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/internal/openapigen"
 	"github.com/forbearing/golib/middleware"
 	"github.com/forbearing/golib/types"
@@ -20,6 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +31,8 @@ var (
 
 	server *http.Server
 )
+
+var globalErrors = make([]error, 0)
 
 func Init() error {
 	gin.SetMode(gin.ReleaseMode)
@@ -50,15 +54,20 @@ func Init() error {
 
 	api = base.Group("/api")
 	api.Use(
+		middleware.Gzip(),
 		// middleware.JwtAuth(),
 		// middleware.Authz(),
-		middleware.Gzip(),
 	)
 	return nil
 }
 
 func Run() error {
 	log := zap.S()
+	if err := multierr.Combine(globalErrors...); err != nil {
+		log.Error(err)
+		return err
+	}
+
 	addr := net.JoinHostPort(config.App.Server.Listen, strconv.Itoa(config.App.Server.Port))
 	log.Infow("backend server started", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
 	for _, r := range base.Routes() {
@@ -229,6 +238,13 @@ func validPath(rawPath string) bool {
 func register[M types.Model](router gin.IRouter, path string, verbMap map[consts.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
 	v := reflect.ValueOf(router).Elem()
 	base := v.FieldByName("basePath").String()
+	// AutoMigrate ensures the table structure exists in the database.
+	// This automatically creates or updates the table based on the model structure.
+	// Alternatively, you can use model.Register() to manually control table creation.
+	if err := database.DB.AutoMigrate(reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)); err != nil {
+		globalErrors = append(globalErrors, err)
+	}
+
 	if verbMap[consts.Create] {
 		router.POST(path, controller.CreateFactory(cfg...))
 		middleware.RouteManager.Add(filepath.Join(base, path))
