@@ -29,7 +29,7 @@ var modelData = []byte(`
 r = sub, obj, act
 
 [policy_definition]
-p = priority, sub, obj, act, eft
+p = sub, obj, act, eft
 
 [role_definition]
 g = _, _
@@ -89,7 +89,7 @@ func Init() (err error) {
 		return nil
 	}
 
-	filename := filepath.Join(config.Tempdir(), "rbac.conf")
+	filename := filepath.Join(config.Tempdir(), "casbin_model.conf")
 	if err = os.WriteFile(filename, modelData, 0o644); err != nil {
 		return errors.Wrapf(err, "failed to write model file %s", filename)
 	}
