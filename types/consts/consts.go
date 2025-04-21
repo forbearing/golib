@@ -22,10 +22,6 @@ const (
 )
 
 const (
-	FileRbacConf = "rbac.conf"
-)
-
-const (
 	QUERY_ID          = "id"
 	QUERY_PAGE        = "page"
 	QUERY_SIZE        = "size"
