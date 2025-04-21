@@ -1,6 +1,9 @@
 package basic
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/casbin/casbin/v2"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/cockroachdb/errors"
@@ -8,7 +11,6 @@ import (
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types/consts"
 )
 
 const (
@@ -21,6 +23,24 @@ var defaultAdmins = []string{
 	"admin",
 	"root",
 }
+
+var modelData = []byte(`
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = priority, sub, obj, act, eft
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+#e = priority(p.eft) || some(where (p.eft == allow))
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, "admin") || (g(r.sub, p.sub) && keyMatch3(r.obj, p.obj) && r.act == p.act)
+`)
 
 // role 角色组
 type role struct {
@@ -69,21 +89,19 @@ func Init() (err error) {
 		return nil
 	}
 
-	// casbin.NewEnforcer("model.conf", "policy.csv") 从文件中加载策略
-	// if RBAC.adapter, err = gormadapter.NewAdapterByDB(database.DB); err != nil {
-	// 	return
-	// }
+	filename := filepath.Join(config.Tempdir(), "rbac.conf")
+	if err = os.WriteFile(filename, modelData, 0o644); err != nil {
+		return errors.Wrapf(err, "failed to write model file %s", filename)
+	}
 	if RBAC.adapter, err = gormadapter.NewAdapterByDBWithCustomTable(database.DB, new(model.CasbinRule)); err != nil {
 		return errors.Wrap(err, "failed to create casbin adapter")
 	}
-	if RBAC.enforcer, err = casbin.NewEnforcer(consts.FileRbacConf, RBAC.adapter); err != nil {
+	if RBAC.enforcer, err = casbin.NewEnforcer(filename, RBAC.adapter); err != nil {
 		return errors.Wrap(err, "failed to create casbin enforcer")
 	}
 
 	RBAC.enforcer.SetLogger(logger.Casbin)
-	// if strings.ToLower(config.App.Logger.Level) == "debug" {
 	RBAC.enforcer.EnableLog(true)
-	// }
 
 	for _, user := range defaultAdmins {
 		RBAC.enforcer.AddGroupingPolicy(user, adminRole)
