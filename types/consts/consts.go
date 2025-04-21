@@ -73,6 +73,7 @@ const (
 
 	TAG_JSON   = "json"
 	TAG_SCHEMA = "schema"
+	TAG_QUERY  = "query"
 )
 
 type Phase string
