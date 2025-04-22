@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
+	model_log "github.com/forbearing/golib/model/log"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -30,7 +30,7 @@ func OperationLogger() gin.HandlerFunc {
 		case http.MethodGet:
 		case http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodPatch:
 			username, table := info()
-			if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
+			if err := database.Database[*model_log.OperationLog]().Create(&model_log.OperationLog{
 				IP:        c.ClientIP(),
 				User:      username,
 				Table:     table,
