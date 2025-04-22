@@ -166,6 +166,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
 		ml := make([]M, 0)
+		ids := make([]string, 0)
 
 		// Delete one record accoding to "query parameter `id`".
 		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
@@ -180,9 +181,9 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(id)
 			ml = append(ml, m)
+			ids = append(ids, id)
 		}
 		// Delete multiple records accoding to "http body data".
-		ids := make([]string, 0)
 		if err := c.ShouldBindJSON(&ids); err == nil {
 			// remove empty string
 			_ids := make([]string, 0)
