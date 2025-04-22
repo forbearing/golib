@@ -22,18 +22,18 @@ func Authz() gin.HandlerFunc {
 		if sub != consts.ROOT && sub != consts.ADMIN {
 			sub = c.GetString(consts.CTX_USER_ID)
 		}
-		logger.Authz.Infoz("",
-			zap.String("sub", sub),
-			zap.String("obj", obj),
-			zap.String("act", act),
-			zap.Bool("res", allow),
-		)
 		if allow, err = rbac.Enforcer.Enforce(sub, obj, act); err != nil {
 			zap.S().Error(err)
 			ResponseJSON(c, CodeFailure)
 			c.Abort()
 			return
 		}
+		logger.Authz.Infoz("",
+			zap.String("sub", sub),
+			zap.String("obj", obj),
+			zap.String("act", act),
+			zap.Bool("res", allow),
+		)
 		if allow {
 			c.Next()
 		} else {
