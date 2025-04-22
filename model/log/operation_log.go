@@ -1,4 +1,6 @@
-package model
+package model_log
+
+import "github.com/forbearing/golib/model"
 
 type OperationType string
 
@@ -12,10 +14,6 @@ const (
 	OperationTypeExport        OperationType = "export"
 	OperationTypeImport        OperationType = "import"
 )
-
-func init() {
-	Register[*OperationLog]()
-}
 
 type OperationLog struct {
 	User       string        `json:"user,omitempty" schema:"user"`   // 操作者, 本地账号该字段为空,例如 root
@@ -33,5 +31,5 @@ type OperationLog struct {
 	UserAgent  string        `json:"user_agent,omitempty" schema:"user_agent"`
 	RequestId  string        `json:"request_id,omitempty" schema:"request_id"`
 
-	Base
+	model.Base
 }
