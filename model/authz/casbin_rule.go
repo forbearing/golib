@@ -1,4 +1,6 @@
-package model
+package model_authz
+
+import "github.com/forbearing/golib/model"
 
 // CasbinRule
 // RBAC 包中会通过 gormadapter.NewAdapterByDBWithCustomTable(database.DB, &model.CasbinRule{})
@@ -15,7 +17,7 @@ type CasbinRule struct {
 	V4    string `json:"v4,omitempty" gorm:"size:100" schema:"v4"`
 	V5    string `json:"v5,omitempty" gorm:"size:100" schema:"v5"`
 
-	Base
+	model.Base
 }
 
 // SetID 为一个空的函数,不允许自动设置ID, 因为 gormadapter.NewAdapterByDBWithCustomTable 创建的表的ID总是为 autoIncrement.

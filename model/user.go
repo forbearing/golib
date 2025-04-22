@@ -42,8 +42,8 @@ type User struct {
 	Base
 }
 
-func (u *User) GetAfter() error  { return u.mask() }
-func (u *User) ListAfter() error { return u.mask() }
+// func (u *User) GetAfter() error  { return u.mask() }
+// func (u *User) ListAfter() error { return u.mask() }
 
 func (u *User) mask() error {
 	u.Mobile = maskMobile(u.Mobile)
