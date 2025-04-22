@@ -1,8 +1,8 @@
-package model
+package model_log
 
-func init() {
-	Register[*LoginLog]()
-}
+import (
+	"github.com/forbearing/golib/model"
+)
 
 type LoginStatus string
 
@@ -18,6 +18,6 @@ type LoginLog struct {
 	Token    string      `json:"token" schema:"token"`
 	Status   LoginStatus `json:"status" schema:"status"`
 
-	UserAgent
-	Base
+	model.UserAgent
+	model.Base
 }
