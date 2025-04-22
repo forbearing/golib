@@ -1,4 +1,4 @@
-package model
+package model_authz
 
 import (
 	"fmt"
@@ -7,12 +7,14 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
+	"github.com/forbearing/golib/model"
+	"go.uber.org/zap/zapcore"
 )
 
 type Role struct {
 	Name string `json:"name,omitempty" schema:"name"`
 
-	Base
+	model.Base
 }
 
 func (r *Role) check() error {
@@ -32,4 +34,23 @@ func (r *Role) check() error {
 
 func (r *Role) CreateBefore() error { return r.check() }
 func (r *Role) CreateAfter() error  { return rbac.RBAC().AddRole(r.Name) }
-func (r *Role) DeleteAfter() error  { return rbac.RBAC().RemoveRole(r.Name) }
+func (r *Role) DeleteBefore() error {
+	// The delete request always don't have role id, so we should get the role from database.
+	if err := database.Database[*Role]().Get(r, r.ID); err != nil {
+		return err
+	}
+	if len(r.Name) > 0 {
+		return rbac.RBAC().RemoveRole(r.Name)
+	}
+	return nil
+}
+func (r *Role) DeleteAfter() error { return database.Database[*Role]().Cleanup() }
+
+func (r *Role) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if r == nil {
+		return nil
+	}
+	enc.AddString("name", r.Name)
+	enc.AddObject("base", &r.Base)
+	return nil
+}
