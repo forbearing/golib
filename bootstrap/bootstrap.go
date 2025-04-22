@@ -43,6 +43,8 @@ import (
 	"github.com/forbearing/golib/provider/rocketmq"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/service"
+	service_authz "github.com/forbearing/golib/service/authz"
+	service_log "github.com/forbearing/golib/service/log"
 	"github.com/forbearing/golib/task"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
@@ -104,6 +106,9 @@ func Bootstrap() error {
 
 		// service
 		service.Init,
+		service_authz.Init,
+		service_log.Init,
+
 		middleware.Init,
 		router.Init,
 		grpc.Init,
