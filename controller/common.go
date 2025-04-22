@@ -11,6 +11,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	model_log "github.com/forbearing/golib/model/log"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
@@ -164,11 +165,11 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
-	database.Database[*model.LoginLog]().Create(&model.LoginLog{
+	database.Database[*model_log.LoginLog]().Create(&model_log.LoginLog{
 		UserID:   userInfo.UserId,
 		Username: userInfo.Name,
 		Token:    aToken,
-		Status:   model.LoginStatusSuccess,
+		Status:   model_log.LoginStatusSuccess,
 		ClientIP: c.ClientIP(),
 		UserAgent: model.UserAgent{
 			Source:   c.Request.UserAgent(),
