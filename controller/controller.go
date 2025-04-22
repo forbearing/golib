@@ -166,51 +166,44 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// 'typ' is the structure type, such as: model.User.
 		typ := reflect.TypeOf(*new(M)).Elem()
 		ml := make([]M, 0)
-		ids := make([]string, 0)
+		idsSet := make(map[string]struct{})
+
+		addId := func(id string) {
+			if len(id) == 0 {
+				return
+			}
+			if _, exists := idsSet[id]; exists {
+				return
+			}
+			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
+			ml = append(ml, m)
+			idsSet[id] = struct{}{}
+		}
 
 		// Delete one record accoding to "query parameter `id`".
 		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
-			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
-			m.SetID(id)
-			ml = append(ml, m)
+			addId(id)
 		}
 		// Delete one record accoding to "route parameter `id`".
 		if id := c.Param(consts.PARAM_ID); len(id) != 0 {
-			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
-			m.SetID(id)
-			ml = append(ml, m)
-			ids = append(ids, id)
+			addId(id)
 		}
 		// Delete multiple records accoding to "http body data".
-		if err := c.ShouldBindJSON(&ids); err == nil {
-			// remove empty string
-			_ids := make([]string, 0)
-			for i := range ids {
-				if len(ids[i]) == 0 {
-					continue
-				}
-				_ids = append(_ids, ids[i])
+		bodyIds := make([]string, 0)
+		if err := c.ShouldBindJSON(&bodyIds); err == nil && len(bodyIds) > 0 {
+			for _, id := range bodyIds {
+				addId(id)
 			}
-			if len(_ids) == 0 {
-				log.Warn("id list is empty, skip delete")
-				ResponseJSON(c, CodeSuccess)
-				return
-			}
-			for i := range _ids {
-				// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-				m := reflect.New(typ).Interface().(M)
-				m.SetID(_ids[i])
-				ml = append(ml, m)
-			}
-		} else if err == io.EOF {
-			log.Warnf("empty request body")
-		} else {
-			log.Warn(err)
 		}
 
+		ids := make([]string, 0, len(idsSet))
+		for id := range idsSet {
+			ids = append(ids, id)
+		}
 		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
+
 		// 1.Perform business logic processing before delete resources.
 		if err := new(service.Factory[M]).Service().DeleteBefore(helper.NewServiceContext(c), ml...); err != nil {
 			log.Error(err)
