@@ -2,8 +2,10 @@ package util
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"net"
@@ -351,4 +353,12 @@ func BuildTLSConfig(certFile, keyFile, caFile string, insecureSkipVerify bool) (
 	}
 
 	return tlsConfig, nil
+}
+
+func HashID(fields ...string) string {
+	if len(fields) == 0 {
+		return ""
+	}
+	hash := sha256.Sum256([]byte(strings.Join(fields, ":")))
+	return hex.EncodeToString(hash[:16])
 }

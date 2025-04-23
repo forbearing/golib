@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+func init() {
+	model.Register[*UserRole]()
+}
+
 type UserRole struct {
 	UserId string `json:"user_id,omitempty" schema:"user_id"`
 	RoleId string `json:"role_id,omitempty" schema:"role_id"`
@@ -20,7 +24,7 @@ type UserRole struct {
 	model.Base
 }
 
-func (r *UserRole) check() error {
+func (r *UserRole) CreateBefore() error {
 	if len(r.UserId) == 0 {
 		return errors.New("user_id is required")
 	}
@@ -35,24 +39,24 @@ func (r *UserRole) check() error {
 		return fmt.Errorf("user_role(%s) already exists", bindings[0].ID)
 	}
 
-	return nil
-}
-
-func (r *UserRole) CreateBefore() error { return r.check() }
-func (r *UserRole) CreateAfter() error {
-	user := new(model.User)
-	role := new(Role)
+	// expands field: user and role
+	user, role := new(model.User), new(Role)
 	if err := database.Database[*model.User]().Get(user, r.UserId); err != nil {
 		return err
 	}
 	if err := database.Database[*Role]().Get(role, r.RoleId); err != nil {
 		return err
 	}
-	r.User = user.Name
-	r.Role = role.Name
+	r.User, r.Role = user.Name, role.Name
+
+	return nil
+}
+
+func (r *UserRole) CreateAfter() error {
 	if err := database.Database[*UserRole]().Update(r); err != nil {
 		return err
 	}
+	// TODO: add remark for casbin_rule.
 	return rbac.RBAC().AssignRole(r.UserId, r.RoleId)
 }
 

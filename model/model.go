@@ -35,21 +35,12 @@ var (
 		DBName string
 	}
 
-	// Routes is a map slice that element is map[string][]Verb
-	// The map key is the route path, eg: '/asset' or 'asset'
-	//   or '/api/asset' (the prefiex /api will be remove automatically).
-	// The map value is the Verb slice.
-	// - VerbCreate is equivalent to http method "POST".
-	// - VerbDelete is equivalent to http method "DELETE".
-	// - VerbUpdate is equivalent to http method "PUT".
-	// - VerbUpdatePartial is equivalent to http method "PATCH".
-	// - VerbList is equivalent to http method "GET /xxx".
-	// - VerbGET is equivalent to http method "GET /xxx/:id".
-	// - VerbExport is equivalent to http method "GET" but specifially used to export resources.
-	// - VerbImport is equivalent to http method "POST" but specifically used to import resources.
-	Routes []route = make([]route, 0)
-
 	mu sync.Mutex
+
+	// Routes map an API path to its allowed HTTP methods.
+	// The key is the API endpoint path (e.g., "/user/:id")
+	// and the value is a list of supported HTTP methods (e.g., GET, POST, DELETE).
+	Routes map[string][]string = make(map[string][]string)
 )
 
 // Record is table record
@@ -58,11 +49,6 @@ type Record struct {
 	Rows    any
 	Expands []string
 	DBName  string
-}
-type route struct {
-	Model types.Model
-	Path  string
-	Verbs []consts.HTTPVerb
 }
 
 // Register associates the model with database table and will created automatically.

@@ -200,6 +200,11 @@ func TestRound(t *testing.T) {
 	}
 }
 
+func TestHashID(t *testing.T) {
+	hashID := HashID("user", "email", "address")
+	fmt.Println(hashID)
+}
+
 func BenchmarkRound(b *testing.B) {
 	b.Run("float64", func(b *testing.B) {
 		value := 3.14159
