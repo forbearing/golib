@@ -14,10 +14,11 @@ import (
 	pkgcontroller "github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/mysql"
-	"github.com/forbearing/golib/examples/myproject/internal/model"
+	internal_model "github.com/forbearing/golib/examples/myproject/internal/model"
 	_ "github.com/forbearing/golib/examples/myproject/internal/service"
 	"github.com/forbearing/golib/middleware"
-	pkgmodel "github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/model"
+	model_authz "github.com/forbearing/golib/model/authz"
 	"github.com/forbearing/golib/provider/etcd"
 	"github.com/forbearing/golib/provider/memcached"
 	pkgnats "github.com/forbearing/golib/provider/nats"
@@ -182,9 +183,9 @@ func main() {
 
 	// redis
 	{
-		g1 := &model.Group{Name: "group01"}
-		g2 := &model.Group{Name: "group02"}
-		groups := []*model.Group{g1, g2}
+		g1 := &internal_model.Group{Name: "group01"}
+		g2 := &internal_model.Group{Name: "group02"}
+		groups := []*internal_model.Group{g1, g2}
 		if err := redis.SetM("group", g1); err != nil {
 			zap.S().Error(err)
 		}
@@ -348,15 +349,14 @@ func main() {
 		middleware.Authz(),
 	)
 
-	router.Register[*pkgmodel.User](router.API(), "/user")
-	router.Register[*model.Group](router.API(), "/group")
-	router.RegisterList[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-	router.RegisterGet[*model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-	// router.RegisterList[*pkgmodel.CasbinRule](router.API(), "casbin_rule")
-	router.RegisterList[*pkgmodel.Rolebinding](router.API(), "rolebinding")
-	router.RegisterList[*pkgmodel.Role](router.API(), "role")
-	router.RegisterCreate[*pkgmodel.Role](router.API(), "role")
-	router.RegisterDelete[*pkgmodel.Role](router.API(), "role")
+	router.Register[*internal_model.Group](router.API(), "/group")
+	router.RegisterList[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
+	router.RegisterGet[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
+	router.Register[*model.User](router.API(), "/user")
+	router.Register[*model_authz.Role](router.API(), "role")
+	router.Register[*model_authz.UserRole](router.API(), "user_role")
+	router.RegisterList[*model_authz.Permission](router.API(), "permission")
+	router.Register[*model_authz.RolePermission](router.API(), "role_permission")
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
@@ -371,8 +371,13 @@ func main() {
 	}
 	_ = db
 	// It's your responsibility to ensure the table already exists.
-	router.Register(router.API(), "/external/user", &types.ControllerConfig[*pkgmodel.User]{DB: db})
-	router.Register(router.API(), "/external/group", &types.ControllerConfig[*model.Group]{DB: db})
+	router.Register(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db})
+	router.Register(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db})
+	// fmt.Println()
+	// for _, route := range router.Base().Routes() {
+	// 	fmt.Println(route.Method, route.Path)
+	// }
+	// fmt.Println()
 
 	RunOrDie(bootstrap.Run)
 }

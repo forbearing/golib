@@ -11,13 +11,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+func init() {
+	model.Register[*Role]()
+}
+
 type Role struct {
 	Name string `json:"name,omitempty" schema:"name"`
 
 	model.Base
 }
 
-func (r *Role) check() error {
+func (r *Role) CreateBefore() error {
 	if len(strings.TrimSpace(r.Name)) == 0 {
 		return errors.New("name is required")
 	}
@@ -32,8 +36,7 @@ func (r *Role) check() error {
 	return nil
 }
 
-func (r *Role) CreateBefore() error { return r.check() }
-func (r *Role) CreateAfter() error  { return rbac.RBAC().AddRole(r.Name) }
+func (r *Role) CreateAfter() error { return rbac.RBAC().AddRole(r.Name) }
 func (r *Role) DeleteBefore() error {
 	// The delete request always don't have role id, so we should get the role from database.
 	if err := database.Database[*Role]().Get(r, r.ID); err != nil {

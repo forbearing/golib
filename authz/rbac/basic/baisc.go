@@ -11,7 +11,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/model"
+	model_authz "github.com/forbearing/golib/model/authz"
 )
 
 const (
@@ -53,7 +53,7 @@ func Init() (err error) {
 		return errors.Wrapf(err, "failed to write model file %s", filename)
 	}
 	// NOTE: gormadapter.NewAdapterByDBWithCustomTable creates the Casbin policy table with an auto-incrementing primary key.
-	if rbac.Adapter, err = gormadapter.NewAdapterByDBWithCustomTable(database.DB, new(model.CasbinRule)); err != nil {
+	if rbac.Adapter, err = gormadapter.NewAdapterByDBWithCustomTable(database.DB, new(model_authz.CasbinRule)); err != nil {
 		return errors.Wrap(err, "failed to create casbin adapter")
 	}
 	if rbac.Enforcer, err = casbin.NewEnforcer(filename, rbac.Adapter); err != nil {
@@ -62,27 +62,14 @@ func Init() (err error) {
 
 	rbac.Enforcer.SetLogger(logger.Casbin)
 	rbac.Enforcer.EnableLog(true)
+	rbac.Enforcer.EnableAutoSave(true)
+	rbac.Enforcer.EnableAutoNotifyDispatcher(true)
+	rbac.Enforcer.EnableAutoNotifyWatcher(true)
+	rbac.Enforcer.EnableEnforce(true)
 
 	for _, user := range defaultAdmins {
 		rbac.Enforcer.AddGroupingPolicy(user, adminRole)
 	}
-
-	// | 操作             | 函数                                  |
-	// | ---------------- | ------------------------------------- |
-	// | 添加角色权限     | `AddPolicy(role, obj, act)`           |
-	// | 删除角色权限     | `RemovePolicy(...)`                   |
-	// | 给用户授权角色   | `AddGroupingPolicy(user, role)`       |
-	// | 删除用户授权     | `RemoveGroupingPolicy(user, role)`    |
-	// | 查询用户角色     | `GetRolesForUser(user)`               |
-	// | 查询角色权限     | `GetPermissionsForUser(role)`         |
-	// | 查询用户所有权限 | `GetImplicitPermissionsForUser(user)` |
-
-	// // 查询用户拥有的角色
-	// RBAC.enforcer.GetRolesForUser("root")
-	// // 查询角色拥有的权限
-	// RBAC.enforcer.GetFilteredPolicy(0, "admin")
-	// // 查询用户拥有的权限（继承）
-	// RBAC.enforcer.GetImplicitPermissionsForUser("root")
 
 	return rbac.Enforcer.LoadPolicy()
 }

@@ -2,10 +2,12 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
-	"path/filepath"
+	gopath "path"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,8 +17,11 @@ import (
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/internal/openapigen"
 	"github.com/forbearing/golib/middleware"
+	"github.com/forbearing/golib/model"
+	model_authz "github.com/forbearing/golib/model/authz"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -64,6 +69,32 @@ func Init() error {
 func Run() error {
 	log := zap.S()
 	if err := multierr.Combine(globalErrors...); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// Delete all permissions in database
+	permissions := make([]*model_authz.Permission, 0)
+	if err := database.Database[*model_authz.Permission]().WithLimit(-1).List(&permissions); err != nil {
+		log.Error(err)
+		return err
+	}
+	if err := database.Database[*model_authz.Permission]().WithLimit(-1).WithBatchSize(100).WithPurge().Delete(permissions...); err != nil {
+		log.Error(err)
+		return err
+	}
+	// Create permissions in database
+	permissions = make([]*model_authz.Permission, 0)
+	for endpoint, methods := range model.Routes {
+		for _, method := range methods {
+			permissions = append(permissions, &model_authz.Permission{
+				Resource: convertGinPathToCasbinKeyMatch3(endpoint),
+				Action:   method,
+				Base:     model.Base{ID: util.HashID(endpoint, method), Remark: util.ValueOf(fmt.Sprintf("%s %s", method, endpoint))},
+			})
+		}
+	}
+	if err := database.Database[*model_authz.Permission]().WithLimit(-1).WithBatchSize(100).Create(permissions...); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -236,8 +267,14 @@ func validPath(rawPath string) bool {
 }
 
 func register[M types.Model](router gin.IRouter, path string, verbMap map[consts.HTTPVerb]bool, cfg ...*types.ControllerConfig[M]) {
-	v := reflect.ValueOf(router).Elem()
-	base := v.FieldByName("basePath").String()
+	// v := reflect.ValueOf(router).Elem()
+	// base := v.FieldByName("basePath").String()
+	var base string
+	if group, ok := router.(*gin.RouterGroup); ok {
+		base = group.BasePath()
+	} else {
+		panic("unknown router type")
+	}
 	// AutoMigrate ensures the table structure exists in the database.
 	// This automatically creates or updates the table based on the model structure.
 	// Alternatively, you can use model.Register() to manually control table creation.
@@ -247,60 +284,92 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 	}
 
 	if verbMap[consts.Create] {
+		endpoint := gopath.Join(base, path)
 		router.POST(path, controller.CreateFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
+		middleware.RouteManager.Add(endpoint)
 	}
 	if verbMap[consts.Delete] {
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/:id")
 		router.DELETE(path, controller.DeleteFactory(cfg...))
 		router.DELETE(path+"/:id", controller.DeleteFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path))
-		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodDelete)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodDelete)
+		middleware.RouteManager.Add(endpoint)
+		middleware.RouteManager.Add(endpoint2)
+
 	}
 	if verbMap[consts.Update] {
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/:id")
 		router.PUT(path, controller.UpdateFactory(cfg...))
 		router.PUT(path+"/:id", controller.UpdateFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path))
-		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPut)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPut)
+		middleware.RouteManager.Add(endpoint)
+		middleware.RouteManager.Add(endpoint2)
+
 	}
 	if verbMap[consts.UpdatePartial] {
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/:id")
 		router.PATCH(path, controller.UpdatePartialFactory(cfg...))
 		router.PATCH(path+"/:id", controller.UpdatePartialFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path))
-		middleware.RouteManager.Add(filepath.Join(base, path+"/:id"))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
+		middleware.RouteManager.Add(endpoint)
+		middleware.RouteManager.Add(endpoint2)
 	}
 	if verbMap[consts.List] {
+		endpoint := gopath.Join(base, path)
 		router.GET(path, controller.ListFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
+		middleware.RouteManager.Add(endpoint)
 	}
 	if verbMap[consts.Get] {
+		endpoint := gopath.Join(base, path, "/:id")
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path, "/:id"))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
+		middleware.RouteManager.Add(endpoint)
 	}
 
 	if verbMap[consts.BatchCreate] {
+		endpoint := gopath.Join(base, path, "/batch")
 		router.POST(path+"/batch", controller.BatchCreateFactory(cfg...))
-		middleware.RouteManager.Add(filepath.Join(base, path, "/batch"))
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
+		middleware.RouteManager.Add(gopath.Join(base, path, "/batch"))
 	}
 	if verbMap[consts.BatchDelete] {
+		endpoint := gopath.Join(base, path, "/batch")
 		router.DELETE(path+"/batch", controller.BatchDeleteFactory(cfg...))
-		middleware.RouteManager.Add(path + "/batch")
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodDelete)
+		middleware.RouteManager.Add(endpoint)
 	}
 	if verbMap[consts.BatchUpdate] {
+		endpoint := gopath.Join(base, path, "/batch")
 		router.PUT(path+"/batch", controller.BatchUpdateFactory(cfg...))
-		middleware.RouteManager.Add(path + "/batch")
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPut)
+		middleware.RouteManager.Add(endpoint)
 	}
 	if verbMap[consts.BatchUpdatePartial] {
+		endpoint := gopath.Join(base, path, "/batch")
 		router.PATCH(path+"/batch", controller.BatchUpdatePartialFactory(cfg...))
-		middleware.RouteManager.Add(path + "/batch")
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
+		middleware.RouteManager.Add(endpoint)
 	}
 
 	if verbMap[consts.Import] {
+		endpoint := gopath.Join(base, path, "/import")
 		router.POST(path+"/import", controller.ImportFactory(cfg...))
-		middleware.RouteManager.Add(path + "/import")
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
+		middleware.RouteManager.Add(endpoint)
 	}
 	if verbMap[consts.Export] {
+		endpoint := gopath.Join(base, path, "/export")
 		router.GET(path+"/export", controller.ExportFactory(cfg...))
-		middleware.RouteManager.Add(path + "/export")
+		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
+		middleware.RouteManager.Add(endpoint)
 	}
 }
 
@@ -341,4 +410,10 @@ func buildVerbMap(verbs ...consts.HTTPVerb) map[consts.HTTPVerb]bool {
 		verbMap[consts.BatchUpdatePartial] = true
 	}
 	return verbMap
+}
+
+func convertGinPathToCasbinKeyMatch3(ginPath string) string {
+	// Match :param style and replace with {param}
+	re := regexp.MustCompile(`:([a-zA-Z0-9_]+)`)
+	return re.ReplaceAllString(ginPath, `{$1}`)
 }
