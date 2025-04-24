@@ -1,13 +1,13 @@
 package model_authz
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -25,16 +25,13 @@ func (r *Role) CreateBefore() error {
 	if len(strings.TrimSpace(r.Name)) == 0 {
 		return errors.New("name is required")
 	}
-	roles := make([]*Role, 0)
-	if err := database.Database[*Role]().WithLimit(1).WithQuery(&Role{Name: r.Name}).List(&roles); err != nil {
-		return err
-	}
-	if len(roles) > 0 {
-		return fmt.Errorf("role(%s) already exists", r.Name)
-	}
+	// Ensure the role with the same name share the same ID.
+	// If the role already exists, set same id to just update it.
+	r.SetID(util.HashID(r.Name))
 
 	return nil
 }
+func (r *Role) UpdateBefore() error { return r.CreateAfter() }
 
 func (r *Role) CreateAfter() error { return rbac.RBAC().AddRole(r.Name) }
 func (r *Role) DeleteBefore() error {
