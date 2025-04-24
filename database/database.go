@@ -413,6 +413,9 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 		if val.Field(i).IsZero() {
 			continue
 		}
+		if !val.Field(i).CanInterface() {
+			continue
+		}
 
 		switch typ.Field(i).Type.Kind() {
 		case reflect.Chan, reflect.Map, reflect.Func:
