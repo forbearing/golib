@@ -1,7 +1,10 @@
 package model_authz
 
 import (
+	"fmt"
+
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -14,6 +17,12 @@ type Permission struct {
 	Action   string `json:"action,omitempty" schema:"action"`
 
 	model.Base
+}
+
+func (p *Permission) CreateBefore() error {
+	p.SetID(util.HashID(p.Resource, p.Action))
+	p.Remark = util.ValueOf(fmt.Sprintf("%s %s", p.Action, p.Resource))
+	return nil
 }
 
 func (p *Permission) MarshalLogObject(enc zapcore.ObjectEncoder) error {

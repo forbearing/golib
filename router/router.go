@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	gopath "path"
@@ -21,7 +20,6 @@ import (
 	model_authz "github.com/forbearing/golib/model/authz"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -90,7 +88,6 @@ func Run() error {
 			permissions = append(permissions, &model_authz.Permission{
 				Resource: convertGinPathToCasbinKeyMatch3(endpoint),
 				Action:   method,
-				Base:     model.Base{ID: util.HashID(endpoint, method), Remark: util.ValueOf(fmt.Sprintf("%s %s", method, endpoint))},
 			})
 		}
 	}
