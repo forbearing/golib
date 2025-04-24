@@ -25,11 +25,11 @@ func Run() error {
 		Handler: mux,
 	}
 
+	zap.S().Infow("statsviz server started", "listen", config.App.StatsvizListen, "port", config.App.StatsvizPort)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		zap.S().Errorw("failed to start statsviz server", "err", err)
 		return err
 	}
-	zap.S().Infow("statsviz server started", "listen", config.App.StatsvizListen, "port", config.App.StatsvizPort)
 
 	return nil
 }
