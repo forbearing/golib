@@ -24,6 +24,7 @@ package model
 9.model可以手动注册"自动创建数据库表",可以在 init 中调用 Register, 或者注册路由 router.Register 来手动创建数据库表
 10.如何使用该库: 作为第三方库导入进来 import; 或者 git clone 当前整个项目到 internal 目录中, 在自己的项目调用这个后端框架.
 11:如果 create before 检查到有相同的资源在创建但是不想创建,则可以设置相同的ID.这样就可以只更新资源而不重复创建资源了.
+12.为了防止创建相同的 name 的 role， 可以在 CreateBefore 使用 util.HashID(r.Name) 设置ID，这样如果 role.Name 相同则只是更新
 
 rbac
 	g hybfkuf admin                  // hybfkuf 属于 admin 组
