@@ -33,6 +33,7 @@ type user struct{}
 
 var User = new(user)
 
+// Login 多次登陆之后，使用先前的 token 会报错 "access token not match"
 func (*user) Login(c *gin.Context) {
 	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Login"))
 	limiter, found := loginRatelimiterMap.Get(c.ClientIP())
