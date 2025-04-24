@@ -18,6 +18,8 @@ type StructMeta struct {
 	GormNames   []string
 	QueryNames  []string
 	UrlNames    []string
+
+	FieldIndexes [][]int // 每个字段的 Index 路径（支持嵌套匿名字段）
 }
 
 func GetStructMeta(t reflect.Type) *StructMeta {
@@ -38,42 +40,39 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 	queryNames := make([]string, 0, fieldCount)
 	urlNames := make([]string, 0, fieldCount)
 
-	var parseFields func(reflect.Type)
-	parseFields = func(rt reflect.Type) {
-		for i := range rt.NumField() {
-			field := rt.Field(i)
+	fieldIndexes := make([][]int, 0, fieldCount)
 
-			// 如果是匿名字段且是结构体，递归展开
+	var parseFields func(reflect.Type, []int)
+	parseFields = func(rt reflect.Type, parentIndex []int) {
+		for i := 0; i < rt.NumField(); i++ {
+			field := rt.Field(i)
+			indexPath := append(parentIndex, i)
+
 			if field.Anonymous && field.Type.Kind() == reflect.Struct {
-				parseFields(field.Type)
+				parseFields(field.Type, indexPath)
 				continue
 			}
 
 			fields = append(fields, field)
-
-			// // NOTE: strings.Split always returns at least one element(empty string)
-			// // We should not use len(jsonTagItems) to check the json tags exists.
-			// jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
-			// schemaTag := strings.Split(field.Tag.Get("schema"), ",")[0]
-			// jsonNames = append(jsonNames, jsonTag)
-			// schemaNames = append(schemaNames, schemaTag)
+			fieldIndexes = append(fieldIndexes, indexPath)
 
 			jsonNames = append(jsonNames, field.Tag.Get("json"))
 			schemaNames = append(schemaNames, field.Tag.Get("schema"))
 			gormNames = append(gormNames, field.Tag.Get("gorm"))
 			queryNames = append(queryNames, field.Tag.Get("query"))
 			urlNames = append(urlNames, field.Tag.Get("url"))
-
 			fieldMap[field.Name] = len(fields) - 1
 		}
 	}
-	parseFields(t)
+
+	parseFields(t, []int{})
 
 	meta := &StructMeta{
-		Type:     t,
-		Fields:   fields,
-		numField: fieldCount,
-		FieldMap: fieldMap,
+		Type:         t,
+		Fields:       fields,
+		numField:     fieldCount,
+		FieldMap:     fieldMap,
+		FieldIndexes: fieldIndexes,
 
 		JSONNames:   jsonNames,
 		SchemaNames: schemaNames,
