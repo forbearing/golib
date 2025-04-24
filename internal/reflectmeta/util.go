@@ -18,39 +18,45 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 	}
 	meta := GetStructMeta(_typ)
 	for i := range meta.NumField() {
-		if val.Field(i).IsZero() {
+		field := meta.Field(i)
+		fieldVal := val.FieldByIndex(meta.FieldIndexes[i])
+
+		if fieldVal.IsZero() {
+			continue
+		}
+		if !fieldVal.CanInterface() {
 			continue
 		}
 
-		switch meta.Field(i).Type.Kind() {
+		switch field.Type.Kind() {
 		case reflect.Chan, reflect.Map, reflect.Func:
 			continue
 		case reflect.Struct:
 			// All `model.XXX` extends the basic model named `Base`,
-			if meta.Field(i).Name == "Base" {
-				if !val.Field(i).FieldByName("CreatedBy").IsZero() {
+			if field.Name == "Base" {
+				if !fieldVal.FieldByName("CreatedBy").IsZero() {
 					// Not overwrite the "CreatedBy" value set in types.Model.
 					// The "CreatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["created_by"]; !loaded {
-						q["created_by"] = val.Field(i).FieldByName("CreatedBy").Interface().(string)
+						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string)
 					}
 				}
-				if !val.Field(i).FieldByName("UpdatedBy").IsZero() {
+				if !fieldVal.FieldByName("UpdatedBy").IsZero() {
 					// Not overwrite the "UpdatedBy" value set in types.Model.
 					// The "UpdatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["updated_by"]; !loaded {
-						q["updated_by"] = val.Field(i).FieldByName("UpdatedBy").Interface().(string)
+						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string)
 					}
 				}
-				if !val.Field(i).FieldByName("ID").IsZero() {
+				if !fieldVal.FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
-						q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
+						q["id"] = fieldVal.FieldByName("ID").Interface().(string)
 					}
 				}
 			} else {
-				StructFieldToMap2(meta.Field(i).Type, val.Field(i), q)
+				StructFieldToMap2(field.Type, fieldVal, q)
 			}
 			continue
 		}
@@ -62,12 +68,12 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 		jsonTag := ""
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
-			jsonTagItems[0] = meta.Field(i).Name
+			jsonTagItems[0] = field.Name
 		}
 		jsonTag = jsonTagItems[0]
 		if len(jsonTag) == 0 {
 			// the structure lowercase field name as the query condition.
-			jsonTag = meta.Field(i).Name
+			jsonTag = field.Name
 		}
 		// "schema" tag have higher priority than "json" tag
 		schemaTagStr := strings.TrimSpace(meta.SchemaTag(i))
@@ -81,12 +87,12 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 			jsonTag = schemaTag
 		}
 
-		if !val.Field(i).CanInterface() {
+		if !fieldVal.CanInterface() {
 			continue
 		}
-		v := val.Field(i).Interface()
+		v := fieldVal.Interface()
 		var _v string
-		switch val.Field(i).Kind() {
+		switch fieldVal.Kind() {
 		case reflect.Bool:
 			// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
 			// 但是我们想要的是 WHERE `default` IN (true),
@@ -99,9 +105,9 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 		case reflect.String:
 			_v = fmt.Sprintf("%s", v)
 		case reflect.Pointer:
-			v = val.Field(i).Elem().Interface()
+			v = fieldVal.Elem().Interface()
 			// switch typ.Elem().Kind() {
-			switch val.Field(i).Elem().Kind() {
+			switch fieldVal.Elem().Kind() {
 			case reflect.Bool:
 				_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -115,21 +121,21 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 				_v = fmt.Sprintf("%v", v)
 			}
 		case reflect.Slice:
-			_len := val.Field(i).Len()
+			_len := fieldVal.Len()
 			if _len == 0 {
 				zap.S().Warn("reflect.Slice length is 0")
 				_len = 1
 			}
-			slice := reflect.MakeSlice(val.Field(i).Type(), _len, _len)
+			slice := reflect.MakeSlice(fieldVal.Type(), _len, _len)
 			// fmt.Println("--------------- slice element", slice.Index(0), slice.Index(0).Kind(), slice.Index(0).Type())
 			switch slice.Index(0).Kind() {
 			case reflect.String: // handle string slice.
-				// WARN: val.Field(i).Type() is model.GormStrings not []string,
+				// WARN: fieldVal.Type() is model.GormStrings not []string,
 				// execute statement `slice.Interface().([]string)` directly will case panic.
 				// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
 				// We should make the slice of []string again.
 				slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
-				reflect.Copy(slice, val.Field(i))
+				reflect.Copy(slice, fieldVal)
 				_v = strings.Join(slice.Interface().([]string), ",")
 			default:
 				_v = fmt.Sprintf("%v", v)
@@ -143,7 +149,7 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 		// both should be "snake case" or "camel case".
 		// gorm table columns naming format default to 'snake case',
 		// so the json tag name is converted to "snake case here"
-		// q[strcase.SnakeCase(jsonTag)] = val.Field(i).Interface()
+		// q[strcase.SnakeCase(jsonTag)] = fieldVal.Interface()
 		q[strcase.SnakeCase(jsonTag)] = _v
 	}
 }
@@ -156,59 +162,65 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		q = make(map[string]string)
 	}
 	for i := range typ.NumField() {
-		if val.Field(i).IsZero() {
+		field := typ.Field(i)
+		fieldVal := val.Field(i)
+
+		if fieldVal.IsZero() {
+			continue
+		}
+		if !fieldVal.CanInterface() {
 			continue
 		}
 
-		switch typ.Field(i).Type.Kind() {
+		switch field.Type.Kind() {
 		case reflect.Chan, reflect.Map, reflect.Func:
 			continue
 		case reflect.Struct:
 			// All `model.XXX` extends the basic model named `Base`,
-			if typ.Field(i).Name == "Base" {
-				if !val.Field(i).FieldByName("CreatedBy").IsZero() {
+			if field.Name == "Base" {
+				if !fieldVal.FieldByName("CreatedBy").IsZero() {
 					// Not overwrite the "CreatedBy" value set in types.Model.
 					// The "CreatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["created_by"]; !loaded {
-						q["created_by"] = val.Field(i).FieldByName("CreatedBy").Interface().(string)
+						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string)
 					}
 				}
-				if !val.Field(i).FieldByName("UpdatedBy").IsZero() {
+				if !fieldVal.FieldByName("UpdatedBy").IsZero() {
 					// Not overwrite the "UpdatedBy" value set in types.Model.
 					// The "UpdatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["updated_by"]; !loaded {
-						q["updated_by"] = val.Field(i).FieldByName("UpdatedBy").Interface().(string)
+						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string)
 					}
 				}
-				if !val.Field(i).FieldByName("ID").IsZero() {
+				if !fieldVal.FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
-						q["id"] = val.Field(i).FieldByName("ID").Interface().(string)
+						q["id"] = fieldVal.FieldByName("ID").Interface().(string)
 					}
 				}
 			} else {
-				StructFieldToMap(typ.Field(i).Type, val.Field(i), q)
+				StructFieldToMap(field.Type, fieldVal, q)
 			}
 			continue
 		}
-		// "json" tag priority is higher than typ.Field(i).Name
-		jsonTagStr := strings.TrimSpace(typ.Field(i).Tag.Get("json"))
+		// "json" tag priority is higher than fieldTyp.Name
+		jsonTagStr := strings.TrimSpace(field.Tag.Get("json"))
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		// NOTE: strings.Split always returns at least one element(empty string)
 		// We should not use len(jsonTagItems) to check the json tags exists.
 		jsonTag := ""
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
-			jsonTagItems[0] = typ.Field(i).Name
+			jsonTagItems[0] = field.Name
 		}
 		jsonTag = jsonTagItems[0]
 		if len(jsonTag) == 0 {
 			// the structure lowercase field name as the query condition.
-			jsonTag = typ.Field(i).Name
+			jsonTag = field.Name
 		}
 		// "schema" tag have higher priority than "json" tag
-		schemaTagStr := strings.TrimSpace(typ.Field(i).Tag.Get("schema"))
+		schemaTagStr := strings.TrimSpace(field.Tag.Get("schema"))
 		schemaTagItems := strings.Split(schemaTagStr, ",")
 		schemaTag := ""
 		if len(schemaTagItems) > 0 {
@@ -219,12 +231,12 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 			jsonTag = schemaTag
 		}
 
-		if !val.Field(i).CanInterface() {
+		if !fieldVal.CanInterface() {
 			continue
 		}
-		v := val.Field(i).Interface()
+		v := fieldVal.Interface()
 		var _v string
-		switch val.Field(i).Kind() {
+		switch fieldVal.Kind() {
 		case reflect.Bool:
 			// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
 			// 但是我们想要的是 WHERE `default` IN (true),
@@ -237,9 +249,9 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		case reflect.String:
 			_v = fmt.Sprintf("%s", v)
 		case reflect.Pointer:
-			v = val.Field(i).Elem().Interface()
+			v = fieldVal.Elem().Interface()
 			// switch typ.Elem().Kind() {
-			switch val.Field(i).Elem().Kind() {
+			switch fieldVal.Elem().Kind() {
 			case reflect.Bool:
 				_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -253,21 +265,21 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 				_v = fmt.Sprintf("%v", v)
 			}
 		case reflect.Slice:
-			_len := val.Field(i).Len()
+			_len := fieldVal.Len()
 			if _len == 0 {
 				zap.S().Warn("reflect.Slice length is 0")
 				_len = 1
 			}
-			slice := reflect.MakeSlice(val.Field(i).Type(), _len, _len)
+			slice := reflect.MakeSlice(fieldVal.Type(), _len, _len)
 			// fmt.Println("--------------- slice element", slice.Index(0), slice.Index(0).Kind(), slice.Index(0).Type())
 			switch slice.Index(0).Kind() {
 			case reflect.String: // handle string slice.
-				// WARN: val.Field(i).Type() is model.GormStrings not []string,
+				// WARN: fieldVal.Type() is model.GormStrings not []string,
 				// execute statement `slice.Interface().([]string)` directly will case panic.
 				// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
 				// We should make the slice of []string again.
 				slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
-				reflect.Copy(slice, val.Field(i))
+				reflect.Copy(slice, fieldVal)
 				_v = strings.Join(slice.Interface().([]string), ",")
 			default:
 				_v = fmt.Sprintf("%v", v)
@@ -281,7 +293,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		// both should be "snake case" or "camel case".
 		// gorm table columns naming format default to 'snake case',
 		// so the json tag name is converted to "snake case here"
-		// q[strcase.SnakeCase(jsonTag)] = val.Field(i).Interface()
+		// q[strcase.SnakeCase(jsonTag)] = fieldVal.Interface()
 		q[strcase.SnakeCase(jsonTag)] = _v
 	}
 }

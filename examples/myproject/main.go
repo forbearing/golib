@@ -55,6 +55,7 @@ func main() {
 	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
 	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, "-")
 	os.Setenv(config.LOGGER_DIR, "/tmp/myproject/logs")
+	os.Setenv(config.LOGGER_MAX_SIZE, "1000")
 	os.Setenv(config.DATABASE_MAX_IDLE_CONNS, "100")
 	os.Setenv(config.DATABASE_MAX_OPEN_CONNS, "1000")
 	os.Setenv(config.SQLITE_PATH, "/tmp/myproject/data.db")
