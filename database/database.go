@@ -472,6 +472,9 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 			jsonTag = schemaTag
 		}
 
+		if !val.Field(i).CanInterface() {
+			continue
+		}
 		v := val.Field(i).Interface()
 		var _v string
 		switch val.Field(i).Kind() {
