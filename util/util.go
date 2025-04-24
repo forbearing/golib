@@ -362,3 +362,15 @@ func HashID(fields ...string) string {
 	hash := sha256.Sum256([]byte(strings.Join(fields, ":")))
 	return hex.EncodeToString(hash[:16])
 }
+
+// FormatDurationMilliseconds formats a time.Duration as a string representing milliseconds.
+// The result keeps 'precision' decimal places, e.g., "1.23" for precision=2.
+// If precision is negative, it defaults to 2 decimal places.
+func FormatDurationMilliseconds(d time.Duration, precision int) string {
+	if precision < 0 {
+		precision = 2
+	}
+	ms := float64(d) / float64(time.Millisecond)
+	format := fmt.Sprintf("%%.%dfms", precision)
+	return fmt.Sprintf(format, ms)
+}

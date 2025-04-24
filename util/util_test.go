@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -203,6 +204,29 @@ func TestRound(t *testing.T) {
 func TestHashID(t *testing.T) {
 	hashID := HashID("user", "email", "address")
 	fmt.Println(hashID)
+}
+
+func TestFormatDurationMilliseconds(t *testing.T) {
+	tests := []struct {
+		duration  time.Duration
+		precision int
+		expected  string
+	}{
+		{1234567 * time.Nanosecond, 2, "1.23ms"},
+		{1234567 * time.Nanosecond, 3, "1.235ms"},
+		{1500 * time.Millisecond, 2, "1500.00ms"},
+		{1 * time.Second, 0, "1000ms"},
+		{1 * time.Second, -1, "1000.00ms"}, // negative precision, default 2
+		{0, 2, "0.00ms"},
+		{2500 * time.Microsecond, 4, "2.5000ms"},
+	}
+
+	for _, tt := range tests {
+		got := FormatDurationMilliseconds(tt.duration, tt.precision)
+		if got != tt.expected {
+			t.Errorf("FormatDurationMilliseconds(%v, %d) = %s; want %s", tt.duration, tt.precision, got, tt.expected)
+		}
+	}
 }
 
 func BenchmarkRound(b *testing.B) {

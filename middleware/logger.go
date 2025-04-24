@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/metrics"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,7 +35,7 @@ func Logger(filename ...string) gin.HandlerFunc {
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
-			zap.String("latency", time.Since(start).String()),
+			zap.String("latency", util.FormatDurationMilliseconds(time.Since(start), 2)),
 		}
 
 		if len(c.Errors) > 0 {
