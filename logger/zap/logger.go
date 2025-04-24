@@ -9,6 +9,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
@@ -189,7 +190,7 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	sql, rows := fc()
 
 	if err != nil {
-		g.l.Errorz("", zap.String("sql", sql), zap.Int64("rows", rows), zap.String("elapsed", elapsed.String()), zap.Error(err))
+		g.l.Errorz("", zap.String("sql", sql), zap.Int64("rows", rows), zap.String("elapsed", util.FormatDurationMilliseconds(elapsed, 2)), zap.Error(err))
 	} else {
 		if elapsed > config.App.Database.SlowQueryThreshold {
 			g.l.Warnz("slow SQL detected",
@@ -197,7 +198,7 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 				zap.String(consts.CTX_USER_ID, userId),
 				zap.String(consts.TRACE_ID, traceId),
 				zap.String("sql", sql),
-				zap.String("elapsed", elapsed.String()),
+				zap.String("elapsed", util.FormatDurationMilliseconds(elapsed, 2)),
 				zap.String("threshold", config.App.Database.SlowQueryThreshold.String()),
 				zap.Int64("rows", rows))
 		} else {
@@ -206,7 +207,7 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 				zap.String(consts.CTX_USER_ID, userId),
 				zap.String(consts.TRACE_ID, traceId),
 				zap.String("sql", sql),
-				zap.String("elapsed", elapsed.String()),
+				zap.String("elapsed", util.FormatDurationMilliseconds(elapsed, 2)),
 				zap.Int64("rows", rows))
 		}
 	}
