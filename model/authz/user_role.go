@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -31,14 +32,6 @@ func (r *UserRole) CreateBefore() error {
 	if len(r.RoleId) == 0 {
 		return errors.New("role_id is required")
 	}
-	bindings := make([]*UserRole, 0)
-	if err := database.Database[*UserRole]().WithLimit(1).WithQuery(&UserRole{UserId: r.UserId, RoleId: r.RoleId}).List(&bindings); err != nil {
-		return err
-	}
-	if len(bindings) > 0 {
-		return fmt.Errorf("user_role(%s) already exists", bindings[0].ID)
-	}
-
 	// expands field: user and role
 	user, role := new(model.User), new(Role)
 	if err := database.Database[*model.User]().Get(user, r.UserId); err != nil {
@@ -49,6 +42,9 @@ func (r *UserRole) CreateBefore() error {
 	}
 	r.User, r.Role = user.Name, role.Name
 
+	// If the user already has the role, set same id to just update it.
+	r.SetID(util.HashID(r.UserId, r.RoleId))
+
 	return nil
 }
 
@@ -56,8 +52,27 @@ func (r *UserRole) CreateAfter() error {
 	if err := database.Database[*UserRole]().Update(r); err != nil {
 		return err
 	}
-	// TODO: add remark for casbin_rule.
-	return rbac.RBAC().AssignRole(r.UserId, r.RoleId)
+	// NOTE: must be role name not role id.
+	if err := rbac.RBAC().AssignRole(r.UserId, r.Role); err != nil {
+		return err
+	}
+
+	// update casbin_rule field: `user`, `role`, `remark`
+	user := new(model.User)
+	if err := database.Database[*model.User]().Get(user, r.UserId); err != nil {
+		return err
+	}
+	casbinRules := make([]*CasbinRule, 0)
+	if err := database.Database[*CasbinRule]().WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
+		return err
+	}
+	if len(casbinRules) > 0 {
+		casbinRules[0].User = user.Name
+		casbinRules[0].Role = r.Role
+		casbinRules[0].Remark = util.ValueOf(fmt.Sprintf("%s -> %s", r.User, r.Role))
+		return database.Database[*CasbinRule]().Update(casbinRules[0])
+	}
+	return nil
 }
 
 func (r *UserRole) DeleteBefore() error {
@@ -65,7 +80,8 @@ func (r *UserRole) DeleteBefore() error {
 	if err := database.Database[*UserRole]().Get(r, r.ID); err != nil {
 		return err
 	}
-	return rbac.RBAC().UnassignRole(r.UserId, r.RoleId)
+	// NOTE: must be role name not role id.
+	return rbac.RBAC().UnassignRole(r.UserId, r.Role)
 }
 
 func (r *UserRole) DeleteAfter() error { return database.Database[*UserRole]().Cleanup() }
