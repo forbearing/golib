@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -9,14 +10,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/database"
+	"github.com/forbearing/golib/ds/queue/circularbuffer"
 	"github.com/forbearing/golib/logger"
+	model_log "github.com/forbearing/golib/model/log"
 	"github.com/forbearing/golib/pkg/filetype"
 	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/types/helper"
+	"github.com/forbearing/golib/util"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/schema"
@@ -59,7 +64,52 @@ import (
 	1.记录操作日志也在 controller 层
 */
 
-var pluralizeCli = pluralize.NewClient()
+var (
+	pluralizeCli = pluralize.NewClient()
+
+	// TODO: circularbuffer cap should be configurable.
+	cbCap = 10000
+	cb    *circularbuffer.CircularBuffer[*model_log.OperationLog]
+)
+
+func Init() (err error) {
+	if cb, err = circularbuffer.New(cbCap, circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
+		return err
+	}
+
+	// Consume operation log.
+	go func() {
+		operationLogs := make([]*model_log.OperationLog, 0, cbCap)
+		ticker := time.NewTicker(5 * time.Second)
+		for range ticker.C {
+			operationLogs = operationLogs[:0]
+			for !cb.IsEmpty() {
+				ol, _ := cb.Dequeue()
+				operationLogs = append(operationLogs, ol)
+			}
+			if len(operationLogs) > 0 {
+				if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+					zap.S().Error(err)
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
+func Clean() {
+	operationLogs := make([]*model_log.OperationLog, 0, cbCap)
+	for !cb.IsEmpty() {
+		ol, _ := cb.Dequeue()
+		operationLogs = append(operationLogs, ol)
+	}
+	if len(operationLogs) > 0 {
+		if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+			zap.S().Error(err)
+		}
+	}
+}
 
 // Create is a generic function to product gin handler to create one resource.
 // The resource type depends on the type of interface types.Model.
@@ -113,30 +163,27 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		// // 4.record operation log to database.
-		// typ := reflect.TypeOf(*new(M)).Elem()
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// record, _ := json.Marshal(req)
-		// // TODO: should we record the operation in the database of `db` instance.
-		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-		// 	Op:        model.OperationTypeCreate,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	RecordId:  req.GetID(),
-		// 	Record:    util.BytesToString(record),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// }); err != nil {
-		// 	log.Error("failed to write operation log to database: ", err.Error())
-		// }
+		// 4.record operation log to database.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeCreate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		ResponseJSON(c, CodeSuccess, req)
 	}
@@ -211,16 +258,16 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		// // find out the records and record to operation log.
-		// copied := make([]M, len(ml))
-		// for i := range ml {
-		// 	m := reflect.New(typ).Interface().(M)
-		// 	m.SetID(ml[i].GetID())
-		// 	if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
-		// 		log.Error(err)
-		// 	}
-		// 	copied[i] = m
-		// }
+		// find out the records and record to operation log.
+		copied := make([]M, len(ml))
+		for i := range ml {
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(ml[i].GetID())
+			if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+				log.Error(err)
+			}
+			copied[i] = m
+		}
 
 		// 2.Delete resources in database.
 		if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
@@ -235,30 +282,28 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// for i := range ml {
-		// 	record, _ := json.Marshal(copied[i])
-		// 	if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-		// 		Op:        model.OperationTypeDelete,
-		// 		Model:     typ.Name(),
-		// 		Table:     tableName,
-		// 		RecordId:  ml[i].GetID(),
-		// 		Record:    util.BytesToString(record),
-		// 		IP:        c.ClientIP(),
-		// 		User:      c.GetString(consts.CTX_USERNAME),
-		// 		RequestId: c.GetString(consts.REQUEST_ID),
-		// 		URI:       c.Request.RequestURI,
-		// 		Method:    c.Request.Method,
-		// 		UserAgent: c.Request.UserAgent(),
-		// 	}); err != nil {
-		// 		log.Error("failed to write operation log to database: ", err.Error())
-		// 	}
-		// }
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		for i := range ml {
+			record, _ := json.Marshal(copied[i])
+			cb.Enqueue(&model_log.OperationLog{
+				Op:        model_log.OperationTypeDelete,
+				Model:     typ.Name(),
+				Table:     tableName,
+				RecordId:  ml[i].GetID(),
+				Record:    util.BytesToString(record),
+				IP:        c.ClientIP(),
+				User:      c.GetString(consts.CTX_USERNAME),
+				RequestId: c.GetString(consts.REQUEST_ID),
+				URI:       c.Request.RequestURI,
+				Method:    c.Request.Method,
+				UserAgent: c.Request.UserAgent(),
+			})
+		}
 
 		ResponseJSON(c, CodeSuccess)
 	}
@@ -281,17 +326,34 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
-		id := c.Param(consts.PARAM_ID)
 		req := *new(M)
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
-		log.Infoz("update from request", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
-		if len(id) == 0 {
-			id = req.GetID()
+
+		// param id has more priority than http body data id
+		paramId := c.Param(consts.PARAM_ID)
+		bodyId := req.GetID()
+		var id string
+		log.Infoz("update from request",
+			zap.String("param_id", paramId),
+			zap.String("body_id", bodyId),
+			zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
+		)
+		if paramId != "" {
+			req.SetID(paramId)
+			id = paramId
+		} else if bodyId != "" {
+			paramId = bodyId
+			id = bodyId
+		} else {
+			log.Error("id missing")
+			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
+			return
 		}
+
 		data := make([]M, 0)
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
@@ -299,7 +361,6 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		typ := reflect.TypeOf(*new(M)).Elem()
 		m := reflect.New(typ).Interface().(M)
 		m.SetID(id)
-
 		// Make sure the record must be already exists.
 		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
@@ -314,7 +375,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
 		req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
-		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // keep original "updated_by"
+		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 		// 1.Perform business logic processing before update resource.
 		if err := new(service.Factory[M]).Service().UpdateBefore(helper.NewServiceContext(c), req); err != nil {
 			log.Error(err)
@@ -335,28 +396,26 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// record, _ := json.Marshal(req)
-		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-		// 	Op:        model.OperationTypeUpdate,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	RecordId:  req.GetID(),
-		// 	Record:    util.BytesToString(record),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// }); err != nil {
-		// 	log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
-		// }
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeUpdate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		ResponseJSON(c, CodeSuccess, req)
 	}
@@ -514,30 +573,27 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// // NOTE: We should record the `req` instead of `oldVal`,
-		// // The req is `newVal`.
-		// record, _ := json.Marshal(req)
-		// if err := database.Database[*model.OperationLog]().WithDB(db).Create(&model.OperationLog{
-		// 	Op:        model.OperationTypeUpdatePartial,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	RecordId:  req.GetID(),
-		// 	Record:    util.BytesToString(record),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// }); err != nil {
-		// 	log.Error(fmt.Sprintf("failed to write operation log to database: %s", err.Error()))
-		// }
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeUpdatePartial,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		// NOTE: You should response `oldVal` instead of `req`.
 		// The req is `newVal`.
@@ -740,26 +796,25 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 				return
 			}
 		}
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		// 	Op:        model.OperationTypeList,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// }); err != nil {
-		// 	log.Error("failed to write operation log to database: ", err.Error())
-		// }
-		// types.Sort[M](types.UpdatedTime, data)
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeList,
+			Model:     typ.Name(),
+			Table:     tableName,
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
+
 		log.Infoz(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total), zap.Object(typ.Name(), m))
 		if cached {
 			ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
@@ -917,25 +972,23 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			}
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// if err := database.Database[*model.OperationLog]().Create(&model.OperationLog{
-		// 	Op:        model.OperationTypeGet,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// }); err != nil {
-		// 	log.Error("failed to write operation log to database: ", err.Error())
-		// }
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeGet,
+			Model:     typ.Name(),
+			Table:     tableName,
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 		if cached {
 			ResponseBytes(c, CodeSuccess, cache)
 		} else {
@@ -1098,10 +1151,27 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			return
 		}
 
-		// TODO: write operation log
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeBatchCreate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
-
 		if reqErr != io.EOF {
 			req.Summary = &summary{
 				Total:     len(req.Items),
@@ -1165,6 +1235,26 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			return
 		}
 
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeBatchDelete,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
+
 		if reqErr != io.EOF {
 			req.Summary = &summary{
 				Total:     len(req.Items),
@@ -1224,6 +1314,27 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
+
+		// 4.record operation log to database.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeBatchUpdate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		if reqErr != io.EOF {
 			req.Summary = &summary{
@@ -1302,6 +1413,27 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
+		record, _ := json.Marshal(req)
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeBatchUpdatePartial,
+			Model:     typ.Name(),
+			Table:     tableName,
+			Record:    util.BytesToString(record),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
 
 		if reqErr != io.EOF {
 			req.Summary = &summary{

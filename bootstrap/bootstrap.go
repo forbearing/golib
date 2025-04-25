@@ -13,6 +13,7 @@ import (
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
 	"github.com/forbearing/golib/database/clickhouse"
 	"github.com/forbearing/golib/database/mysql"
@@ -109,6 +110,7 @@ func Bootstrap() error {
 		service_authz.Init,
 		service_log.Init,
 
+		controller.Init,
 		middleware.Init,
 		router.Init,
 		grpc.Init,
@@ -118,8 +120,6 @@ func Bootstrap() error {
 		cronjob.Init,
 	)
 
-	RegisterCleanup(config.Clean)
-	RegisterCleanup(pkgzap.Clean)
 	RegisterCleanup(redis.Close)
 	RegisterCleanup(kafka.Close)
 	RegisterCleanup(etcd.Close)
@@ -130,6 +130,9 @@ func Bootstrap() error {
 	RegisterCleanup(rethinkdb.Close)
 	RegisterCleanup(rocketmq.Close)
 	RegisterCleanup(ldap.Close)
+	RegisterCleanup(controller.Clean)
+	RegisterCleanup(pkgzap.Clean)
+	RegisterCleanup(config.Clean)
 
 	initialized = true
 

@@ -12,7 +12,8 @@ var (
 	RouteManager *routeParamsManager
 )
 
-func Init() error {
+func Init() (err error) {
+	// Init circuit breaker
 	cbCfg := config.App.Server.CircuitBreaker
 	if cbCfg.MaxRequests == 0 {
 		return errors.New("circuit breaker max_requests cannot be 0")
@@ -53,6 +54,8 @@ func Init() error {
 		"timeout", cbCfg.Timeout,
 	)
 
+	// Init route params manager
 	RouteManager = NewRouteParamsManager()
+
 	return nil
 }
