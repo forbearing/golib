@@ -2,6 +2,8 @@ package model
 
 import (
 	"strings"
+
+	"go.uber.org/zap/zapcore"
 )
 
 type User struct {
@@ -40,6 +42,18 @@ type User struct {
 	TokenExpiration GormTime `json:"token_expiration,omitempty"`
 
 	Base
+}
+
+func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if u == nil {
+		return nil
+	}
+
+	enc.AddString("name", u.Name)
+	enc.AddString("email", u.Email)
+	enc.AddObject("base", &u.Base)
+
+	return nil
 }
 
 // func (u *User) GetAfter() error  { return u.mask() }
