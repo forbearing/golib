@@ -13,6 +13,11 @@ const (
 	OperationTypeGet           OperationType = "get"
 	OperationTypeExport        OperationType = "export"
 	OperationTypeImport        OperationType = "import"
+
+	OperationTypeBatchCreate        OperationType = "batch_create"
+	OperationTypeBatchDelete        OperationType = "batch_delete"
+	OperationTypeBatchUpdate        OperationType = "batch_update"
+	OperationTypeBatchUpdatePartial OperationType = "batch_update_partial"
 )
 
 type OperationLog struct {
