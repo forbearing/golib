@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1063,7 +1064,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Create")
+	done := db.trace("Create", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -1114,42 +1115,49 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	if db.batchSize > 0 {
 		batchSize = db.batchSize
 	}
+	// update "created_at" and "updated_at"
+	now := time.Now()
+	for i := range len(objs) {
+		objs[i].SetCreatedAt(now)
+		objs[i].SetUpdatedAt(now)
+	}
 	for i := 0; i < len(objs); i += batchSize {
 		end := min(i+batchSize, len(objs))
 		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
-
-	// because db.db.Delete method just update field "delete_at" to current time,
-	// not really delete it(soft delete).
-	// If record already exists, Update method update all fields but exlcude "created_at" by
-	// mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should update the "created_at" field manually.
-	for i := range objs {
-		// 有些 model 重写 SetID 为一个空函数, 则 GetID() 的值为空字符串. 更新 created_at 则会报错
-		// 例如 casbin_rule 表/结构体: 这张表的 ID 总是 integer 类型, 并且有 autoincrement 属性, 所以必须重写 SetID.
-		if len(objs[i].GetID()) == 0 {
-			continue
-		}
-
-		// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
-		// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
-		var _db *gorm.DB
-		if strings.ToLower(config.App.Logger.Level) == "debug" {
-			_db = DB.Debug()
-		} else {
-			_db = DB
-		}
-		createdAt := time.Now()
-		if err = _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
-			return err
-		}
-		objs[i].SetCreatedAt(createdAt)
-		if db.enableCache {
+	if db.enableCache {
+		for i := range objs {
 			lru.Cache[M]().Remove(objs[i].GetID())
 		}
-
 	}
+
+	// // because db.db.Delete method just update field "delete_at" to current time,
+	// // not really delete it(soft delete).
+	// // If record already exists, Update method update all fields but exlcude "created_at" by
+	// // mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should update the "created_at" field manually.
+	// for i := range objs {
+	// 	// 有些 model 重写 SetID 为一个空函数, 则 GetID() 的值为空字符串. 更新 created_at 则会报错
+	// 	// 例如 casbin_rule 表/结构体: 这张表的 ID 总是 integer 类型, 并且有 autoincrement 属性, 所以必须重写 SetID.
+	// 	if len(objs[i].GetID()) == 0 {
+	// 		continue
+	// 	}
+	//
+	// 	// 这里要重新创建一个 gorm.DB 实例, 否则会出现这种语句, id 出现多次了.
+	// 	// UPDATE `assets` SET `created_at`='2023-11-12 14:35:42.604',`updated_at`='2023-11-12 14:35:42.604' WHERE id = '010103NU000020' AND `assets`.`deleted_at` IS NULL AND id = '010103NU000021' AND id = '010103NU000022' LIMIT 1000
+	// 	var _db *gorm.DB
+	// 	if strings.ToLower(config.App.Logger.Level) == "debug" {
+	// 		_db = DB.Debug()
+	// 	} else {
+	// 		_db = DB
+	// 	}
+	// 	createdAt := time.Now()
+	// 	if err = _db.Table(tableName).Model(*new(M)).Where("id = ?", objs[i].GetID()).Update("created_at", createdAt).Error; err != nil {
+	// 		return err
+	// 	}
+	// }
+
 	// Invoke model hook: CreateAfter.
 	for i := range objs {
 		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
@@ -1171,7 +1179,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Delete")
+	done := db.trace("Delete", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -1276,7 +1284,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Update")
+	done := db.trace("Update", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -2259,13 +2267,18 @@ func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 // It logs operation name, table name and elapsed time when done function is called.
 //
 // NOTE: trace function must be called after `defer db.reset()`.
-func (db *database[M]) trace(op string) func(error) {
+func (db *database[M]) trace(op string, batch ...int) func(error) {
 	begin := time.Now()
+	var _batch int
+	if len(batch) > 0 {
+		_batch = batch[0]
+	}
 	return func(err error) {
 		if err != nil {
 			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Errorz("",
 				zap.Error(err),
 				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("batch", strconv.Itoa(_batch)),
 				zap.String("cost", util.FormatDurationMilliseconds(time.Since(begin), 2)),
 				zap.Bool("cache_enabled", db.enableCache),
 				zap.Bool("try_run", db.tryRun),
@@ -2273,6 +2286,7 @@ func (db *database[M]) trace(op string) func(error) {
 		} else {
 			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
 				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("batch", strconv.Itoa(_batch)),
 				zap.String("cost", util.FormatDurationMilliseconds(time.Since(begin), 2)),
 				zap.Bool("cache_enabled", db.enableCache),
 				zap.Bool("try_run", db.tryRun),
