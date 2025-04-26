@@ -18,20 +18,20 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/arl/statsviz v0.6.0
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
-	github.com/casbin/casbin/v2 v2.104.0
+	github.com/casbin/casbin/v2 v2.105.0
 	github.com/casbin/gorm-adapter/v3 v3.32.0
 	github.com/cloverstd/tcping v0.1.1
 	github.com/cockroachdb/errors v1.11.3
 	github.com/creasty/defaults v1.8.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/elastic/go-elasticsearch/v8 v8.17.1
-	github.com/gabriel-vasile/mimetype v1.4.8
+	github.com/elastic/go-elasticsearch/v8 v8.18.0
+	github.com/gabriel-vasile/mimetype v1.4.9
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/getkin/kin-openapi v0.131.0
 	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-contrib/zap v1.1.5
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-ldap/ldap/v3 v3.4.10
+	github.com/go-ldap/ldap/v3 v3.4.11
 	github.com/go-ping/ping v1.2.0
 	github.com/go-viper/encoding/ini v0.1.1
 	github.com/gocql/gocql v1.7.0
@@ -46,10 +46,10 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
-	github.com/larksuite/oapi-sdk-go/v3 v3.4.13
-	github.com/minio/minio-go/v7 v7.0.90
+	github.com/larksuite/oapi-sdk-go/v3 v3.4.15
+	github.com/minio/minio-go/v7 v7.0.91
 	github.com/mssola/useragent v1.0.0
-	github.com/nats-io/nats.go v1.41.1
+	github.com/nats-io/nats.go v1.41.2
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pkg/sftp v1.13.9
 	github.com/prometheus/client_golang v1.22.0
@@ -78,7 +78,7 @@ require (
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 	golang.org/x/sync v0.13.0
 	golang.org/x/time v0.11.0
-	google.golang.org/grpc v1.71.1
+	google.golang.org/grpc v1.72.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/rethinkdb/rethinkdb-go.v6 v6.2.2
 	gorm.io/driver/clickhouse v0.6.1
@@ -86,7 +86,7 @@ require (
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/driver/sqlserver v1.5.4
-	gorm.io/gorm v1.25.12
+	gorm.io/gorm v1.26.0
 	gorm.io/hints v1.1.2
 )
 
@@ -116,14 +116,14 @@ require (
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
 	github.com/glebarez/sqlite v1.11.0 // indirect
-	github.com/go-asn1-ber/asn1-ber v1.5.7 // indirect
+	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
@@ -185,7 +185,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/nkeys v0.4.9 // indirect
+	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
@@ -255,7 +255,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/plugin/dbresolver v1.5.3 // indirect
+	gorm.io/plugin/dbresolver v1.6.0 // indirect
 	modernc.org/libc v1.61.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
