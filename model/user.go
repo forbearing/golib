@@ -1,48 +1,58 @@
 package model
 
 import (
+	"database/sql/driver"
 	"strings"
 
 	"go.uber.org/zap/zapcore"
 )
 
 type User struct {
-	Name         string `json:"name,omitempty"`
-	EnName       string `json:"en_name,omitempty"`
-	Password     string `json:"password,omitempty"`
-	RePassword   string `json:"re_password,omitempty" gorm:"-"`
-	NewPassword  string `json:"new_password,omitempty" gorm:"-"`
-	Email        string `json:"email,omitempty"`
-	Avatar       string `json:"avatar,omitempty"`
-	AvatarUrl    string `json:"avatar_url,omitempty"`    // 用户头像
-	AvatarThumb  string `json:"avatar_thumb,omitempty"`  // 用户头像 72x72
-	AvatarMiddle string `json:"avatar_middle,omitempty"` // 用户头像 240x240
-	AvatarBig    string `json:"avatar_big,omitempty"`    // 用户头像 640x640
-	Mobile       string `json:"mobile,omitempty"`
-	Nickname     string `json:"nickname,omitempty"`
-	Introduction string `json:"introduction,omitempty"`
-	Status       uint   `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
-	// State 员工状态
-	// 1 在职
-	// 2 离职
-	// 3 试用期
-	// 4 实习生
+	Name        string `json:"name,omitempty"`
+	EnName      string `json:"en_name,omitempty"`
+	Password    string `json:"password,omitempty"`
+	RePassword  string `json:"re_password,omitempty" gorm:"-"`
+	NewPassword string `json:"new_password,omitempty" gorm:"-"`
+	Nickname    string `json:"nickname,omitempty"`
+
+	Email          string `json:"email,omitempty"`
+	EmailVerified  bool   `json:"email_verified,omitempty"`
+	Mobile         string `json:"mobile,omitempty"`
+	MobileVerified bool   `json:"mobile_verified,omitempty"`
+
+	Status uint `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
+
 	RoleId       string `json:"role_id,omitempty"`
 	DepartmentId string `json:"department_id,omitempty"`
 
-	LastLogin   GormTime `json:"last_login,omitempty"`
-	LastLoginIP string   `json:"last_login_ip,omitempty"`
-	LockExpire  int64    `json:"lock_expire,omitempty"`
-	NumWrong    int      `json:"num_wrong,omitempty" gorm:"comment:the number of input password wrong"`
+	LastLoginIP string `json:"last_login_ip,omitempty"`
+	LockExpire  int64  `json:"lock_expire,omitempty"`
+	LoginCount  int    `json:"login_count,omitempty"`
+	NumWrong    int    `json:"num_wrong,omitempty" gorm:"comment:the number of input password wrong"`
 
-	Token           string   `json:"token,omitempty" gorm:"-"`
-	AccessToken     string   `json:"access_token,omitempty" gorm:"-"`
-	RefreshToken    string   `json:"refresh_token,omitempty" gorm:"-"`
-	SessionId       string   `json:"session_id,omitempty" gorm:"-"`
-	TokenExpiration GormTime `json:"token_expiration,omitempty"`
+	Avatar *Avatar `json:"avatar,omitempty"`
+
+	LastLoginAt          *GormTime `json:"last_login,omitempty"`
+	TokenExpiration      *GormTime `json:"token_expiration,omitempty"`
+	LastPasswordChangeAt *GormTime `json:"last_password_change_at,omitempty" gorm:"-"`
+
+	Token        string `json:"token,omitempty" gorm:"-"`
+	AccessToken  string `json:"access_token,omitempty" gorm:"-"`
+	RefreshToken string `json:"refresh_token,omitempty" gorm:"-"`
+	SessionId    string `json:"session_id,omitempty" gorm:"-"`
 
 	Base
 }
+
+type Avatar struct {
+	URL    string `json:"url,omitempty"`    // 用户头像
+	Thumb  string `json:"thumb,omitempty"`  // 用户头像 72x72
+	Middle string `json:"middle,omitempty"` // 用户头像 240x240
+	Big    string `json:"big,omitempty"`    // 用户头像 640x640
+}
+
+func (a *Avatar) Scan(value any) error        { return GormScannerWrapper(a).Scan(value) }
+func (a Avatar) Value() (driver.Value, error) { return GormScannerWrapper(a).Value() }
 
 func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if u == nil {
