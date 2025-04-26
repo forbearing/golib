@@ -35,7 +35,7 @@ func Logger(filename ...string) gin.HandlerFunc {
 			zap.String("query", query),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
-			zap.String("latency", util.FormatDurationMilliseconds(time.Since(start), 2)),
+			zap.String("latency", util.FormatDurationSmart(time.Since(start), 2)),
 		}
 
 		if len(c.Errors) > 0 {
