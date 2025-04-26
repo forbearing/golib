@@ -105,9 +105,9 @@ func Run() error {
 	server = &http.Server{
 		Addr:           addr,
 		Handler:        base,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		IdleTimeout:    60 * time.Second,
+		ReadTimeout:    config.App.Server.ReadTimeout,
+		WriteTimeout:   config.App.Server.WriteTimeout,
+		IdleTimeout:    config.App.IdleTimeout,
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
 
