@@ -19,12 +19,13 @@ func init() {
 }
 
 // DeleteAfter support delete multiple role_permissions by query parameters `role`, `resource`, `action`
-func (*rolePermission) DeleteAfter(ctx *types.ServiceContext, rolePermissions ...*model_authz.RolePermission) error {
+func (*rolePermission) DeleteAfter(ctx *types.ServiceContext, rolePermission *model_authz.RolePermission) error {
 	log := logger.Service.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
 	role := ctx.URL.Query().Get("role")
 	resource := ctx.URL.Query().Get("resource")
 	action := ctx.URL.Query().Get("action")
 
+	rolePermissions := make([]*model_authz.RolePermission, 0)
 	if err := database.Database[*model_authz.RolePermission]().WithLimit(-1).WithQuery(&model_authz.RolePermission{
 		Role:     role,
 		Resource: resource,

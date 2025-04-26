@@ -262,18 +262,18 @@ type Model interface {
 // xxxAfter
 // - 操作行为记录
 type Service[M Model] interface {
-	CreateBefore(*ServiceContext, ...M) error
-	CreateAfter(*ServiceContext, ...M) error
-	DeleteBefore(*ServiceContext, ...M) error
-	DeleteAfter(*ServiceContext, ...M) error
-	UpdateBefore(*ServiceContext, ...M) error
-	UpdateAfter(*ServiceContext, ...M) error
-	UpdatePartialBefore(*ServiceContext, ...M) error
-	UpdatePartialAfter(*ServiceContext, ...M) error
+	CreateBefore(*ServiceContext, M) error
+	CreateAfter(*ServiceContext, M) error
+	DeleteBefore(*ServiceContext, M) error
+	DeleteAfter(*ServiceContext, M) error
+	UpdateBefore(*ServiceContext, M) error
+	UpdateAfter(*ServiceContext, M) error
+	UpdatePartialBefore(*ServiceContext, M) error
+	UpdatePartialAfter(*ServiceContext, M) error
 	ListBefore(*ServiceContext, *[]M) error // 必须是指针类型, 因为有时候需要修改原数据
 	ListAfter(*ServiceContext, *[]M) error  // 必须是指针类型, 因为有时候需要修改原数据
-	GetBefore(*ServiceContext, ...M) error
-	GetAfter(*ServiceContext, ...M) error
+	GetBefore(*ServiceContext, M) error
+	GetAfter(*ServiceContext, M) error
 
 	BatchCreateBefore(*ServiceContext, ...M) error
 	BatchCreateAfter(*ServiceContext, ...M) error

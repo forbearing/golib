@@ -82,18 +82,18 @@ func (f Factory[M]) Service() types.Service[M] {
 
 type Base[M types.Model] struct{ types.Logger }
 
-func (Base[M]) CreateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) CreateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) DeleteBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) DeleteAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) UpdateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) UpdateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) UpdatePartialBefore(*types.ServiceContext, ...M) error { return nil }
-func (Base[M]) UpdatePartialAfter(*types.ServiceContext, ...M) error  { return nil }
-func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error          { return nil }
-func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error           { return nil }
-func (Base[M]) GetBefore(*types.ServiceContext, ...M) error           { return nil }
-func (Base[M]) GetAfter(*types.ServiceContext, ...M) error            { return nil }
+func (Base[M]) CreateBefore(*types.ServiceContext, M) error        { return nil }
+func (Base[M]) CreateAfter(*types.ServiceContext, M) error         { return nil }
+func (Base[M]) DeleteBefore(*types.ServiceContext, M) error        { return nil }
+func (Base[M]) DeleteAfter(*types.ServiceContext, M) error         { return nil }
+func (Base[M]) UpdateBefore(*types.ServiceContext, M) error        { return nil }
+func (Base[M]) UpdateAfter(*types.ServiceContext, M) error         { return nil }
+func (Base[M]) UpdatePartialBefore(*types.ServiceContext, M) error { return nil }
+func (Base[M]) UpdatePartialAfter(*types.ServiceContext, M) error  { return nil }
+func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error       { return nil }
+func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error        { return nil }
+func (Base[M]) GetBefore(*types.ServiceContext, M) error           { return nil }
+func (Base[M]) GetAfter(*types.ServiceContext, M) error            { return nil }
 
 func (Base[M]) BatchCreateBefore(*types.ServiceContext, ...M) error        { return nil }
 func (Base[M]) BatchCreateAfter(*types.ServiceContext, ...M) error         { return nil }
