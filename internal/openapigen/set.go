@@ -1028,6 +1028,9 @@ func setupExample(schemaRef *openapi3.SchemaRef) {
 		if k == "created_at" || k == "created_by" || k == "updated_at" || k == "updated_by" || k == "id" {
 			continue
 		}
+		if v.Value == nil || v.Value.Type == nil {
+			continue
+		}
 		if v.Value.Type.Is(openapi3.TypeString) {
 			examples[k] = "string"
 		}
