@@ -15,49 +15,49 @@ type star struct {
 	service.Base[*model.Star]
 }
 
-func (s *star) CreateBefore(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) CreateBefore(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_CREATE_BEFORE)
 	log.Info("star create before")
 	return nil
 }
 
-func (s *star) CreateAfter(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) CreateAfter(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_CREATE_AFTER)
 	log.Info("star create after")
 	return nil
 }
 
-func (s *star) DeleteBefore(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) DeleteBefore(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_DELETE_BEFORE)
 	log.Info("star delete before")
 	return nil
 }
 
-func (s *star) DeleteAfter(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) DeleteAfter(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
 	log.Info("star delete after")
 	return nil
 }
 
-func (s *star) UpdateBefore(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) UpdateBefore(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
 	log.Info("star update before")
 	return nil
 }
 
-func (s *star) UpdateAfter(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) UpdateAfter(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_UPDATE_AFTER)
 	log.Info("star update after")
 	return nil
 }
 
-func (s *star) UpdatePartialBefore(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) UpdatePartialBefore(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
 	log.Info("star update partial before")
 	return nil
 }
 
-func (s *star) UpdatePartialAfter(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) UpdatePartialAfter(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_AFTER)
 	log.Info("star update partial after")
 	return nil
@@ -75,13 +75,13 @@ func (s *star) ListAfter(ctx *types.ServiceContext, stars *[]*model.Star) error 
 	return nil
 }
 
-func (s *star) GetBefore(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) GetBefore(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_GET_BEFORE)
 	log.Info("star get before")
 	return nil
 }
 
-func (s *star) GetAfter(ctx *types.ServiceContext, stars ...*model.Star) error {
+func (s *star) GetAfter(ctx *types.ServiceContext, star *model.Star) error {
 	log := s.WithServiceContext(ctx, consts.PHASE_GET_AFTER)
 	log.Info("star get after")
 	return nil

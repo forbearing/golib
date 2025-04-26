@@ -15,49 +15,49 @@ type group struct {
 	service.Base[*model.Group]
 }
 
-func (g *group) CreateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) CreateBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_CREATE_BEFORE)
 	log.Info("group create before")
 	return nil
 }
 
-func (g *group) CreateAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) CreateAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_CREATE_AFTER)
 	log.Info("group create after")
 	return nil
 }
 
-func (g *group) DeleteBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) DeleteBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_DELETE_BEFORE)
 	log.Info("group delete before")
 	return nil
 }
 
-func (g *group) DeleteAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) DeleteAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
 	log.Info("group delete after")
 	return nil
 }
 
-func (g *group) UpdateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdateBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
 	log.Info("group update before")
 	return nil
 }
 
-func (g *group) UpdateAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_AFTER)
 	log.Info("group update after")
 	return nil
 }
 
-func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
 	log.Info("group update partial before")
 	return nil
 }
 
-func (g *group) UpdatePartialAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdatePartialAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_AFTER)
 	log.Info("group update partial after")
 	return nil
@@ -75,13 +75,13 @@ func (g *group) ListAfter(ctx *types.ServiceContext, groups *[]*model.Group) err
 	return nil
 }
 
-func (g *group) GetBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) GetBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_GET_BEFORE)
 	log.Info("group get before")
 	return nil
 }
 
-func (g *group) GetAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) GetAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_GET_AFTER)
 	log.Info("group get after")
 	return nil

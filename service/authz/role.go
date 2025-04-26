@@ -19,14 +19,14 @@ func init() {
 }
 
 // DeleteAfter support filter and delete multiple roles by query parameter `name`.
-func (r *role) DeleteAfter(ctx *types.ServiceContext, roles ...*model_authz.Role) error {
+func (r *role) DeleteAfter(ctx *types.ServiceContext, role *model_authz.Role) error {
 	log := logger.Service.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
 	name := ctx.URL.Query().Get("name")
 	if len(name) == 0 {
 		return nil
 	}
 
-	roles = make([]*model_authz.Role, 0)
+	roles := make([]*model_authz.Role, 0)
 	if err := database.Database[*model_authz.Role]().WithLimit(-1).WithQuery(&model_authz.Role{Name: name}).List(&roles); err != nil {
 		log.Error(err)
 		return err
