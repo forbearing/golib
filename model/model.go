@@ -51,6 +51,22 @@ type Record struct {
 	DBName  string
 }
 
+// IsValid check the model is valid.
+// If the model has `Request` or `Response` suffix, it will be returns false.
+//
+// eg:
+//
+//	IsValid[*UserRequest]() returns false
+//	IsValid[*UserResponse]() returns false
+//	IsValid[*User]() returns true
+func IsValid[M types.Model]() bool {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	if strings.HasSuffix(typ.Name(), "Request") || strings.HasSuffix(typ.Name(), "Response") {
+		return false
+	}
+	return true
+}
+
 // Register associates the model with database table and will created automatically.
 // If records provided, they will be inserted when application bootstrapping.
 //
@@ -79,6 +95,9 @@ func Register[M types.Model](records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
 	// table := *new(M)
+	if !IsValid[M]() {
+		return
+	}
 	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
 	Tables = append(Tables, table)
 	// NOTE: it's necessary to set id before insert.
