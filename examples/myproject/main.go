@@ -52,6 +52,7 @@ func main() {
 	os.Setenv(config.AUTH_RBAC_ENABLE, "true")
 
 	os.Setenv(config.SERVER_PORT, "8002")
+	os.Setenv(config.SERVER_CIRCULAR_BUFFER_SIZE_OPERATION_LOG, "1000000")
 	os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
 	os.Setenv(config.AUTH_NONE_EXPIRE_TOKEN, "-")
 	os.Setenv(config.LOGGER_DIR, "/tmp/myproject/logs")

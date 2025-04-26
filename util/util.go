@@ -363,14 +363,51 @@ func HashID(fields ...string) string {
 	return hex.EncodeToString(hash[:16])
 }
 
-// FormatDurationMilliseconds formats a time.Duration as a string representing milliseconds.
-// The result keeps 'precision' decimal places, e.g., "1.23" for precision=2.
-// If precision is negative, it defaults to 2 decimal places.
-func FormatDurationMilliseconds(d time.Duration, precision int) string {
+// // FormatDurationMilliseconds formats a time.Duration as a string representing milliseconds.
+// // The result keeps 'precision' decimal places, e.g., "1.23" for precision=2.
+// // If precision is negative, it defaults to 2 decimal places.
+// func FormatDurationMilliseconds(d time.Duration, precision int) string {
+// 	if precision < 0 {
+// 		precision = 2
+// 	}
+// 	ms := float64(d) / float64(time.Millisecond)
+// 	format := fmt.Sprintf("%%.%dfms", precision)
+// 	return fmt.Sprintf(format, ms)
+// }
+
+// FormatDurationSmart formats a time.Duration into a string with the following rules:
+//   - If duration is less than 1ms, display as milliseconds with the specified precision (e.g., "0.018ms").
+//   - If duration is less than 1s, display as milliseconds with the specified precision (e.g., "123.451ms").
+//   - If duration is less than 1min, display as seconds with the specified precision (e.g., "2.013s").
+//   - If duration is 1min or more, display as minutes with the specified precision (e.g., "1.502min").
+//
+// Negative durations are supported and formatted with a '-' sign.
+// The precision parameter controls the number of digits after the decimal point (minimum 0, maximum 9).
+func FormatDurationSmart(d time.Duration, precision int) string {
 	if precision < 0 {
-		precision = 2
+		precision = 0
 	}
-	ms := float64(d) / float64(time.Millisecond)
-	format := fmt.Sprintf("%%.%dfms", precision)
-	return fmt.Sprintf(format, ms)
+	if precision > 9 {
+		precision = 9
+	}
+
+	// Format string, e.g., "%.2f"
+	format := "%." + fmt.Sprintf("%d", precision) + "f%s"
+
+	ns := d.Nanoseconds()
+	absNs := ns
+	if absNs < 0 {
+		absNs = -absNs
+	}
+
+	switch {
+	case absNs < 1e6: // <1ms
+		return fmt.Sprintf(format, float64(ns)/1e6, "ms")
+	case absNs < 1e9: // <1s
+		return fmt.Sprintf(format, float64(ns)/1e6, "ms")
+	case absNs < 60*1e9: // <1min
+		return fmt.Sprintf(format, float64(ns)/1e9, "s")
+	default:
+		return fmt.Sprintf(format, float64(ns)/(60*1e9), "min")
+	}
 }

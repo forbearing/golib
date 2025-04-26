@@ -206,25 +206,34 @@ func TestHashID(t *testing.T) {
 	fmt.Println(hashID)
 }
 
-func TestFormatDurationMilliseconds(t *testing.T) {
+func TestFormatDurationSmart(t *testing.T) {
 	tests := []struct {
-		duration  time.Duration
+		input     time.Duration
 		precision int
 		expected  string
 	}{
-		{1234567 * time.Nanosecond, 2, "1.23ms"},
-		{1234567 * time.Nanosecond, 3, "1.235ms"},
-		{1500 * time.Millisecond, 2, "1500.00ms"},
-		{1 * time.Second, 0, "1000ms"},
-		{1 * time.Second, -1, "1000.00ms"}, // negative precision, default 2
-		{0, 2, "0.00ms"},
-		{2500 * time.Microsecond, 4, "2.5000ms"},
+		{900 * time.Nanosecond, 3, "0.001ms"},
+		{500 * time.Microsecond, 2, "0.50ms"},
+		{2 * time.Millisecond, 0, "2ms"},
+		{999 * time.Millisecond, 1, "999.0ms"},
+		{1500 * time.Millisecond, 2, "1.50s"},
+		{2 * time.Second, 2, "2.00s"},
+		{59 * time.Second, 0, "59s"},
+		{60 * time.Second, 1, "1.0min"},
+		{90 * time.Second, 3, "1.500min"},
+		{2*time.Minute + 3*time.Second, 2, "2.05min"},
+		{-500 * time.Microsecond, 2, "-0.50ms"},
+		{-2 * time.Second, 2, "-2.00s"},
+		{-90 * time.Second, 1, "-1.5min"},
+		// test precision bounds
+		{123456789 * time.Nanosecond, -5, "123ms"},
+		{123456789 * time.Nanosecond, 15, "123.456789000ms"},
 	}
 
-	for _, tt := range tests {
-		got := FormatDurationMilliseconds(tt.duration, tt.precision)
-		if got != tt.expected {
-			t.Errorf("FormatDurationMilliseconds(%v, %d) = %s; want %s", tt.duration, tt.precision, got, tt.expected)
+	for _, tc := range tests {
+		got := FormatDurationSmart(tc.input, tc.precision)
+		if got != tc.expected {
+			t.Errorf("FormatDurationSmart(%v, %d) = %v; want %v", tc.input, tc.precision, got, tc.expected)
 		}
 	}
 }
@@ -232,14 +241,14 @@ func TestFormatDurationMilliseconds(t *testing.T) {
 func BenchmarkRound(b *testing.B) {
 	b.Run("float64", func(b *testing.B) {
 		value := 3.14159
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			Round(value, 3)
 		}
 	})
 
 	b.Run("float32", func(b *testing.B) {
 		value := float32(3.14159)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			Round(value, 3)
 		}
 	})

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/ds/queue/circularbuffer"
 	"github.com/forbearing/golib/logger"
@@ -68,18 +69,17 @@ var (
 	pluralizeCli = pluralize.NewClient()
 
 	// TODO: circularbuffer cap should be configurable.
-	cbCap = 10000
-	cb    *circularbuffer.CircularBuffer[*model_log.OperationLog]
+	cb *circularbuffer.CircularBuffer[*model_log.OperationLog]
 )
 
 func Init() (err error) {
-	if cb, err = circularbuffer.New(cbCap, circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
+	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
 		return err
 	}
 
 	// Consume operation log.
 	go func() {
-		operationLogs := make([]*model_log.OperationLog, 0, cbCap)
+		operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 		ticker := time.NewTicker(5 * time.Second)
 		for range ticker.C {
 			operationLogs = operationLogs[:0]
@@ -88,7 +88,7 @@ func Init() (err error) {
 				operationLogs = append(operationLogs, ol)
 			}
 			if len(operationLogs) > 0 {
-				if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+				if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
 					zap.S().Error(err)
 				}
 			}
@@ -99,7 +99,7 @@ func Init() (err error) {
 }
 
 func Clean() {
-	operationLogs := make([]*model_log.OperationLog, 0, cbCap)
+	operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 	for !cb.IsEmpty() {
 		ol, _ := cb.Dequeue()
 		operationLogs = append(operationLogs, ol)
