@@ -2,6 +2,95 @@
 ## [Unreleased]
 
 
+<a name="v0.4.4"></a>
+## [v0.4.4] - 2025-04-26
+### Build
+- add commitizen config
+- add .air.toml
+
+### Chg
+- move setup permission ID and remark to model hook CreateBefore
+- remove const "FileRbacConf"
+- **authz:** basic authz remove "priority" in "policy_defination"
+- **bootstrap:** boostrap service_authz, service_log
+- **controller:** CreateFactory will handle empty request bodies and response 200
+- **debug:** correct statsviz server log output timing
+- **logger:** replace FormatDurationMilliseconds by FormatDurationSmart to format time.Duration
+- **model:** setup user role id manually and update casbin_rule table when create user role succesfully
+- **model:** same role name always has same id
+- **model:** base model add field _notoal, its necessary for openapi generate
+- **model:** table casbin_rule add field: `user` and `role` to record user and role info
+- **model:** cleanup unused fields for casbin_rule
+- **model:** change model user fields
+- **router:** change api doc path: "/api/doc" -> "/-/api-doc"
+
+### Chore
+- **bootstrap:** correct typo in signal handling log message
+- **deps:** upgrade dependencies to latest version
+- **example:** upgrade golib to latest
+- **example:** upgrade golib to latest
+- **example:** update
+
+### Doc
+- **model:** my notes
+
+### Docs
+- generate CHANGELOG.md
+- **controller:** update doc for User.Login
+
+### Enh
+- exclude ID field from OpenAPI example output
+- **authz:** basic authz not depends on external rbac model file
+- **controller:** improve error response with detailed error information
+- **router:** automatic create table
+
+### Feat
+- support rbac system (no test)
+- prepare support rbac foundations with `role`, `rolebinding` and `permission` models
+- **authz:** prepare support tenant mode
+- **config:** add server config for server router and circular buffer
+- **consts:** add TAG_QUERY constant for query parameter tag handling
+- **controller:** remove middleware `operation_log`; controller log the operation; fix UpdateFactory
+- **logger:** add Casbin logger implementation
+- **middleware:** add authorization logging
+- **model:** add model validity check to exclude request/response types
+- **service:** add package `service_log` for logger
+- **service:** add package `service_authz` for rbac
+
+### Fix
+- openapi3 setupBatchExample panic cause by nil op
+- openapi3 setupExample panic cause by nil op
+- specify table name explicitly during AutoMigrate
+- prevent overwriting existing paths in OpenAPI generator
+- list resources API docs support query parameters that get from "scheme" tag
+- **config:** always create tmp dir
+- **controller:** prevent duplicate ID processing in delete handler
+- **controller:** ensure consistent ID collection in DELETE handler
+- **database:** handle unexported struct fields in structFieldToMap
+- **database:** avoid obtained from unexported cuase panic
+- **database:** handle models with empty ID during creation operation
+- **middleware:** move authorization logging after enforcement decision
+
+### Perf
+- **database:** Create has more performance
+
+### Refactor
+- move rbac package to authn/rbac/basic directory and rename to "basic"
+- move jwt package to authn directory
+- **config:** move RBAC configuration from Server to Auth
+- **controller:** rename package model -> model_log
+- **controller:** rename package model -> model_log
+- **logger:** standardize duratioin formatting to millseconds in logs
+- **model:** operation_log add more OperationType for batch operation
+- **model:** user add logger entries
+- **model:** move rbac model to package `model_authz`
+- **model:** move logger model to package `model_log`
+
+### Style
+- **middleware:** change logger style
+- **model:** rename user-agent.go to user_agent.go
+
+
 <a name="v0.4.3"></a>
 ## [v0.4.3] - 2025-04-20
 ### Chg
@@ -553,17 +642,17 @@
 ## [v0.1.0] - 2024-12-26
 ### Chore
 - update examples/demo
-- update README.md
+- update examples/demo
 - update READMD.md
 - update READMD.md
 - update examples/demo
 - add READMD.md for controller
 - update READMD.md
 - update READMD.md
+- update example/demo
+- update READMD.md
 - update examples/demo
 - update READMD.md
-- update READMD.md
-- update examples/demo
 - update READMD.md
 - update example/demo
 - update examples/demo
@@ -572,7 +661,7 @@
 - update README.md
 - update examples/simple
 - update README.md
-- update example/demo
+- update README.md
 - bump go pkg version to latest
 - **model:** add doc for `Register` and `Register`, deprecated `RegisterRoutes`
 
@@ -1096,7 +1185,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.4.4...HEAD
+[v0.4.4]: https://github.com/forbearing/golib/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/forbearing/golib/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/forbearing/golib/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/forbearing/golib/compare/v0.4.0...v0.4.1
