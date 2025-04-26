@@ -87,14 +87,14 @@ func (*user) Login(c *gin.Context) {
 	u.RefreshToken = rToken
 	u.SessionId = util.UUID()
 	fmt.Println("SessionId: ", u.SessionId)
-	u.TokenExpiration = model.GormTime(time.Now().Add(config.App.AccessTokenExpireDuration))
+	u.TokenExpiration = util.ValueOf(model.GormTime(time.Now().Add(config.App.AccessTokenExpireDuration)))
 	writeLocalSessionAndCookie(c, aToken, rToken, u)
 	// WARN: you must clean password before response to user.
 	u.Password = ""
 
-	u.LastLogin = model.GormTime(time.Now())
+	u.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	u.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLogin); err != nil {
+	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLoginAt); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -178,7 +178,7 @@ func (*user) Signup(c *gin.Context) {
 	req.Password = hashedPasswd
 	req.Status = 1
 	req.ID = util.UUID()
-	req.LastLogin = model.GormTime(time.Now())
+	req.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	req.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
 	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Create(req); err != nil {
 		log.Error(err)
