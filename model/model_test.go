@@ -3,7 +3,6 @@ package model_test
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/forbearing/golib/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,6 +68,5 @@ func TestHasRequest(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
-	value := model.NewRequest[*User]()
-	spew.Dump(value)
+	_ = model.NewRequest[*User]()
 }
