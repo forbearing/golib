@@ -41,7 +41,7 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	key := t.PkgPath() + "." + t.Name()
+	key := t.PkgPath() + "|" + t.String()
 	if meta, ok := metaCache.Load(key); ok {
 		return meta.(*StructMeta)
 	}
@@ -154,7 +154,7 @@ type methodCacheKey struct {
 }
 
 func GetCachedMethod(typ reflect.Type, methodName string) (reflect.Method, bool) {
-	key := methodCacheKey{TypeName: typ.PkgPath() + "." + typ.Name(), MethodName: methodName}
+	key := methodCacheKey{TypeName: typ.PkgPath() + "|" + typ.String(), MethodName: methodName}
 	if m, ok := methodCache.Load(key); ok {
 		return m.(reflect.Method), true
 	}
@@ -172,7 +172,7 @@ type methodParamCacheKey struct {
 }
 
 func GetCachedMethodParamType(typ reflect.Type, methodName string, idx int) (reflect.Type, bool) {
-	key := methodParamCacheKey{TypeName: typ.PkgPath() + "." + typ.Name(), MethodName: methodName, ParamIndex: idx}
+	key := methodParamCacheKey{TypeName: typ.PkgPath() + "|" + typ.String(), MethodName: methodName, ParamIndex: idx}
 	if t, ok := methodParamCache.Load(key); ok {
 		return t.(reflect.Type), true
 	}
