@@ -10,7 +10,7 @@ func init() {
 }
 
 type Group struct {
-	Name        string `json:"name,omitempty" schema:"name" gorm:"unique" binding:"required"`
+	Name        string `json:"name,omitempty" schema:"name"`
 	Desc        string `json:"desc,omitempty" schema:"desc"`
 	MemberCount int    `json:"member_count" gorm:"default:0"`
 
@@ -28,11 +28,10 @@ func (g *Group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (g *Group) Request(GroupRequest, GroupResponse) {}
+// func (g *Group) Request(GroupRequest, GroupResponse) {}
 
 type GroupRequest struct {
-	FieldA string
-	FieldB *int
+	Name string
 }
 
 type GroupResponse struct {
