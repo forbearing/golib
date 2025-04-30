@@ -67,6 +67,74 @@ func IsValid[M types.Model]() bool {
 	return true
 }
 
+func HasRequest[M types.Model]() bool {
+	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
+	typ := reflect.TypeOf(*new(M))
+	method, ok := typ.MethodByName("Request")
+	if !ok { // Model donn't has method `Request`
+		return false
+	}
+	// Method `Request` must have one parameter, first is `request`, second is `response`.
+	if method.Type.NumIn() < 2 {
+		return false
+	}
+	paramType := method.Type.In(1)
+	for paramType.Kind() == reflect.Ptr {
+		paramType = paramType.Elem()
+	}
+	// Method `Request` parameter must be struct or pointer of struct.
+	return paramType.Kind() == reflect.Struct
+}
+
+func HasResponse[M types.Model]() bool {
+	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
+	typ := reflect.TypeOf(*new(M))
+	method, ok := typ.MethodByName("Request")
+	if !ok { // Model donn't has method `Request`
+		return false
+	}
+	// Method `Request` must have two parameter, first is `request`, second is `response`.
+	if method.Type.NumIn() < 3 {
+		return false
+	}
+	paramType := method.Type.In(2)
+	for paramType.Kind() == reflect.Ptr {
+		paramType = paramType.Elem()
+	}
+	// Method `Request` parameter must be struct or pointer of struct.
+	return paramType.Kind() == reflect.Struct
+}
+
+// NewRequest always creates a pointer of struct value that used by controller to parse request.
+// The returns value type is the same as the method `Request` first parameter type.
+func NewRequest[M types.Model]() any {
+	if !HasRequest[M]() {
+		return nil
+	}
+	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
+	typ := reflect.TypeOf(*new(M))
+	method, _ := typ.MethodByName("Request")
+	paramType := method.Type.In(1)
+	for paramType.Kind() == reflect.Ptr {
+		paramType = paramType.Elem()
+	}
+	return reflect.New(paramType).Interface()
+}
+
+func NewResponse[M types.Model]() any {
+	if !HasResponse[M]() {
+		return nil
+	}
+	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
+	typ := reflect.TypeOf(*new(M))
+	method, _ := typ.MethodByName("Request")
+	paramType := method.Type.In(2)
+	for paramType.Kind() == reflect.Ptr {
+		paramType = paramType.Elem()
+	}
+	return reflect.New(paramType).Interface()
+}
+
 // Register associates the model with database table and will created automatically.
 // If records provided, they will be inserted when application bootstrapping.
 //

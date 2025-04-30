@@ -4,6 +4,10 @@ import "github.com/forbearing/golib/model"
 
 type OperationType string
 
+func init() {
+	model.Register[*OperationLog]()
+}
+
 const (
 	OperationTypeCreate        OperationType = "create"
 	OperationTypeDelete        OperationType = "delete"
@@ -29,8 +33,10 @@ type OperationLog struct {
 	RecordId   string        `json:"record_id,omitempty" schema:"record_id"`     // 表记录的 id
 	RecordName string        `json:"record_name,omitempty" schema:"record_name"` // 表记录的 name
 	Record     string        `json:"record,omitempty" schema:"record"`           // 记录全部内容
-	OldRecord  string        `json:"old_record,omitempty"`                       // 更新前的内容
-	NewRecord  string        `json:"new_record,omitempty"`                       // 更新后的内容
+	Request    string        `json:"request,omitempty" schema:"request"`
+	Response   string        `json:"response,omitempty" schema:"response"`
+	OldRecord  string        `json:"old_record,omitempty"` // 更新前的内容
+	NewRecord  string        `json:"new_record,omitempty"` // 更新后的内容
 	Method     string        `json:"method,omitempty" schema:"method"`
 	URI        string        `json:"uri,omitempty" schema:"uri"` // request uri
 	UserAgent  string        `json:"user_agent,omitempty" schema:"user_agent"`
