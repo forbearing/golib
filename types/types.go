@@ -107,7 +107,15 @@ type ServiceContext struct {
 	PSpanId   string
 	SpanId    string
 	Seq       int
+
+	requestBody  any
+	responseBody any
 }
+
+func (sc *ServiceContext) SetRequestBody(m any)  { sc.requestBody = m }
+func (sc *ServiceContext) SetResponseBody(m any) { sc.responseBody = m }
+func (sc *ServiceContext) GetRequestBody() any   { return sc.requestBody }
+func (sc *ServiceContext) GetResponseBody() any  { return sc.responseBody }
 
 type ControllerConfig[M Model] struct {
 	DB        any // only support *gorm.DB

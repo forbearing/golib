@@ -15,6 +15,7 @@ import (
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/ds/queue/circularbuffer"
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/model"
 	model_log "github.com/forbearing/golib/model/log"
 	"github.com/forbearing/golib/pkg/filetype"
 	. "github.com/forbearing/golib/response"
@@ -68,7 +69,6 @@ import (
 var (
 	pluralizeCli = pluralize.NewClient()
 
-	// TODO: circularbuffer cap should be configurable.
 	cb *circularbuffer.CircularBuffer[*model_log.OperationLog]
 )
 
@@ -121,25 +121,49 @@ func Create[M types.Model](c *gin.Context) {
 func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
 		var err error
 		var reqErr error
-		req := *new(M)
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-			log.Error(reqErr)
-			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-			return
-		}
-		if reqErr == io.EOF {
-			log.Warn("empty request body")
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
+		typ := reflect.TypeOf(*new(M)).Elem()
+		req := reflect.New(typ).Interface().(M)
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+
+		if hasCustomReq {
+			// Has custom request.
+			req := model.NewRequest[M]()
+			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				// Has custom response
+				ctx.SetResponseBody(model.NewResponse[M]())
+			}
 		} else {
-			req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
-			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-			log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+			// Does not have custom request, the request type is the same as the resource type.
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			} else {
+				req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+				req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+				log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+			}
 		}
 
 		// 1.Perform business logic processing before create resource.
-		if err = new(service.Factory[M]).Service().CreateBefore(helper.NewServiceContext(c), req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateBefore(ctx, req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -149,7 +173,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
 		// NOTE: WithExpand(req.Expands()...) is not a good choices.
 		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-		if reqErr != io.EOF {
+		if reqErr != io.EOF && !hasCustomReq {
 			if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -157,26 +181,29 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			}
 		}
 		// 3.Perform business logic processing after create resource
-		if err = new(service.Factory[M]).Service().CreateAfter(helper.NewServiceContext(c), req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateAfter(ctx, req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 
 		// 4.record operation log to database.
-		typ := reflect.TypeOf(*new(M)).Elem()
 		var tableName string
 		items := strings.Split(typ.Name(), ".")
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetRequestBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeCreate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -185,7 +212,13 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		ResponseJSON(c, CodeSuccess, req)
+		if hasCustomResp {
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom response, the response type is the same as the resource type.
+			ResponseJSON(c, CodeSuccess, req)
+		}
 	}
 }
 
@@ -330,71 +363,92 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
-		req := *new(M)
-		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-
-		// param id has more priority than http body data id
-		paramId := c.Param(consts.PARAM_ID)
-		bodyId := req.GetID()
-		var id string
-		log.Infoz("update from request",
-			zap.String("param_id", paramId),
-			zap.String("body_id", bodyId),
-			zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
-		)
-		if paramId != "" {
-			req.SetID(paramId)
-			id = paramId
-		} else if bodyId != "" {
-			paramId = bodyId
-			id = bodyId
-		} else {
-			log.Error("id missing")
-			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
-			return
-		}
-
-		data := make([]M, 0)
-		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-		// 'typ' is the structure type, such as: model.User.
-		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(id)
-		// Make sure the record must be already exists.
-		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if len(data) != 1 {
-			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
-			ResponseJSON(c, CodeNotFound)
-			return
+		req := reflect.New(typ).Interface().(M)
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+		if hasCustomReq {
+			// Has custom request.
+			req := model.NewRequest[M]()
+			if err := c.ShouldBindJSON(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				ctx.SetResponseBody(model.NewResponse[M]())
+			}
+		} else {
+			// Does not have custom request, the request type is the same as the resource type.
+			if err := c.ShouldBindJSON(&req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+
+			// param id has more priority than http body data id
+			paramId := c.Param(consts.PARAM_ID)
+			bodyId := req.GetID()
+			var id string
+			log.Infoz("update from request",
+				zap.String("param_id", paramId),
+				zap.String("body_id", bodyId),
+				zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
+			)
+			if paramId != "" {
+				req.SetID(paramId)
+				id = paramId
+			} else if bodyId != "" {
+				paramId = bodyId
+				id = bodyId
+			} else {
+				log.Error("id missing")
+				ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
+				return
+			}
+
+			data := make([]M, 0)
+			// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+			// 'typ' is the structure type, such as: model.User.
+			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
+			// Make sure the record must be already exists.
+			if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if len(data) != 1 {
+				log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
+				ResponseJSON(c, CodeNotFound)
+				return
+			}
+
+			req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
+			req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
+			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 		}
 
-		req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
-		req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
-		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 		// 1.Perform business logic processing before update resource.
-		if err := new(service.Factory[M]).Service().UpdateBefore(helper.NewServiceContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateBefore(ctx, req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 		// 2.Update resource in database.
-		log.Infoz("update in database", zap.Object(typ.Name(), req))
-		if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
+		if !hasCustomReq {
+			log.Infoz("update in database", zap.Object(typ.Name(), req))
+			if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
 		}
 		// 3.Perform business logic processing after update resource.
-		if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c), req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateAfter(ctx, req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -407,12 +461,16 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetResponseBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -421,7 +479,13 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		ResponseJSON(c, CodeSuccess, req)
+		if hasCustomResp {
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom response. the response type is the same as the resource type.
+			ResponseJSON(c, CodeSuccess, req)
+		}
 	}
 }
 
@@ -443,135 +507,160 @@ func UpdatePartial[M types.Model](c *gin.Context) {
 func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
+		var id string
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_PARTIAL)
-		id := c.Param(consts.PARAM_ID)
-		req := *new(M)
-		if err := c.ShouldBindJSON(&req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if len(id) == 0 {
-			id = req.GetID()
-		}
-		data := make([]M, 0)
-		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-		// 'typ' is the structure type, such as: model.User.
-		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(id)
-
-		// Make sure the record must be already exists.
-		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if len(data) != 1 {
-			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
-			ResponseJSON(c, CodeNotFound)
-			return
-		}
-		// req.SetCreatedAt(data[0].GetCreatedAt())
-		// req.SetCreatedBy(data[0].GetCreatedBy())
-		// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-		data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-
+		req := reflect.New(typ).Interface().(M)
+		oldVal := reflect.ValueOf(req).Elem()
 		newVal := reflect.ValueOf(req).Elem()
-		oldVal := reflect.ValueOf(data[0]).Elem()
-		for i := range typ.NumField() {
-			// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
-			switch typ.Field(i).Type.Kind() {
-			case reflect.Struct: // skip update base model.
-				switch typ.Field(i).Type.Name() {
-				case "GormTime": // The underlying type of model.GormTime(type of time.Time) is struct, we should continue handle.
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+		if hasCustomReq {
+			// Has custom request.
+			req := model.NewRequest[M]()
+			if err := c.ShouldBindJSON(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				// Has custom response.
+				ctx.SetResponseBody(model.NewResponse[M]())
+			}
+		} else {
+			// Does not have custom request, the request type is the same as the resource type.
+			id = c.Param(consts.PARAM_ID)
+			if err := c.ShouldBindJSON(&req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if len(id) == 0 {
+				id = req.GetID()
+			}
+			data := make([]M, 0)
+			// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+			// 'typ' is the structure type, such as: model.User.
+			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
 
-				case "Asset", "Base":
-					// AssetChecking 有匿名继承 Asset, 所以要检查是不是结构体 Asset.
-					//
-					// 可以自动深度查找,不需要链式查找, 例如
-					// newVal.FieldByName("Asset").FieldByName("Remark").IsValid() 可以简化为
-					// newVal.FieldByName("Remark").IsValid()
+			// Make sure the record must be already exists.
+			if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if len(data) != 1 {
+				log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
+				ResponseJSON(c, CodeNotFound)
+				return
+			}
+			// req.SetCreatedAt(data[0].GetCreatedAt())
+			// req.SetCreatedBy(data[0].GetCreatedBy())
+			// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+			data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 
-					// Make sure the type of "Remark" is pointer to golang base type.
-					fieldRemark := "Remark"
-					if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
-						if !newVal.FieldByName(fieldRemark).IsZero() {
-							if newVal.FieldByName(fieldRemark).CanSet() {
-								// output log must before set value.
-								if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
-									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-										oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
-								} else {
-									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-										oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
-								}
-								oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
-							}
-						}
-					}
-					// Make sure the type of "Order" is pointer to golang base type.
-					fieldOrder := "Order"
-					if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
-						if !newVal.FieldByName(fieldOrder).IsZero() {
-							if newVal.FieldByName(fieldOrder).CanSet() {
-								// output log must before set value.
-								if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
-									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-										oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
-								} else {
-									log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-										oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
-								}
-								oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
-							}
-						}
-					}
-					continue
-
-				default:
-					continue
-				}
-			}
-			if !newVal.Field(i).IsValid() {
-				// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
-				continue
-			}
-			// base type such like int and string have default value(zero value).
-			// If the struct field(the field type is golang base type) supported by patch update,
-			// the field type must be pointer to base type, such like *string, *int.
-			if newVal.Field(i).IsZero() {
-				// log.Warnf("field %s is zero value, skip", typ.Field(i).Name)
-				// log.Warnf("DeepEqual: %v : %v : %v : %v", typ.Field(i).Name, newVal.Field(i).Interface(), oldVal.Field(i).Interface(), reflect.DeepEqual(newVal.Field(i), oldVal.Field(i)))
-				continue
-			}
-			if newVal.Field(i).CanSet() {
-				// output log must before set value.
-				if newVal.Field(i).Kind() == reflect.Pointer {
-					log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
-				} else {
-					log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
-				}
-				oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
-			}
+			newVal = reflect.ValueOf(req).Elem()
+			oldVal = reflect.ValueOf(data[0]).Elem()
+			partialUpdateValue(log, typ, oldVal, newVal)
+			// for i := range typ.NumField() {
+			// 	// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
+			// 	switch typ.Field(i).Type.Kind() {
+			// 	case reflect.Struct: // skip update base model.
+			// 		switch typ.Field(i).Type.Name() {
+			// 		case "GormTime": // The underlying type of model.GormTime(type of time.Time) is struct, we should continue handle.
+			//
+			// 		case "Asset", "Base":
+			// 			// AssetChecking 有匿名继承 Asset, 所以要检查是不是结构体 Asset.
+			// 			//
+			// 			// 可以自动深度查找,不需要链式查找, 例如
+			// 			// newVal.FieldByName("Asset").FieldByName("Remark").IsValid() 可以简化为
+			// 			// newVal.FieldByName("Remark").IsValid()
+			//
+			// 			// Make sure the type of "Remark" is pointer to golang base type.
+			// 			fieldRemark := "Remark"
+			// 			if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
+			// 				if !newVal.FieldByName(fieldRemark).IsZero() {
+			// 					if newVal.FieldByName(fieldRemark).CanSet() {
+			// 						// output log must before set value.
+			// 						if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
+			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
+			// 								oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
+			// 						} else {
+			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
+			// 								oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
+			// 						}
+			// 						oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
+			// 					}
+			// 				}
+			// 			}
+			// 			// Make sure the type of "Order" is pointer to golang base type.
+			// 			fieldOrder := "Order"
+			// 			if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
+			// 				if !newVal.FieldByName(fieldOrder).IsZero() {
+			// 					if newVal.FieldByName(fieldOrder).CanSet() {
+			// 						// output log must before set value.
+			// 						if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
+			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
+			// 								oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
+			// 						} else {
+			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
+			// 								oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
+			// 						}
+			// 						oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
+			// 					}
+			// 				}
+			// 			}
+			// 			continue
+			//
+			// 		default:
+			// 			continue
+			// 		}
+			// 	}
+			// 	if !newVal.Field(i).IsValid() {
+			// 		// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
+			// 		continue
+			// 	}
+			// 	// base type such like int and string have default value(zero value).
+			// 	// If the struct field(the field type is golang base type) supported by patch update,
+			// 	// the field type must be pointer to base type, such like *string, *int.
+			// 	if newVal.Field(i).IsZero() {
+			// 		// log.Warnf("field %s is zero value, skip", typ.Field(i).Name)
+			// 		// log.Warnf("DeepEqual: %v : %v : %v : %v", typ.Field(i).Name, newVal.Field(i).Interface(), oldVal.Field(i).Interface(), reflect.DeepEqual(newVal.Field(i), oldVal.Field(i)))
+			// 		continue
+			// 	}
+			// 	if newVal.Field(i).CanSet() {
+			// 		// output log must before set value.
+			// 		if newVal.Field(i).Kind() == reflect.Pointer {
+			// 			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
+			// 		} else {
+			// 			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
+			// 		}
+			// 		oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
+			// 	}
+			// }
+			// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
 		}
-		// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
 
 		// 1.Perform business logic processing before partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialBefore(helper.NewServiceContext(c), oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialBefore(ctx, oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 		// 2.Partial update resource in database.
-		if err := handler(helper.NewDatabaseContext(c)).Update(oldVal.Addr().Interface().(M)); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
+		if !hasCustomReq {
+			if err := handler(helper.NewDatabaseContext(c)).Update(oldVal.Addr().Interface().(M)); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
 		}
 		// 3.Perform business logic processing after partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialAfter(helper.NewServiceContext(c), oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialAfter(ctx, oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -585,12 +674,16 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetResponseBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdatePartial,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -599,9 +692,15 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		// NOTE: You should response `oldVal` instead of `req`.
-		// The req is `newVal`.
-		ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
+		if hasCustomResp {
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom response, the response type is the same as the resource type.
+			// NOTE: You should response `oldVal` instead of `req`.
+			// The req is `newVal`.
+			ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
+		}
 	}
 }
 
@@ -1112,36 +1211,58 @@ func BatchCreate[M types.Model](c *gin.Context) {
 func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_CREATE)
 		var err error
 		var reqErr error
 		var req requestData[M]
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-			log.Error(reqErr)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if reqErr == io.EOF {
-			log.Warn("empty request body")
-		}
-
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_CREATE)
 		typ := reflect.TypeOf(*new(M)).Elem()
 		val := reflect.New(typ).Interface().(M)
-		for _, m := range req.Items {
-			m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
-			m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-			log.Infoz("batch create", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+		if hasCustomReq {
+			// Has custom request.
+			req := model.NewRequest[M]()
+			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				// Has custom response.
+				ctx.SetResponseBody(model.NewResponse[M]())
+			}
+		} else {
+			// Does not have custom request, the request type is the same as the resource type.
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+
+			for _, m := range req.Items {
+				m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+				m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+				log.Infoz("batch create", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
+			}
 		}
 
 		// 1.Perform business logic processing before batch create resource.
-		if err = new(service.Factory[M]).Service().BatchCreateBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchCreateBefore(ctx, req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 
 		// 2.Batch create resource in database.
-		if reqErr != io.EOF {
+		if reqErr != io.EOF && !hasCustomReq {
 			if err = handler(helper.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1149,7 +1270,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch create resource
-		if err = new(service.Factory[M]).Service().BatchCreateAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchCreateAfter(ctx, req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1162,11 +1283,15 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetResponseBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchCreate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -1175,15 +1300,21 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
-		if reqErr != io.EOF {
-			req.Summary = &summary{
-				Total:     len(req.Items),
-				Succeeded: len(req.Items),
-				Failed:    0,
+		if hasCustomReq {
+			// Has custom request.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom request, the request type is the same as the resource type.
+			// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
+			if reqErr != io.EOF {
+				req.Summary = &summary{
+					Total:     len(req.Items),
+					Succeeded: len(req.Items),
+					Failed:    0,
+				}
 			}
+			ResponseJSON(c, CodeSuccess, req)
 		}
-		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
@@ -1283,29 +1414,50 @@ func BatchUpdate[M types.Model](c *gin.Context) {
 func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE)
-		log.Info("batch update")
-
 		var err error
 		var reqErr error
 		var req requestData[M]
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-			log.Error(reqErr)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if reqErr == io.EOF {
-			log.Warn("empty request body")
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE)
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+
+		if hasCustomReq {
+			// Has custom request
+			req := model.NewRequest[M]()
+			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				// Has custom response
+				ctx.SetResponseBody(model.NewResponse[M]())
+			}
+		} else {
+			// Does not have custom request, the request type is the same as the resource type.
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
 		}
 
 		// 1.Perform business logic processing before batch update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdateBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdateBefore(ctx, req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 		// 2.Batch update resource in database.
-		if reqErr != io.EOF {
+		if reqErr != io.EOF && !hasCustomReq {
 			if err = handler(helper.NewDatabaseContext(c)).Update(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1313,7 +1465,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdateAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdateAfter(ctx, req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1327,11 +1479,15 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetResponseBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchUpdate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -1340,14 +1496,20 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if reqErr != io.EOF {
-			req.Summary = &summary{
-				Total:     len(req.Items),
-				Succeeded: len(req.Items),
-				Failed:    0,
+		if hasCustomResp {
+			// Has custom response
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom response, the response type is the same as the request type.
+			if reqErr != io.EOF {
+				req.Summary = &summary{
+					Total:     len(req.Items),
+					Succeeded: len(req.Items),
+					Failed:    0,
+				}
 			}
+			ResponseJSON(c, CodeSuccess, req)
 		}
-		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
@@ -1360,51 +1522,72 @@ func BatchUpdatePartial[M types.Model](c *gin.Context) {
 func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE_PARTIAL)
-		log.Info("batch update partial")
-
 		var err error
 		var reqErr error
 		var req requestData[M]
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-			log.Error(reqErr)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		if reqErr == io.EOF {
-			log.Warn("empty request body")
-		}
-		typ := reflect.TypeOf(*new(M)).Elem()
 		var shouldUpdates []M
-		for _, m := range req.Items {
-			var results []M
-			v := reflect.New(typ).Interface().(M)
-			v.SetID(m.GetID())
-			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
-				log.Error(err)
-				continue
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE_PARTIAL)
+		typ := reflect.TypeOf(*new(M)).Elem()
+		ctx := helper.NewServiceContext(c)
+		hasCustomReq := model.HasRequest[M]()
+		hasCustomResp := model.HasResponse[M]()
+
+		if hasCustomReq {
+			// Has custom request
+			req := model.NewRequest[M]()
+			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
 			}
-			if len(results) != 1 {
-				log.Warnf(fmt.Sprintf("partial update resource not found, expect 1 but got: %d", len(results)))
-				continue
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
 			}
-			if len(results[0].GetID()) == 0 {
-				log.Warnf("partial update resource not found, id is empty")
-				continue
+			ctx.SetRequestBody(req)
+			if hasCustomResp {
+				// Has custom response
+				ctx.SetResponseBody(model.NewResponse[M]())
 			}
-			oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
-			partialUpdateValue(log, typ, oldVal, newVal)
-			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+		} else {
+			// Does not have custom request
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			for _, m := range req.Items {
+				var results []M
+				v := reflect.New(typ).Interface().(M)
+				v.SetID(m.GetID())
+				if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
+					log.Error(err)
+					continue
+				}
+				if len(results) != 1 {
+					log.Warnf(fmt.Sprintf("partial update resource not found, expect 1 but got: %d", len(results)))
+					continue
+				}
+				if len(results[0].GetID()) == 0 {
+					log.Warnf("partial update resource not found, id is empty")
+					continue
+				}
+				oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
+				partialUpdateValue(log, typ, oldVal, newVal)
+				shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+			}
 		}
 
 		// 1.Perform business logic processing before batch partial update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdatePartialBefore(helper.NewServiceContext(c), shouldUpdates...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdatePartialBefore(ctx, shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 		// 2.Batch partial update resource in database.
-		if reqErr != io.EOF {
+		if reqErr != io.EOF && !hasCustomReq {
 			if err = handler(helper.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1412,7 +1595,7 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 			}
 		}
 		// 3.Perform business logic processing after batch partial update resource.
-		if err := new(service.Factory[M]).Service().BatchUpdatePartialAfter(helper.NewServiceContext(c), shouldUpdates...); err != nil {
+		if err := new(service.Factory[M]).Service().BatchUpdatePartialAfter(ctx, shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1426,11 +1609,15 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequestBody())
+		respData, _ := json.Marshal(ctx.GetResponseBody())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchUpdatePartial,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestId: c.GetString(consts.REQUEST_ID),
@@ -1439,14 +1626,20 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if reqErr != io.EOF {
-			req.Summary = &summary{
-				Total:     len(req.Items),
-				Succeeded: len(req.Items),
-				Failed:    0,
+		if hasCustomResp {
+			// Has custom response
+			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		} else {
+			// Does not have custom response, the response type is the same as the request type.
+			if reqErr != io.EOF {
+				req.Summary = &summary{
+					Total:     len(req.Items),
+					Succeeded: len(req.Items),
+					Failed:    0,
+				}
 			}
+			ResponseJSON(c, CodeSuccess, req)
 		}
-		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
