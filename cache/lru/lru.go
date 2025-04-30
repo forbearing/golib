@@ -134,9 +134,9 @@ func Init() (err error) {
 	return
 }
 
-// TODO: if type is int, string, returns the internal cache
 func Cache[T any]() types.Cache[T] {
-	key := reflect.TypeOf((*T)(nil)).Elem().String()
+	typ := reflect.TypeOf((*T)(nil)).Elem()
+	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	// lru.New() only error on negative size.
 	if !exists {
