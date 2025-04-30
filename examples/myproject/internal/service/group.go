@@ -5,6 +5,7 @@ import (
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
 )
 
 func init() {
@@ -18,6 +19,13 @@ type group struct {
 func (g *group) CreateBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_CREATE_BEFORE)
 	log.Info("group create before")
+
+	// Has Custom Request and Response
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in create before"
+		resp.FieldD = util.ValueOf(100)
+	}
 	return nil
 }
 
@@ -41,6 +49,11 @@ func (g *group) DeleteAfter(ctx *types.ServiceContext, group *model.Group) error
 
 func (g *group) UpdateBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in update before"
+		resp.FieldD = util.ValueOf(101)
+	}
 	log.Info("group update before")
 	return nil
 }
@@ -53,6 +66,11 @@ func (g *group) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error
 
 func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in update partial before"
+		resp.FieldD = util.ValueOf(102)
+	}
 	log.Info("group update partial before")
 	return nil
 }
@@ -89,6 +107,11 @@ func (g *group) GetAfter(ctx *types.ServiceContext, group *model.Group) error {
 
 func (g *group) BatchCreateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_BEFORE)
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in batch create before"
+		resp.FieldD = util.ValueOf(103)
+	}
 	log.Info("group batch create before")
 	return nil
 }
@@ -113,6 +136,11 @@ func (g *group) BatchDeleteAfter(ctx *types.ServiceContext, groups ...*model.Gro
 
 func (g *group) BatchUpdateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_BEFORE)
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in batch update before"
+		resp.FieldD = util.ValueOf(104)
+	}
 	log.Info("group batch update before")
 	return nil
 }
@@ -125,6 +153,11 @@ func (g *group) BatchUpdateAfter(ctx *types.ServiceContext, groups ...*model.Gro
 
 func (g *group) BatchUpdatePartialBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE)
+	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
+	if ok {
+		resp.FieldC = "field c in batch updte partial before"
+		resp.FieldD = util.ValueOf(105)
+	}
 	log.Info("group batch update partial before")
 	return nil
 }
