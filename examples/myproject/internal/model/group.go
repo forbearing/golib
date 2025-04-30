@@ -27,3 +27,14 @@ func (g *Group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddObject("base", &g.Base)
 	return nil
 }
+
+func (g *Group) Request(GroupRequest, GroupResponse) {}
+
+type GroupRequest struct {
+	Name string
+}
+
+type GroupResponse struct {
+	FieldC string
+	FieldD *int
+}
