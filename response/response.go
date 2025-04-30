@@ -137,7 +137,7 @@ func ResponseJSON(c *gin.Context, code Code, data ...any) {
 		c.JSON(code.Status(), gin.H{
 			"code":            code,
 			"msg":             code.Msg(),
-			"data":            "",
+			"data":            nil,
 			consts.REQUEST_ID: c.GetString(consts.REQUEST_ID),
 		})
 	}

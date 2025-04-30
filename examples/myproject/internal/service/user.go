@@ -15,49 +15,49 @@ type user struct {
 	service.Base[*pkgmodel.User]
 }
 
-func (u *user) CreateBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) CreateBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_CREATE_BEFORE)
 	log.Info("user create before")
 	return nil
 }
 
-func (u *user) CreateAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) CreateAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_CREATE_AFTER)
 	log.Info("user create after")
 	return nil
 }
 
-func (u *user) DeleteBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) DeleteBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_DELETE_BEFORE)
 	log.Info("user delete before")
 	return nil
 }
 
-func (u *user) DeleteAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) DeleteAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
 	log.Info("user delete after")
 	return nil
 }
 
-func (u *user) UpdateBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdateBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
 	log.Info("user update before")
 	return nil
 }
 
-func (u *user) UpdateAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdateAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_AFTER)
 	log.Info("user update after")
 	return nil
 }
 
-func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
 	log.Info("user update partial before")
 	return nil
 }
 
-func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_AFTER)
 	log.Info("user update partial after")
 	return nil
@@ -75,13 +75,13 @@ func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*pkgmodel.User) err
 	return nil
 }
 
-func (u *user) GetBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) GetBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_GET_BEFORE)
 	log.Info("user get before")
 	return nil
 }
 
-func (u *user) GetAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) GetAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, consts.PHASE_GET_AFTER)
 	log.Info("user get after")
 	return nil
