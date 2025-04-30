@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/examples/myproject/internal/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
@@ -21,6 +22,12 @@ func (g *group) CreateBefore(ctx *types.ServiceContext, group *model.Group) erro
 	log.Info("group create before")
 
 	// Has Custom Request and Response
+	req, ok := ctx.GetRequestBody().(*model.GroupRequest)
+	if ok {
+		if err := database.Database[*model.Group]().Create(&model.Group{Name: req.Name}); err != nil {
+			log.Error(err)
+		}
+	}
 	resp, ok := ctx.GetResponseBody().(*model.GroupResponse)
 	if ok {
 		resp.FieldC = "field c in create before"

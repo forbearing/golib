@@ -28,7 +28,7 @@ func (g *Group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// func (g *Group) Request(GroupRequest, GroupResponse) {}
+func (g *Group) Request(GroupRequest, GroupResponse) {}
 
 type GroupRequest struct {
 	Name string
