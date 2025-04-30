@@ -117,9 +117,9 @@ func Init() error {
 	return nil
 }
 
-// TODO: if type is int, string, returns the internal cache
 func Cache[T any]() types.Cache[T] {
-	key := reflect.TypeOf((*T)(nil)).Elem().String()
+	typ := reflect.TypeOf((*T)(nil)).Elem()
+	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if !exists {
 		val = &_Cache[T]{_cmap: cmap.New[T]()}
