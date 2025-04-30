@@ -46,7 +46,7 @@ func Init() error {
 	for _, s := range serviceMap {
 		typ := reflect.TypeOf(s).Elem()
 		val := reflect.ValueOf(s).Elem()
-		for i := 0; i < typ.NumField(); i++ {
+		for i := range typ.NumField() {
 			switch strings.ToLower(typ.Field(i).Name) {
 			case "logger": // service object has itself types.Logger
 				if val.Field(i).IsZero() {
