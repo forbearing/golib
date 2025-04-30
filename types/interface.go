@@ -243,10 +243,10 @@ type Model interface {
 	GetUpdatedBy() string
 	GetCreatedAt() time.Time
 	GetUpdatedAt() time.Time
-	SetCreatedBy(s string)
-	SetUpdatedBy(s string)
-	SetCreatedAt(t time.Time)
-	SetUpdatedAt(t time.Time)
+	SetCreatedBy(string)
+	SetUpdatedBy(string)
+	SetCreatedAt(time.Time)
+	SetUpdatedAt(time.Time)
 	Expands() []string // Expands returns the foreign keys should preload.
 	Excludes() map[string][]any
 	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
