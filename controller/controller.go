@@ -141,10 +141,10 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
 				// Has custom response
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
@@ -194,8 +194,8 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetRequestBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetRequest())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeCreate,
 			Model:     typ.Name(),
@@ -214,7 +214,10 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		if hasCustomResp {
 			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom response, the response type is the same as the resource type.
 			ResponseJSON(c, CodeSuccess, req)
@@ -368,6 +371,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		ctx := helper.NewServiceContext(c)
 		hasCustomReq := model.HasRequest[M]()
 		hasCustomResp := model.HasResponse[M]()
+
 		if hasCustomReq {
 			// Has custom request.
 			req := model.NewRequest[M]()
@@ -376,9 +380,9 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
@@ -461,8 +465,8 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetResponseBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdate,
 			Model:     typ.Name(),
@@ -481,7 +485,10 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		if hasCustomResp {
 			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom response. the response type is the same as the resource type.
 			ResponseJSON(c, CodeSuccess, req)
@@ -516,6 +523,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		ctx := helper.NewServiceContext(c)
 		hasCustomReq := model.HasRequest[M]()
 		hasCustomResp := model.HasResponse[M]()
+
 		if hasCustomReq {
 			// Has custom request.
 			req := model.NewRequest[M]()
@@ -524,10 +532,10 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
 				// Has custom response.
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
@@ -674,8 +682,8 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetResponseBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdatePartial,
 			Model:     typ.Name(),
@@ -694,7 +702,10 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 
 		if hasCustomResp {
 			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom response, the response type is the same as the resource type.
 			// NOTE: You should response `oldVal` instead of `req`.
@@ -1220,6 +1231,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		ctx := helper.NewServiceContext(c)
 		hasCustomReq := model.HasRequest[M]()
 		hasCustomResp := model.HasResponse[M]()
+
 		if hasCustomReq {
 			// Has custom request.
 			req := model.NewRequest[M]()
@@ -1231,10 +1243,10 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
 				// Has custom response.
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
@@ -1283,8 +1295,8 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetResponseBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchCreate,
 			Model:     typ.Name(),
@@ -1300,9 +1312,12 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if hasCustomReq {
-			// Has custom request.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+		if hasCustomResp {
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
 			// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
@@ -1433,10 +1448,10 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
 				// Has custom response
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
@@ -1479,8 +1494,8 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetResponseBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchUpdate,
 			Model:     typ.Name(),
@@ -1497,8 +1512,11 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		})
 
 		if hasCustomResp {
-			// Has custom response
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom response, the response type is the same as the request type.
 			if reqErr != io.EOF {
@@ -1543,10 +1561,10 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			ctx.SetRequestBody(req)
+			ctx.SetRequest(req)
 			if hasCustomResp {
 				// Has custom response
-				ctx.SetResponseBody(model.NewResponse[M]())
+				ctx.SetResponse(model.NewResponse[M]())
 			}
 		} else {
 			// Does not have custom request
@@ -1609,8 +1627,8 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequestBody())
-		respData, _ := json.Marshal(ctx.GetResponseBody())
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeBatchUpdatePartial,
 			Model:     typ.Name(),
@@ -1627,8 +1645,11 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 		})
 
 		if hasCustomResp {
-			// Has custom response
-			ResponseJSON(c, CodeSuccess, ctx.GetResponseBody())
+			// Has custom response.
+			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+		} else if hasCustomReq {
+			// Has custom request but not custom response.
+			ResponseJSON(c, CodeSuccess)
 		} else {
 			// Does not have custom response, the response type is the same as the request type.
 			if reqErr != io.EOF {
