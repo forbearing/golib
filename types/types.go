@@ -108,14 +108,14 @@ type ServiceContext struct {
 	SpanId    string
 	Seq       int
 
-	requestBody  any
-	responseBody any
+	request  any // custom http request.
+	response any // custom http response.
 }
 
-func (sc *ServiceContext) SetRequestBody(m any)  { sc.requestBody = m }
-func (sc *ServiceContext) SetResponseBody(m any) { sc.responseBody = m }
-func (sc *ServiceContext) GetRequestBody() any   { return sc.requestBody }
-func (sc *ServiceContext) GetResponseBody() any  { return sc.responseBody }
+func (sc *ServiceContext) SetRequest(m any)  { sc.request = m }
+func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
+func (sc *ServiceContext) GetRequest() any   { return sc.request }
+func (sc *ServiceContext) GetResponse() any  { return sc.response }
 
 type ControllerConfig[M Model] struct {
 	DB        any // only support *gorm.DB
