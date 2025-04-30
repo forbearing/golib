@@ -288,6 +288,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
 
 		// 1.Perform business logic processing before delete resources.
+		// TODO: Should there be one service hook(DeleteBefore), or multiple?
 		for _, m := range ml {
 			if err := new(service.Factory[M]).Service().DeleteBefore(helper.NewServiceContext(c), m); err != nil {
 				log.Error(err)
@@ -314,6 +315,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after delete resources.
+		// TODO: Should there be one service hook(DeleteAfter), or multiple?
 		for _, m := range ml {
 			if err := new(service.Factory[M]).Service().DeleteAfter(helper.NewServiceContext(c), m); err != nil {
 				log.Error(err)
