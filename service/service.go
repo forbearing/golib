@@ -30,7 +30,8 @@ func Register[S types.Service[M], M types.Model](s ...S) {
 	defer mu.Unlock()
 	// WARN: 一定不要使用 reflect.TypeOf(*new(M)).Name(), 因为可能存在 model.User, model2.User 的情况,
 	// 这样就会导致 key 重复.
-	key := reflect.TypeOf(*new(M)).String()
+	typ := reflect.TypeOf(*new(M))
+	key := typ.PkgPath() + "|" + typ.String()
 	val := reflect.New(reflect.TypeOf(*new(S)).Elem()).Interface()
 	serviceMap[key] = val
 	if len(s) > 0 {
