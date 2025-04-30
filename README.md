@@ -99,6 +99,10 @@ type ZapLogger interface {
 
 type Logger interface {
 	With(fields ...string) Logger
+
+	WithObject(name string, obj zapcore.ObjectMarshaler) Logger
+	WithArray(name string, arr zapcore.ArrayMarshaler) Logger
+
 	WithControllerContext(*ControllerContext, consts.Phase) Logger
 	WithServiceContext(*ServiceContext, consts.Phase) Logger
 	WithDatabaseContext(*DatabaseContext, consts.Phase) Logger
@@ -162,20 +166,20 @@ type DatabaseOption[M Model] interface {
 
 ```go
 type Model interface {
-	GetTableName() string // GetTableName returns the table name.
+	GetTableName() string
 	GetID() string
-	SetID(id ...string) // SetID method will automatically set the id if id is empty.
+	SetID(id ...string)
 	GetCreatedBy() string
 	GetUpdatedBy() string
 	GetCreatedAt() time.Time
 	GetUpdatedAt() time.Time
-	SetCreatedBy(s string)
-	SetUpdatedBy(s string)
-	SetCreatedAt(t time.Time)
-	SetUpdatedAt(t time.Time)
-	Expands() []string // Expands returns the foreign keys should preload.
+	SetCreatedBy(string)
+	SetUpdatedBy(string)
+	SetCreatedAt(time.Time)
+	SetUpdatedAt(time.Time)
+	Expands() []string
 	Excludes() map[string][]any
-	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
+	MarshalLogObject(zapcore.ObjectEncoder) error
 
 	Hooker
 }
@@ -198,18 +202,18 @@ type Hooker interface {
 
 ```go
 type Service[M Model] interface {
-	CreateBefore(*ServiceContext, ...M) error
-	CreateAfter(*ServiceContext, ...M) error
-	DeleteBefore(*ServiceContext, ...M) error
-	DeleteAfter(*ServiceContext, ...M) error
-	UpdateBefore(*ServiceContext, ...M) error
-	UpdateAfter(*ServiceContext, ...M) error
-	UpdatePartialBefore(*ServiceContext, ...M) error
-	UpdatePartialAfter(*ServiceContext, ...M) error
+	CreateBefore(*ServiceContext, M) error
+	CreateAfter(*ServiceContext, M) error
+	DeleteBefore(*ServiceContext, M) error
+	DeleteAfter(*ServiceContext, M) error
+	UpdateBefore(*ServiceContext, M) error
+	UpdateAfter(*ServiceContext, M) error
+	UpdatePartialBefore(*ServiceContext, M) error
+	UpdatePartialAfter(*ServiceContext, M) error
 	ListBefore(*ServiceContext, *[]M) error
 	ListAfter(*ServiceContext, *[]M) error
-	GetBefore(*ServiceContext, ...M) error
-	GetAfter(*ServiceContext, ...M) error
+	GetBefore(*ServiceContext, M) error
+	GetAfter(*ServiceContext, M) error
 
 	BatchCreateBefore(*ServiceContext, ...M) error
 	BatchCreateAfter(*ServiceContext, ...M) error
@@ -227,6 +231,21 @@ type Service[M Model] interface {
 	FilterRaw(*ServiceContext) string
 
 	Logger
+}
+```
+
+### RBAC
+
+```go
+type RBAC interface {
+	AddRole(name string) error
+	RemoveRole(name string) error
+
+	GrantPermission(role string, resource string, action string) error
+	RevokePermission(role string, resource string, action string) error
+
+	AssignRole(subject string, role string) error
+	UnassignRole(subject string, role string) error
 }
 ```
 
