@@ -28,7 +28,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/gabriel-vasile/mimetype v1.4.9
 	github.com/gertd/go-pluralize v0.2.1
-	github.com/getkin/kin-openapi v0.131.0
+	github.com/getkin/kin-openapi v0.132.0
 	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-contrib/zap v1.1.5
 	github.com/gin-gonic/gin v1.10.0
@@ -47,14 +47,14 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
-	github.com/larksuite/oapi-sdk-go/v3 v3.4.15
+	github.com/larksuite/oapi-sdk-go/v3 v3.4.16
 	github.com/minio/minio-go/v7 v7.0.91
 	github.com/mssola/useragent v1.0.0
 	github.com/nats-io/nats.go v1.41.2
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pkg/sftp v1.13.9
 	github.com/prometheus/client_golang v1.22.0
-	github.com/redis/go-redis/v9 v9.7.3
+	github.com/redis/go-redis/v9 v9.8.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
 	github.com/scylladb/gocqlx/v3 v3.0.1
