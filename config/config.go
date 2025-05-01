@@ -48,6 +48,7 @@ type Config struct {
 	Grpc          `json:"grpc" mapstructure:"grpc" ini:"grpc" yaml:"grpc"`
 	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
 	Database      `json:"database" mapstructure:"database" ini:"database" yaml:"database"`
+	Cache         `json:"cache" mapstructure:"cache" ini:"cache" yaml:"cache"`
 	Sqlite        `json:"sqlite" mapstructure:"sqlite" ini:"sqlite" yaml:"sqlite"`
 	Postgres      `json:"postgres" mapstructure:"postgres" ini:"postgres" yaml:"postgres"`
 	MySQL         `json:"mysql" mapstructure:"mysql" ini:"mysql" yaml:"mysql"`
@@ -81,6 +82,7 @@ func (*Config) setDefault() {
 	new(Auth).setDefault()
 	new(Logger).setDefault()
 	new(Database).setDefault()
+	new(Cache).setDefault()
 	new(Sqlite).setDefault()
 	new(Postgres).setDefault()
 	new(MySQL).setDefault()
