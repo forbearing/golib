@@ -1700,7 +1700,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, exists = lru.Int64.Get(key); !exists {
+	if _cache, exists = lru.Cache[int64]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1763,7 +1763,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lru.Int64.Set(key, *count)
+		lru.Cache[int64]().Set(key, *count)
 
 	}
 	return nil
