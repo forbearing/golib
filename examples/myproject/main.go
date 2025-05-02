@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	pkgcontroller "github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
@@ -22,6 +21,7 @@ import (
 	"github.com/forbearing/golib/provider/etcd"
 	"github.com/forbearing/golib/provider/memcached"
 	pkgnats "github.com/forbearing/golib/provider/nats"
+	"github.com/forbearing/golib/provider/redis"
 	"github.com/forbearing/golib/provider/rethinkdb"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"

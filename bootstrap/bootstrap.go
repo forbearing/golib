@@ -11,7 +11,6 @@ import (
 	"github.com/forbearing/golib/authz/rbac/tenant"
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/lru"
-	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
@@ -40,6 +39,7 @@ import (
 	"github.com/forbearing/golib/provider/mongo"
 	"github.com/forbearing/golib/provider/mqtt"
 	"github.com/forbearing/golib/provider/nats"
+	"github.com/forbearing/golib/provider/redis"
 	"github.com/forbearing/golib/provider/rethinkdb"
 	"github.com/forbearing/golib/provider/rocketmq"
 	"github.com/forbearing/golib/router"
@@ -74,7 +74,6 @@ func Bootstrap() error {
 		// cache
 		lru.Init,
 		cmap.Init,
-		redis.Init,
 
 		// database
 		sqlite.Init,
@@ -84,6 +83,7 @@ func Bootstrap() error {
 		sqlserver.Init,
 
 		// provider
+		redis.Init,
 		elastic.Init,
 		mongo.Init,
 		minio.Init,
