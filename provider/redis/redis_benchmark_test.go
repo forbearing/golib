@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/provider/redis"
 	"github.com/forbearing/golib/util"
 )
 
