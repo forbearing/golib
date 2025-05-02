@@ -27,6 +27,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var (
 	client      *redis.Client
 	cluster     *redis.ClusterClient
+	cli         redis.UniversalClient
 	mu          sync.Mutex
 	initialized bool
 
@@ -59,6 +60,7 @@ func Init() (err error) {
 			client = nil
 			return errors.Wrap(err, "failed to ping redis")
 		}
+		cli = cluster
 		zap.S().Infow("successfully connect to redis", "addrs", cfg.Addrs, "cluster_mode", cfg.ClusterMode)
 		return nil
 	} else {
@@ -70,6 +72,7 @@ func Init() (err error) {
 			client = nil
 			return errors.Wrap(err, "failed to ping redis")
 		}
+		cli = client
 		zap.S().Infow("successfully connect to redis", "addr", cfg.Addr, "db", cfg.DB, "cluster_mode", cfg.ClusterMode)
 
 	}
@@ -168,6 +171,7 @@ func Close() {
 		} else {
 			zap.S().Infow("successfully close redis client")
 		}
+		cli = nil
 		client = nil
 	}
 
@@ -177,6 +181,7 @@ func Close() {
 		} else {
 			zap.S().Infow("successfully close redis cluster client")
 		}
+		cli = nil
 		cluster = nil
 	}
 }
