@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/cache/lrue"
+	"github.com/forbearing/golib/cache"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
@@ -1071,7 +1071,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer lrue.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Flush()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1129,7 +1129,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 	if db.enableCache {
 		for i := range objs {
-			lrue.Cache[M]().Delete(objs[i].GetID())
+			cache.Cache[M]().Delete(objs[i].GetID())
 		}
 	}
 
@@ -1186,7 +1186,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer lrue.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Flush()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1233,7 +1233,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				lrue.Cache[M]().Delete(objs[i].GetID())
+				cache.Cache[M]().Delete(objs[i].GetID())
 			}
 		}
 	} else {
@@ -1254,7 +1254,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				lrue.Cache[M]().Delete(objs[i].GetID())
+				cache.Cache[M]().Delete(objs[i].GetID())
 			}
 		}
 	}
@@ -1291,7 +1291,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer lrue.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Flush()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1342,7 +1342,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		}
 		if db.enableCache {
 			for j := range objs[i:end] {
-				lrue.Cache[M]().Delete(objs[j].GetID())
+				cache.Cache[M]().Delete(objs[j].GetID())
 			}
 		}
 	}
@@ -1368,7 +1368,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	defer done(err)
 
 	if db.enableCache {
-		defer lrue.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Flush()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1393,7 +1393,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 		return err
 	}
 	if db.enableCache {
-		lrue.Cache[M]().Delete(id)
+		cache.Cache[M]().Delete(id)
 	}
 	return nil
 }
@@ -1424,7 +1424,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
-	if _dest, exists = lrue.Cache[[]M]().Get(key); !exists {
+	if _dest, exists = cache.Cache[[]M]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1536,7 +1536,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("list from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[[]M]().Set(key, *dest, config.App.Cache.Expiration)
+		cache.Cache[[]M]().Set(key, *dest, config.App.Cache.Expiration)
 	}
 
 	return nil
@@ -1565,7 +1565,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, exists = lrue.Cache[M]().Get(key); !exists {
+	if _dest, exists = cache.Cache[M]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1677,7 +1677,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("get from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -1700,7 +1700,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, exists = lrue.Cache[int64]().Get(key); !exists {
+	if _cache, exists = cache.Cache[int64]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1763,7 +1763,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[int64]().Set(key, *count, config.App.Cache.Expiration)
+		cache.Cache[int64]().Set(key, *count, config.App.Cache.Expiration)
 
 	}
 	return nil
@@ -1786,7 +1786,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
-	if _dest, exists = lrue.Cache[M]().Get(key); !exists {
+	if _dest, exists = cache.Cache[M]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1895,7 +1895,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("first from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -1917,7 +1917,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
-	if _dest, exists = lrue.Cache[M]().Get(key); !exists {
+	if _dest, exists = cache.Cache[M]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2026,7 +2026,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("last from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2048,7 +2048,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
-	if _dest, exists = lrue.Cache[M]().Get(key); !exists {
+	if _dest, exists = cache.Cache[M]().Get(key); !exists {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2159,7 +2159,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("take from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
-		lrue.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
