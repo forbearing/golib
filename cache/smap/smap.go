@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -31,7 +32,7 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T) {
+func (c *cache[T]) Set(key string, value T, _ time.Duration) {
 	_, loaded := c.m.LoadOrStore(key, value)
 	if loaded {
 		c.m.Store(key, value)
@@ -52,7 +53,7 @@ func (c *cache[T]) Peek(key string) (T, bool) {
 	return _v, ok1 && ok2
 }
 
-func (c *cache[T]) Remove(key string) {
+func (c *cache[T]) Delete(key string) {
 	_, exists := c.m.LoadAndDelete(key)
 	if exists {
 		atomic.AddInt64(&c.n, -1)
@@ -72,7 +73,7 @@ func (c *cache[T]) Keys() []string {
 	})
 	return keys
 }
-func (c *cache[T]) Count() int { return int(c.n) }
+func (c *cache[T]) Len() int { return int(c.n) }
 func (c *cache[T]) Flush() {
 	c.m.Range(func(key, _ any) bool {
 		c.m.Delete(key)

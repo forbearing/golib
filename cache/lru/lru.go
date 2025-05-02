@@ -2,6 +2,7 @@ package lru
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
@@ -39,11 +40,11 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T)   { c.c.Add(key, value) }
-func (c *cache[T]) Get(key string) (T, bool)  { return c.c.Get(key) }
-func (c *cache[T]) Peek(key string) (T, bool) { return c.c.Get(key) }
-func (c *cache[T]) Remove(key string)         { c.c.Remove(key) }
-func (c *cache[T]) Exists(key string) bool    { return c.c.Contains(key) }
-func (c *cache[T]) Keys() []string            { return c.c.Keys() }
-func (c *cache[T]) Count() int                { return c.c.Len() }
-func (c *cache[T]) Flush()                    { c.c.Purge() }
+func (c *cache[T]) Set(key string, value T, _ time.Duration) { c.c.Add(key, value) }
+func (c *cache[T]) Get(key string) (T, bool)                 { return c.c.Get(key) }
+func (c *cache[T]) Peek(key string) (T, bool)                { return c.c.Get(key) }
+func (c *cache[T]) Delete(key string)                        { c.c.Remove(key) }
+func (c *cache[T]) Exists(key string) bool                   { return c.c.Contains(key) }
+func (c *cache[T]) Keys() []string                           { return c.c.Keys() }
+func (c *cache[T]) Len() int                                 { return c.c.Len() }
+func (c *cache[T]) Flush()                                   { c.c.Purge() }

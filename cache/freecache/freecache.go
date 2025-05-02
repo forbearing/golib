@@ -2,6 +2,7 @@ package freecache
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/coocood/freecache"
 	"github.com/forbearing/golib/config"
@@ -35,12 +36,12 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T) {
+func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
 	val, err := json.Marshal(value)
 	if err != nil {
 		zap.S().Error(err)
 	} else {
-		if err := c.c.Set([]byte(key), val, int(config.App.Cache.Expiration)); err != nil {
+		if err := c.c.Set([]byte(key), val, int(ttl.Seconds())); err != nil {
 			zap.S().Error(err)
 		}
 	}
@@ -66,7 +67,7 @@ func (c *cache[T]) Peek(key string) (T, bool) {
 	return c.Get(key)
 }
 
-func (c *cache[T]) Remove(key string) { c.c.Del([]byte(key)) }
+func (c *cache[T]) Delete(key string) { c.c.Del([]byte(key)) }
 func (c *cache[T]) Exists(key string) bool {
 	_, err := c.c.Get([]byte(key))
 	return err == nil
@@ -81,5 +82,5 @@ func (c *cache[T]) Keys() []string {
 	return keys
 }
 
-func (c *cache[T]) Count() int { return int(c.c.EntryCount()) }
-func (c *cache[T]) Flush()     { c.c.Clear() }
+func (c *cache[T]) Len() int { return int(c.c.EntryCount()) }
+func (c *cache[T]) Flush()   { c.c.Clear() }
