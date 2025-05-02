@@ -166,91 +166,78 @@ func Stop() {
 func Register[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Most), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Most)
 	}
 }
 
 func RegisterCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Create), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Create)
 	}
 }
 
 func RegisterDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Delete), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Delete)
 	}
 }
 
 func RegisterUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Update), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Update)
 	}
 }
 
 func RegisterUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.UpdatePartial), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.UpdatePartial)
 	}
 }
 
 func RegisterList[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.List), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.List)
 	}
 }
 
 func RegisterGet[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Get), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Get)
 	}
 }
 
 func RegisterImport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Import), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Import)
 	}
 }
 
 func RegisterExport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.Export), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.Export)
 	}
 }
 
 func RegisterBatchCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchCreate), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.BatchCreate)
 	}
 }
 
 func RegisterBatchDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchDelete), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.BatchDelete)
 	}
 }
 
 func RegisterBatchUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdate), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.BatchUpdate)
 	}
 }
 
 func RegisterBatchUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
 	if validPath(rawPath) {
 		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdatePartial), cfg...)
-		openapigen.Set[M](buildPath(rawPath), consts.BatchUpdatePartial)
 	}
 }
 
@@ -287,6 +274,7 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		router.POST(path, controller.CreateFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.Create)
 	}
 	if verbMap[consts.Delete] {
 		endpoint := gopath.Join(base, path)
@@ -297,6 +285,7 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodDelete)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
+		openapigen.Set[M](endpoint, consts.Delete)
 
 	}
 	if verbMap[consts.Update] {
@@ -308,6 +297,7 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPut)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
+		openapigen.Set[M](endpoint, consts.Update)
 
 	}
 	if verbMap[consts.UpdatePartial] {
@@ -319,18 +309,21 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
+		openapigen.Set[M](endpoint, consts.UpdatePartial)
 	}
 	if verbMap[consts.List] {
 		endpoint := gopath.Join(base, path)
 		router.GET(path, controller.ListFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.List)
 	}
 	if verbMap[consts.Get] {
 		endpoint := gopath.Join(base, path, "/:id")
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.Get)
 	}
 
 	if verbMap[consts.BatchCreate] {
@@ -338,24 +331,28 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		router.POST(path+"/batch", controller.BatchCreateFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
 		middleware.RouteManager.Add(gopath.Join(base, path, "/batch"))
+		openapigen.Set[M](endpoint, consts.BatchCreate)
 	}
 	if verbMap[consts.BatchDelete] {
 		endpoint := gopath.Join(base, path, "/batch")
 		router.DELETE(path+"/batch", controller.BatchDeleteFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodDelete)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.BatchDelete)
 	}
 	if verbMap[consts.BatchUpdate] {
 		endpoint := gopath.Join(base, path, "/batch")
 		router.PUT(path+"/batch", controller.BatchUpdateFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPut)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.BatchUpdate)
 	}
 	if verbMap[consts.BatchUpdatePartial] {
 		endpoint := gopath.Join(base, path, "/batch")
 		router.PATCH(path+"/batch", controller.BatchUpdatePartialFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.BatchUpdatePartial)
 	}
 
 	if verbMap[consts.Import] {
@@ -363,12 +360,14 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		router.POST(path+"/import", controller.ImportFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.Import)
 	}
 	if verbMap[consts.Export] {
 		endpoint := gopath.Join(base, path, "/export")
 		router.GET(path+"/export", controller.ExportFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
 		middleware.RouteManager.Add(endpoint)
+		openapigen.Set[M](endpoint, consts.Export)
 	}
 }
 
