@@ -9,8 +9,7 @@ import (
 	"github.com/forbearing/golib/authn/jwt"
 	"github.com/forbearing/golib/authz/rbac/basic"
 	"github.com/forbearing/golib/authz/rbac/tenant"
-	"github.com/forbearing/golib/cache/cmap"
-	"github.com/forbearing/golib/cache/lru"
+	"github.com/forbearing/golib/cache"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/controller"
 	"github.com/forbearing/golib/cronjob"
@@ -72,8 +71,7 @@ func Bootstrap() error {
 		metrics.Init,
 
 		// cache
-		lru.Init,
-		cmap.Init,
+		cache.Init,
 
 		// database
 		sqlite.Init,
