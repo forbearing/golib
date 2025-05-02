@@ -49,7 +49,7 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T) {
+func (c *cache[T]) Set(key string, value T, _ time.Duration) {
 	val, err := json.Marshal(value)
 	if err != nil {
 		zap.S().Error(err)
@@ -79,7 +79,7 @@ func (c *cache[T]) Get(key string) (T, bool) {
 func (c *cache[T]) Peek(key string) (T, bool) {
 	return c.Get(key)
 }
-func (c *cache[T]) Remove(key string) { c.c.Delete(key) }
+func (c *cache[T]) Delete(key string) { c.c.Delete(key) }
 func (c *cache[T]) Exists(key string) bool {
 	_, err := c.c.Get(key)
 	return err == nil
@@ -98,7 +98,7 @@ func (c *cache[T]) Keys() []string {
 	return keys
 }
 
-func (c *cache[T]) Count() int {
+func (c *cache[T]) Len() int {
 	count := 0
 	iterator := c.c.Iterator()
 	for iterator.SetNext() {

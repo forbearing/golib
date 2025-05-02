@@ -309,46 +309,16 @@ type Hooker interface {
 
 // Cache interface defines the standard operations for a generic cache mechanism.
 type Cache[T any] interface {
-	// Set stores a Model identified by a key in the cache, with an expiration time.
-	// If the cache already contains the key, the existing Model is overwritten.
-	// The ttl (time to live) determines how long the key stays in the cache before it is auto-evicted.
-	// Returns an error if the operation fails.
-	Set(key string, values T)
-
-	// Get retrieves a Model based on its key from the cache.
-	// Returns the Model associated with the key and a boolean indicating whether the key was found.
-	// If the key does not exist, the returned error will be non-nil.
+	Set(key string, values T, ttl time.Duration)
 	Get(key string) (T, bool)
-
-	// Peek retrieves the Model associated with the given key without updating the key's access time.
-	// This is particularly useful in caches where the age of an item might determine its eviction from the cache.
-	// Returns the Model associated with the key and a boolean indicating whether the key was found.
 	Peek(key string) (T, bool)
-
-	// Remove removes the Model associated with a key from the cache.
-	Remove(key string)
-
-	// Exists checks if the cache contains a Model associated with the given key.
-	// Returns a boolean indicating whether the key exists in the cache.
+	Delete(key string)
 	Exists(key string) bool
-
-	// Keys returns a slice of all the keys present in the cache.
 	Keys() []string
-
-	// Count returns the number of items currently in the cache.
-	// This can be useful for monitoring cache usage or for debugging.
-	// Returns the count of items and an error if the operation fails.
-	Count() int
-
-	// Flush clears all entries in the cache.
+	Len() int
 	Flush()
 
-	// // Increment atomically increases the integer value of a key by delta.
-	// // The function returns the new value after the increment and an error if the operation fails or if the value is not an integer.
 	// Increment(key string, delta int64) (int64, error)
-
-	// // Decrement atomically decreases the integer value of a key by delta.
-	// // The function returns the new value after the decrement and an error if the operation fails or if the value is not an integer.
 	// Decrement(key string, delta int64) (int64, error)
 }
 

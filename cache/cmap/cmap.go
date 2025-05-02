@@ -2,6 +2,7 @@ package cmap
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -28,11 +29,11 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T)   { c.c.Set(key, value) }
-func (c *cache[T]) Get(key string) (T, bool)  { return c.c.Get(key) }
-func (c *cache[T]) Peek(key string) (T, bool) { return c.c.Get(key) }
-func (c *cache[T]) Remove(key string)         { c.c.Remove(key) }
-func (c *cache[T]) Exists(key string) bool    { return c.c.Has(key) }
-func (c *cache[T]) Keys() []string            { return c.c.Keys() }
-func (c *cache[T]) Count() int                { return c.c.Count() }
-func (c *cache[T]) Flush()                    { c.c.Clear() }
+func (c *cache[T]) Set(key string, value T, _ time.Duration) { c.c.Set(key, value) }
+func (c *cache[T]) Get(key string) (T, bool)                 { return c.c.Get(key) }
+func (c *cache[T]) Peek(key string) (T, bool)                { return c.c.Get(key) }
+func (c *cache[T]) Delete(key string)                        { c.c.Remove(key) }
+func (c *cache[T]) Exists(key string) bool                   { return c.c.Has(key) }
+func (c *cache[T]) Keys() []string                           { return c.c.Keys() }
+func (c *cache[T]) Len() int                                 { return c.c.Count() }
+func (c *cache[T]) Flush()                                   { c.c.Clear() }
