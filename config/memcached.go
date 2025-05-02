@@ -21,7 +21,7 @@ type Memcached struct {
 
 func (*Memcached) setDefault() {
 	cv.SetDefault("memcached.servers", "127.0.0.1:11211")
-	cv.SetDefault("memcached.max_idle_conns", 2)
+	cv.SetDefault("memcached.max_idle_conns", 100)
 	cv.SetDefault("memcached.timeout", 100*time.Millisecond)
 	cv.SetDefault("memcached.max_cache_size", 0) // 0 is unlimited
 	cv.SetDefault("memcached.enable", false)
