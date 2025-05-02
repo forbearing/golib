@@ -58,29 +58,29 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 	for _, verb := range buildVerbs(verb...) {
 		switch verb {
 		case consts.Create:
-			setCreate[M](pathItem)
+			setCreate[M](path, pathItem)
 		case consts.Delete:
-			setDelete[M](pathidItem)
+			setDelete[M](pathid, pathidItem)
 		case consts.Update:
-			setUpdate[M](pathidItem)
+			setUpdate[M](pathid, pathidItem)
 		case consts.UpdatePartial:
-			setUpdatePartial[M](pathidItem)
+			setUpdatePartial[M](pathid, pathidItem)
 		case consts.List:
-			setList[M](pathItem)
+			setList[M](path, pathItem)
 		case consts.Get:
-			setGet[M](pathidItem)
+			setGet[M](pathid, pathidItem)
 		case consts.Import:
-			setImport[M](pathiptItem)
+			setImport[M](pathipt, pathiptItem)
 		case consts.Export:
-			setExport[M](pathexptItem)
+			setExport[M](pathexpt, pathexptItem)
 		case consts.BatchCreate:
-			setBatchCreate[M](pathbatchItem)
+			setBatchCreate[M](pathbatch, pathbatchItem)
 		case consts.BatchDelete:
-			setBatchDelete[M](pathbatchItem)
+			setBatchDelete[M](pathbatch, pathbatchItem)
 		case consts.BatchUpdate:
-			setBatchUpdate[M](pathbatchItem)
+			setBatchUpdate[M](pathbatch, pathbatchItem)
 		case consts.BatchUpdatePartial:
-			setBatchUpdatePartial[M](pathbatchItem)
+			setBatchUpdatePartial[M](pathbatch, pathbatchItem)
 		}
 	}
 

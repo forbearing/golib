@@ -49,7 +49,7 @@ var idParameters []*openapi3.ParameterRef = []*openapi3.ParameterRef{
 	},
 }
 
-func setCreate[M types.Model](pathItem *openapi3.PathItem) {
+func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	gen := openapi3gen.NewGenerator()
 	name := typ.Elem().Name()
@@ -71,7 +71,7 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.Create, typ),
 		Summary:     summary(consts.Create, typ),
 		Description: description(consts.Create, typ),
-		Tags:        tags(consts.Create, typ),
+		Tags:        tags(path, consts.Create, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Create %s", name),
@@ -142,7 +142,7 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Post)
 }
 
-func setDelete[M types.Model](pathItem *openapi3.PathItem) {
+func setDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
@@ -150,7 +150,7 @@ func setDelete[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.Delete, typ),
 		Summary:     summary(consts.Delete, typ),
 		Description: description(consts.Delete, typ),
-		Tags:        tags(consts.Delete, typ),
+		Tags:        tags(path, consts.Delete, typ),
 		Parameters:  idParameters,
 		Responses: func() *openapi3.Responses {
 			schemaRef204, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
@@ -196,7 +196,7 @@ func setDelete[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Delete)
 }
 
-func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
+func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -218,7 +218,7 @@ func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.Update, typ),
 		Summary:     summary(consts.Update, typ),
 		Description: description(consts.Update, typ),
-		Tags:        tags(consts.Update, typ),
+		Tags:        tags(path, consts.Update, typ),
 		Parameters:  idParameters,
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
@@ -281,7 +281,7 @@ func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Put)
 }
 
-func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
+func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -303,7 +303,7 @@ func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.UpdatePartial, typ),
 		Summary:     summary(consts.UpdatePartial, typ),
 		Description: description(consts.UpdatePartial, typ),
-		Tags:        []string{name},
+		Tags:        tags(path, consts.UpdatePartial, typ),
 		Parameters:  idParameters,
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
@@ -364,7 +364,7 @@ func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Patch)
 }
 
-func setList[M types.Model](pathItem *openapi3.PathItem) {
+func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -380,7 +380,7 @@ func setList[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.List, typ),
 		Summary:     summary(consts.List, typ),
 		Description: description(consts.List, typ),
-		Tags:        tags(consts.List, typ),
+		Tags:        tags(path, consts.List, typ),
 		// Parameters: []*openapi3.ParameterRef{
 		// 	{
 		// 		Value: &openapi3.Parameter{
@@ -458,7 +458,7 @@ func setList[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Get)
 }
 
-func setGet[M types.Model](pathItem *openapi3.PathItem) {
+func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -474,7 +474,7 @@ func setGet[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.Get, typ),
 		Summary:     summary(consts.Get, typ),
 		Description: description(consts.Get, typ),
-		Tags:        tags(consts.Get, typ),
+		Tags:        tags(path, consts.Get, typ),
 		Parameters:  idParameters,
 		Responses: func() *openapi3.Responses {
 			schemeRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
@@ -523,13 +523,13 @@ func setGet[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Get)
 }
 
-func setImport[M types.Model](pathItem *openapi3.PathItem) {
+func setImport[M types.Model](path string, pathItem *openapi3.PathItem) {
 }
 
-func setExport[M types.Model](pathItem *openapi3.PathItem) {
+func setExport[M types.Model](path string, pathItem *openapi3.PathItem) {
 }
 
-func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
+func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -576,7 +576,7 @@ func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.BatchCreate, typ),
 		Summary:     summary(consts.BatchCreate, typ),
 		Description: description(consts.BatchCreate, typ),
-		Tags:        tags(consts.BatchCreate, typ),
+		Tags:        tags(path, consts.BatchCreate, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch creating %s", name),
@@ -639,7 +639,7 @@ func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Post)
 }
 
-func setBatchDelete[M types.Model](pathItem *openapi3.PathItem) {
+func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
@@ -667,7 +667,7 @@ func setBatchDelete[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.BatchDelete, typ),
 		Summary:     summary(consts.BatchDelete, typ),
 		Description: description(consts.BatchDelete, typ),
-		Tags:        tags(consts.BatchDelete, typ),
+		Tags:        tags(path, consts.BatchDelete, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Required:    true,
@@ -717,7 +717,7 @@ func setBatchDelete[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Delete)
 }
 
-func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
+func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -739,7 +739,7 @@ func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.BatchUpdate, typ),
 		Summary:     summary(consts.BatchUpdate, typ),
 		Description: description(consts.BatchUpdate, typ),
-		Tags:        tags(consts.BatchUpdate, typ),
+		Tags:        tags(path, consts.BatchUpdate, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch updating %s", name),
@@ -798,7 +798,7 @@ func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Put)
 }
 
-func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
+func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -820,7 +820,7 @@ func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 		OperationID: operationID(consts.BatchUpdatePartial, typ),
 		Summary:     summary(consts.BatchUpdatePartial, typ),
 		Description: description(consts.BatchUpdatePartial, typ),
-		Tags:        tags(consts.BatchUpdatePartial, typ),
+		Tags:        tags(path, consts.BatchUpdatePartial, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch partial updating %s", name),
@@ -1056,7 +1056,7 @@ func description(op consts.HTTPVerb, typ reflect.Type) string {
 	return fmt.Sprintf("%s %s", op, typ.Elem().Name())
 }
 
-func tags(op consts.HTTPVerb, typ reflect.Type) []string {
+func tags(path string, op consts.HTTPVerb, typ reflect.Type) []string {
 	return []string{typ.Elem().Name()}
 }
 
