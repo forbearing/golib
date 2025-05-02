@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -115,11 +116,14 @@ func (*Config) setDefault() {
 // 2. Configuration file
 // 3. Default values
 func Init() (err error) {
-	if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
-		return errors.Wrap(err, "failed to create temp dir")
+	// Create temp directory if not in test.
+	if flag.Lookup("test.v") == nil {
+		if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
+			return errors.Wrap(err, "failed to create temp dir")
+		}
+		// logger not initialized using fmt.Println instead.
+		fmt.Fprintf(os.Stdout, "create temp dir: %s\n", tempdir)
 	}
-	// logger not initialized using fmt.Println instead.
-	fmt.Fprintf(os.Stdout, "create temp dir: %s\n", tempdir)
 
 	// Breaking change:
 	// https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-hcl-java-properties-ini-removed-from-core
