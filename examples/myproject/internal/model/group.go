@@ -31,10 +31,10 @@ func (g *Group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 func (g *Group) Request(GroupRequest, GroupResponse) {}
 
 type GroupRequest struct {
-	Name string
+	Name string `json:"name,omitempty" schema:"name"`
 }
 
 type GroupResponse struct {
-	FieldC string
-	FieldD *int
+	FieldC string `json:"field_c,omitempty" schema:"field_c"`
+	FieldD *int   `json:"field_d,omitempty" schema:"field_d"`
 }
