@@ -150,8 +150,11 @@ func Init() (err error) {
 
 	if err = cv.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
-				return errors.Wrap(err, "failed to create config file")
+			// Only create config file if not in test.
+			if flag.Lookup("test.v") == nil {
+				if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
+					return errors.Wrap(err, "failed to create config file")
+				}
 			}
 		} else {
 			return errors.Wrap(err, "failed to read config file")
