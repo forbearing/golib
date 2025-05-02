@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/forbearing/golib/cache/redis"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
 	model_log "github.com/forbearing/golib/model/log"
+	"github.com/forbearing/golib/provider/redis"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
