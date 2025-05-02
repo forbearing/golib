@@ -54,7 +54,13 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	name := typ.Elem().Name()
 
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(M), nil)
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -75,12 +81,22 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 		},
 		Responses: func() *openapi3.Responses {
 			resp := openapi3.NewResponses()
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var err error
 
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			if model.HasResponse[M]() {
+				// data := model.NewResponse[M]()
+				// dataSchemaRef, err := openapi3gen.NewSchemaRefForValue(data, nil)
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
+
 			resp.Set("201", &openapi3.ResponseRef{
 				Value: &openapi3.Response{
 					Description: util.ValueOf(fmt.Sprintf("%s created", name)),
@@ -91,8 +107,7 @@ func setCreate[M types.Model](pathItem *openapi3.PathItem) {
 				},
 			})
 
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
@@ -186,7 +201,13 @@ func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(M), nil)
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -207,19 +228,27 @@ func setUpdate[M types.Model](pathItem *openapi3.PathItem) {
 			},
 		},
 		Responses: func() *openapi3.Responses {
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var schemaRef404 *openapi3.SchemaRef
+			var err error
+
+			if model.HasResponse[M]() {
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
 			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef404 = new(openapi3.SchemaRef)
 			}
@@ -257,7 +286,13 @@ func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(M), nil)
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -278,19 +313,25 @@ func setUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 			},
 		},
 		Responses: func() *openapi3.Responses {
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var schemaRef404 *openapi3.SchemaRef
+
+			if model.HasResponse[M]() {
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
 			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef404 = new(openapi3.SchemaRef)
 			}
@@ -517,7 +558,14 @@ func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
 	// 	},
 	// }
 	// doc.Components.Schemas[reqSchemaName] = reqSchemaRef
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -540,19 +588,26 @@ func setBatchCreate[M types.Model](pathItem *openapi3.PathItem) {
 			},
 		},
 		Responses: func() *openapi3.Responses {
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var schemaRef404 *openapi3.SchemaRef
+			var err error
+
+			if model.HasResponse[M]() {
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil)
-			if err != nil {
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
 			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil)
-			if err != nil {
+			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef404 = new(openapi3.SchemaRef)
 			}
@@ -667,7 +722,13 @@ func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -687,19 +748,25 @@ func setBatchUpdate[M types.Model](pathItem *openapi3.PathItem) {
 			},
 		},
 		Responses: func() *openapi3.Responses {
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var schemaRef404 *openapi3.SchemaRef
+
+			if model.HasResponse[M]() {
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
 			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
+			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef404 = new(openapi3.SchemaRef)
 			}
@@ -736,7 +803,13 @@ func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
-	reqSchemaRef, err := gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+	var reqSchemaRef *openapi3.SchemaRef
+	var err error
+	if model.HasRequest[M]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
+	} else {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
+	}
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -756,19 +829,26 @@ func setBatchUpdatePartial[M types.Model](pathItem *openapi3.PathItem) {
 			},
 		},
 		Responses: func() *openapi3.Responses {
-			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			var schemaRef200 *openapi3.SchemaRef
+			var schemaRef400 *openapi3.SchemaRef
+			var schemaRef404 *openapi3.SchemaRef
+			var err error
+
+			if model.HasResponse[M]() {
+				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
+			} else {
+				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
+			}
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil)
-			if err != nil {
+			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef400 = new(openapi3.SchemaRef)
 			}
 			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil)
-			if err != nil {
+			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
 				schemaRef404 = new(openapi3.SchemaRef)
 			}
@@ -1174,6 +1254,26 @@ type apiResponse[T any] struct {
 	Msg       string `json:"msg"`
 	RequestID string `json:"request_id"`
 }
+
+// newApiResponseRefWithData generate a openapi3.SchemaRef with custom data.
+func newApiResponseRefWithData(data any) *openapi3.SchemaRef {
+	dataSchemaRef, err := openapi3gen.NewSchemaRefForValue(data, nil)
+	if err != nil {
+		zap.S().Error(err)
+		dataSchemaRef = new(openapi3.SchemaRef)
+	}
+	schema := &openapi3.Schema{
+		Type: &openapi3.Types{openapi3.TypeObject},
+		Properties: map[string]*openapi3.SchemaRef{
+			"code":       {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeInteger}}},
+			"msg":        {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
+			"request_id": {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
+			"data":       dataSchemaRef, // ✅ 使用动态生成的类型
+		},
+	}
+	return &openapi3.SchemaRef{Value: schema}
+}
+
 type apiListResponse[T any] struct {
 	Code      int         `json:"code"`
 	Data      listData[T] `json:"data"`
