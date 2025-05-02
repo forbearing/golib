@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/types"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +41,11 @@ func (*cache[T]) Get(key string) (T, bool) {
 	}
 	val, err := cli.Get(context.Background(), key).Result()
 	if err != nil {
-		zap.S().Error(err)
+		if errors.Is(err, redis.Nil) {
+			return zero, false
+		} else {
+			zap.S().Error(err)
+		}
 		return zero, false
 	}
 	var result T
