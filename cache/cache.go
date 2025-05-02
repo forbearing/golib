@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
 	"github.com/forbearing/golib/cache/smap"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 )
 
@@ -20,3 +21,5 @@ func Init() error {
 		freecache.Init,
 	)
 }
+
+func Cache[T any]() types.Cache[T] { return lrue.Cache[T]() }
