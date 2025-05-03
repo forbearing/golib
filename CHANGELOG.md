@@ -2,6 +2,71 @@
 ## [Unreleased]
 
 
+<a name="v0.5.0"></a>
+## [v0.5.0] - 2025-05-03
+### Chore
+- **controller:** add TODO comments for DeleteBefore and DeleteAfter hooks
+- **deps:** upgrade dependencies to latest version
+- **deps:** go mod tidy
+- **docs:** update CHANGELOG.md
+- **example:** refactor(model): add json and schema tags to GroupRequest, GroupResponse
+- **example:** update
+- **example:** update
+- **example:** update
+- **examples:** update example myproject
+- **types:** simplify parameter names in Model interface methods
+
+### Docs
+- update README.md
+
+### Feat
+- support custom request and response
+- add package reflectmeta to cache reflect
+- **cache:** add package cache/lrue and implements interface `Cache`
+- **cache:** add generic Cache[T]() shortcut using lrue backend
+- **cache:** add package cache/smap and implements interface `Cache`
+- **cache:** add package cache/bigcache and implements interface `Cache`
+- **cache:** add package cache/freecache and implements interface `Cache`
+- **config:** add cache config
+- **config:** increase default memcached.max_idle_conns to 100
+- **controller:** prepare support captcha
+- **memcached:** provider/memcached implement interface `Cache`
+- **openapigen:** support custom request and response
+- **redis:** implement interface `Cache`
+
+### Fix
+- **config:** avoid creating config file in test environment
+- **config:** skip create temp dir during test
+- **controller:** handle case when model has custom request but no custom response
+- **redis:** do not log error for cache miss(redis.Nil)
+- **reflectmeta:** use full type string in cache keys to avoid name collisions
+- **router:** move oepnapigen.Set calls from Register* to register to fix api path in api docs
+- **service:** user same service key
+- **service:** use package path in service registration key to prevent collisions
+
+### Refactor
+- remove package pkg/bigcacheg
+- **bootstrap:** boostrap cache, remove lru,cmap
+- **cache:** change method: Remove -> Delete, Count -> Len; Set method add parameter ttl
+- **database:** replace lru.Int64() with lru.Cache[int64]()
+- **database:** replace lru with lrue that is a expirable lru cache
+- **model:** operation log add feild `Request`,`Response` and auto create table
+- **openapigen:** pass path argument to set* functions and tags generator
+- **redis:** move redis package: cache/redis -> provider/redis
+- **redis:** move redis package: cache/redis -> provider/redis
+- **redis:** add shared redis.UniversalClient (cli) for flexible access
+- **response:** change empty data representation from empty string to null
+- **service:** use range
+- **service:** change service hooks to handle single model for method: Create/Delete/Update/Update/UpdatePartial/Get before and after hooks
+- **types:** rename Set/GetRequestBody Set/GetResponseBody -> Set/GetRequest Set/GetResponse
+
+### Test
+- **cache:** add parallel benchmark, benchmark redis and memcached
+- **cache:** add benchmark testcase
+- **model:** remove spew
+- **redis:** correct import
+
+
 <a name="v0.4.4"></a>
 ## [v0.4.4] - 2025-04-26
 ### Build
@@ -1185,7 +1250,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.0...HEAD
+[v0.5.0]: https://github.com/forbearing/golib/compare/v0.4.4...v0.5.0
 [v0.4.4]: https://github.com/forbearing/golib/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/forbearing/golib/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/forbearing/golib/compare/v0.4.1...v0.4.2
