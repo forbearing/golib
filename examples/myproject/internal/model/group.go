@@ -35,6 +35,6 @@ type GroupRequest struct {
 }
 
 type GroupResponse struct {
-	FieldC string `json:"field_c,omitempty" schema:"field_c"`
-	FieldD *int   `json:"field_d,omitempty" schema:"field_d"`
+	CustomName string  `json:"custom_name,omitempty" schema:"custom_name"`
+	CustomDesc *string `json:"custom_desc,omitempty" schema:"custom_desc"`
 }

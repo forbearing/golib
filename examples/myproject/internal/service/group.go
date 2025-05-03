@@ -30,8 +30,8 @@ func (g *group) CreateBefore(ctx *types.ServiceContext, group *model.Group) erro
 	}
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in create before"
-		resp.FieldD = util.ValueOf(100)
+		resp.CustomName = "custom name in create before"
+		resp.CustomDesc = util.ValueOf("desc in create before")
 	}
 	return nil
 }
@@ -58,8 +58,8 @@ func (g *group) UpdateBefore(ctx *types.ServiceContext, group *model.Group) erro
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in update before"
-		resp.FieldD = util.ValueOf(101)
+		resp.CustomName = "custom name in update before"
+		resp.CustomDesc = util.ValueOf("desc in update before")
 	}
 	log.Info("group update before")
 	return nil
@@ -75,8 +75,8 @@ func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, group *model.Grou
 	log := g.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in update partial before"
-		resp.FieldD = util.ValueOf(102)
+		resp.CustomName = "custom name in update partial before"
+		resp.CustomDesc = util.ValueOf("custom desc in update partial before")
 	}
 	log.Info("group update partial before")
 	return nil
@@ -116,8 +116,8 @@ func (g *group) BatchCreateBefore(ctx *types.ServiceContext, groups ...*model.Gr
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_BEFORE)
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in batch create before"
-		resp.FieldD = util.ValueOf(103)
+		resp.CustomName = "custom name in batch create before"
+		resp.CustomDesc = util.ValueOf("custom desc in batch create before")
 	}
 	log.Info("group batch create before")
 	return nil
@@ -145,8 +145,8 @@ func (g *group) BatchUpdateBefore(ctx *types.ServiceContext, groups ...*model.Gr
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_BEFORE)
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in batch update before"
-		resp.FieldD = util.ValueOf(104)
+		resp.CustomName = "custom name in batch update before"
+		resp.CustomDesc = util.ValueOf("custom desc in batch update before")
 	}
 	log.Info("group batch update before")
 	return nil
@@ -162,8 +162,8 @@ func (g *group) BatchUpdatePartialBefore(ctx *types.ServiceContext, groups ...*m
 	log := g.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE)
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
-		resp.FieldC = "field c in batch updte partial before"
-		resp.FieldD = util.ValueOf(105)
+		resp.CustomName = "custom name in batch updte partial before"
+		resp.CustomDesc = util.ValueOf("custom desc in batch update partial before")
 	}
 	log.Info("group batch update partial before")
 	return nil
