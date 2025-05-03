@@ -22,16 +22,19 @@ var (
 	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
 )
 
+func serviceKey[M types.Model]() string {
+	typ := reflect.TypeOf(*new(M)).Elem()
+	key := typ.PkgPath() + "|" + typ.String()
+	return key
+}
+
 // Register service instance into serviceMap.
 // pass parameters to replace the default service instance.
 // If the passed parameters is nil, skip replace.
 func Register[S types.Service[M], M types.Model](s ...S) {
 	mu.Lock()
 	defer mu.Unlock()
-	// WARN: 一定不要使用 reflect.TypeOf(*new(M)).Name(), 因为可能存在 model.User, model2.User 的情况,
-	// 这样就会导致 key 重复.
-	typ := reflect.TypeOf(*new(M))
-	key := typ.PkgPath() + "|" + typ.String()
+	key := serviceKey[M]()
 	val := reflect.New(reflect.TypeOf(*new(S)).Elem()).Interface()
 	serviceMap[key] = val
 	if len(s) > 0 {
@@ -66,16 +69,16 @@ func Init() error {
 }
 
 // Factory is a service factory used to product service instance.
-// The servicei instance should registered by function `register()` in init()
+// The service instance should registered by function `Register()` in init()
 //
 // The service defined by user should be unexported (structure name is lowercase).
 // service instance are only returns by the `Factory`.
 type Factory[M types.Model] struct{}
 
 func (f Factory[M]) Service() types.Service[M] {
-	svc, ok := serviceMap[reflect.TypeOf(*new(M)).String()]
+	svc, ok := serviceMap[serviceKey[M]()]
 	if !ok {
-		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", reflect.TypeOf(*new(M)).String()))
+		logger.Service.Warn(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
 		return new(Base[M])
 	}
 	return svc.(types.Service[M])
