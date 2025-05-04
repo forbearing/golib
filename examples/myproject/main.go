@@ -359,6 +359,7 @@ func main() {
 	router.Register[*model_authz.UserRole](router.API(), "user_role")
 	router.RegisterList[*model_authz.Permission](router.API(), "permission")
 	router.Register[*model_authz.RolePermission](router.API(), "role_permission")
+	router.RegisterCreate[*internal_model.Department](router.API(), "department")
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
