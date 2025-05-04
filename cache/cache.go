@@ -3,6 +3,7 @@ package cache
 import (
 	"github.com/forbearing/golib/cache/bigcache"
 	"github.com/forbearing/golib/cache/cmap"
+	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
@@ -17,6 +18,7 @@ func Init() error {
 		lrue.Init,
 		cmap.Init,
 		smap.Init,
+		fastcache.Init,
 		bigcache.Init,
 		freecache.Init,
 	)

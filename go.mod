@@ -13,6 +13,7 @@ tool (
 
 require (
 	github.com/IBM/sarama v1.45.1
+	github.com/VictoriaMetrics/fastcache v1.12.2
 	github.com/allegro/bigcache v1.2.1
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
