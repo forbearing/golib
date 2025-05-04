@@ -163,7 +163,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 
 		// 1.Perform business logic processing before create resource.
-		if err = new(service.Factory[M]).Service().CreateBefore(ctx, req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -181,7 +181,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			}
 		}
 		// 3.Perform business logic processing after create resource
-		if err = new(service.Factory[M]).Service().CreateAfter(ctx, req); err != nil {
+		if err = new(service.Factory[M]).Service().CreateAfter(ctx.WithPhase(consts.PHASE_CREATE_AFTER), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -290,7 +290,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// 1.Perform business logic processing before delete resources.
 		// TODO: Should there be one service hook(DeleteBefore), or multiple?
 		for _, m := range ml {
-			if err := new(service.Factory[M]).Service().DeleteBefore(helper.NewServiceContext(c), m); err != nil {
+			if err := new(service.Factory[M]).Service().DeleteBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_BEFORE), m); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -317,7 +317,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		// 3.Perform business logic processing after delete resources.
 		// TODO: Should there be one service hook(DeleteAfter), or multiple?
 		for _, m := range ml {
-			if err := new(service.Factory[M]).Service().DeleteAfter(helper.NewServiceContext(c), m); err != nil {
+			if err := new(service.Factory[M]).Service().DeleteAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_AFTER), m); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -439,7 +439,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 
 		// 1.Perform business logic processing before update resource.
-		if err := new(service.Factory[M]).Service().UpdateBefore(ctx, req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -454,7 +454,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			}
 		}
 		// 3.Perform business logic processing after update resource.
-		if err := new(service.Factory[M]).Service().UpdateAfter(ctx, req); err != nil {
+		if err := new(service.Factory[M]).Service().UpdateAfter(ctx.WithPhase(consts.PHASE_UPDATE_AFTER), req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -656,7 +656,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		}
 
 		// 1.Perform business logic processing before partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialBefore(ctx, oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialBefore(ctx.WithPhase(consts.PHASE_UPDATE_PARTIAL_BEFORE), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -670,7 +670,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			}
 		}
 		// 3.Perform business logic processing after partial update resource.
-		if err := new(service.Factory[M]).Service().UpdatePartialAfter(ctx, oldVal.Addr().Interface().(M)); err != nil {
+		if err := new(service.Factory[M]).Service().UpdatePartialAfter(ctx.WithPhase(consts.PHASE_UPDATE_PARTIAL_AFTER), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -857,7 +857,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		svc := new(service.Factory[M]).Service()
 		svcCtx := helper.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
-		if err = svc.ListBefore(svcCtx, &data); err != nil {
+		if err = svc.ListBefore(svcCtx.WithPhase(consts.PHASE_LIST_BEFORE), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -887,7 +887,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			cached = true
 		}
 		// 3.Perform business logic processing after list resources.
-		if err := svc.ListAfter(svcCtx, &data); err != nil {
+		if err := svc.ListAfter(svcCtx.WithPhase(consts.PHASE_LIST_AFTER), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1051,7 +1051,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		log.Infoz("", zap.Object(typ.Name(), m))
 
 		// 1.Perform business logic processing before get resource.
-		if err = new(service.Factory[M]).Service().GetBefore(helper.NewServiceContext(c), m); err != nil {
+		if err = new(service.Factory[M]).Service().GetBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_GET_BEFORE), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1073,7 +1073,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 			cached = true
 		}
 		// 3.Perform business logic processing after get resource.
-		if err := new(service.Factory[M]).Service().GetAfter(helper.NewServiceContext(c), m); err != nil {
+		if err := new(service.Factory[M]).Service().GetAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_GET_AFTER), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1269,7 +1269,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		}
 
 		// 1.Perform business logic processing before batch create resource.
-		if err = new(service.Factory[M]).Service().BatchCreateBefore(ctx, req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchCreateBefore(ctx.WithPhase(consts.PHASE_BATCH_CREATE_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1284,7 +1284,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch create resource
-		if err = new(service.Factory[M]).Service().BatchCreateAfter(ctx, req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchCreateAfter(ctx.WithPhase(consts.PHASE_BATCH_CREATE_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1367,7 +1367,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
-		if err = new(service.Factory[M]).Service().BatchDeleteBefore(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchDeleteBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_BATCH_DELETE_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1381,7 +1381,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch delete resources.
-		if err = new(service.Factory[M]).Service().BatchDeleteAfter(helper.NewServiceContext(c), req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchDeleteAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_BATCH_DELETE_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1468,7 +1468,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		}
 
 		// 1.Perform business logic processing before batch update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdateBefore(ctx, req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdateBefore(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1482,7 +1482,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdateAfter(ctx, req.Items...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdateAfter(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1601,7 +1601,7 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 		}
 
 		// 1.Perform business logic processing before batch partial update resource.
-		if err = new(service.Factory[M]).Service().BatchUpdatePartialBefore(ctx, shouldUpdates...); err != nil {
+		if err = new(service.Factory[M]).Service().BatchUpdatePartialBefore(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE), shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1615,7 +1615,7 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 			}
 		}
 		// 3.Perform business logic processing after batch partial update resource.
-		if err := new(service.Factory[M]).Service().BatchUpdatePartialAfter(ctx, shouldUpdates...); err != nil {
+		if err := new(service.Factory[M]).Service().BatchUpdatePartialAfter(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_PARTIAL_AFTER), shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1798,7 +1798,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 
 		// 1.Perform business logic processing before list resources.
-		if err = new(service.Factory[M]).Service().ListBefore(helper.NewServiceContext(c), &data); err != nil {
+		if err = new(service.Factory[M]).Service().ListBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_EXPORT), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1826,14 +1826,14 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		// 3.Perform business logic processing after list resources.
-		if err = new(service.Factory[M]).Service().ListAfter(helper.NewServiceContext(c), &data); err != nil {
+		if err = new(service.Factory[M]).Service().ListAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_EXPORT), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
 		log.Info("export data length: ", len(data))
 		// 4.Export
-		exported, err := new(service.Factory[M]).Service().Export(helper.NewServiceContext(c), data...)
+		exported, err := new(service.Factory[M]).Service().Export(helper.NewServiceContext(c).WithPhase(consts.PHASE_EXPORT), data...)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1909,7 +1909,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		// check filetype
 
-		ml, err := new(service.Factory[M]).Service().Import(helper.NewServiceContext(c), buf)
+		ml, err := new(service.Factory[M]).Service().Import(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), buf)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1927,7 +1927,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			return
 		}
 		for _, m := range ml {
-			if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c), m); err != nil {
+			if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), m); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
