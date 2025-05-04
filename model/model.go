@@ -53,15 +53,21 @@ type Record struct {
 
 // IsValid check the model is valid.
 // If the model has `Request` or `Response` suffix, it will be returns false.
+// If the model only has `Base` field, it will be returns false.
 //
 // eg:
 //
 //	IsValid[*UserRequest]() returns false
 //	IsValid[*UserResponse]() returns false
 //	IsValid[*User]() returns true
+//	IsValid[*Empty]() returns false
 func IsValid[M types.Model]() bool {
 	typ := reflect.TypeOf(*new(M)).Elem()
 	if strings.HasSuffix(typ.Name(), "Request") || strings.HasSuffix(typ.Name(), "Response") {
+		return false
+	}
+	_, ok := typ.FieldByName("Base")
+	if typ.NumField() == 1 && ok {
 		return false
 	}
 	return true
@@ -300,6 +306,9 @@ func setID(m types.Model, id ...string) {
 		idField.SetString(id[0])
 	}
 }
+
+// Empty model always invalid and will never generate a database table automatically.
+type Empty struct{ Base }
 
 type GormTime time.Time
 
