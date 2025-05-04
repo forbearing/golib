@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 type sortByCreatedTime[M Model] []M
@@ -108,14 +110,58 @@ type ServiceContext struct {
 	SpanId    string
 	Seq       int
 
+	phase consts.Phase
+
 	request  any // custom http request.
 	response any // custom http response.
 }
 
-func (sc *ServiceContext) SetRequest(m any)  { sc.request = m }
+// SetRequest is called in the controller layer when the model has custom request type.
+// The custom request only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
+// BATCH_CREATE(POST), BATCH_UPDATE(PUT) and BATCH_UPDATE_PARTIAL(PATCH) operations.
+func (sc *ServiceContext) SetRequest(m any) { sc.request = m }
+
+// SetResponse is called in the controller layer if the model has custom response type.
+// The custom response only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
+// BATCH_CREATE(POST), BATCH_UPDATE(PUT) and BATCH_UPDATE_PARTIAL(PATCH) operations.
 func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
-func (sc *ServiceContext) GetRequest() any   { return sc.request }
-func (sc *ServiceContext) GetResponse() any  { return sc.response }
+
+// GetRequest is called in the service layer when the model has a custom request type.
+//
+// It returns the custom request object unmarshaled from the HTTP request body.
+// This method is only supported in the following service hooks:
+//
+//	CREATE_BEFORE (POST), CREATE_AFTER (POST)
+//	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
+//	UPDATE_PARTIAL_BEFORE (PATCH), UPDATE_PARTIAL_AFTER (PATCH)
+//	BATCH_CREATE_BEFORE (POST), BATCH_CREATE_AFTER (POST)
+//	BATCH_UPDATE_BEFORE (PUT), BATCH_UPDATE_AFTER (PUT)
+//	BATCH_UPDATE_PARTIAL_BEFORE (PATCH), BATCH_UPDATE_PARTIAL_AFTER (PATCH)
+//
+// For all other service hooks, GetRequest always returns nil, including:
+//
+//	DELETE_BEFORE (DELETE), DELETE_AFTER (DELETE)
+//	LIST_BEFORE (GET), LIST_AFTER (GET)
+//	GET_BEFORE (GET), GET_AFTER (GET)
+func (sc *ServiceContext) GetRequest() any { return sc.request }
+
+// GetResponse is typically called in the controller layer to return a custom response object to the client.
+// The response object is set in the following service hooks:
+//
+//	CREATE_BEFORE (POST), CREATE_AFTER (POST)
+//	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
+//	UPDATE_PARTIAL_BEFORE (PATCH), UPDATE_PARTIAL_AFTER (PATCH)
+//	BATCH_CREATE_BEFORE (POST), BATCH_CREATE_AFTER (POST)
+//	BATCH_UPDATE_BEFORE (PUT), BATCH_UPDATE_AFTER (PUT)
+//	BATCH_UPDATE_PARTIAL_BEFORE (PATCH), BATCH_UPDATE_PARTIAL_AFTER (PATCH)
+func (sc *ServiceContext) GetResponse() any { return sc.response }
+
+func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
+func (sc *ServiceContext) GetPhase() consts.Phase      { return sc.phase }
+func (sc *ServiceContext) WithPhase(phase consts.Phase) *ServiceContext {
+	sc.phase = phase
+	return sc
+}
 
 type ControllerConfig[M Model] struct {
 	DB        any // only support *gorm.DB
