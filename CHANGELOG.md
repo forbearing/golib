@@ -3,16 +3,18 @@
 
 
 <a name="v0.5.0"></a>
-## [v0.5.0] - 2025-05-03
+## [v0.5.0] - 2025-05-04
 ### Chore
 - **controller:** add TODO comments for DeleteBefore and DeleteAfter hooks
 - **deps:** upgrade dependencies to latest version
 - **deps:** go mod tidy
 - **docs:** update CHANGELOG.md
+- **docs:** update CHANGELOG.md
 - **example:** refactor(model): add json and schema tags to GroupRequest, GroupResponse
 - **example:** update
 - **example:** update
 - **example:** update
+- **examples:** update example myproject
 - **examples:** update example myproject
 - **types:** simplify parameter names in Model interface methods
 
@@ -20,19 +22,22 @@
 - update README.md
 
 ### Feat
-- support custom request and response
 - add package reflectmeta to cache reflect
+- support custom request and response
 - **cache:** add package cache/lrue and implements interface `Cache`
-- **cache:** add generic Cache[T]() shortcut using lrue backend
-- **cache:** add package cache/smap and implements interface `Cache`
-- **cache:** add package cache/bigcache and implements interface `Cache`
 - **cache:** add package cache/freecache and implements interface `Cache`
-- **config:** add cache config
+- **cache:** add package cache/bigcache and implements interface `Cache`
+- **cache:** add package cache/smap and implements interface `Cache`
+- **cache:** add generic Cache[T]() shortcut using lrue backend
 - **config:** increase default memcached.max_idle_conns to 100
+- **config:** add cache config
+- **controller:** trace and propagate service phase in ServiceContext
 - **controller:** prepare support captcha
 - **memcached:** provider/memcached implement interface `Cache`
+- **model:** add `Empty` model and it is always invalid
 - **openapigen:** support custom request and response
 - **redis:** implement interface `Cache`
+- **types:** add phase field and methods to ServiceContext with enhanced docs
 
 ### Fix
 - **config:** avoid creating config file in test environment
