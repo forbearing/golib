@@ -7,15 +7,12 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
-	jsoniter "github.com/json-iterator/go"
+	"github.com/forbearing/golib/util"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.uber.org/zap"
 )
 
-var (
-	json     = jsoniter.ConfigCompatibleWithStandardLibrary
-	cacheMap = cmap.New[any]()
-)
+var cacheMap = cmap.New[any]()
 
 func Init() error {
 	return nil
@@ -37,7 +34,7 @@ func Cache[T any]() types.Cache[T] {
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
-	val, err := json.Marshal(value)
+	val, err := util.Marshal(value)
 	if err != nil {
 		zap.S().Error(err)
 	} else {
@@ -55,7 +52,7 @@ func (c *cache[T]) Get(key string) (T, bool) {
 		return zero, false
 	}
 	var result T
-	err = json.Unmarshal(val, &result)
+	err = util.Unmarshal(val, &result)
 	if err != nil {
 		zap.S().Error(err)
 		return zero, false
