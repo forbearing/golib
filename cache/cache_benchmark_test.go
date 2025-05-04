@@ -9,6 +9,7 @@ import (
 	"github.com/forbearing/golib/cache"
 	"github.com/forbearing/golib/cache/bigcache"
 	"github.com/forbearing/golib/cache/cmap"
+	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
@@ -176,6 +177,9 @@ func BenchmarkCache(b *testing.B) {
 		b.Run("freecache", func(b *testing.B) {
 			benchInt(b, freecache.Cache[int]())
 		})
+		b.Run("fastcache", func(b *testing.B) {
+			benchInt(b, fastcache.Cache[int]())
+		})
 		b.Run("redis", func(b *testing.B) {
 			benchInt(b, redis.Cache[int]())
 		})
@@ -205,6 +209,9 @@ func BenchmarkCache(b *testing.B) {
 		b.Run("freecache", func(b *testing.B) {
 			benchString(b, freecache.Cache[string]())
 		})
+		b.Run("fastcache", func(b *testing.B) {
+			benchString(b, fastcache.Cache[string]())
+		})
 		b.Run("redis", func(b *testing.B) {
 			benchString(b, redis.Cache[string]())
 		})
@@ -233,6 +240,9 @@ func BenchmarkCache(b *testing.B) {
 		})
 		b.Run("freecache", func(b *testing.B) {
 			benchUser(b, freecache.Cache[User]())
+		})
+		b.Run("fastcache", func(b *testing.B) {
+			benchUser(b, fastcache.Cache[User]())
 		})
 		b.Run("redis", func(b *testing.B) {
 			benchUser(b, redis.Cache[User]())
