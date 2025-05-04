@@ -41,7 +41,12 @@ type Response struct {
 	Field6 struct{}
 }
 
-func TestHasRequest(t *testing.T) {
+func TestIsValid(t *testing.T) {
+	assert.False(t, model.IsValid[*model.Empty]())
+	assert.True(t, model.IsValid[*model.User]())
+}
+
+func TestHasRequestHasResponse(t *testing.T) {
 	assert.Equal(t, false, model.HasRequest[*User]())
 	assert.Equal(t, false, model.HasResponse[*User]())
 
