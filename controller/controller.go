@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -214,13 +215,13 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		if hasCustomResp {
 			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), ctx.GetResponse())
 		} else if hasCustomReq {
 			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated))
 		} else {
 			// Does not have custom response, the response type is the same as the resource type.
-			ResponseJSON(c, CodeSuccess, req)
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 		}
 	}
 }
@@ -347,7 +348,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			})
 		}
 
-		ResponseJSON(c, CodeSuccess)
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusNoContent))
 	}
 }
 
@@ -1316,10 +1317,10 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 
 		if hasCustomResp {
 			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), ctx.GetResponse())
 		} else if hasCustomReq {
 			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated))
 		} else {
 			// Does not have custom request, the request type is the same as the resource type.
 			// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
@@ -1330,7 +1331,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 					Failed:    0,
 				}
 			}
-			ResponseJSON(c, CodeSuccess, req)
+			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 		}
 	}
 }
@@ -1418,7 +1419,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		req.Items = nil
 		req.Options = nil
 		// not response req.
-		ResponseJSON(c, CodeSuccess)
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusNoContent))
 	}
 }
 
