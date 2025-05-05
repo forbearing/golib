@@ -314,9 +314,8 @@ type Cache[T any] interface {
 	Peek(key string) (T, bool)
 	Delete(key string)
 	Exists(key string) bool
-	Keys() []string
 	Len() int
-	Flush()
+	Clear()
 
 	// Increment(key string, delta int64) (int64, error)
 	// Decrement(key string, delta int64) (int64, error)

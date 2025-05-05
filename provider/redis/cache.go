@@ -84,21 +84,6 @@ func (*cache[T]) Exists(key string) bool {
 	return err == nil && res > 0
 }
 
-func (*cache[T]) Keys() []string {
-	if !initialized {
-		zap.S().Warn("redis not initialized")
-		return []string{}
-	}
-	// WARNING: KEYS * is not recommended in production!
-	// In Redis Cluster, this only works on a single node.
-	keys, err := cli.Keys(context.Background(), "*").Result()
-	if err != nil {
-		zap.S().Error(err)
-		return []string{}
-	}
-	return keys
-}
-
 func (*cache[T]) Len() int {
 	if !initialized {
 		zap.S().Warn("redis not initialized")
@@ -113,7 +98,7 @@ func (*cache[T]) Len() int {
 	return int(count)
 }
 
-func (*cache[T]) Flush() {
+func (*cache[T]) Clear() {
 	if !initialized {
 		zap.S().Warn("redis not initialized")
 		return

@@ -65,16 +65,8 @@ func (c *cache[T]) Exists(key string) bool {
 	return exists
 }
 
-func (c *cache[T]) Keys() []string {
-	keys := make([]string, 0, 1024)
-	c.m.Range(func(key, _ any) bool {
-		keys = append(keys, key.(string))
-		return true
-	})
-	return keys
-}
 func (c *cache[T]) Len() int { return int(c.n) }
-func (c *cache[T]) Flush() {
+func (c *cache[T]) Clear() {
 	c.m.Range(func(key, _ any) bool {
 		c.m.Delete(key)
 		return true

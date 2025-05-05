@@ -66,15 +66,10 @@ func (c *cache[T]) Delete(key string) {
 	c.c.Delete(key)
 }
 
-func (c *cache[T]) Keys() []string {
-	return []string{}
-}
-
 func (c *cache[T]) Len() int {
 	return c.c.ItemCount()
 }
 
-func (c *cache[T]) Flush() {
+func (c *cache[T]) Clear() {
 	c.c.Clear()
 }
-
