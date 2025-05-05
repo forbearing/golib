@@ -2,6 +2,38 @@
 ## [Unreleased]
 
 
+<a name="v0.5.1"></a>
+## [v0.5.1] - 2025-05-05
+### Chore
+- change delay build in air config
+- **cache:** rename implementation files to cache.go for consistency
+- **docs:** update CHANGELOG.md
+- **example:** update examples/myproject
+
+### Docs
+- update interface Cache docs
+
+### Feat
+- support cursor-based pagination
+- **cache:** add cache ristretto
+- **cache:** support go-cache
+- **cache:** support ccache
+- **cache:** support fastcache
+- **controller:** use correct HTTP status code(201/204) in create and delete responses
+- **response:** Code add method `WithStatus` to replace deafult http status
+- **router:** add "/-/api/redoc" endpoint for Redoc API documentation
+- **util:** add Marshal,Unmarshal
+
+### Fix
+- **cache:** ensure thread-safe cacheMap initialization with double-check locking
+
+### Perf
+- **cache:** replace json.Marshal/Unmarshal with util.Marshal/Unmarshal for faster Go base type serialization
+
+### Test
+- **cache:** split test case
+
+
 <a name="v0.5.0"></a>
 ## [v0.5.0] - 2025-05-04
 ### Chore
@@ -1255,7 +1287,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.1...HEAD
+[v0.5.1]: https://github.com/forbearing/golib/compare/v0.5.0...v0.5.1
 [v0.5.0]: https://github.com/forbearing/golib/compare/v0.4.4...v0.5.0
 [v0.4.4]: https://github.com/forbearing/golib/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/forbearing/golib/compare/v0.4.2...v0.4.3
