@@ -48,6 +48,7 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
+	github.com/karlseguin/ccache/v3 v3.0.6
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.16
 	github.com/minio/minio-go/v7 v7.0.91
 	github.com/mssola/useragent v1.0.0
