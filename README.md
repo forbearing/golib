@@ -139,6 +139,7 @@ type DatabaseOption[M Model] interface {
 	WithDebug() Database[M]
 	WithQuery(query M, fuzzyMatch ...bool) Database[M]
 	WithQueryRaw(query any, args ...any) Database[M]
+	WithCursor(string, bool, ...string) Database[M]
 	WithAnd(...bool) Database[M]
 	WithOr(...bool) Database[M]
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]

@@ -127,6 +127,23 @@ type DatabaseOption[M Model] interface {
 	// - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
 	WithQueryRaw(query any, args ...any) Database[M]
 
+	// WithCursor enables cursor-based pagination.
+	// cursorValue is the value of the last record in the previous page.
+	// next indicates the direction of pagination:
+	//   - true: fetch records after the cursor (next page)
+	//   - false: fetch records before the cursor (previous page)
+	//
+	// Example:
+	//
+	//	// First page (no cursor)
+	//	database.Database[*model.User]().WithLimit(10).List(&users)
+	//	// Next page (using last user's ID as cursor)
+	//	lastID := users[len(users)-1].ID
+	//	database.Database[*model.User]().WithCursor(lastID, true).WithLimit(10).List(&nextUsers)
+	//	// Next page (using last user id as cursor)
+	//	database.Database[*model.User]().WithCursor(lastID, true, "user_id").WithLimit(10).List(&nextUsers)
+	WithCursor(string, bool, ...string) Database[M]
+
 	// WithAnd with AND query condition(default).
 	// It must be called before WithQuery.
 	WithAnd(...bool) Database[M]

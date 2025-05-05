@@ -790,8 +790,11 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		var or bool
 		var fuzzy bool
 		var expands []string
+		var cursorNext bool
 		var nototal bool // default enable total.
-		nocache := true  // default disable cache.
+		cursorValue := c.Query(consts.QUERY_CURSOR_VALUE)
+		cursorFields := c.Query(consts.QUERY_CURSOR_FIELDS)
+		nocache := true // default disable cache.
 		depth := 1
 		data := make([]M, 0)
 		if nocacheStr, ok := c.GetQuery(consts.QUERY_NOCACHE); ok {
@@ -805,6 +808,9 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		}
 		if fuzzyStr, ok := c.GetQuery(consts.QUERY_FUZZY); ok {
 			fuzzy, _ = strconv.ParseBool(fuzzyStr)
+		}
+		if cursorNextStr, ok := c.GetQuery(consts.QUERY_CURSOR_NEXT); ok {
+			cursorNext, _ = strconv.ParseBool(cursorNextStr)
 		}
 		if depthStr, ok := c.GetQuery(consts.QUERY_DEPTH); ok {
 			depth, _ = strconv.Atoi(depthStr)
@@ -874,6 +880,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			WithSelect(strings.Split(selects, ",")...).
 			WithQuery(svc.Filter(svcCtx, m), fuzzy).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
+			WithCursor(cursorValue, cursorNext, cursorFields).
 			WithExclude(m.Excludes()).
 			WithExpand(expands, sortBy).
 			WithOrder(sortBy).
@@ -896,7 +903,8 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 		total := new(int64)
 		nototalStr, _ := c.GetQuery(consts.QUERY_NOTOTAL)
 		nototal, _ = strconv.ParseBool(nototalStr)
-		if !nototal {
+		// NOTE: Total count is not provided when using cursor-based pagination.
+		if !nototal && len(cursorValue) == 0 {
 			if err := handler(helper.NewDatabaseContext(c)).
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
