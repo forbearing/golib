@@ -54,6 +54,7 @@ require (
 	github.com/mssola/useragent v1.0.0
 	github.com/nats-io/nats.go v1.41.2
 	github.com/orcaman/concurrent-map/v2 v2.0.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/sftp v1.13.9
 	github.com/prometheus/client_golang v1.22.0
 	github.com/redis/go-redis/v9 v9.8.0
@@ -198,7 +199,6 @@ require (
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pdfcpu/pdfcpu v0.9.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
