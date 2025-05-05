@@ -25,6 +25,7 @@ require (
 	github.com/cockroachdb/errors v1.11.3
 	github.com/coocood/freecache v1.2.4
 	github.com/creasty/defaults v1.8.0
+	github.com/dgraph-io/ristretto/v2 v2.2.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/gabriel-vasile/mimetype v1.4.9

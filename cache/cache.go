@@ -9,6 +9,7 @@ import (
 	"github.com/forbearing/golib/cache/gocache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
+	"github.com/forbearing/golib/cache/ristretto"
 	"github.com/forbearing/golib/cache/smap"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
@@ -25,6 +26,7 @@ func Init() error {
 		freecache.Init,
 		ccache.Init,
 		gocache.Init,
+		ristretto.Init,
 	)
 }
 
