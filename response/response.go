@@ -97,15 +97,11 @@ func (r Code) Msg() string {
 }
 
 func (r Code) WithStatus(status int) Code {
-	return NewCode(status, r.Msg())
+	return NewCode(r, status, r.Msg())
 }
 
 func (r Code) WithErr(err error) Code {
-	return NewCode(r.Status(), err.Error())
-}
-
-func (r Code) String() string {
-	return r.Msg()
+	return NewCode(r, r.Status(), err.Error())
 }
 
 func (r Code) Status() int {
@@ -120,8 +116,7 @@ func (r Code) Code() int {
 	return int(r)
 }
 
-func NewCode(status int, msg string) Code {
-	code := -1
+func NewCode(code Code, status int, msg string) Code {
 	codeValueMap[Code(code)] = codeValue{
 		Status: status,
 		Msg:    msg,
