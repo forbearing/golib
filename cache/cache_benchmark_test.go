@@ -15,6 +15,7 @@ import (
 	"github.com/forbearing/golib/cache/gocache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
+	"github.com/forbearing/golib/cache/ristretto"
 	"github.com/forbearing/golib/cache/smap"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger/zap"
@@ -52,21 +53,18 @@ func init() {
 }
 
 func BenchmarkInt(b *testing.B) {
-	// b.Run("cache", func(b *testing.B) {
-	// 	benchInt(b, cache.Cache[int]())
-	// })
-	// b.Run("lru", func(b *testing.B) {
-	// 	benchInt(b, lru.Cache[int]())
-	// })
-	// b.Run("lrue", func(b *testing.B) {
-	// 	benchInt(b, lrue.Cache[int]())
-	// })
-	// b.Run("cmap", func(b *testing.B) {
-	// 	benchInt(b, cmap.Cache[int]())
-	// })
-	// b.Run("smap", func(b *testing.B) {
-	// 	benchInt(b, smap.Cache[int]())
-	// })
+	b.Run("lru", func(b *testing.B) {
+		benchInt(b, lru.Cache[int]())
+	})
+	b.Run("lrue", func(b *testing.B) {
+		benchInt(b, lrue.Cache[int]())
+	})
+	b.Run("cmap", func(b *testing.B) {
+		benchInt(b, cmap.Cache[int]())
+	})
+	b.Run("smap", func(b *testing.B) {
+		benchInt(b, smap.Cache[int]())
+	})
 	b.Run("bigcache", func(b *testing.B) {
 		benchInt(b, bigcache.Cache[int]())
 	})
@@ -82,18 +80,18 @@ func BenchmarkInt(b *testing.B) {
 	b.Run("gocache", func(b *testing.B) {
 		benchInt(b, gocache.Cache[int]())
 	})
-	// b.Run("redis", func(b *testing.B) {
-	// 	benchInt(b, redis.Cache[int]())
-	// })
-	// b.Run("memcached", func(b *testing.B) {
-	// 	benchInt(b, memcached.Cache[int]())
-	// })
+	b.Run("ristretto", func(b *testing.B) {
+		benchInt(b, ristretto.Cache[int]())
+	})
+	b.Run("redis", func(b *testing.B) {
+		benchInt(b, redis.Cache[int]())
+	})
+	b.Run("memcached", func(b *testing.B) {
+		benchInt(b, memcached.Cache[int]())
+	})
 }
 
 func BenchmarkIntParallel(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchIntParallel(b, cache.Cache[int]())
-	})
 	b.Run("lru", func(b *testing.B) {
 		benchIntParallel(b, lru.Cache[int]())
 	})
@@ -118,6 +116,12 @@ func BenchmarkIntParallel(b *testing.B) {
 	b.Run("ccache", func(b *testing.B) {
 		benchIntParallel(b, ccache.Cache[int]())
 	})
+	b.Run("gocache", func(b *testing.B) {
+		benchIntParallel(b, gocache.Cache[int]())
+	})
+	b.Run("ristretto", func(b *testing.B) {
+		benchIntParallel(b, ristretto.Cache[int]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchIntParallel(b, redis.Cache[int]())
 	})
@@ -127,9 +131,6 @@ func BenchmarkIntParallel(b *testing.B) {
 }
 
 func BenchmarkString(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchString(b, cache.Cache[string]())
-	})
 	b.Run("lru", func(b *testing.B) {
 		benchString(b, lru.Cache[string]())
 	})
@@ -154,6 +155,12 @@ func BenchmarkString(b *testing.B) {
 	b.Run("ccache", func(b *testing.B) {
 		benchString(b, ccache.Cache[string]())
 	})
+	b.Run("gocache", func(b *testing.B) {
+		benchString(b, gocache.Cache[string]())
+	})
+	b.Run("ristretto", func(b *testing.B) {
+		benchString(b, ristretto.Cache[string]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchString(b, redis.Cache[string]())
 	})
@@ -163,9 +170,6 @@ func BenchmarkString(b *testing.B) {
 }
 
 func BenchmarkStringParallel(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchStringParallel(b, cache.Cache[string]())
-	})
 	b.Run("lru", func(b *testing.B) {
 		benchStringParallel(b, lru.Cache[string]())
 	})
@@ -190,6 +194,12 @@ func BenchmarkStringParallel(b *testing.B) {
 	b.Run("ccache", func(b *testing.B) {
 		benchStringParallel(b, ccache.Cache[string]())
 	})
+	b.Run("gocache", func(b *testing.B) {
+		benchStringParallel(b, gocache.Cache[string]())
+	})
+	b.Run("ristretto", func(b *testing.B) {
+		benchStringParallel(b, ristretto.Cache[string]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchStringParallel(b, redis.Cache[string]())
 	})
@@ -199,9 +209,6 @@ func BenchmarkStringParallel(b *testing.B) {
 }
 
 func BenchmarkUser(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchUser(b, cache.Cache[User]())
-	})
 	b.Run("lru", func(b *testing.B) {
 		benchUser(b, lru.Cache[User]())
 	})
@@ -226,6 +233,12 @@ func BenchmarkUser(b *testing.B) {
 	b.Run("ccache", func(b *testing.B) {
 		benchUser(b, ccache.Cache[User]())
 	})
+	b.Run("gocache", func(b *testing.B) {
+		benchUser(b, gocache.Cache[User]())
+	})
+	b.Run("ristretto", func(b *testing.B) {
+		benchUser(b, ristretto.Cache[User]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchUser(b, redis.Cache[User]())
 	})
@@ -235,9 +248,6 @@ func BenchmarkUser(b *testing.B) {
 }
 
 func BenchmarkUserParallel(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchUserParallel(b, cache.Cache[User]())
-	})
 	b.Run("lru", func(b *testing.B) {
 		benchUserParallel(b, lru.Cache[User]())
 	})
@@ -261,6 +271,12 @@ func BenchmarkUserParallel(b *testing.B) {
 	})
 	b.Run("ccache", func(b *testing.B) {
 		benchUserParallel(b, ccache.Cache[User]())
+	})
+	b.Run("gocache", func(b *testing.B) {
+		benchUserParallel(b, gocache.Cache[User]())
+	})
+	b.Run("ristretto", func(b *testing.B) {
+		benchUserParallel(b, ristretto.Cache[User]())
 	})
 	b.Run("redis", func(b *testing.B) {
 		benchUserParallel(b, redis.Cache[User]())
