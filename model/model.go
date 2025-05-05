@@ -250,6 +250,11 @@ type Base struct {
 	Select     string  `json:"-" gorm:"-" schema:"_select" url:"_select,omitempty"`           // Query parameter: eg: "_select=field1,field2"
 	Nototal    bool    `json:"-" gorm:"-" schema:"_nototal" url:"_nototal,omitempty"`         // Query parameter: eg: "_nototal=true"
 
+	// cursor pagination
+	CursorValue  *string `json:"-" gorm:"-" schema:"_cursor_value" url:"_cursor_value,omitempty"`   // Query parameter: eg: "_cursor_value=0196a0b3-c9d1-713c-870e-adc76af9f857"
+	CursorFields string  `json:"-" gorm:"-" schema:"_cursor_fields" url:"_cursor_fields,omitempty"` // Query parameter: eg: "_cursor_fields=field1,field2"
+	CursorNext   bool    `json:"-" gorm:"-" schema:"_cursor_next" url:"_cursor_next,omitempty"`     // Query parameter: eg: "_cursor_next=true"
+
 	gorm.Model `json:"-" schema:"-" url:"-"`
 }
 

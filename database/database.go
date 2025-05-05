@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -70,6 +71,12 @@ type database[M types.Model] struct {
 	inTransaction bool   // in transaction
 	tryRun        bool   // try run
 
+	// cursor pagination
+	cursorField  string // field used for cursor pagination, default is "id"
+	cursorValue  string // cursor value for pagination
+	cursorNext   bool   // direction of cursor pagination, true for next page, false for previous page
+	enableCursor bool   // enable cursor pagination
+
 	shouldAutoMigrate bool
 }
 
@@ -90,6 +97,13 @@ func (db *database[M]) reset() {
 	db.inTransaction = false
 	db.shouldAutoMigrate = false
 	db.tryRun = false
+
+	// reset cursor pagination fields
+	db.cursorField = ""
+	db.cursorValue = ""
+	db.cursorNext = true
+	db.enableCursor = false
+
 	db.db = DB.WithContext(context.Background())
 }
 
@@ -558,6 +572,62 @@ func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
 	defer db.mu.Unlock()
 	db.db = db.db.Where(query, args...)
 	return db
+}
+
+// WithCursor enables cursor-based pagination.
+// cursorValue is the value of the last record in the previous page.
+// next indicates the direction of pagination:
+//   - true: fetch records after the cursor (next page)
+//   - false: fetch records before the cursor (previous page)
+//
+// Example:
+//
+//	// First page (no cursor)
+//	db.Database[*model.User]().WithLimit(10).List(&users)
+//	// Next page (using last user's ID as cursor)
+//	lastID := users[len(users)-1].ID
+//	db.Database[*model.User]().WithCursor(lastID, true).WithLimit(10).List(&nextUsers)
+//	db.Database[*model.User]().WithCursor(lastID, true, "created_at").WithLimit(10).List(&nextUsers)
+func (db *database[M]) WithCursor(cursorValue string, next bool, fields ...string) types.Database[M] {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if len(cursorValue) == 0 {
+		return db
+	}
+
+	db.enableCursor = true
+	db.cursorValue = cursorValue
+	db.cursorNext = next
+
+	// TODO: support multiple cursor fields
+	if len(fields) > 0 {
+		db.cursorField = fields[0]
+	}
+	// Default cursor field is "id" if not specified
+	if db.cursorField == "" {
+		db.cursorField = "id"
+	}
+
+	return db
+}
+
+// applyCursorPagination applies cursor-based pagination to the query if cursor is set.
+func (db *database[M]) applyCursorPagination() {
+	if db.enableCursor {
+		// Apply cursor condition based on direction
+		if db.cursorNext {
+			// Next page: get records after the cursor
+			db.db = db.db.Where(fmt.Sprintf("`%s` > ?", db.cursorField), db.cursorValue)
+			// Order by cursor field ascending for next page
+			db.db = db.db.Order(fmt.Sprintf("`%s` ASC", db.cursorField))
+		} else {
+			// Previous page: get records before the cursor
+			db.db = db.db.Where(fmt.Sprintf("`%s` < ?", db.cursorField), db.cursorValue)
+			// Order by cursor field descending for previous page
+			db.db = db.db.Order(fmt.Sprintf("`%s` DESC", db.cursorField))
+		}
+	}
 }
 
 // WithTimeRange
@@ -1514,9 +1584,17 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
+	// apply cursor-based pagination.
+	db.applyCursorPagination()
 	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
 		return err
 	}
+	// If cursor-based pagination is enabled and this is a previous page query,
+	// reverse the list to mantain the original sort order.
+	if db.enableCursor && !db.cursorNext {
+		slices.Reverse(*dest)
+	}
+
 	// Invoke model hook: ListAfter()
 	for i := range *dest {
 		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
