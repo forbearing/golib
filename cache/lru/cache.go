@@ -2,6 +2,7 @@ package lru
 
 import (
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/forbearing/golib/config"
@@ -13,6 +14,7 @@ import (
 var (
 	cacheMap = cmap.New[any]()
 	tmp      *lru.Cache[string, any] // tmp is a temporary cache used to check the config is correct.
+	mu       sync.Mutex
 )
 
 func Init() (err error) {
@@ -31,8 +33,16 @@ func Cache[T any]() types.Cache[T] {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
-	// lru.New() only error on negative size.
+	if exists {
+		return val.(*cache[T])
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	val, exists = cacheMap.Get(key)
 	if !exists {
+		// lru.New() only error on negative size.
 		_lru, _ := lru.New[string, T](config.App.Cache.Capacity)
 		val = &cache[T]{c: _lru}
 		cacheMap.Set(key, val)

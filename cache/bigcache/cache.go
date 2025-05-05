@@ -2,6 +2,7 @@ package bigcache
 
 import (
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/allegro/bigcache"
@@ -16,6 +17,7 @@ var (
 	cacheMap = cmap.New[any]()
 
 	tmp *bigcache.BigCache // tmp is a temporary cache used to check the config is correct.
+	mu  sync.Mutex
 
 	defaultExpire    = time.Hour
 	maxEntrySize     = 1024 // 1KB
@@ -40,6 +42,14 @@ func Cache[T any]() types.Cache[T] {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
+	if exists {
+		return val.(*cache[T])
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	val, exists = cacheMap.Get(key)
 	if !exists {
 		val = &cache[T]{c: newBigCache()}
 		cacheMap.Set(key, val)
