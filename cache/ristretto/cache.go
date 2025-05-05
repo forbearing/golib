@@ -2,6 +2,7 @@ package ristretto
 
 import (
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -12,7 +13,8 @@ import (
 
 var (
 	cacheMap = cmap.New[any]()
-	tmp      *ristretto.Cache[string, any]
+	tmp      *ristretto.Cache[string, any] // tmp is a temporary cache used to check the config is correct.
+	mu       sync.Mutex
 )
 
 func Init() (err error) {
@@ -31,6 +33,14 @@ func Cache[T any]() types.Cache[T] {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
+	if exists {
+		return val.(*cache[T])
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	val, exists = cacheMap.Get(key)
 	if !exists {
 		c, _ := ristretto.NewCache(buildConf[T]())
 		val = &cache[T]{c: c}

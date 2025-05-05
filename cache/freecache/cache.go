@@ -2,6 +2,7 @@ package freecache
 
 import (
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/coocood/freecache"
@@ -12,7 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var cacheMap = cmap.New[any]()
+var (
+	cacheMap = cmap.New[any]()
+	mu       sync.Mutex
+)
 
 func Init() error {
 	return nil
@@ -26,6 +30,14 @@ func Cache[T any]() types.Cache[T] {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
+	if exists {
+		return val.(*cache[T])
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	val, exists = cacheMap.Get(key)
 	if !exists {
 		val = &cache[T]{c: freecache.NewCache(config.App.Cache.Capacity)}
 		cacheMap.Set(key, val)
