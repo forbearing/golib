@@ -84,15 +84,6 @@ func (c *cache[T]) Exists(key string) bool {
 	return err == nil
 }
 
-func (c *cache[T]) Keys() []string {
-	if !initialized {
-		zap.S().Warn("memcached not initialized")
-		return []string{}
-	}
-	// NOTE: memcached don't support.
-	return []string{}
-}
-
 func (c *cache[T]) Len() int {
 	if !initialized {
 		zap.S().Warn("memcached not initialized")
@@ -102,7 +93,7 @@ func (c *cache[T]) Len() int {
 	return 0
 }
 
-func (c *cache[T]) Flush() {
+func (c *cache[T]) Clear() {
 	if !initialized {
 		zap.S().Warn("memcached not initialized")
 		return

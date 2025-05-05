@@ -83,19 +83,6 @@ func (c *cache[T]) Exists(key string) bool {
 	return err == nil
 }
 
-func (c *cache[T]) Keys() []string {
-	keys := make([]string, 0)
-	iterator := c.c.Iterator()
-	for iterator.SetNext() {
-		entry, err := iterator.Value()
-		if err != nil {
-			continue
-		}
-		keys = append(keys, entry.Key())
-	}
-	return keys
-}
-
 func (c *cache[T]) Len() int {
 	count := 0
 	iterator := c.c.Iterator()
@@ -107,7 +94,7 @@ func (c *cache[T]) Len() int {
 	}
 	return count
 }
-func (c *cache[T]) Flush() { c.c.Reset() }
+func (c *cache[T]) Clear() { c.c.Reset() }
 
 func newBigCache() *bigcache.BigCache {
 	cache, _ := bigcache.NewBigCache(buildConfig())

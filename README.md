@@ -258,9 +258,8 @@ type Cache[T any] interface {
 	Peek(key string) (T, bool)
 	Delete(key string)
 	Exists(key string) bool
-	Keys() []string
 	Len() int
-	Flush()
+	Clear()
 }
 ```
 

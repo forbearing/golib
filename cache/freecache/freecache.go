@@ -70,14 +70,5 @@ func (c *cache[T]) Exists(key string) bool {
 	return err == nil
 }
 
-func (c *cache[T]) Keys() []string {
-	keys := make([]string, 0)
-	it := c.c.NewIterator()
-	for entry := it.Next(); entry != nil; entry = it.Next() {
-		keys = append(keys, string(entry.Key))
-	}
-	return keys
-}
-
 func (c *cache[T]) Len() int { return int(c.c.EntryCount()) }
-func (c *cache[T]) Flush()   { c.c.Clear() }
+func (c *cache[T]) Clear()   { c.c.Clear() }

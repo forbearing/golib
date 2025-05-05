@@ -34,6 +34,5 @@ func (c *cache[T]) Get(key string) (T, bool)                 { return c.c.Get(ke
 func (c *cache[T]) Peek(key string) (T, bool)                { return c.c.Get(key) }
 func (c *cache[T]) Delete(key string)                        { c.c.Remove(key) }
 func (c *cache[T]) Exists(key string) bool                   { return c.c.Has(key) }
-func (c *cache[T]) Keys() []string                           { return c.c.Keys() }
 func (c *cache[T]) Len() int                                 { return c.c.Count() }
-func (c *cache[T]) Flush()                                   { c.c.Clear() }
+func (c *cache[T]) Clear()                                   { c.c.Clear() }

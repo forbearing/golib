@@ -1071,7 +1071,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1186,7 +1186,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1291,7 +1291,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1368,7 +1368,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	defer done(err)
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Flush()
+		defer cache.Cache[[]M]().Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
