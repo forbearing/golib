@@ -341,7 +341,7 @@ func main() {
 	router.API().POST("/login", pkgcontroller.User.Login)
 	router.API().POST("/signup", pkgcontroller.User.Signup)
 	router.API().DELETE("/logout", middleware.JwtAuth(), pkgcontroller.User.Logout)
-	router.API().POST("token/refresh", pkgcontroller.User.RefreshToken)
+	router.API().POST("/token/refresh", pkgcontroller.User.RefreshToken)
 	router.API().GET("/debug/debug", Debug.Debug)
 
 	router.API().Use(
