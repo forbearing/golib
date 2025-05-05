@@ -8,6 +8,7 @@ import (
 
 	"github.com/forbearing/golib/cache"
 	"github.com/forbearing/golib/cache/bigcache"
+	"github.com/forbearing/golib/cache/ccache"
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
@@ -74,6 +75,9 @@ func BenchmarkInt(b *testing.B) {
 	b.Run("fastcache", func(b *testing.B) {
 		benchInt(b, fastcache.Cache[int]())
 	})
+	b.Run("ccache", func(b *testing.B) {
+		benchInt(b, ccache.Cache[int]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchInt(b, redis.Cache[int]())
 	})
@@ -106,6 +110,9 @@ func BenchmarkIntParallel(b *testing.B) {
 	})
 	b.Run("fastcache", func(b *testing.B) {
 		benchIntParallel(b, fastcache.Cache[int]())
+	})
+	b.Run("ccache", func(b *testing.B) {
+		benchIntParallel(b, ccache.Cache[int]())
 	})
 	b.Run("redis", func(b *testing.B) {
 		benchIntParallel(b, redis.Cache[int]())
@@ -140,6 +147,9 @@ func BenchmarkString(b *testing.B) {
 	b.Run("fastcache", func(b *testing.B) {
 		benchString(b, fastcache.Cache[string]())
 	})
+	b.Run("ccache", func(b *testing.B) {
+		benchString(b, ccache.Cache[string]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchString(b, redis.Cache[string]())
 	})
@@ -172,6 +182,9 @@ func BenchmarkStringParallel(b *testing.B) {
 	})
 	b.Run("fastcache", func(b *testing.B) {
 		benchStringParallel(b, fastcache.Cache[string]())
+	})
+	b.Run("ccache", func(b *testing.B) {
+		benchStringParallel(b, ccache.Cache[string]())
 	})
 	b.Run("redis", func(b *testing.B) {
 		benchStringParallel(b, redis.Cache[string]())
@@ -206,6 +219,9 @@ func BenchmarkUser(b *testing.B) {
 	b.Run("fastcache", func(b *testing.B) {
 		benchUser(b, fastcache.Cache[User]())
 	})
+	b.Run("ccache", func(b *testing.B) {
+		benchUser(b, ccache.Cache[User]())
+	})
 	b.Run("redis", func(b *testing.B) {
 		benchUser(b, redis.Cache[User]())
 	})
@@ -238,6 +254,9 @@ func BenchmarkUserParallel(b *testing.B) {
 	})
 	b.Run("fastcache", func(b *testing.B) {
 		benchUserParallel(b, fastcache.Cache[User]())
+	})
+	b.Run("ccache", func(b *testing.B) {
+		benchUserParallel(b, ccache.Cache[User]())
 	})
 	b.Run("redis", func(b *testing.B) {
 		benchUserParallel(b, redis.Cache[User]())

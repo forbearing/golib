@@ -2,6 +2,7 @@ package cache
 
 import (
 	"github.com/forbearing/golib/cache/bigcache"
+	"github.com/forbearing/golib/cache/ccache"
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
@@ -21,6 +22,7 @@ func Init() error {
 		fastcache.Init,
 		bigcache.Init,
 		freecache.Init,
+		ccache.Init,
 	)
 }
 
