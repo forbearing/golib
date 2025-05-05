@@ -43,7 +43,7 @@ func (*user) Login(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many login requests")
-		ResponseJSON(c, response.NewCode(http.StatusTooManyRequests, "too many login requests"))
+		ResponseJSON(c, response.NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many login requests"))
 		return
 	}
 
@@ -132,7 +132,7 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many signup requests")
-		ResponseJSON(c, response.NewCode(http.StatusTooManyRequests, "too many signup requests"))
+		ResponseJSON(c, response.NewCode(response.CodeTooManyRequests, http.StatusTooManyRequests, "too many signup requests"))
 		return
 	}
 
@@ -145,12 +145,12 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if err = validateUsername(req.Name); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if err = validatePassword(req.Password); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if req.Password != req.RePassword {
