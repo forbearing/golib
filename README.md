@@ -253,13 +253,13 @@ type RBAC interface {
 
 ```go
 type Cache[T any] interface {
-	Set(key string, values T)
+	Set(key string, values T, ttl time.Duration)
 	Get(key string) (T, bool)
 	Peek(key string) (T, bool)
-	Remove(key string)
+	Delete(key string)
 	Exists(key string) bool
 	Keys() []string
-	Count() int
+	Len() int
 	Flush()
 }
 ```
