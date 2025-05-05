@@ -6,6 +6,7 @@ import (
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
+	"github.com/forbearing/golib/cache/gocache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
 	"github.com/forbearing/golib/cache/smap"
@@ -23,6 +24,7 @@ func Init() error {
 		bigcache.Init,
 		freecache.Init,
 		ccache.Init,
+		gocache.Init,
 	)
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/cache/cmap"
 	"github.com/forbearing/golib/cache/fastcache"
 	"github.com/forbearing/golib/cache/freecache"
+	"github.com/forbearing/golib/cache/gocache"
 	"github.com/forbearing/golib/cache/lru"
 	"github.com/forbearing/golib/cache/lrue"
 	"github.com/forbearing/golib/cache/smap"
@@ -51,21 +52,21 @@ func init() {
 }
 
 func BenchmarkInt(b *testing.B) {
-	b.Run("cache", func(b *testing.B) {
-		benchInt(b, cache.Cache[int]())
-	})
-	b.Run("lru", func(b *testing.B) {
-		benchInt(b, lru.Cache[int]())
-	})
-	b.Run("lrue", func(b *testing.B) {
-		benchInt(b, lrue.Cache[int]())
-	})
-	b.Run("cmap", func(b *testing.B) {
-		benchInt(b, cmap.Cache[int]())
-	})
-	b.Run("smap", func(b *testing.B) {
-		benchInt(b, smap.Cache[int]())
-	})
+	// b.Run("cache", func(b *testing.B) {
+	// 	benchInt(b, cache.Cache[int]())
+	// })
+	// b.Run("lru", func(b *testing.B) {
+	// 	benchInt(b, lru.Cache[int]())
+	// })
+	// b.Run("lrue", func(b *testing.B) {
+	// 	benchInt(b, lrue.Cache[int]())
+	// })
+	// b.Run("cmap", func(b *testing.B) {
+	// 	benchInt(b, cmap.Cache[int]())
+	// })
+	// b.Run("smap", func(b *testing.B) {
+	// 	benchInt(b, smap.Cache[int]())
+	// })
 	b.Run("bigcache", func(b *testing.B) {
 		benchInt(b, bigcache.Cache[int]())
 	})
@@ -78,12 +79,15 @@ func BenchmarkInt(b *testing.B) {
 	b.Run("ccache", func(b *testing.B) {
 		benchInt(b, ccache.Cache[int]())
 	})
-	b.Run("redis", func(b *testing.B) {
-		benchInt(b, redis.Cache[int]())
+	b.Run("gocache", func(b *testing.B) {
+		benchInt(b, gocache.Cache[int]())
 	})
-	b.Run("memcached", func(b *testing.B) {
-		benchInt(b, memcached.Cache[int]())
-	})
+	// b.Run("redis", func(b *testing.B) {
+	// 	benchInt(b, redis.Cache[int]())
+	// })
+	// b.Run("memcached", func(b *testing.B) {
+	// 	benchInt(b, memcached.Cache[int]())
+	// })
 }
 
 func BenchmarkIntParallel(b *testing.B) {
