@@ -1,11 +1,20 @@
 package model
 
+import (
+	"github.com/forbearing/golib/util"
+	"go.uber.org/zap/zapcore"
+)
+
 type Fixed string
 
 const (
 	FIXED_RIGHT Fixed = "right"
 	FIXED_LEFT  Fixed = "left"
 )
+
+func init() {
+	Register[*TableColumn]()
+}
 
 // TableColumn 表格的列
 type TableColumn struct {
@@ -14,10 +23,49 @@ type TableColumn struct {
 	Name      string `json:"name,omitempty" schema:"name"`             // 列名
 	Key       string `json:"key,omitempty" schema:"key"`               // 列名对应的id
 
-	Width    *uint  `json:"width,omitempty"`    // 列宽度
-	Sequence *uint  `json:"sequence,omitempty"` // 列顺序
-	Visiable *bool  `json:"visiable,omitempty"` // 是否显示
-	Fixed    *Fixed `json:"fixed,omitempty"`    // 固定在哪里 left,right, 必须加上 omitempty
+	Width    *uint   `json:"width,omitempty"`    // 列宽度
+	Sequence *uint   `json:"sequence,omitempty"` // 列顺序
+	Visiable *bool   `json:"visiable,omitempty"` // 是否显示
+	Fixed    *string `json:"fixed,omitempty"`    // 固定在哪里 left,right, 必须加上 omitempty
 
 	Base
+}
+
+func (t *TableColumn) CreateBefore() error {
+	if (t.Visiable) == nil {
+		t.Visiable = util.ValueOf(true)
+	}
+	// id cannot be hidden
+	if t.Key == "id" {
+		t.Visiable = util.ValueOf(true)
+	}
+	return nil
+}
+
+func (t *TableColumn) UpdateBefore() error {
+	// id cannot be hidden
+	if t.Key == "id" {
+		t.Visiable = util.Pointer(true)
+	}
+	return nil
+}
+
+func (t *TableColumn) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("user_id", t.UserId)
+	enc.AddString("table_name", t.TableName)
+	enc.AddString("name", t.Name)
+	enc.AddString("key", t.Key)
+	if t.Width != nil {
+		enc.AddUint("width", *t.Width)
+	}
+	if t.Sequence != nil {
+		enc.AddUint("sequence", *t.Sequence)
+	}
+	if t.Visiable != nil {
+		enc.AddBool("visiable", *t.Visiable)
+	}
+	if t.Fixed != nil {
+		enc.AddString("fixed", *t.Fixed)
+	}
+	return nil
 }
