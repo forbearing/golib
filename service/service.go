@@ -78,7 +78,7 @@ type Factory[M types.Model] struct{}
 func (f Factory[M]) Service() types.Service[M] {
 	svc, ok := serviceMap[serviceKey[M]()]
 	if !ok {
-		logger.Service.Warn(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
+		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
 		return new(Base[M])
 	}
 	return svc.(types.Service[M])
