@@ -1935,20 +1935,6 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
 		}
-		for _, m := range ml {
-			if err := new(service.Factory[M]).Service().UpdateAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), m); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-		}
-		for i := range ml {
-			if err := ml[i].UpdateAfter(); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-		}
 		// // record operation log to database.
 		// typ := reflect.TypeOf(*new(M)).Elem()
 		// var tableName string
