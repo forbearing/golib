@@ -1270,6 +1270,9 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 				log.Warn("empty request body")
 			}
 
+			if req.Options == nil {
+				req.Options = new(options)
+			}
 			for _, m := range req.Items {
 				m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
 				m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
@@ -1380,6 +1383,9 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
+		}
+		if req.Options == nil {
+			req.Options = new(options)
 		}
 		// 2.Batch delete resources in database.
 		if reqErr != io.EOF {
