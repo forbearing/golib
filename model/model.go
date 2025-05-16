@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql/driver"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"sync"
@@ -348,6 +349,28 @@ func (ct GormTime) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + time.Time(ct).Format(consts.DATE_TIME_LAYOUT) + "\""), nil
 }
 
+func (gs *GormStrings) UnmarshalJSON(data []byte) error {
+	// format: ["a", "b", "c"]
+	var arr []string
+	if err := json.Unmarshal(data, &arr); err == nil {
+		*gs = arr
+		return nil
+	}
+	// format: "a,b,c"
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		s = strings.TrimSpace(s)
+		s = strings.Trim(s, ",")
+		if s == "" {
+			*gs = []string{}
+		} else {
+			*gs = strings.Split(s, ",")
+		}
+		return nil
+	}
+	return errors.New("GormStrings: invalid JSON type")
+}
+
 type GormStrings []string
 
 func (gs *GormStrings) Scan(value any) error {
@@ -365,7 +388,7 @@ func (gs *GormStrings) Scan(value any) error {
 		_v = strings.Trim(_v, ",")
 		*gs = strings.Split(_v, ",")
 	default:
-		return errors.New("unsupported type for GormStrings, expected []byte or string")
+		return errors.New("GormStrings: unsupported type, expected []byte or string")
 	}
 	return nil
 }
