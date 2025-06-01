@@ -180,7 +180,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 				// 前端过滤出空值并且 _fuzzy=true 时,没有任何过滤作用
 				// 前端过滤出空值并且 _fuzzy=false 时,查询不到任何结果
 				if len(name) == 0 {
-					zap.S().Warnf("empty name for column: %s", column)
+					zap.S().Debugf("empty name for column: %s", column)
 					continue
 				}
 				results = append(results, name)
