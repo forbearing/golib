@@ -244,6 +244,8 @@ func Register[T any](name string) {
 }
 
 func registerType(name string, typ reflect.Type) {
+	name = strings.ToLower(name)
+
 	// Set default value from struct tag "default".
 	cfg := reflect.New(typ).Interface()
 	if err := defaults.Set(cfg); err != nil {
