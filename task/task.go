@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/util"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -74,9 +75,9 @@ func register(t *task) {
 		begin := time.Now()
 		logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 		if err := t.fn(); err != nil {
-			logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
+			logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
 		} else {
-			logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
+			logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
 		}
 
 		ticker := time.NewTicker(t.interval)
@@ -89,10 +90,10 @@ func register(t *task) {
 				begin = time.Now()
 				logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 				if err := t.fn(); err != nil {
-					logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
+					logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
 					// return
 				} else {
-					logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", time.Since(begin).String())
+					logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
 					// return
 				}
 			}
@@ -197,7 +198,7 @@ func runtimestats() error {
 			startTime = time.Unix(ctime/1000, (ctime%1000)*int64(time.Millisecond))
 			logger.Runtime.Infow("Application Uptime",
 				"StartTime", startTime,
-				"Uptime", time.Since(startTime).String(),
+				"Uptime", util.FormatDurationSmart(time.Since(startTime), 2),
 			)
 		}
 	}
