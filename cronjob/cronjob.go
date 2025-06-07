@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pkgzap "github.com/forbearing/golib/logger/zap"
+	"github.com/forbearing/golib/util"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
@@ -88,9 +89,9 @@ func register(cj *cronjob) {
 		}()
 		begin := time.Now()
 		if err = cj.fn(); err != nil {
-			log.Errorz(fmt.Sprintf("finished cronjob with error: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", time.Since(begin).String()))
+			log.Errorz(fmt.Sprintf("finished cronjob with error: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)))
 		} else {
-			log.Infoz("finished cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", time.Since(begin).String()))
+			log.Infoz("finished cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)))
 		}
 	}); err != nil {
 		log.Errorz(fmt.Sprintf("failed to add cronjob: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec))
