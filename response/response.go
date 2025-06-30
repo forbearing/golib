@@ -54,7 +54,8 @@ type codeValue struct {
 	Msg    string
 }
 
-var codeValueMap = map[Code]codeValue{
+// 原始默认的错误码映射
+var defaultCodeValueMap = map[Code]codeValue{
 	// 成功处理或失败处理的值.
 	CodeSuccess: {http.StatusOK, "success"},
 	CodeFailure: {http.StatusBadRequest, "failure"},
@@ -86,92 +87,185 @@ var codeValueMap = map[Code]codeValue{
 	CodeTooLargeFile:        {http.StatusBadRequest, "too large file"},
 }
 
+// 用于存储自定义的错误码映射
+var customCodeValueMap = make(map[Code]codeValue)
+
 type Code int32
 
+// CodeInstance 表示一个错误码实例，包含自定义的状态和消息
+type CodeInstance struct {
+	code   Code
+	status *int    // 自定义状态码，nil 表示使用默认值
+	msg    *string // 自定义消息，nil 表示使用默认值
+}
+
 func (r Code) Msg() string {
-	val, ok := codeValueMap[r]
-	if !ok {
-		val.Msg = codeValueMap[CodeFailure].Msg
+	// 先查找自定义映射
+	if val, ok := customCodeValueMap[r]; ok {
+		return val.Msg
 	}
-	return val.Msg
+	// 再查找默认映射
+	if val, ok := defaultCodeValueMap[r]; ok {
+		return val.Msg
+	}
+	return defaultCodeValueMap[CodeFailure].Msg
 }
 
-func (r Code) WithStatus(status int) Code {
-	return NewCode(r, status, r.Msg())
+func (r Code) WithStatus(status int) CodeInstance {
+	return CodeInstance{
+		code:   r,
+		status: &status,
+		msg:    nil, // 保持原有消息
+	}
 }
 
-func (r Code) WithErr(err error) Code {
-	return NewCode(r, r.Status(), err.Error())
+func (r Code) WithErr(err error) CodeInstance {
+	msg := err.Error()
+	return CodeInstance{
+		code:   r,
+		status: nil, // 保持原有状态码
+		msg:    &msg,
+	}
+}
+
+func (r Code) WithMsg(msg string) CodeInstance {
+	return CodeInstance{
+		code:   r,
+		status: nil, // 保持原有状态码
+		msg:    &msg,
+	}
 }
 
 func (r Code) Status() int {
-	val, ok := codeValueMap[r]
-	if !ok {
-		val.Status = http.StatusBadRequest
+	// 先查找自定义映射
+	if val, ok := customCodeValueMap[r]; ok {
+		return val.Status
 	}
-	return val.Status
+	// 再查找默认映射
+	if val, ok := defaultCodeValueMap[r]; ok {
+		return val.Status
+	}
+	return http.StatusBadRequest
 }
 
 func (r Code) Code() int {
 	return int(r)
 }
 
+// CodeInstance 的方法
+func (ci CodeInstance) Msg() string {
+	if ci.msg != nil {
+		return *ci.msg
+	}
+	return ci.code.Msg()
+}
+
+func (ci CodeInstance) Status() int {
+	if ci.status != nil {
+		return *ci.status
+	}
+	return ci.code.Status()
+}
+
+func (ci CodeInstance) Code() int {
+	return ci.code.Code()
+}
+
+func (ci CodeInstance) WithStatus(status int) CodeInstance {
+	return CodeInstance{
+		code:   ci.code,
+		status: &status,
+		msg:    ci.msg,
+	}
+}
+
+func (ci CodeInstance) WithErr(err error) CodeInstance {
+	msg := err.Error()
+	return CodeInstance{
+		code:   ci.code,
+		status: ci.status,
+		msg:    &msg,
+	}
+}
+
+func (ci CodeInstance) WithMsg(msg string) CodeInstance {
+	return CodeInstance{
+		code:   ci.code,
+		status: ci.status,
+		msg:    &msg,
+	}
+}
+
+// 响应接口，统一处理 Code 和 CodeInstance
+type Responder interface {
+	Msg() string
+	Status() int
+	Code() int
+}
+
+// 确保 Code 和 CodeInstance 都实现了 Responder 接口
+var (
+	_ Responder = Code(0)
+	_ Responder = CodeInstance{}
+)
+
 func NewCode(code Code, status int, msg string) Code {
-	codeValueMap[Code(code)] = codeValue{
+	customCodeValueMap[code] = codeValue{
 		Status: status,
 		Msg:    msg,
 	}
-	return Code(code)
+	return code
 }
 
-func ResponseJSON(c *gin.Context, code Code, data ...any) {
+// 修改响应函数以支持 Responder 接口
+func ResponseJSON(c *gin.Context, responder Responder, data ...any) {
 	if len(data) > 0 {
-		c.JSON(code.Status(), gin.H{
-			"code":            code,
-			"msg":             code.Msg(),
+		c.JSON(responder.Status(), gin.H{
+			"code":            responder.Code(),
+			"msg":             responder.Msg(),
 			"data":            data[0],
 			consts.REQUEST_ID: c.GetString(consts.REQUEST_ID),
 		})
 	} else {
-		c.JSON(code.Status(), gin.H{
-			"code":            code,
-			"msg":             code.Msg(),
+		c.JSON(responder.Status(), gin.H{
+			"code":            responder.Code(),
+			"msg":             responder.Msg(),
 			"data":            nil,
 			consts.REQUEST_ID: c.GetString(consts.REQUEST_ID),
 		})
 	}
 }
 
-func ResponseBytes(c *gin.Context, code Code, data ...[]byte) {
+func ResponseBytes(c *gin.Context, responder Responder, data ...[]byte) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	c.Header("X-cached", "true")
 	var dataStr string
 	if len(data) > 0 {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":%s,"request_id":"%s"}`, code, code.Msg(), util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":%s,"request_id":"%s"}`, responder.Code(), responder.Msg(), util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
 	} else {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":"","request_id":"%s"}`, code, code.Msg(), c.GetString(consts.REQUEST_ID))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":"","request_id":"%s"}`, responder.Code(), responder.Msg(), c.GetString(consts.REQUEST_ID))
 	}
-	c.Writer.WriteHeader(code.Status())
+	c.Writer.WriteHeader(responder.Status())
 	c.Writer.Write(util.StringToBytes(dataStr))
 }
 
-func ResponseBytesList(c *gin.Context, code Code, total uint64, data ...[]byte) {
+func ResponseBytesList(c *gin.Context, responder Responder, total uint64, data ...[]byte) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	var dataStr string
 	if len(data) > 0 {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":%d,"items":%s},"request_id":"%s"}`, code, code.Msg(), total, util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":%d,"items":%s},"request_id":"%s"}`, responder.Code(), responder.Msg(), total, util.BytesToString(data[0]), c.GetString(consts.REQUEST_ID))
 	} else {
-		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":0,"items":[]},"request_id":"%s"}`, code, code.Msg(), c.GetString(consts.REQUEST_ID))
+		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":0,"items":[]},"request_id":"%s"}`, responder.Code(), responder.Msg(), c.GetString(consts.REQUEST_ID))
 	}
-	c.Writer.WriteHeader(code.Status())
+	c.Writer.WriteHeader(responder.Status())
 	c.Writer.Write(util.StringToBytes(dataStr))
 }
 
-func ResponseTEXT(c *gin.Context, code Code, data ...any) {
+func ResponseTEXT(c *gin.Context, responder Responder, data ...any) {
 	if len(data) > 0 {
-		c.String(code.Status(), stringAny(data))
+		c.String(responder.Status(), stringAny(data))
 	} else {
-		c.String(code.Status(), "")
+		c.String(responder.Status(), "")
 	}
 }
 
