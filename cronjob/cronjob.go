@@ -89,9 +89,9 @@ func register(cj *cronjob) {
 		}()
 		begin := time.Now()
 		if err = cj.fn(); err != nil {
-			log.Errorz(fmt.Sprintf("finished cronjob with error: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)))
+			log.Errorz(fmt.Sprintf("finished cronjob with error: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin))))
 		} else {
-			log.Infoz("finished cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)))
+			log.Infoz("finished cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Time("next", cj.sched.Next(begin)), zap.String("cost", util.FormatDurationSmart(time.Since(begin))))
 		}
 	}); err != nil {
 		log.Errorz(fmt.Sprintf("failed to add cronjob: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec))

@@ -75,9 +75,9 @@ func register(t *task) {
 		begin := time.Now()
 		logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 		if err := t.fn(); err != nil {
-			logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
+			logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin)))
 		} else {
-			logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
+			logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin)))
 		}
 
 		ticker := time.NewTicker(t.interval)
@@ -90,10 +90,10 @@ func register(t *task) {
 				begin = time.Now()
 				logger.Task.Infow("starting task", "name", t.name, "interval", t.interval.String())
 				if err := t.fn(); err != nil {
-					logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
+					logger.Task.Errorw(fmt.Sprintf("finished task with error: %s", err), "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin)))
 					// return
 				} else {
-					logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin), 2))
+					logger.Task.Infow("finished task", "name", t.name, "interval", t.interval.String(), "cost", util.FormatDurationSmart(time.Since(begin)))
 					// return
 				}
 			}
