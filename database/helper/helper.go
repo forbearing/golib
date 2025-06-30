@@ -7,6 +7,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -45,7 +46,7 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			}
 		}
 	}
-	zap.S().Infow("database create table", "cost", time.Since(begin).String())
+	zap.S().Infow("database create table", "cost", util.FormatDurationSmart(time.Since(begin)))
 
 	begin = time.Now()
 	// create the table records that must be pre-exists before database curds.
@@ -64,7 +65,7 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			}
 		}
 	}
-	zap.S().Infow("database create table records", "cost", time.Since(begin).String())
+	zap.S().Infow("database create table records", "cost", util.FormatDurationSmart(time.Since(begin)))
 
 	// set default database to 'Default'.
 	database.DB = db

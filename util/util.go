@@ -383,7 +383,11 @@ func HashID(fields ...string) string {
 //
 // Negative durations are supported and formatted with a '-' sign.
 // The precision parameter controls the number of digits after the decimal point (minimum 0, maximum 9).
-func FormatDurationSmart(d time.Duration, precision int) string {
+func FormatDurationSmart(d time.Duration, precisions ...int) string {
+	precision := 2
+	if len(precisions) > 0 {
+		precision = precisions[0]
+	}
 	if precision < 0 {
 		precision = 0
 	}

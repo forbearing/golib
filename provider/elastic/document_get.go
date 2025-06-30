@@ -10,6 +10,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/util"
 )
 
 type GetRequest struct {
@@ -37,7 +38,7 @@ func (*document) Get(ctx context.Context, indexName string, id string, req *GetR
 	begin := time.Now()
 	logger := logger.Elastic.With("index", indexName, "id", id)
 	defer func() {
-		logger.Infow("get document completed", "cost", time.Since(begin).String())
+		logger.Infow("get document completed", "cost", util.FormatDurationSmart(time.Since(begin)))
 	}()
 
 	opts := []func(*esapi.GetRequest){client.Get.WithContext(ctx)}
