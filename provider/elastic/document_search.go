@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/util"
 )
 
 // SearchRequest represents an Elasticsearch search query.
@@ -140,7 +141,7 @@ func (*document) Search(ctx context.Context, indexName string, req *SearchReques
 		"size", strconv.Itoa(req.Size),
 	)
 	defer func() {
-		logger.Infow("search completed", "cost", time.Since(begin).String())
+		logger.Infow("search completed", "cost", util.FormatDurationSmart(time.Since(begin)))
 	}()
 
 	// Convert request to JSON
