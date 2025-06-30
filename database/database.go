@@ -1508,7 +1508,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*dest = _dest
-		logger.Cache.Infow("list from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("list from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil
 	}
 
@@ -1621,7 +1621,7 @@ QUERY:
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("list from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("list from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[[]M]().Set(key, *dest, config.App.Cache.Expiration)
 	}
 
@@ -1664,7 +1664,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Cache.Infow("get from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("get from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil
 	}
 
@@ -1762,7 +1762,7 @@ QUERY:
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("get from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("get from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
@@ -1792,7 +1792,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*count = _cache
-		logger.Cache.Infow("count from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("count from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return
 	}
 
@@ -1848,7 +1848,7 @@ QUERY:
 	//
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[int64]().Set(key, *count, config.App.Cache.Expiration)
 
 	}
@@ -1885,7 +1885,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Cache.Infow("first from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("first from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -1980,7 +1980,7 @@ QUERY:
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("first from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("first from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
@@ -2016,7 +2016,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Cache.Infow("last from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("last from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -2111,7 +2111,7 @@ QUERY:
 	// 	}()
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("last from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("last from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
@@ -2147,7 +2147,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 			return ErrNotAddressableModel
 		}
 		val.Elem().Set(reflect.ValueOf(_dest).Elem()) // the type of M is pointer to struct.
-		logger.Cache.Infow("take from cache", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("take from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil // Found cache and return.
 	}
 
@@ -2244,7 +2244,7 @@ QUERY:
 	//
 	// }
 	if db.enableCache {
-		logger.Cache.Infow("take from database", "cost", util.FormatDurationSmart(time.Since(begin), 2), "key", key)
+		logger.Cache.Infow("take from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
@@ -2282,7 +2282,7 @@ func (db *database[M]) Health() error {
 	if err := db.db.Exec("SELECT 1").Error; err != nil {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("database connection check failed",
 			zap.Error(err),
-			zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 		)
 		return fmt.Errorf("database connection check failed: %w", err)
 	}
@@ -2292,7 +2292,7 @@ func (db *database[M]) Health() error {
 	if err != nil {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("get sql.DB instance failed",
 			zap.Error(err),
-			zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 		)
 		return fmt.Errorf("get sql.DB instance failed: %w", err)
 	}
@@ -2305,7 +2305,7 @@ func (db *database[M]) Health() error {
 			zap.Int("max", stats.MaxOpenConnections),
 			zap.Int("in_use", stats.InUse),
 			zap.Int("idle", stats.Idle),
-			zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 		)
 	}
 
@@ -2313,7 +2313,7 @@ func (db *database[M]) Health() error {
 	if err := sqlDB.PingContext(context.TODO()); err != nil {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("database ping failed",
 			zap.Error(err),
-			zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 		)
 		return fmt.Errorf("database ping failed: %w", err)
 	}
@@ -2323,7 +2323,7 @@ func (db *database[M]) Health() error {
 		zap.Int("in_use_connections", stats.InUse),
 		zap.Int("idle_connections", stats.Idle),
 		zap.Int("max_open_connections", stats.MaxOpenConnections),
-		zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+		zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 	)
 
 	return nil
@@ -2365,7 +2365,7 @@ func (db *database[M]) trace(op string, batch ...int) func(error) {
 				zap.Error(err),
 				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
 				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 				zap.Bool("cache_enabled", db.enableCache),
 				zap.Bool("try_run", db.tryRun),
 			)
@@ -2373,7 +2373,7 @@ func (db *database[M]) trace(op string, batch ...int) func(error) {
 			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
 				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
 				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin), 2)),
+				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
 				zap.Bool("cache_enabled", db.enableCache),
 				zap.Bool("try_run", db.tryRun),
 			)
