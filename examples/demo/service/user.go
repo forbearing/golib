@@ -3,7 +3,6 @@ package service
 import (
 	"demo/model"
 
-	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 )
@@ -11,23 +10,13 @@ import (
 // init registers user service layer.
 // NOTE: you should always ensure current service package import directly or indirectly in `main.go`.
 func init() {
-	// // Register user service layer, generic type *model.User can be inferred.
-	// service.Register[*user]()
-
-	// // Alternatively, you can explicitly specify both types.
-	// service.Register[*user, *model.User]()
-
-	// Register user service with custom fields initialization
-	service.Register(&user{Field1: "value1", Field2: "value2"})
+	service.Register[*user]()
 }
 
 // user implements the types.Service[*model.User] interface.
 // service.Base[*model.User] is a service layer associated with *model.User.
 // It's strongly recommended to set user unexported.
 type user struct {
-	Field1 string
-	Field2 string
-
 	service.Base[*model.User]
 }
 
@@ -38,10 +27,6 @@ func (u *user) CreateBefore(ctx *types.ServiceContext, users *model.User) error 
 	// Add your business logic here.
 	// =============================
 
-	// example1: you can operate database in service layer.
-	_ = users
-	logs := make([]*model.Log, 0)
-	database.Database[*model.Log]().List(&logs)
 	return nil
 }
 
@@ -51,6 +36,7 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, users *model.User) error {
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -60,6 +46,7 @@ func (u *user) DeleteBefore(ctx *types.ServiceContext, users *model.User) error 
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -69,6 +56,7 @@ func (u *user) DeleteAfter(ctx *types.ServiceContext, users *model.User) error {
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -78,6 +66,7 @@ func (u *user) UpdateBefore(ctx *types.ServiceContext, users *model.User) error 
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -87,6 +76,7 @@ func (u *user) UpdateAfter(ctx *types.ServiceContext, users *model.User) error {
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -96,6 +86,7 @@ func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, users *model.User)
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -105,6 +96,7 @@ func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, users *model.User) 
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -114,6 +106,7 @@ func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -123,6 +116,7 @@ func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error 
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -132,6 +126,7 @@ func (u *user) GetBefore(ctx *types.ServiceContext, users *model.User) error {
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -141,6 +136,7 @@ func (u *user) GetAfter(ctx *types.ServiceContext, users *model.User) error {
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -150,6 +146,7 @@ func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -159,6 +156,7 @@ func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User)
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -168,6 +166,7 @@ func (u *user) BatchDeleteBefore(ctx *types.ServiceContext, users ...*model.User
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -177,6 +176,7 @@ func (u *user) BatchDeleteAfter(ctx *types.ServiceContext, users ...*model.User)
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -186,6 +186,7 @@ func (u *user) BatchUpdateBefore(ctx *types.ServiceContext, users ...*model.User
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -195,6 +196,7 @@ func (u *user) BatchUpdateAfter(ctx *types.ServiceContext, users ...*model.User)
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -204,6 +206,7 @@ func (u *user) BatchUpdatePartialBefore(ctx *types.ServiceContext, users ...*mod
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
 
@@ -213,5 +216,6 @@ func (u *user) BatchUpdatePartialAfter(ctx *types.ServiceContext, users ...*mode
 	// =============================
 	// Add your business logic here.
 	// =============================
+
 	return nil
 }
