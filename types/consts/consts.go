@@ -140,8 +140,9 @@ const (
 	Import HTTPVerb = "import" // POST /resource/import
 
 	// Verb groups
-	Most HTTPVerb = "most" // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
-	All  HTTPVerb = "all"  // All operations including Import and Export
+	Most      HTTPVerb = "most"       // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
+	MostBatch HTTPVerb = "most_batch" // Basic batch operations (BatchCreate, BatchDelete, BatchUpdate, BatchUpdatePartial)
+	All       HTTPVerb = "all"        // All operations including Most, MostBatch, Import and Export
 )
 
 func (v HTTPVerb) String() string {
