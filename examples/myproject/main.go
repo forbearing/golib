@@ -352,14 +352,14 @@ func main() {
 		middleware.Authz(),
 	)
 
-	router.Register[*internal_model.Group](router.API(), "/group", consts.Most)
+	router.Register[*internal_model.Group](router.API(), "/group")
 	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.List)
 	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.Get)
-	router.Register[*model.User](router.API(), "/user", consts.Most)
-	router.Register[*model_authz.Role](router.API(), "role", consts.Most)
-	router.Register[*model_authz.UserRole](router.API(), "user_role", consts.Most)
+	router.Register[*model.User](router.API(), "/user")
+	router.Register[*model_authz.Role](router.API(), "role")
+	router.Register[*model_authz.UserRole](router.API(), "user_role")
 	router.Register[*model_authz.Permission](router.API(), "permission", consts.List)
-	router.Register[*model_authz.RolePermission](router.API(), "role_permission", consts.Most)
+	router.Register[*model_authz.RolePermission](router.API(), "role_permission")
 	router.Register[*internal_model.Department](router.API(), "department", consts.Create)
 
 	cfg := config.MySQL{}
@@ -375,8 +375,8 @@ func main() {
 	}
 	_ = db
 	// It's your responsibility to ensure the table already exists.
-	router.RegisterWithConfig(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db}, consts.Most)
-	router.RegisterWithConfig(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db}, consts.Most)
+	router.RegisterWithConfig(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db})
+	router.RegisterWithConfig(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db})
 	// fmt.Println()
 	// for _, route := range router.Base().Routes() {
 	// 	fmt.Println(route.Method, route.Path)
