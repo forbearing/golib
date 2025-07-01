@@ -1191,10 +1191,10 @@ func fieldType2openapiType(field reflect.StructField) *openapi3.Types {
 	case reflect.Array:
 		return &openapi3.Types{openapi3.TypeArray}
 	case reflect.Struct:
-		fmt.Println("----- field name", field.Name, field.Type.Kind())
+		// fmt.Println("----- field name", field.Name, field.Type.Kind())
 		return &openapi3.Types{openapi3.TypeObject}
 	default:
-		fmt.Println("----- field name", field.Name, field.Type.Kind())
+		// fmt.Println("----- field name", field.Name, field.Type.Kind())
 		return &openapi3.Types{openapi3.TypeNull}
 	}
 }
