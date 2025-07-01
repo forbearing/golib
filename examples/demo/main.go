@@ -19,6 +19,7 @@ import (
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	. "github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 )
@@ -112,53 +113,90 @@ func main() {
 	// router.Register[*model.User](router.API(), "/user")
 	// router.Register[*model.User](router.API(), "user", consts.Most)
 	router.Register[*model.User](router.API(), "user")
-	router.Register[*model.Category](router.API(), "category")
+
+	// Generated endpoints:
+	//   POST    /api/category/batch - batch create category
+	//   DELETE  /api/category/batch - batch delete category
+	//   PUT     /api/category/batch - batch update category
+	//   PATCH   /api/category/batch - batch update partial category
+	router.Register[*model.Category](router.API(), "category", consts.MostBatch)
 
 	// Only register `Create` operation for the model `Group`.
 	// Generated endpoints:
 	//   POST   /api/group     - create group
 	//   POST   /api/group/:id - create group
-	router.RegisterCreate[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Create)
+
 	// Only register `Delete` operation for the model `Group`.
 	// Generated endpoints:
 	//   DELETE /api/group     - delete group
 	//   DELETE /api/group/:id - delete group
-	router.RegisterDelete[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Delete)
+
 	// Only register `Update` operation for the model `Group`.
 	// Generated endpoints:
 	//   PUT    /api/group     - update group
 	//   PUT    /api/group/:id - update group
-	router.RegisterUpdate[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Update)
+
 	// Only register `Update` operation for the model `Group`.
 	// Generated endpoints:
 	//   PATCH  /api/group     - update partial group
 	//   PATCH  /api/group/:id - update partial group
-	router.RegisterUpdatePartial[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.UpdatePartial)
+
 	// Only register `List` operation for the model `Group`.
 	// Generated endpoints:
 	//   GET    /api/group/    - List users
-	router.RegisterList[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.List)
+
 	// Only register `Get` operation for the model `Group`.
 	// Generated endpoints:
 	//   GET    /api/group/:id - Get group by ID
-	router.RegisterGet[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Get)
+
+	// Only register `BatchCreate` operation for the model `Group`.
+	// Generated endpoints:
+	//   POST   /api/group/batch - batch create group
+	router.Register[*model.Group](router.API(), "group", consts.BatchCreate)
+
+	// Only register `BatchDelete` operation for the model `Group`.
+	// Generated endpoints:
+	//   DELETE /api/group/batch - batch delete group
+	router.Register[*model.Group](router.API(), "group", consts.BatchDelete)
+
+	// Only register `BatchUpdate` operation for the model `Group`.
+	// Generated endpoints:
+	//   PUT    /api/group/batch - batch update group
+	router.Register[*model.Group](router.API(), "group", consts.BatchUpdate)
+
+	// Only register `BatchUpdatePartial` operation for the model `Group`.
+	// Generated endpoints:
+	//   PATCH  /api/group/batch - batch update partial group
+	router.Register[*model.Group](router.API(), "group", consts.BatchUpdatePartial)
+
 	// Generated endpoints:
 	//   POST   /api/group/import - import groups.
-	router.RegisterImport[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Import)
+
 	// Generated endpoints:
 	//   GET    /api/group/export - export groups.
-	router.RegisterExport[*model.Group](router.API(), "group")
+	router.Register[*model.Group](router.API(), "group", consts.Export)
 
 	// Manual RESTful API route configuration for model `Contact`.
-	router.API().POST("/contact", controller.Create[*model.Contact])             // create
-	router.API().DELETE("/contact", controller.Delete[*model.Contact])           // delete
-	router.API().DELETE("/contact/:id", controller.Delete[*model.Contact])       // delete
-	router.API().PUT("/contact", controller.Update[*model.Contact])              // update
-	router.API().PUT("/contact/:id", controller.Update[*model.Contact])          // update
-	router.API().PATCH("/contact", controller.UpdatePartial[*model.Contact])     // update partial
-	router.API().PATCH("/contact/:id", controller.UpdatePartial[*model.Contact]) // update partial
-	router.API().GET("/contact", controller.List[*model.Contact])                // list
-	router.API().GET("/contact/:id", controller.Get[*model.Contact])             // get
+	router.API().POST("/contact", controller.Create[*model.Contact])                    // create
+	router.API().DELETE("/contact", controller.Delete[*model.Contact])                  // delete
+	router.API().DELETE("/contact/:id", controller.Delete[*model.Contact])              // delete
+	router.API().PUT("/contact", controller.Update[*model.Contact])                     // update
+	router.API().PUT("/contact/:id", controller.Update[*model.Contact])                 // update
+	router.API().PATCH("/contact", controller.UpdatePartial[*model.Contact])            // update partial
+	router.API().PATCH("/contact/:id", controller.UpdatePartial[*model.Contact])        // update partial
+	router.API().GET("/contact", controller.List[*model.Contact])                       // list
+	router.API().GET("/contact/:id", controller.Get[*model.Contact])                    // get
+	router.API().POST("/contact/batch", controller.BatchCreate[*model.Contact])         // batch create
+	router.API().DELETE("/contact/batch", controller.BatchDelete[*model.Contact])       // batch delete
+	router.API().PUT("/contact/batch", controller.BatchUpdate[*model.Contact])          // batch update
+	router.API().PATCH("/contact/batch", controller.BatchUpdatePartial[*model.Contact]) // batch update partial
 
 	// Models are defined in separate packages:
 	// - model.*          -> core models
@@ -166,14 +204,14 @@ func main() {
 	// - model_instance.* -> instance management models
 	//
 	// Register core model routes.
-	router.Register[*model.Order](router.API(), "order") // route: /api/order
-	router.Register[*model.Log](router.API(), "log")     // route: /api/log
+	router.Register[*model.Order](router.API(), "order", consts.Most) // route: /api/order
+	router.Register[*model.Log](router.API(), "log", consts.Most)     // route: /api/log
 	// Register asset routes.
 	asset := router.API().Group("/asset")
-	router.Register[*model_asset.Computer](asset, "computer") // route: /api/asset/computer
-	router.Register[*model_asset.Monitor](asset, "monitor")   // route: /api/asset/monitor
-	router.Register[*model_asset.Software](asset, "software") // route: /api/asset/software
-	router.Register[*model_asset.Printer](asset, "printer")   // route: /api/asset/printer
+	router.Register[*model_asset.Computer](asset, "computer", consts.Most) // route: /api/asset/computer
+	router.Register[*model_asset.Monitor](asset, "monitor")                // route: /api/asset/monitor
+	router.Register[*model_asset.Software](asset, "software")              // route: /api/asset/software
+	router.Register[*model_asset.Printer](asset, "printer")                // route: /api/asset/printer
 	// Register instance routes.
 	instance := router.API().Group("/instance")
 	router.Register[*model_instance.Datacenter](instance, "datacenter")   // route: /api/instance/datacenter
@@ -195,8 +233,8 @@ func main() {
 	}
 	// NOTE: It is your responsibility to ensure the table that map to model already exists.
 	external := router.API().Group("/external")
-	router.Register(external, "/user", &types.ControllerConfig[*model.User]{DB: db, TableName: "users"})
-	router.Register(external, "category", &types.ControllerConfig[*model.Category]{DB: db, TableName: "groups"})
+	router.RegisterWithConfig(external, "/user", &types.ControllerConfig[*model.User]{DB: db, TableName: "users"})
+	router.RegisterWithConfig(external, "category", &types.ControllerConfig[*model.Category]{DB: db, TableName: "groups"})
 
 	RunOrDie(bootstrap.Run)
 }
