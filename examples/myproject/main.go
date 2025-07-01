@@ -26,6 +26,7 @@ import (
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
@@ -351,15 +352,15 @@ func main() {
 		middleware.Authz(),
 	)
 
-	router.Register[*internal_model.Group](router.API(), "/group")
-	router.RegisterList[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-	router.RegisterGet[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars")
-	router.Register[*model.User](router.API(), "/user")
-	router.Register[*model_authz.Role](router.API(), "role")
-	router.Register[*model_authz.UserRole](router.API(), "user_role")
-	router.RegisterList[*model_authz.Permission](router.API(), "permission")
-	router.Register[*model_authz.RolePermission](router.API(), "role_permission")
-	router.RegisterCreate[*internal_model.Department](router.API(), "department")
+	router.Register[*internal_model.Group](router.API(), "/group", consts.Most)
+	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.List)
+	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.Get)
+	router.Register[*model.User](router.API(), "/user", consts.Most)
+	router.Register[*model_authz.Role](router.API(), "role", consts.Most)
+	router.Register[*model_authz.UserRole](router.API(), "user_role", consts.Most)
+	router.Register[*model_authz.Permission](router.API(), "permission", consts.List)
+	router.Register[*model_authz.RolePermission](router.API(), "role_permission", consts.Most)
+	router.Register[*internal_model.Department](router.API(), "department", consts.Create)
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"
@@ -374,8 +375,8 @@ func main() {
 	}
 	_ = db
 	// It's your responsibility to ensure the table already exists.
-	router.Register(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db})
-	router.Register(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db})
+	router.RegisterWithConfig(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db}, consts.Most)
+	router.RegisterWithConfig(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db}, consts.Most)
 	// fmt.Println()
 	// for _, route := range router.Base().Routes() {
 	// 	fmt.Println(route.Method, route.Path)
