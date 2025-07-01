@@ -2,6 +2,42 @@
 ## [Unreleased]
 
 
+<a name="v0.5.2"></a>
+## [v0.5.2] - 2025-07-01
+### Chore
+- update examples/myproject
+- **deps:** upgrade dependencies to latest version
+- **example:** update examples/simple
+- **example:** update examples/demo
+- **example:** update examples/myproject
+- **openapigen:** remove debug print statements
+
+### Docs
+- generate CHANGELOG.md
+
+### Feat
+- **model:** add JSON unmarshalling for GormStrings type
+- **model:** enhance TableColumn with lifecycle hooks
+- **response:** introduce CodeInstance for flexible error code customization
+- **router:** add MostBatch verb group for batch operations
+- **util:** make FormatDurationSmart precision parameter optional
+
+### Fix
+- **config:** normalize config type name to lowercase
+- **controller:** handle nil options in BatchCreate and BatchDelete operations
+- **logger:** replace Warn with Warnz method in service factory
+- **router:** correct OpenAPI endpoint for get operation
+
+### Refactor
+- util.FormatDurationSmart(time.Since(begin), 2) -> util.FormatDurationSmart(time.Since(begin))
+- **controller:** change empty column name log level from warn to debug
+- **controller:** remove redundant hooks after import
+- **cronjob:** enhance duration formatting in logs
+- **database:** improve struct field reflection with pointer unwrapping
+- **router:** simplify registeration API with variadic verbs
+- **task:** enhance duration formatting in logs
+
+
 <a name="v0.5.1"></a>
 ## [v0.5.1] - 2025-05-05
 ### Chore
@@ -744,17 +780,17 @@
 ## [v0.1.0] - 2024-12-26
 ### Chore
 - update examples/demo
-- update examples/demo
+- update README.md
 - update READMD.md
 - update READMD.md
 - update examples/demo
 - add READMD.md for controller
 - update READMD.md
 - update READMD.md
-- update example/demo
-- update READMD.md
 - update examples/demo
 - update READMD.md
+- update READMD.md
+- update examples/demo
 - update READMD.md
 - update example/demo
 - update examples/demo
@@ -763,7 +799,7 @@
 - update README.md
 - update examples/simple
 - update README.md
-- update README.md
+- update example/demo
 - bump go pkg version to latest
 - **model:** add doc for `Register` and `Register`, deprecated `RegisterRoutes`
 
@@ -1287,7 +1323,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.2...HEAD
+[v0.5.2]: https://github.com/forbearing/golib/compare/v0.5.1...v0.5.2
 [v0.5.1]: https://github.com/forbearing/golib/compare/v0.5.0...v0.5.1
 [v0.5.0]: https://github.com/forbearing/golib/compare/v0.4.4...v0.5.0
 [v0.4.4]: https://github.com/forbearing/golib/compare/v0.4.3...v0.4.4
