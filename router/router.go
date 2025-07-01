@@ -254,10 +254,11 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		openapigen.Set[M](endpoint, consts.List)
 	}
 	if verbMap[consts.Get] {
-		endpoint := gopath.Join(base, path, "/:id")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/:id")
 		router.GET(path+"/:id", controller.GetFactory(cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodGet)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.Get)
 	}
 
