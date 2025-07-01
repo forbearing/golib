@@ -338,6 +338,8 @@ func buildVerbMap(verbs ...consts.HTTPVerb) map[consts.HTTPVerb]bool {
 		verbMap[consts.UpdatePartial] = true
 		verbMap[consts.List] = true
 		verbMap[consts.Get] = true
+	}
+	if verbMap[consts.MostBatch] {
 		verbMap[consts.BatchCreate] = true
 		verbMap[consts.BatchDelete] = true
 		verbMap[consts.BatchUpdate] = true
