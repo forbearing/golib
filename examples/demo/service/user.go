@@ -6,7 +6,6 @@ import (
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
 )
 
 // init registers user service layer.
@@ -32,24 +31,22 @@ type user struct {
 	service.Base[*model.User]
 }
 
-func (u *user) CreateBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_CREATE_BEFORE)
+func (u *user) CreateBefore(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create before")
 	// =============================
 	// Add your business logic here.
 	// =============================
 
 	// example1: you can operate database in service layer.
-	for i := range users {
-		_ = users[i]
-		logs := make([]*model.Log, 0)
-		database.Database[*model.Log]().List(&logs)
-	}
+	_ = users
+	logs := make([]*model.Log, 0)
+	database.Database[*model.Log]().List(&logs)
 	return nil
 }
 
-func (u *user) CreateAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_CREATE_AFTER)
+func (u *user) CreateAfter(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create after")
 	// =============================
 	// Add your business logic here.
@@ -57,8 +54,8 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, users ...*model.User) erro
 	return nil
 }
 
-func (u *user) DeleteBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_DELETE_BEFORE)
+func (u *user) DeleteBefore(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user delete before")
 	// =============================
 	// Add your business logic here.
@@ -66,8 +63,8 @@ func (u *user) DeleteBefore(ctx *types.ServiceContext, users ...*model.User) err
 	return nil
 }
 
-func (u *user) DeleteAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_DELETE_AFTER)
+func (u *user) DeleteAfter(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user delete after")
 	// =============================
 	// Add your business logic here.
@@ -75,8 +72,8 @@ func (u *user) DeleteAfter(ctx *types.ServiceContext, users ...*model.User) erro
 	return nil
 }
 
-func (u *user) UpdateBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_BEFORE)
+func (u *user) UpdateBefore(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update before")
 	// =============================
 	// Add your business logic here.
@@ -84,8 +81,8 @@ func (u *user) UpdateBefore(ctx *types.ServiceContext, users ...*model.User) err
 	return nil
 }
 
-func (u *user) UpdateAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_AFTER)
+func (u *user) UpdateAfter(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update after")
 	// =============================
 	// Add your business logic here.
@@ -93,8 +90,8 @@ func (u *user) UpdateAfter(ctx *types.ServiceContext, users ...*model.User) erro
 	return nil
 }
 
-func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_BEFORE)
+func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update partial before")
 	// =============================
 	// Add your business logic here.
@@ -102,8 +99,8 @@ func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, users ...*model.Us
 	return nil
 }
 
-func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_UPDATE_PARTIAL_AFTER)
+func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update partial after")
 	// =============================
 	// Add your business logic here.
@@ -112,7 +109,7 @@ func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, users ...*model.Use
 }
 
 func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_LIST_BEFORE)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user list before")
 	// =============================
 	// Add your business logic here.
@@ -121,7 +118,7 @@ func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error
 }
 
 func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_LIST_AFTER)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user list after")
 	// =============================
 	// Add your business logic here.
@@ -129,8 +126,8 @@ func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error 
 	return nil
 }
 
-func (u *user) GetBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_GET_BEFORE)
+func (u *user) GetBefore(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user get before")
 	// =============================
 	// Add your business logic here.
@@ -138,8 +135,8 @@ func (u *user) GetBefore(ctx *types.ServiceContext, users ...*model.User) error 
 	return nil
 }
 
-func (u *user) GetAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_GET_AFTER)
+func (u *user) GetAfter(ctx *types.ServiceContext, users *model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user get after")
 	// =============================
 	// Add your business logic here.
@@ -148,7 +145,7 @@ func (u *user) GetAfter(ctx *types.ServiceContext, users ...*model.User) error {
 }
 
 func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_BEFORE)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch create before")
 	// =============================
 	// Add your business logic here.
@@ -157,7 +154,7 @@ func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User
 }
 
 func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_CREATE_AFTER)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch create after")
 	// =============================
 	// Add your business logic here.
@@ -166,7 +163,7 @@ func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User)
 }
 
 func (u *user) BatchDeleteBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_DELETE_BEFORE)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch delete before")
 	// =============================
 	// Add your business logic here.
@@ -175,7 +172,7 @@ func (u *user) BatchDeleteBefore(ctx *types.ServiceContext, users ...*model.User
 }
 
 func (u *user) BatchDeleteAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_DELETE_AFTER)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch delete after")
 	// =============================
 	// Add your business logic here.
@@ -184,7 +181,7 @@ func (u *user) BatchDeleteAfter(ctx *types.ServiceContext, users ...*model.User)
 }
 
 func (u *user) BatchUpdateBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_BEFORE)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update before")
 	// =============================
 	// Add your business logic here.
@@ -193,7 +190,7 @@ func (u *user) BatchUpdateBefore(ctx *types.ServiceContext, users ...*model.User
 }
 
 func (u *user) BatchUpdateAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_AFTER)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update after")
 	// =============================
 	// Add your business logic here.
@@ -202,7 +199,7 @@ func (u *user) BatchUpdateAfter(ctx *types.ServiceContext, users ...*model.User)
 }
 
 func (u *user) BatchUpdatePartialBefore(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update partial before")
 	// =============================
 	// Add your business logic here.
@@ -211,7 +208,7 @@ func (u *user) BatchUpdatePartialBefore(ctx *types.ServiceContext, users ...*mod
 }
 
 func (u *user) BatchUpdatePartialAfter(ctx *types.ServiceContext, users ...*model.User) error {
-	log := u.WithServiceContext(ctx, consts.PHASE_BATCH_UPDATE_PARTIAL_AFTER)
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update partial after")
 	// =============================
 	// Add your business logic here.
