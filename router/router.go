@@ -164,81 +164,15 @@ func Stop() {
 //   - PATCH  /{path}/batch   -> BatchUpdatePartial
 //
 // For custom controller configuration, pass a ControllerConfig object.
-func Register[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
 	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Most), cfg...)
+		register[M](router, buildPath(rawPath), buildVerbMap(verbs...))
 	}
 }
 
-func RegisterCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
+func RegisterWithConfig[M types.Model](router gin.IRouter, rawPath string, cfg *types.ControllerConfig[M], verbs ...consts.HTTPVerb) {
 	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Create), cfg...)
-	}
-}
-
-func RegisterDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Delete), cfg...)
-	}
-}
-
-func RegisterUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Update), cfg...)
-	}
-}
-
-func RegisterUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.UpdatePartial), cfg...)
-	}
-}
-
-func RegisterList[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.List), cfg...)
-	}
-}
-
-func RegisterGet[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Get), cfg...)
-	}
-}
-
-func RegisterImport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Import), cfg...)
-	}
-}
-
-func RegisterExport[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.Export), cfg...)
-	}
-}
-
-func RegisterBatchCreate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.BatchCreate), cfg...)
-	}
-}
-
-func RegisterBatchDelete[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.BatchDelete), cfg...)
-	}
-}
-
-func RegisterBatchUpdate[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdate), cfg...)
-	}
-}
-
-func RegisterBatchUpdatePartial[M types.Model](router gin.IRouter, rawPath string, cfg ...*types.ControllerConfig[M]) {
-	if validPath(rawPath) {
-		register(router, buildPath(rawPath), buildVerbMap(consts.BatchUpdatePartial), cfg...)
+		register(router, buildPath(rawPath), buildVerbMap(verbs...), cfg)
 	}
 }
 
