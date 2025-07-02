@@ -11,7 +11,10 @@ import (
 	"text/template"
 
 	"github.com/forbearing/golib/internal/codegen"
+	"github.com/gertd/go-pluralize"
 )
+
+var pluralizeCli = pluralize.NewClient()
 
 // ServiceGenerator 生成 service 层代码
 type ServiceGenerator struct {
@@ -48,13 +51,23 @@ func (g *ServiceGenerator) GenerateFromModel(modelInfo *codegen.ModelInfo) ([]by
 	// 生成包名
 	packageName := g.config.GetServicePackageName(modelInfo.RelativePath)
 
+	// 获取 model 包的导入信息
+	modelPackageAlias, needsAlias := modelInfo.GetModelPackageInfo()
+
+	// 生成变量名
+	modelNameLower := strings.ToLower(modelInfo.Name)
+
 	data := &codegen.ServiceTemplateData{
-		PackageName:   packageName,
-		ModelPackage:  modelInfo.PackagePath,
-		ModelName:     modelInfo.Name,
-		ServiceName:   strings.ToLower(modelInfo.Name),
-		ModelVariable: strings.ToLower(modelInfo.Name) + "s",
-		FrameworkPath: g.config.FrameworkPath,
+		PackageName:       packageName,
+		ModelPackage:      modelInfo.PackagePath,
+		ModelPackageName:  modelInfo.PackageName,
+		ModelPackageAlias: modelPackageAlias,
+		ModelName:         modelInfo.Name,
+		ServiceName:       modelNameLower,
+		ModelVariable:     modelNameLower,                      // 单数：user
+		ModelVariables:    pluralizeCli.Plural(modelNameLower), // 复数：users
+		FrameworkPath:     g.config.FrameworkPath,
+		NeedsAlias:        needsAlias,
 	}
 
 	var buf bytes.Buffer
