@@ -1,3 +1,4 @@
+// internal/codegen/generator/template.go
 package generator
 
 const ServiceTemplate = `package {{.PackageName}}
