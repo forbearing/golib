@@ -68,14 +68,18 @@ func Init() error {
 	return nil
 }
 
-// Factory is a service factory used to product service instance.
+func Factory[M types.Model]() *factory[M] {
+	return &factory[M]{}
+}
+
+// factory is a service factory used to product service instance.
 // The service instance should registered by function `Register()` in init()
 //
 // The service defined by user should be unexported (structure name is lowercase).
-// service instance are only returns by the `Factory`.
-type Factory[M types.Model] struct{}
+// service instance are only returns by the `factory`.
+type factory[M types.Model] struct{}
 
-func (f Factory[M]) Service() types.Service[M] {
+func (f factory[M]) Service() types.Service[M] {
 	svc, ok := serviceMap[serviceKey[M]()]
 	if !ok {
 		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
@@ -110,5 +114,6 @@ func (Base[M]) BatchUpdatePartialAfter(*types.ServiceContext, ...M) error  { ret
 
 func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
 func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)   { return make([]byte, 0), nil }
-func (Base[M]) Filter(_ *types.ServiceContext, m M) M                { return m }
-func (Base[M]) FilterRaw(_ *types.ServiceContext) string             { return "" }
+
+func (Base[M]) Filter(_ *types.ServiceContext, m M) M    { return m }
+func (Base[M]) FilterRaw(_ *types.ServiceContext) string { return "" }
