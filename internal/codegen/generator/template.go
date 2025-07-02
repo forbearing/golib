@@ -4,7 +4,7 @@ package generator
 const ServiceTemplate = `package {{.PackageName}}
 
 import (
-	"{{.ModelPackage}}"
+{{if .NeedsAlias}}	{{.ModelPackageAlias}} "{{.ModelPackage}}"{{else}}	"{{.ModelPackage}}"{{end}}
 
 	"{{.FrameworkPath}}/service"
 	"{{.FrameworkPath}}/types"
@@ -14,12 +14,12 @@ func init() {
 	service.Register[*{{.ServiceName}}]()
 }
 
-// {{.ServiceName}} implements the types.Service[*model.{{.ModelName}}] interface.
+// {{.ServiceName}} implements the types.Service[*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}] interface.
 type {{.ServiceName}} struct {
-	service.Base[*model.{{.ModelName}}]
+	service.Base[*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}]
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateBefore(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateBefore(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} create before")
 	// =============================
@@ -29,7 +29,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateBefore(ctx *types.Se
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateAfter(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateAfter(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} create after")
 	// =============================
@@ -39,7 +39,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) CreateAfter(ctx *types.Ser
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteBefore(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteBefore(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} delete before")
 	// =============================
@@ -49,7 +49,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteBefore(ctx *types.Se
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteAfter(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteAfter(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} delete after")
 	// =============================
@@ -59,7 +59,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) DeleteAfter(ctx *types.Ser
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateBefore(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateBefore(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} update before")
 	// =============================
@@ -69,7 +69,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateBefore(ctx *types.Se
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateAfter(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateAfter(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} update after")
 	// =============================
@@ -79,7 +79,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdateAfter(ctx *types.Ser
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialBefore(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialBefore(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} update partial before")
 	// =============================
@@ -89,7 +89,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialBefore(ctx *t
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialAfter(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialAfter(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} update partial after")
 	// =============================
@@ -99,7 +99,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) UpdatePartialAfter(ctx *ty
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListBefore(ctx *types.ServiceContext, {{.ModelVariable}} *[]*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListBefore(ctx *types.ServiceContext, {{.ModelVariables}} *[]*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} list before")
 	// =============================
@@ -109,7 +109,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListBefore(ctx *types.Serv
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListAfter(ctx *types.ServiceContext, {{.ModelVariable}} *[]*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListAfter(ctx *types.ServiceContext, {{.ModelVariables}} *[]*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} list after")
 	// =============================
@@ -119,7 +119,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) ListAfter(ctx *types.Servi
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetBefore(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetBefore(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} get before")
 	// =============================
@@ -129,7 +129,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetBefore(ctx *types.Servi
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetAfter(ctx *types.ServiceContext, {{.ModelVariable}} *model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetAfter(ctx *types.ServiceContext, {{.ModelVariable}} *{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} get after")
 	// =============================
@@ -139,7 +139,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) GetAfter(ctx *types.Servic
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateBefore(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateBefore(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch create before")
 	// =============================
@@ -149,7 +149,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateBefore(ctx *typ
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateAfter(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateAfter(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch create after")
 	// =============================
@@ -159,7 +159,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchCreateAfter(ctx *type
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteBefore(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteBefore(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch delete before")
 	// =============================
@@ -169,7 +169,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteBefore(ctx *typ
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteAfter(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteAfter(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch delete after")
 	// =============================
@@ -179,7 +179,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchDeleteAfter(ctx *type
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateBefore(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateBefore(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch update before")
 	// =============================
@@ -189,7 +189,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateBefore(ctx *typ
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateAfter(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateAfter(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch update after")
 	// =============================
@@ -199,7 +199,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdateAfter(ctx *type
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdatePartialBefore(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdatePartialBefore(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch update partial before")
 	// =============================
@@ -209,7 +209,7 @@ func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdatePartialBefore(c
 	return nil
 }
 
-func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdatePartialAfter(ctx *types.ServiceContext, {{.ModelVariable}} ...*model.{{.ModelName}}) error {
+func ({{.ServiceName | firstChar}} *{{.ServiceName}}) BatchUpdatePartialAfter(ctx *types.ServiceContext, {{.ModelVariables}} ...*{{if .NeedsAlias}}{{.ModelPackageAlias}}{{else}}model{{end}}.{{.ModelName}}) error {
 	log := {{.ServiceName | firstChar}}.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("{{.ServiceName}} batch update partial after")
 	// =============================
