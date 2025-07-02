@@ -10,15 +10,11 @@ import (
 	"{{.FrameworkPath}}/types"
 )
 
-// init registers {{.ServiceName}} service layer.
-// NOTE: you should always ensure current service package import directly or indirectly in ` + "`main.go`" + `.
 func init() {
 	service.Register[*{{.ServiceName}}]()
 }
 
 // {{.ServiceName}} implements the types.Service[*model.{{.ModelName}}] interface.
-// service.Base[*model.{{.ModelName}}] is a service layer associated with *model.{{.ModelName}}.
-// It's strongly recommended to set {{.ServiceName}} unexported.
 type {{.ServiceName}} struct {
 	service.Base[*model.{{.ModelName}}]
 }
