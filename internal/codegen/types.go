@@ -11,21 +11,48 @@ import (
 
 // ServiceTemplateData 包含生成 service 代码所需的所有数据
 type ServiceTemplateData struct {
-	PackageName   string // service 包名 (如: service_keycloak)
-	ModelPackage  string // model 包的导入路径
-	ModelName     string // Model 结构体名称 (如: User)
-	ServiceName   string // service 结构体名称 (如: user)
-	ModelVariable string // model 变量名 (如: users)
-	FrameworkPath string // 框架路径
+	PackageName       string // service 包名 (如: service_keycloak)
+	ModelPackage      string // model 包的导入路径
+	ModelPackageName  string // model 包的实际名称 (如: model_setting)
+	ModelPackageAlias string // model 包的别名 (如果需要的话)
+	ModelName         string // Model 结构体名称 (如: User)
+	ServiceName       string // service 结构体名称 (如: user)
+	ModelVariable     string // model 变量名 (如: users)
+	FrameworkPath     string // 框架路径
+	NeedsAlias        bool   // 是否需要使用别名导入
 }
 
 // ModelInfo 包含解析的 model 信息
 type ModelInfo struct {
 	Name         string // 结构体名称
-	PackageName  string // 原包名
+	PackageName  string // 实际的包名 (从 package 声明中获取)
 	PackagePath  string // 完整包路径
 	RelativePath string // 相对于 model 根目录的路径
 	FilePath     string // 文件路径
+}
+
+// GetModelPackageInfo 获取 model 包的导入信息
+func (m *ModelInfo) GetModelPackageInfo() (alias string, needsAlias bool) {
+	// 从相对路径推断期望的包名
+	expectedPackageName := m.getExpectedPackageName()
+
+	// 如果实际包名与期望包名不同，需要使用别名
+	if m.PackageName != expectedPackageName {
+		return m.PackageName, true
+	}
+
+	return "", false
+}
+
+// getExpectedPackageName 根据目录路径推断期望的包名
+func (m *ModelInfo) getExpectedPackageName() string {
+	if m.RelativePath == "" || m.RelativePath == "." {
+		return "model"
+	}
+
+	// 取最后一个目录名作为期望的包名
+	parts := strings.Split(m.RelativePath, string(filepath.Separator))
+	return parts[len(parts)-1]
 }
 
 // Config 代码生成配置
