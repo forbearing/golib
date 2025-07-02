@@ -2,6 +2,22 @@
 ## [Unreleased]
 
 
+<a name="v0.6.0"></a>
+## [v0.6.0] - 2025-07-02
+### Chore
+- remove unused test model files
+- **example:** update examples/demo
+
+### Docs
+- generate CHANGELOG.md
+
+### Feat
+- prepare support cmd/gg
+
+### Refactor
+- **codegen:** simplify service template comments
+
+
 <a name="v0.5.2"></a>
 ## [v0.5.2] - 2025-07-01
 ### Chore
@@ -1323,7 +1339,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.0...HEAD
+[v0.6.0]: https://github.com/forbearing/golib/compare/v0.5.2...v0.6.0
 [v0.5.2]: https://github.com/forbearing/golib/compare/v0.5.1...v0.5.2
 [v0.5.1]: https://github.com/forbearing/golib/compare/v0.5.0...v0.5.1
 [v0.5.0]: https://github.com/forbearing/golib/compare/v0.4.4...v0.5.0
