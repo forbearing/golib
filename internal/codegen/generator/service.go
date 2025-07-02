@@ -48,13 +48,19 @@ func (g *ServiceGenerator) GenerateFromModel(modelInfo *codegen.ModelInfo) ([]by
 	// 生成包名
 	packageName := g.config.GetServicePackageName(modelInfo.RelativePath)
 
+	// 获取 model 包的导入信息
+	modelPackageAlias, needsAlias := modelInfo.GetModelPackageInfo()
+
 	data := &codegen.ServiceTemplateData{
-		PackageName:   packageName,
-		ModelPackage:  modelInfo.PackagePath,
-		ModelName:     modelInfo.Name,
-		ServiceName:   strings.ToLower(modelInfo.Name),
-		ModelVariable: strings.ToLower(modelInfo.Name) + "s",
-		FrameworkPath: g.config.FrameworkPath,
+		PackageName:       packageName,
+		ModelPackage:      modelInfo.PackagePath,
+		ModelPackageName:  modelInfo.PackageName,
+		ModelPackageAlias: modelPackageAlias,
+		ModelName:         modelInfo.Name,
+		ServiceName:       strings.ToLower(modelInfo.Name),
+		ModelVariable:     strings.ToLower(modelInfo.Name) + "s",
+		FrameworkPath:     g.config.FrameworkPath,
+		NeedsAlias:        needsAlias,
 	}
 
 	var buf bytes.Buffer
