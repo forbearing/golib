@@ -17,7 +17,8 @@ type ServiceTemplateData struct {
 	ModelPackageAlias string // model 包的别名 (如果需要的话)
 	ModelName         string // Model 结构体名称 (如: User)
 	ServiceName       string // service 结构体名称 (如: user)
-	ModelVariable     string // model 变量名 (如: users)
+	ModelVariable     string // model 变量名单数 (如: user)
+	ModelVariables    string // model 变量名复数 (如: users)
 	FrameworkPath     string // 框架路径
 	NeedsAlias        bool   // 是否需要使用别名导入
 }
