@@ -1,3 +1,11 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/forbearing/golib)
+
+## Install golib code generator
+
+```bash
+go install github.com/forbearing/golib/cmd/gg@latest
+```
+
 ## Description
 
 🚀 Golang Lightning Backend Framework
