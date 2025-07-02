@@ -139,7 +139,7 @@ func (mp *ModelParser) ParseModelFile(filePath, modelRoot string) ([]*codegen.Mo
 			if mp.hasBaseEmbedded(structType, imports) {
 				model := &codegen.ModelInfo{
 					Name:         typeSpec.Name.Name,
-					PackageName:  file.Name.Name, // 这是实际的包名
+					PackageName:  file.Name.Name,
 					PackagePath:  mp.getPackagePath(filePath, relativeDir),
 					RelativePath: relativeDir,
 					FilePath:     filePath,
