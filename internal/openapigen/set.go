@@ -68,7 +68,7 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	}
 
 	// Add field descriptions to request schema
-	addSchemaDescriptions[M](reqSchemaRef)
+	addSchemaTitleDesc[M](reqSchemaRef)
 
 	setupExample(reqSchemaRef)
 
@@ -104,7 +104,7 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			// Add field descriptions to response data schema
 			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
 				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
-					addSchemaDescriptions[M](dataProperty)
+					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
 
@@ -172,7 +172,7 @@ func setDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 			// Add field descriptions to response data schema
 			if schemaRef204.Value != nil && schemaRef204.Value.Properties != nil {
 				if dataProperty, exists := schemaRef204.Value.Properties["data"]; exists {
-					addSchemaDescriptions[M](dataProperty)
+					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
@@ -230,7 +230,7 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
 	setupExample(reqSchemaRef)
-	addSchemaDescriptions[M](reqSchemaRef)
+	addSchemaTitleDesc[M](reqSchemaRef)
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.Update, typ),
@@ -263,7 +263,7 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			// Add field descriptions to response data schema
 			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
 				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
-					addSchemaDescriptions[M](dataProperty)
+					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
 
@@ -322,7 +322,7 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
 	setupExample(reqSchemaRef)
-	addSchemaDescriptions[M](reqSchemaRef)
+	addSchemaTitleDesc[M](reqSchemaRef)
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.UpdatePartial, typ),
@@ -354,7 +354,7 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 			// Add field descriptions to response data schema
 			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
 				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
-					addSchemaDescriptions[M](dataProperty)
+					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
@@ -406,7 +406,7 @@ func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 		schemaRef = new(openapi3.SchemaRef)
 	}
 	// Add field descriptions to schema
-	addSchemaDescriptions[M](schemaRef)
+	addSchemaTitleDesc[M](schemaRef)
 	doc.Components.Schemas[name] = schemaRef
 
 	pathItem.Get = &openapi3.Operation{
@@ -457,7 +457,7 @@ func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
 						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
 							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-								addSchemaDescriptions[M](itemsProperty.Value.Items)
+								addSchemaTitleDesc[M](itemsProperty.Value.Items)
 							}
 						}
 					}
@@ -515,7 +515,7 @@ func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 	}
 
 	// Add field descriptions to schema
-	addSchemaDescriptions[M](schemaRef)
+	addSchemaTitleDesc[M](schemaRef)
 
 	doc.Components.Schemas[name] = schemaRef
 	pathItem.Get = &openapi3.Operation{
@@ -533,7 +533,7 @@ func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 			// Add field descriptions to response data schema
 			if schemeRef200.Value != nil && schemeRef200.Value.Properties != nil {
 				if dataProperty, exists := schemeRef200.Value.Properties["data"]; exists {
-					addSchemaDescriptions[M](dataProperty)
+					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
@@ -627,7 +627,7 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	// Add field descriptions to request body schema
 	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
 		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-			addSchemaDescriptions[M](itemsProperty.Value.Items)
+			addSchemaTitleDesc[M](itemsProperty.Value.Items)
 		}
 	}
 	setupBatchExample(reqSchemaRef)
@@ -668,7 +668,7 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
 						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
 							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-								addSchemaDescriptions[M](itemsProperty.Value.Items)
+								addSchemaTitleDesc[M](itemsProperty.Value.Items)
 							}
 						}
 					}
@@ -757,7 +757,7 @@ func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
 				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists && dataProperty.Value != nil && dataProperty.Value.Properties != nil {
 					if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-						addSchemaDescriptions[M](itemsProperty.Value.Items)
+						addSchemaTitleDesc[M](itemsProperty.Value.Items)
 					}
 				}
 			}
@@ -816,7 +816,7 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	// Add field descriptions to request body schema
 	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
 		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-			addSchemaDescriptions[M](itemsProperty.Value.Items)
+			addSchemaTitleDesc[M](itemsProperty.Value.Items)
 		}
 	}
 	setupBatchExample(reqSchemaRef)
@@ -853,7 +853,7 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
 						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
 							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-								addSchemaDescriptions[M](itemsProperty.Value.Items)
+								addSchemaTitleDesc[M](itemsProperty.Value.Items)
 							}
 						}
 					}
@@ -915,7 +915,7 @@ func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathIt
 	// Add field descriptions to request body schema
 	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
 		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-			addSchemaDescriptions[M](itemsProperty.Value.Items)
+			addSchemaTitleDesc[M](itemsProperty.Value.Items)
 		}
 	}
 	setupBatchExample(reqSchemaRef)
@@ -953,7 +953,7 @@ func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathIt
 					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
 						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
 							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-								addSchemaDescriptions[M](itemsProperty.Value.Items)
+								addSchemaTitleDesc[M](itemsProperty.Value.Items)
 							}
 						}
 					}
@@ -1082,8 +1082,8 @@ func getBaseModelDocs() map[string]string {
 	return baseModelDocsCache
 }
 
-// addSchemaDescriptions adds field descriptions to schema properties
-func addSchemaDescriptions[M types.Model](schemaRef *openapi3.SchemaRef) {
+// addSchemaTitleDesc adds field descriptions to schema properties
+func addSchemaTitleDesc[M types.Model](schemaRef *openapi3.SchemaRef) {
 	if schemaRef == nil || schemaRef.Value == nil || schemaRef.Value.Properties == nil {
 		return
 	}
@@ -1143,6 +1143,7 @@ func addSchemaDescriptions[M types.Model](schemaRef *openapi3.SchemaRef) {
 				// Create a new schema that's a copy of the original
 				newSchema := *propRef.Value
 				newSchema.Description = description
+				newSchema.Title = description
 				// Create a new SchemaRef and update the Properties map
 				schemaRef.Value.Properties[propName] = &openapi3.SchemaRef{Value: &newSchema}
 			}
