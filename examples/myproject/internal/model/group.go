@@ -10,9 +10,9 @@ func init() {
 }
 
 type Group struct {
-	Name        string `json:"name,omitempty" schema:"name"`
-	Desc        string `json:"desc,omitempty" schema:"desc"`
-	MemberCount int    `json:"member_count" gorm:"default:0"`
+	Name        string `json:"name,omitempty" schema:"name"`  // 用户组名
+	Desc        string `json:"desc,omitempty" schema:"desc"`  // 用户组描述
+	MemberCount int    `json:"member_count" gorm:"default:0"` // 成员数量
 
 	pkgmodel.Base
 }
@@ -28,7 +28,7 @@ func (g *Group) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (g *Group) Request(GroupRequest, GroupResponse) {}
+// func (g *Group) Request(GroupRequest, GroupResponse) {}
 
 type GroupRequest struct {
 	Name string `json:"name,omitempty" schema:"name"`
