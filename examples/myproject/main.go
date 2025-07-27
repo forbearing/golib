@@ -25,7 +25,6 @@ import (
 	"github.com/forbearing/golib/provider/rethinkdb"
 	"github.com/forbearing/golib/router"
 	"github.com/forbearing/golib/task"
-	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	. "github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
@@ -352,7 +351,7 @@ func main() {
 		middleware.Authz(),
 	)
 
-	router.Register[*internal_model.Group](router.API(), "/group")
+	router.Register[*internal_model.Group](router.API(), "/group", consts.Most, consts.MostBatch)
 	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.List)
 	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.Get)
 	router.Register[*model.User](router.API(), "/user")
@@ -374,14 +373,14 @@ func main() {
 		panic(err)
 	}
 	_ = db
-	// It's your responsibility to ensure the table already exists.
-	router.RegisterWithConfig(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db})
-	router.RegisterWithConfig(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db})
-	// fmt.Println()
-	// for _, route := range router.Base().Routes() {
-	// 	fmt.Println(route.Method, route.Path)
-	// }
-	// fmt.Println()
+	// // It's your responsibility to ensure the table already exists.
+	// router.RegisterWithConfig(router.API(), "/external/user", &types.ControllerConfig[*model.User]{DB: db})
+	// router.RegisterWithConfig(router.API(), "/external/group", &types.ControllerConfig[*internal_model.Group]{DB: db})
+	// // fmt.Println()
+	// // for _, route := range router.Base().Routes() {
+	// // 	fmt.Println(route.Method, route.Path)
+	// // }
+	// // fmt.Println()
 
 	RunOrDie(bootstrap.Run)
 }

@@ -104,7 +104,7 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 //
 // 	// base scheme
 //
-// 	// TODO: 是否比选
+// 	// TODO: whether to compare and select
 // 	// openapi3.NewStringSchema().WithRequired()
 //
 // 	schema := openapi3.NewObjectSchema().
