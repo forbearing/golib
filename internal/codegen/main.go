@@ -27,26 +27,7 @@ func init() {
 
 func Main() {
 	module, err := getModulePath()
-	if err != nil {
-		panic(err)
-	}
-
-	// info := ModelInfo{PackageName: "model", ModelName: "User", ModelVarName: "u", ModulePath: modulePath, ModelFilePath: "model"}
-	// _ = info
-	//
-	// var buf bytes.Buffer
-	// fset := token.NewFileSet()
-	//
-	// if err = format.Node(&buf, fset, generateServiceFile(info)); err != nil {
-	// 	panic(err)
-	// }
-	//
-	// formated, err := format.Source(buf.Bytes())
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// code := methodAddComments(string(formated), info.ModelName)
-	// fmt.Println(code)
+	checkErr(err)
 
 	models := make([]*ModelInfo, 0)
 
