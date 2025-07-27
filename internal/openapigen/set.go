@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/response"
@@ -65,6 +66,10 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
+
+	// Add field descriptions to request schema
+	addSchemaDescriptions[M](reqSchemaRef)
+
 	setupExample(reqSchemaRef)
 
 	pathItem.Post = &openapi3.Operation{
@@ -95,6 +100,12 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					addSchemaDescriptions[M](dataProperty)
+				}
 			}
 
 			resp.Set("201", &openapi3.ResponseRef{
@@ -158,6 +169,12 @@ func setDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 				zap.S().Error(err)
 				schemaRef204 = new(openapi3.SchemaRef)
 			}
+			// Add field descriptions to response data schema
+			if schemaRef204.Value != nil && schemaRef204.Value.Properties != nil {
+				if dataProperty, exists := schemaRef204.Value.Properties["data"]; exists {
+					addSchemaDescriptions[M](dataProperty)
+				}
+			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
 			if err != nil {
 				zap.S().Error(err)
@@ -213,6 +230,7 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
 	setupExample(reqSchemaRef)
+	addSchemaDescriptions[M](reqSchemaRef)
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.Update, typ),
@@ -241,6 +259,12 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					addSchemaDescriptions[M](dataProperty)
+				}
 			}
 
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
@@ -298,6 +322,7 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
 	setupExample(reqSchemaRef)
+	addSchemaDescriptions[M](reqSchemaRef)
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.UpdatePartial, typ),
@@ -325,6 +350,12 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					addSchemaDescriptions[M](dataProperty)
+				}
 			}
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
@@ -374,6 +405,8 @@ func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 		zap.S().Error(err)
 		schemaRef = new(openapi3.SchemaRef)
 	}
+	// Add field descriptions to schema
+	addSchemaDescriptions[M](schemaRef)
 	doc.Components.Schemas[name] = schemaRef
 
 	pathItem.Get = &openapi3.Operation{
@@ -410,13 +443,25 @@ func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 		// 			Description: "Number of items per page",
 		// 		},
 		// 	},
-		// 	// 可扩展更多 query 参数，例如过滤字段、排序等
+		// 	// Can extend more query parameters, such as filter fields, sorting, etc.
 		// },
 		Responses: func() *openapi3.Responses {
 			schemaRef200, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[M]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+								addSchemaDescriptions[M](itemsProperty.Value.Items)
+							}
+						}
+					}
+				}
 			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[string]), nil)
 			if err != nil {
@@ -469,6 +514,9 @@ func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 		schemaRef = new(openapi3.SchemaRef)
 	}
 
+	// Add field descriptions to schema
+	addSchemaDescriptions[M](schemaRef)
+
 	doc.Components.Schemas[name] = schemaRef
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.Get, typ),
@@ -481,6 +529,12 @@ func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemeRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemeRef200.Value != nil && schemeRef200.Value.Properties != nil {
+				if dataProperty, exists := schemeRef200.Value.Properties["data"]; exists {
+					addSchemaDescriptions[M](dataProperty)
+				}
 			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
 			if err != nil {
@@ -570,6 +624,12 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
+	// Add field descriptions to request body schema
+	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+			addSchemaDescriptions[M](itemsProperty.Value.Items)
+		}
+	}
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Post = &openapi3.Operation{
@@ -601,6 +661,18 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+								addSchemaDescriptions[M](itemsProperty.Value.Items)
+							}
+						}
+					}
+				}
 			}
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
@@ -681,6 +753,14 @@ func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
 			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists && dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+					if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+						addSchemaDescriptions[M](itemsProperty.Value.Items)
+					}
+				}
+			}
 			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
 			if err != nil {
 				zap.S().Error(err)
@@ -733,6 +813,12 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
+	// Add field descriptions to request body schema
+	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+			addSchemaDescriptions[M](itemsProperty.Value.Items)
+		}
+	}
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Put = &openapi3.Operation{
@@ -760,6 +846,18 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+								addSchemaDescriptions[M](itemsProperty.Value.Items)
+							}
+						}
+					}
+				}
 			}
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
 				zap.S().Error(err)
@@ -814,6 +912,12 @@ func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathIt
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
 	}
+	// Add field descriptions to request body schema
+	if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+			addSchemaDescriptions[M](itemsProperty.Value.Items)
+		}
+	}
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Patch = &openapi3.Operation{
@@ -842,6 +946,18 @@ func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathIt
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
+			}
+			// Add field descriptions to response data schema
+			if schemaRef200.Value != nil && schemaRef200.Value.Properties != nil {
+				if dataProperty, exists := schemaRef200.Value.Properties["data"]; exists {
+					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+								addSchemaDescriptions[M](itemsProperty.Value.Items)
+							}
+						}
+					}
+				}
 			}
 			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
 				zap.S().Error(err)
@@ -936,7 +1052,7 @@ func addHeaderParameters(op *openapi3.Operation) {
 		},
 	}
 
-	// 避免重复添加
+	// Avoid duplicate additions
 	existing := map[string]bool{}
 	for _, p := range op.Parameters {
 		if p.Value != nil {
@@ -951,8 +1067,95 @@ func addHeaderParameters(op *openapi3.Operation) {
 	}
 }
 
+var (
+	// Cache field descriptions of model.Base to avoid frequent parsing
+	baseModelDocsCache map[string]string
+	baseModelDocsOnce  sync.Once
+)
+
+// getBaseModelDocs gets field descriptions of model.Base (with caching)
+func getBaseModelDocs() map[string]string {
+	baseModelDocsOnce.Do(func() {
+		baseModel := &model.Base{}
+		baseModelDocsCache = parseModelDocs(baseModel)
+	})
+	return baseModelDocsCache
+}
+
+// addSchemaDescriptions adds field descriptions to schema properties
+func addSchemaDescriptions[M types.Model](schemaRef *openapi3.SchemaRef) {
+	if schemaRef == nil || schemaRef.Value == nil || schemaRef.Value.Properties == nil {
+		return
+	}
+
+	// Get model field descriptions
+	modelInstance := *new(M)
+	modelDocs := parseModelDocs(modelInstance)
+
+	// Get field descriptions of model.Base (using cache)
+	baseDocs := getBaseModelDocs()
+
+	// Create a mapping from JSON property names to field descriptions
+	propertyDescriptions := make(map[string]string)
+
+	// Process model fields
+	typ := reflect.TypeOf(*new(M)).Elem()
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		jsonTag := getFieldTag(field, consts.TAG_JSON)
+		if len(jsonTag) == 0 {
+			continue
+		}
+
+		// Get field descriptions from model documentation
+		if description, exists := modelDocs[field.Name]; exists && description != "" {
+			propertyDescriptions[jsonTag] = description
+			// Debug: log the mapping
+			// fmt.Printf("DEBUG: Field %s -> JSON %s -> Description: %s\n", field.Name, jsonTag, description)
+		}
+	}
+
+	// Process Base model fields
+	baseType := reflect.TypeOf(*new(model.Base))
+	for i := range baseType.NumField() {
+		field := baseType.Field(i)
+		jsonTag := getFieldTag(field, consts.TAG_JSON)
+		if len(jsonTag) == 0 {
+			continue
+		}
+
+		// Get field descriptions from Base model documentation
+		if description, exists := baseDocs[field.Name]; exists && description != "" {
+			propertyDescriptions[jsonTag] = description
+		}
+	}
+
+	// Add descriptions to schema properties
+	for propName, propRef := range schemaRef.Value.Properties {
+		if propRef.Value == nil {
+			continue
+		}
+
+		// Set description if available
+		if description, exists := propertyDescriptions[propName]; exists && description != "" {
+			// Create a copy of the schema to avoid shared reference issues
+			if propRef.Value != nil {
+				// Create a new schema that's a copy of the original
+				newSchema := *propRef.Value
+				newSchema.Description = description
+				// Create a new SchemaRef and update the Properties map
+				schemaRef.Value.Properties[propName] = &openapi3.SchemaRef{Value: &newSchema}
+			}
+		}
+	}
+}
+
 func addQueryParameters[M types.Model](op *openapi3.Operation) {
 	queries := make([]*openapi3.ParameterRef, 0)
+
+	// Get model field descriptions
+	modelInstance := *new(M)
+	modelDocs := parseModelDocs(modelInstance)
 
 	typ := reflect.TypeOf(*new(M)).Elem()
 	for i := range typ.NumField() {
@@ -961,15 +1164,23 @@ func addQueryParameters[M types.Model](op *openapi3.Operation) {
 		if len(schemaTag) == 0 {
 			continue
 		}
+
+		// Get field descriptions from model documentation
+		description := modelDocs[field.Name]
+
 		queries = append(queries, &openapi3.ParameterRef{
 			Value: &openapi3.Parameter{
-				Name:     schemaTag,
-				In:       "query",
-				Required: false,
-				Schema:   &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+				Name:        schemaTag,
+				In:          "query",
+				Required:    false,
+				Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+				Description: description,
 			},
 		})
 	}
+
+	// Get field descriptions of model.Base (using cache)
+	baseDocs := getBaseModelDocs()
 
 	baseType := reflect.TypeOf(*new(model.Base))
 	for i := range baseType.NumField() {
@@ -979,15 +1190,18 @@ func addQueryParameters[M types.Model](op *openapi3.Operation) {
 			continue
 		}
 
+		// Get field descriptions from Base model documentation
+		description := baseDocs[field.Name]
+
 		queries = append(queries, &openapi3.ParameterRef{
 			Value: &openapi3.Parameter{
-				Name:     schemaTag,
-				In:       "query",
-				Required: false,
-				Schema:   &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+				Name:        schemaTag,
+				In:          "query",
+				Required:    false,
+				Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: fieldType2openapiType(field)}},
+				Description: description,
 			},
 		})
-
 	}
 
 	// queries := []*openapi3.ParameterRef{
@@ -1021,7 +1235,7 @@ func addQueryParameters[M types.Model](op *openapi3.Operation) {
 	// 	},
 	// }
 
-	// 避免重复添加
+	// Avoid duplicate additions
 	existing := map[string]bool{}
 	for _, p := range op.Parameters {
 		if p.Value != nil {
@@ -1268,7 +1482,7 @@ func newApiResponseRefWithData(data any) *openapi3.SchemaRef {
 			"code":       {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeInteger}}},
 			"msg":        {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
 			"request_id": {Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
-			"data":       dataSchemaRef, // ✅ 使用动态生成的类型
+			"data":       dataSchemaRef, // ✅ Use dynamically generated type
 		},
 	}
 	return &openapi3.SchemaRef{Value: schema}
