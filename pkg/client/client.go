@@ -21,6 +21,26 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type action int
+
+const (
+	create action = iota
+	delete_
+	update
+	update_partial
+	list
+	get
+	batch_create
+	batch_delete
+	batch_update
+	batch_update_partial
+)
+
+var (
+	ErrNotStringSlice = errors.New("payload must be a string slice")
+	ErrNotStructSlice = errors.New("payload must be a struct slice")
+)
+
 type Client struct {
 	addr       string
 	httpClient *http.Client
@@ -42,21 +62,16 @@ type Client struct {
 	types.Logger
 }
 
-type action int
-
-const (
-	create action = iota
-	delete_
-	update
-	update_partial
-	list
-	get
-)
-
 type response struct {
 	Code int             `json:"code"`
 	Msg  string          `json:"msg"`
 	Data json.RawMessage `json:"data"`
+}
+type batchRequest struct {
+	// Ids is the id list that should be batch delete.
+	Ids any `json:"ids,omitempty"`
+	// Items is the resource list that should be batch create/update/partial update.
+	Items any `json:"items,omitempty"`
 }
 
 // New creates a new client instance with given base URL and options.
@@ -224,6 +239,65 @@ func (c *Client) GetRaw() ([]byte, error) {
 	return c.request(get, nil)
 }
 
+func isStructSlice(payload any) bool {
+	typ := reflect.TypeOf(payload)
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Slice {
+		return false
+	}
+	elemTyp := typ.Elem()
+	for elemTyp.Kind() == reflect.Ptr {
+		elemTyp = elemTyp.Elem()
+	}
+	return elemTyp.Kind() == reflect.Struct
+}
+
+func isStringSlice(payload any) bool {
+	typ := reflect.TypeOf(payload)
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	return typ.Kind() == reflect.Slice && typ.Elem().Kind() == reflect.String
+}
+
+// BatchCreate send a POST request to batch create multiple resources.
+// payload should be a struct slice, eg: []User or []*User
+func (c *Client) BatchCreate(payload any) ([]byte, error) {
+	if !isStructSlice(payload) {
+		return nil, ErrNotStructSlice
+	}
+	return c.request(batch_create, batchRequest{Items: payload})
+}
+
+// BatchDelete send a DELETE request to batch delete multiple resources.
+// payload should be a string slice contains id list.
+func (c *Client) BatchDelete(payload any) ([]byte, error) {
+	if !isStringSlice(payload) {
+		return nil, ErrNotStringSlice
+	}
+	return c.request(batch_delete, batchRequest{Ids: payload})
+}
+
+// BatchUpdate send a PUT request to batch update multiple resources.
+// payload should be a struct slice, eg: []User or []*User
+func (c *Client) BatchUpdate(payload any) ([]byte, error) {
+	if !isStructSlice(payload) {
+		return nil, ErrNotStructSlice
+	}
+	return c.request(batch_update, batchRequest{Items: payload})
+}
+
+// BatchUpdatePartial send a PATCH request to batch partially update multiple resources.
+// payload should be a struct slice, eg: []User or []*User
+func (c *Client) BatchUpdatePartial(payload any) ([]byte, error) {
+	if !isStructSlice(payload) {
+		return nil, ErrNotStructSlice
+	}
+	return c.request(batch_update_partial, batchRequest{Items: payload})
+}
+
 // request send a request to backend server.
 // action determines the type of request,
 // payload can be []byte or struct/pointer that can be marshaled to JSON.
@@ -250,6 +324,18 @@ func (c *Client) request(action action, payload any) ([]byte, error) {
 	case update_partial:
 		method = http.MethodPatch
 		url = c.addr
+	case batch_create:
+		method = http.MethodPost
+		url = fmt.Sprintf("%s/batch", c.addr)
+	case batch_delete:
+		method = http.MethodDelete
+		url = fmt.Sprintf("%s/batch", c.addr)
+	case batch_update:
+		method = http.MethodPut
+		url = fmt.Sprintf("%s/batch", c.addr)
+	case batch_update_partial:
+		method = http.MethodPatch
+		url = fmt.Sprintf("%s/batch", c.addr)
 	case list:
 		method = http.MethodGet
 		url, err = c.RequestURL()
@@ -261,20 +347,20 @@ func (c *Client) request(action action, payload any) ([]byte, error) {
 		return nil, errors.Wrap(err, "invalid request url")
 	}
 
-	var _payload io.Reader
+	var reader io.Reader
 	if payload != nil {
 		switch v := payload.(type) {
 		case []byte:
-			_payload = bytes.NewReader(v)
+			reader = bytes.NewReader(v)
 		default:
 			var data []byte
 			if data, err = json.Marshal(v); err != nil {
 				return nil, errors.Wrap(err, "failed to marshal payload")
 			}
-			_payload = bytes.NewReader(data)
+			reader = bytes.NewReader(data)
 		}
 	}
-	req, err := http.NewRequest(method, url, _payload)
+	req, err := http.NewRequest(method, url, reader)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
@@ -312,12 +398,17 @@ func (c *Client) request(action action, payload any) ([]byte, error) {
 		return buf.Bytes(), fmt.Errorf("response status code: %d, body: %s", resp.StatusCode, buf.String())
 	}
 
-	res := new(response)
-	if err := json.Unmarshal(buf.Bytes(), res); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal response")
+	if len(buf.Bytes()) != 0 {
+		res := new(response)
+		if err := json.Unmarshal(buf.Bytes(), res); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal response: "+buf.String())
+		}
+		if res.Code != 0 {
+			return nil, fmt.Errorf("response status code: %d, code: %d, msg: %s, body: %s", resp.StatusCode, res.Code, res.Msg, buf.String())
+		}
+		return res.Data, nil
 	}
-	if res.Code != 0 {
-		return nil, fmt.Errorf("response status code: %d, code: %d, msg: %s, body: %s", resp.StatusCode, res.Code, res.Msg, buf.String())
-	}
-	return res.Data, nil
+
+	// Delete or BatchDelete response is empty with http status 204.
+	return []byte{}, nil
 }
