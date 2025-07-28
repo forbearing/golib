@@ -2,6 +2,29 @@
 ## [Unreleased]
 
 
+<a name="v0.6.1"></a>
+## [v0.6.1] - 2025-07-28
+### Chore
+- **codegen:** remove comments
+
+### Docs
+- update README.md
+- generate CHANGELOG.md
+
+### Feat
+- **openapigen:** parse struct fields doc use go ast
+
+### Fix
+- **codegen:** add proper pluralization for variable names
+- **codegen:** resolve package import conflicts in service generation
+
+### Pref
+- **service:** cache service instances in controller handlers
+
+### Refactor
+- **openapigen:** rename addSchemaDescriptions -> addSchemaTitleDesc
+
+
 <a name="v0.6.0"></a>
 ## [v0.6.0] - 2025-07-02
 ### Chore
@@ -1339,7 +1362,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.1...HEAD
+[v0.6.1]: https://github.com/forbearing/golib/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/forbearing/golib/compare/v0.5.2...v0.6.0
 [v0.5.2]: https://github.com/forbearing/golib/compare/v0.5.1...v0.5.2
 [v0.5.1]: https://github.com/forbearing/golib/compare/v0.5.0...v0.5.1
