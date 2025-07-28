@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/pkg/client"
+	"github.com/forbearing/golib/client"
 	"github.com/stretchr/testify/assert"
 )
 
