@@ -2,6 +2,23 @@
 ## [Unreleased]
 
 
+<a name="v0.6.2"></a>
+## [v0.6.2] - 2025-07-28
+### Docs
+- update CHANGELOG.md with recent changes
+
+### Feat
+- **client:** client support BatchCreate, BatchDelete, BatchUpdate, BatchUpdatePartial
+
+### Refactor
+- **client:** client operation returns *Resp, bofore is []byte
+- **client:** remove ListRaw, GetRaw
+- **client:** move package: pkg/client -> client
+
+### Test
+- **database:** add test and benchmark case
+
+
 <a name="v0.6.1"></a>
 ## [v0.6.1] - 2025-07-28
 ### Chore
@@ -1362,7 +1379,8 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.2...HEAD
+[v0.6.2]: https://github.com/forbearing/golib/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://github.com/forbearing/golib/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/forbearing/golib/compare/v0.5.2...v0.6.0
 [v0.5.2]: https://github.com/forbearing/golib/compare/v0.5.1...v0.5.2
