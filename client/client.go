@@ -199,11 +199,6 @@ func (c *Client) List(items any, total *int64) error {
 	return nil
 }
 
-// ListRaw send a GET request to retrieve a list of resources without unmarshaling.
-func (c *Client) ListRaw() ([]byte, error) {
-	return c.request(list, nil)
-}
-
 // Get send a GET request to get one resource by given id.
 // The id parameter specifies which resource to retrieve.
 // The dst parameter must be a pointer to struct where the resource will be unmarshaled into.
@@ -232,11 +227,6 @@ func (c *Client) Get(id string, dst any) error {
 		return errors.Wrap(err, "failed to unmarshal response")
 	}
 	return nil
-}
-
-// GetRaw send a GET request to get one resource by given id without unmarshaling.
-func (c *Client) GetRaw() ([]byte, error) {
-	return c.request(get, nil)
 }
 
 func isStructSlice(payload any) bool {
