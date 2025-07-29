@@ -1,8 +1,10 @@
 // cmd/gg/main.go
 package main
 
-import "github.com/forbearing/golib/internal/codegen/gen"
+import (
+	"github.com/spf13/cobra"
+)
 
 func main() {
-	gen.Main()
+	cobra.CheckErr(rootCmd.Execute())
 }
