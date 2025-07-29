@@ -10,9 +10,6 @@ var applyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "apply service code",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Initialize console logger based on debug flag
-		apply.InitLogger(debug)
-
 		if len(module) == 0 {
 			var err error
 			module, err = gen.GetModulePath()

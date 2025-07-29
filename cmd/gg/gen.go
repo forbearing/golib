@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 
+	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
 	"github.com/spf13/cobra"
 )
@@ -22,43 +20,10 @@ var genCmd = &cobra.Command{
 			checkErr(err)
 		}
 
-		models := make([]*gen.ModelInfo, 0)
-		filepath.Walk(modelDir, func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+		allModels, err := codegen.FindModelsInDirectory(module, modelDir, serviceDir, excludes)
+		checkErr(err)
 
-			base := filepath.Base(path)
-			if path != modelDir && (base == "vendor" || base == "testdata") {
-				return filepath.SkipDir
-			}
-			if info.IsDir() {
-				return nil
-			}
-			if !strings.HasSuffix(info.Name(), ".go") ||
-				strings.HasSuffix(info.Name(), "_test.go") ||
-				strings.HasPrefix(info.Name(), "_") ||
-				slices.Contains(excludes, info.Name()) {
-				return nil
-			}
-
-			_models, err := gen.FindModels(module, path)
-			if err != nil {
-				return nil
-			}
-			for _, m := range _models {
-				dir := filepath.Dir(path)
-				svcDir := strings.Replace(dir, modelDir, serviceDir, 1)
-				svcFile := filepath.Join(svcDir, strings.ToLower(m.ModelName)+".go")
-				m.ServiceFilePath = svcFile
-				m.ModelFilePath = path
-				models = append(models, m)
-			}
-
-			return nil
-		})
-
-		for _, m := range models {
+		for _, m := range allModels {
 			dir := filepath.Dir(m.ServiceFilePath)
 			checkErr(os.MkdirAll(dir, 0o755))
 
