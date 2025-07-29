@@ -30,6 +30,7 @@ type ModelInfo struct {
 	ModelName       string // model 名, 例如: User, Group
 	ModelVarName    string // 小写的模型变量名, 例如: u, g
 	ModelFileDir    string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
+	ModelFilePath   string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 }
 
@@ -130,7 +131,7 @@ func findModels(modulePath string, filename string) ([]*ModelInfo, error) {
 	var models []*ModelInfo
 	for _, decl := range node.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
-		if !ok || genDecl == nil {
+		if !ok || genDecl == nil || genDecl.Tok != token.TYPE {
 			continue
 		}
 		for _, spec := range genDecl.Specs {

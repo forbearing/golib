@@ -30,8 +30,6 @@ func Main() {
 	checkErr(err)
 
 	models := make([]*ModelInfo, 0)
-
-	filepath.Join()
 	filepath.Walk(modelDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -60,11 +58,9 @@ func Main() {
 			svcDir := strings.Replace(dir, modelDir, serviceDir, 1)
 			svcFile := filepath.Join(svcDir, strings.ToLower(m.ModelName)+".go")
 			m.ServiceFilePath = svcFile
+			m.ModelFilePath = path
 			models = append(models, m)
 		}
-		// for _, m := range _models {
-		// 	fmt.Println(path, m.ServiceFilePath)
-		// }
 
 		return nil
 	})
