@@ -41,15 +41,15 @@ func generateServiceMethod(model *gen.ModelInfo, methodName string, serviceInfo 
 // generateCRUDMethod generates regular CRUD methods (Create, Update, Delete, Get)
 func generateCRUDMethod(model *gen.ModelInfo, methodName string, businessLogic []ast.Stmt) *ast.FuncDecl {
 	modelVarName := strings.ToLower(model.ModelName)
-	
+
 	// Create method body
 	body := []ast.Stmt{
 		gen.AssignWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName), 
+		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
-	
+
 	// Add business logic markers and preserved code
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
@@ -60,15 +60,15 @@ func generateCRUDMethod(model *gen.ModelInfo, methodName string, businessLogic [
 // generateListMethod generates List methods that work with slices
 func generateListMethod(model *gen.ModelInfo, methodName string, businessLogic []ast.Stmt) *ast.FuncDecl {
 	modelVarName := strings.ToLower(model.ModelName)
-	
+
 	// Create method body
 	body := []ast.Stmt{
 		gen.AssignWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName), 
+		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
-	
+
 	// Add business logic markers and preserved code
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
@@ -79,15 +79,15 @@ func generateListMethod(model *gen.ModelInfo, methodName string, businessLogic [
 // generateBatchMethod generates Batch methods that use variadic parameters
 func generateBatchMethod(model *gen.ModelInfo, methodName string, businessLogic []ast.Stmt) *ast.FuncDecl {
 	modelVarName := strings.ToLower(model.ModelName)
-	
+
 	// Create method body
 	body := []ast.Stmt{
 		gen.AssignWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName), 
+		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
-	
+
 	// Add business logic markers and preserved code
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
@@ -101,15 +101,15 @@ func createBusinessLogicSection(businessLogic []ast.Stmt) []ast.Stmt {
 		createCommentStmt("// ===== business logic start ====="),
 		gen.EmptyLine(),
 	}
-	
+
 	// Add preserved business logic
 	section = append(section, businessLogic...)
-	
+
 	section = append(section,
 		gen.EmptyLine(),
 		createCommentStmt("// ===== business logic end ====="),
 	)
-	
+
 	return section
 }
 
@@ -128,7 +128,7 @@ func convertBusinessLogicToAST(businessCode []string) []ast.Stmt {
 	// For now, we'll create simple expression statements
 	// In a more complete implementation, we would parse these back to proper AST
 	var statements []ast.Stmt
-	
+
 	for _, code := range businessCode {
 		if strings.TrimSpace(code) == "" {
 			statements = append(statements, gen.EmptyLine())
@@ -141,6 +141,7 @@ func convertBusinessLogicToAST(businessCode []string) []ast.Stmt {
 			})
 		}
 	}
-	
+
 	return statements
 }
+
