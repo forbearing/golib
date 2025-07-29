@@ -29,7 +29,7 @@ func Test_Imports(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(Imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
+			got, err := FormatNode(Imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -66,7 +66,7 @@ func Test_Inits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(Inits(tt.modelName))
+			got, err := FormatNode(Inits(tt.modelName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -98,7 +98,7 @@ func Test_Types(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res := Types(tt.modelName, tt.modelPkgname)
-			got, err := formatNode(res)
+			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -139,7 +139,7 @@ func Test_ServiceMethod1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(ServiceMethod1(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName))
+			got, err := FormatNode(ServiceMethod1(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -181,7 +181,7 @@ func Test_ServiceMethod2(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res := ServiceMethod2(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
-			got, err := formatNode(res)
+			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -223,7 +223,7 @@ func Test_ServiceMethod3(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res := ServiceMethod3(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
-			got, err := formatNode(res)
+			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
 				return

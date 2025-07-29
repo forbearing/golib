@@ -177,6 +177,13 @@ func IsValidModelPackage(packageName string) bool {
 
 // ModelPkg2ServicePkg 根据 model name 转换成 service name.
 func ModelPkg2ServicePkg(pkgName string) string {
+	if pkgName == "model" {
+		return "service"
+	}
+	// 对于 model_xxx 格式，替换为 service_xxx
+	if strings.HasPrefix(pkgName, "model_") {
+		return strings.Replace(pkgName, "model_", "service_", 1)
+	}
 	return strings.Replace(pkgName, "model", "service", 1)
 }
 
@@ -216,7 +223,7 @@ func generateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	)
 }
 
-func generateServiceFile(info *ModelInfo) *ast.File {
+func GenerateServiceFile(info *ModelInfo) *ast.File {
 	if !IsValidModelPackage(info.PackageName) {
 		return nil
 	}
@@ -243,7 +250,7 @@ func generateServiceFile(info *ModelInfo) *ast.File {
 	}
 }
 
-func formatNode(node ast.Node) (string, error) {
+func FormatNode(node ast.Node) (string, error) {
 	var buf bytes.Buffer
 	fset := token.NewFileSet()
 
@@ -259,7 +266,7 @@ func formatNode(node ast.Node) (string, error) {
 	return string(formated), nil
 }
 
-func methodAddComments(code string, modelName string) string {
+func MethodAddComments(code string, modelName string) string {
 	for _, method := range methods {
 		str := strings.ReplaceAll(strcase.SnakeCase(method), "_", " ")
 		// 在 log.Info 之后添加注释
