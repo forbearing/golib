@@ -1,4 +1,4 @@
-package codegen
+package gen
 
 import (
 	"github.com/forbearing/golib/types/consts"
