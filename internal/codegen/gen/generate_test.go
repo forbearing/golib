@@ -274,7 +274,7 @@ func Test_generateServiceMethod1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(generateServiceMethod1(tt.info, tt.methodName))
+			got, err := FormatNode(generateServiceMethod1(tt.info, tt.methodName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -315,7 +315,7 @@ func Test_generateServiceMethod2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(generateServiceMethod2(tt.info, tt.methodName))
+			got, err := FormatNode(generateServiceMethod2(tt.info, tt.methodName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -354,7 +354,7 @@ func Test_generateServiceMethod3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(generateServiceMethod3(tt.info, tt.methodName))
+			got, err := FormatNode(generateServiceMethod3(tt.info, tt.methodName))
 			if err != nil {
 				t.Error(err)
 				return
@@ -402,7 +402,7 @@ func Test_generateServiceFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(generateServiceFile(tt.info))
+			got, err := FormatNode(GenerateServiceFile(tt.info))
 			if err != nil {
 				t.Error(err)
 				return
