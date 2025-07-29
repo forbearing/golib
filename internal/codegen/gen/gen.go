@@ -15,19 +15,24 @@ var (
 	modelDir   string
 	serviceDir string
 	excludes   []string
+	module     string
 )
 
 func init() {
 	pflag.StringVarP(&modelDir, "model", "m", "model", "model directory path")
 	pflag.StringVarP(&serviceDir, "service", "s", "service", "service directory path")
+	pflag.StringVarP(&module, "module", "M", "", "module path")
 	pflag.StringSliceVarP(&excludes, "exclude", "e", nil, "exclude files")
 
 	pflag.Parse()
 }
 
 func Main() {
-	module, err := getModulePath()
-	checkErr(err)
+	if len(module) == 0 {
+		var err error
+		module, err = GetModulePath()
+		checkErr(err)
+	}
 
 	models := make([]*ModelInfo, 0)
 	filepath.Walk(modelDir, func(path string, info fs.FileInfo, err error) error {
@@ -49,7 +54,7 @@ func Main() {
 			return nil
 		}
 
-		_models, err := findModels(module, path)
+		_models, err := FindModels(module, path)
 		if err != nil {
 			return nil
 		}

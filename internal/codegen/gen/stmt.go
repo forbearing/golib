@@ -5,8 +5,8 @@ import (
 	"go/token"
 )
 
-// expr_log_info create *ast.ExprStmt represents `log.Info(str)`
-func expr_log_info(str string) *ast.ExprStmt {
+// ExprLogInfo create *ast.ExprStmt represents `log.Info(str)`
+func ExprLogInfo(str string) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			// log.Info
@@ -25,15 +25,11 @@ func expr_log_info(str string) *ast.ExprStmt {
 	}
 }
 
-func empty_line() *ast.EmptyStmt {
+func EmptyLine() *ast.EmptyStmt {
 	return &ast.EmptyStmt{}
 }
 
-func empty_line2() *ast.ExprStmt {
-	return &ast.ExprStmt{}
-}
-
-func returns(strs ...string) *ast.ReturnStmt {
+func Returns(strs ...string) *ast.ReturnStmt {
 	exprs := make([]ast.Expr, 0, len(strs))
 	for _, str := range strs {
 		if len(str) == 0 {
@@ -46,9 +42,9 @@ func returns(strs ...string) *ast.ReturnStmt {
 	}
 }
 
-// assign_with_service_context create *ast.AssignStmt represents `log := u.WithServiceContext(ctx, ctx.GetPhase())`
+// AssignWithServiceContext create *ast.AssignStmt represents `log := u.WithServiceContext(ctx, ctx.GetPhase())`
 // modelVarName is model variable name.
-func assign_with_service_context(modelVarName string) *ast.AssignStmt {
+func AssignWithServiceContext(modelVarName string) *ast.AssignStmt {
 	return &ast.AssignStmt{
 		Lhs: []ast.Expr{
 			ast.NewIdent("log"),

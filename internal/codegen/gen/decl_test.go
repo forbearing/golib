@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_imports(t *testing.T) {
+func Test_Imports(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -29,20 +29,20 @@ func Test_imports(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
+			got, err := formatNode(Imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			fmt.Println(got)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("imports() = %v, want %v", got, tt.want)
+				t.Errorf("Imports() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_inits(t *testing.T) {
+func Test_Inits(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -66,19 +66,19 @@ func Test_inits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(inits(tt.modelName))
+			got, err := formatNode(Inits(tt.modelName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("inits() = %v, want %v", got, tt.want)
+				t.Errorf("Inits() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_types(t *testing.T) {
+func Test_Types(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -97,20 +97,20 @@ func Test_types(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := types(tt.modelName, tt.modelPkgname)
+			res := Types(tt.modelName, tt.modelPkgname)
 			got, err := formatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				// t.Errorf("types() = %v, want %v", got, tt.want)
+				t.Errorf("Types() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_service_method_1(t *testing.T) {
+func Test_ServiceMethod1(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -139,19 +139,19 @@ func Test_service_method_1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(service_method_1(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName))
+			got, err := formatNode(ServiceMethod1(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("service_method_1() = %v, want %v", got, tt.want)
+				t.Errorf("ServiceMethod1() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_service_method_2(t *testing.T) {
+func Test_ServiceMethod2(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -180,20 +180,20 @@ func Test_service_method_2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := service_method_2(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
+			res := ServiceMethod2(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
 			got, err := formatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("service_method_2() = %v, want %v", got, tt.want)
+				t.Errorf("ServiceMethod2() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_service_method_3(t *testing.T) {
+func Test_ServiceMethod3(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -222,14 +222,14 @@ func Test_service_method_3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := service_method_3(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
+			res := ServiceMethod3(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName)
 			got, err := formatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("service_method_3() = %v, want %v", got, tt.want)
+				t.Errorf("ServiceMethod3() = %v, want %v", got, tt.want)
 			}
 		})
 	}
