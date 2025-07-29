@@ -34,8 +34,8 @@ type ModelInfo struct {
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 }
 
-// getModulePath 解析 go.mod 获取模块路径
-func getModulePath() (string, error) {
+// GetModulePath 解析 go.mod 获取模块路径
+func GetModulePath() (string, error) {
 	// 如果存在 go 命令直接通过 go list -m 命令获取模块路径
 	cmd := exec.Command("go", "list", "-m")
 	output, err := cmd.Output()
@@ -64,10 +64,10 @@ func getModulePath() (string, error) {
 	return moduleName, scanner.Err()
 }
 
-// findModelPackageName 查找包中导入的 model 包的实际名称
+// FindModelPackageName 查找包中导入的 model 包的实际名称
 // import "github.com/forbearing/golib/model" 则为 "model"
 // import model_auth "github.com/forbearing/golib/model", 则为 model_auth
-func findModelPackageName(file *ast.File) string {
+func FindModelPackageName(file *ast.File) string {
 	return file.Name.Name
 	for _, imp := range file.Imports {
 		path := strings.Trim(imp.Path.Value, `"`)
@@ -115,15 +115,15 @@ func isModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
 	return false
 }
 
-// findModels 查找 model 文件中的所有结构体
-func findModels(modulePath string, filename string) ([]*ModelInfo, error) {
+// FindModels 查找 model 文件中的所有结构体
+func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	modelPkgName := findModelPackageName(node)
+	modelPkgName := FindModelPackageName(node)
 	if len(modelPkgName) == 0 {
 		return nil, fmt.Errorf("file %s has no model package", filename)
 	}
@@ -171,12 +171,12 @@ func findModels(modulePath string, filename string) ([]*ModelInfo, error) {
 	return models, nil
 }
 
-func isValidModelPackage(packageName string) bool {
+func IsValidModelPackage(packageName string) bool {
 	return strings.HasPrefix(packageName, "model")
 }
 
-// modelPkg2ServicePkg 根据 model name 转换成 service name.
-func modelPkg2ServicePkg(pkgName string) string {
+// ModelPkg2ServicePkg 根据 model name 转换成 service name.
+func ModelPkg2ServicePkg(pkgName string) string {
 	return strings.Replace(pkgName, "model", "service", 1)
 }
 
@@ -184,11 +184,11 @@ func modelPkg2ServicePkg(pkgName string) string {
 func generateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return service_method_1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		assign_with_service_context(info.ModelVarName),
-		expr_log_info(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
-		empty_line(),
-		returns("nil"),
+	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+		AssignWithServiceContext(info.ModelVarName),
+		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns("nil"),
 	)
 }
 
@@ -196,11 +196,11 @@ func generateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 func generateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return service_method_2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		assign_with_service_context(info.ModelVarName),
-		expr_log_info(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
-		empty_line(),
-		returns("nil"),
+	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+		AssignWithServiceContext(info.ModelVarName),
+		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns("nil"),
 	)
 }
 
@@ -208,23 +208,23 @@ func generateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 func generateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return service_method_3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		assign_with_service_context(info.ModelVarName),
-		expr_log_info(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
-		empty_line(),
-		returns("nil"),
+	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+		AssignWithServiceContext(info.ModelVarName),
+		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns("nil"),
 	)
 }
 
 func generateServiceFile(info *ModelInfo) *ast.File {
-	if !isValidModelPackage(info.PackageName) {
+	if !IsValidModelPackage(info.PackageName) {
 		return nil
 	}
 
 	decls := []ast.Decl{
-		imports(info.ModulePath, info.ModelFileDir, info.PackageName),
-		inits(info.ModelName),
-		types(info.ModelName, info.PackageName),
+		Imports(info.ModulePath, info.ModelFileDir, info.PackageName),
+		Inits(info.ModelName),
+		Types(info.ModelName, info.PackageName),
 	}
 
 	for _, method := range methods {
@@ -238,7 +238,7 @@ func generateServiceFile(info *ModelInfo) *ast.File {
 	}
 
 	return &ast.File{
-		Name:  ast.NewIdent(modelPkg2ServicePkg(info.PackageName)),
+		Name:  ast.NewIdent(ModelPkg2ServicePkg(info.PackageName)),
 		Decls: decls,
 	}
 }

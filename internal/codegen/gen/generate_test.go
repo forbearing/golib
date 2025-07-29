@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -8,6 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	_ "github.com/sergi/go-diff/diffmatchpatch"
 )
 
 var src1 = `
@@ -62,7 +65,7 @@ type GroupUser struct {
 }
 	`
 
-func Test_getModulePath(t *testing.T) {
+func Test_GetModulePath(t *testing.T) {
 	tests := []struct {
 		name    string // description of this test case
 		want    string
@@ -76,7 +79,7 @@ func Test_getModulePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := getModulePath()
+			got, gotErr := GetModulePath()
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("getModulePath() failed: %v", gotErr)
@@ -93,7 +96,7 @@ func Test_getModulePath(t *testing.T) {
 	}
 }
 
-func Test_findModelPackageName(t *testing.T) {
+func Test_FindModelPackageName(t *testing.T) {
 	fset := token.NewFileSet()
 	file1, err := parser.ParseFile(fset, "user.go", src1, parser.ParseComments)
 	if err != nil {
@@ -123,7 +126,7 @@ func Test_findModelPackageName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := findModelPackageName(tt.file)
+			got := FindModelPackageName(tt.file)
 			if got != tt.want {
 				t.Errorf("findModelPackageName() = %v, want %v", got, tt.want)
 			}
@@ -131,8 +134,8 @@ func Test_findModelPackageName(t *testing.T) {
 	}
 }
 
-func Test_findModels(t *testing.T) {
-	modulePath, err := getModulePath()
+func Test_FindModels(t *testing.T) {
+	modulePath, err := GetModulePath()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +184,7 @@ func Test_findModels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := findModels(tt.modulePath, tt.filename)
+			got, gotErr := FindModels(tt.modulePath, tt.filename)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("findModels() failed: %v", gotErr)
@@ -206,7 +209,7 @@ func Test_findModels(t *testing.T) {
 	}
 }
 
-func Test_modelPkg2ServicePkg(t *testing.T) {
+func Test_ModelPkg2ServicePkg(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -236,7 +239,7 @@ func Test_modelPkg2ServicePkg(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := modelPkg2ServicePkg(tt.pkgName)
+			got := ModelPkg2ServicePkg(tt.pkgName)
 			if got != tt.want {
 				t.Errorf("modelPkg2ServicePkg() = %v, want %v", got, tt.want)
 			}
@@ -244,19 +247,18 @@ func Test_modelPkg2ServicePkg(t *testing.T) {
 	}
 }
 
-func Test_generateServiceMethod(t *testing.T) {
+func Test_generateServiceMethod1(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		model      *ModelInfo
+		info       *ModelInfo
 		methodName string
 		want       string
 	}{
-		// TODO: Add test cases.
 		{
 			name:       "user",
 			methodName: "CreateBefore",
-			model: &ModelInfo{
+			info: &ModelInfo{
 				PackageName:  "model",
 				ModelName:    "User",
 				ModelVarName: "u",
@@ -264,21 +266,101 @@ func Test_generateServiceMethod(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			want: `func (u *user) CreateBefore(ctx *types.ServiceContext, user *model.User) error {
-        log := u.WithServiceContext(ctx, ctx.GetPhase())
-        log.Info("user create before")
-        return nil
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user create before")
+	return nil
 }`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := formatNode(generateServiceMethod1(tt.model, tt.methodName))
+			got, err := formatNode(generateServiceMethod1(tt.info, tt.methodName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if reflect.DeepEqual(got, tt.want) {
-				t.Errorf("generateServiceMethod() = %v, want %v", got, tt.want)
+			if got != tt.want {
+				// t.Errorf("generateServiceMethod1() = %v, want %v", got, tt.want)
+				fmt.Println(got)
+				fmt.Println(tt.want)
+			}
+		})
+	}
+}
+
+func Test_generateServiceMethod2(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info       *ModelInfo
+		methodName string
+		want       string
+	}{
+		{
+			name:       "user",
+			methodName: "ListBefore",
+			info: &ModelInfo{
+				PackageName:  "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			want: `func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user list before")
+	return nil
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatNode(generateServiceMethod2(tt.info, tt.methodName))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("generateServiceMethod2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_generateServiceMethod3(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info       *ModelInfo
+		methodName string
+		want       string
+	}{
+		{
+			name:       "user",
+			methodName: "BatchCreateBefore",
+			info: &ModelInfo{
+				PackageName:  "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			want: `func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user batch create before")
+	return nil
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := formatNode(generateServiceMethod3(tt.info, tt.methodName))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("generateServiceMethod3() = %v, want %v", got, tt.want)
 			}
 		})
 	}

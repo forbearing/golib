@@ -12,7 +12,7 @@ import (
 
 var pluralizeCli = pluralize.NewClient()
 
-// imports
+// Imports
 /*
 import (
 	"codegen/model"
@@ -20,7 +20,7 @@ import (
 	"github.com/forbearing/golib/types"
 )
 */
-func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
+func Imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 	importModel := filepath.Join(modulePath, modelFileDir)
 	fields := strings.Split(importModel, "/")
 	if len(fields) > 0 && fields[len(fields)-1] != modelPkgName {
@@ -56,13 +56,13 @@ func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 	}
 }
 
-// inits
+// Inits
 /*
 func init() {
 	service.Register[*user]()
 }
 */
-func inits(modelName string) *ast.FuncDecl {
+func Inits(modelName string) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Name: ast.NewIdent("init"),
 		Type: &ast.FuncType{},
@@ -86,14 +86,14 @@ func inits(modelName string) *ast.FuncDecl {
 	}
 }
 
-// types
+// Types
 /*
 // user implements the types.Service[*model.User] interface.
 type user struct {
 	service.Base[*model.User]
 }
 */
-func types(modelName, modelPkgName string) *ast.GenDecl {
+func Types(modelName, modelPkgName string) *ast.GenDecl {
 	return &ast.GenDecl{
 		Doc: &ast.CommentGroup{
 			List: []*ast.Comment{
@@ -132,12 +132,12 @@ func types(modelName, modelPkgName string) *ast.GenDecl {
 	}
 }
 
-// service_method_1 creates a function declaration for a method in a service interface.
+// ServiceMethod1 creates a function declaration for a method in a service interface.
 // For example:
 //
 //	"func (u *user) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
 //	"func (g *group) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
-func service_method_1(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+func ServiceMethod1(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -187,12 +187,12 @@ func service_method_1(recvName, modelName, methodName, modelPkgName string, body
 	}
 }
 
-// service_method_2
+// ServiceMethod2
 // For example:
 //
 //	"func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
 //	"func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
-func service_method_2(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+func ServiceMethod2(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -246,12 +246,12 @@ func service_method_2(recvName, modelName, methodName, modelPkgName string, body
 	}
 }
 
-// service_method_3
+// ServiceMethod3
 // For example:
 //
 //	"func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
 //	"func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-func service_method_3(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+func ServiceMethod3(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{

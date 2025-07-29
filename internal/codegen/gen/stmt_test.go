@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_expr_log_info(t *testing.T) {
+func Test_ExprLogInfo(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -25,7 +25,7 @@ func Test_expr_log_info(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf.Reset()
-			res := expr_log_info(tt.str)
+			res := ExprLogInfo(tt.str)
 			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
 				return
@@ -38,7 +38,7 @@ func Test_expr_log_info(t *testing.T) {
 	}
 }
 
-func Test_return_one(t *testing.T) {
+func Test_Returns(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -61,7 +61,7 @@ func Test_return_one(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := returns(tt.str)
+			res := Returns(tt.str)
 			buf.Reset()
 			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
@@ -75,7 +75,7 @@ func Test_return_one(t *testing.T) {
 	}
 }
 
-func Test_assign_with_service_context(t *testing.T) {
+func Test_AssignWithServiceContext(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -98,7 +98,7 @@ func Test_assign_with_service_context(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := assign_with_service_context(tt.modelVarName)
+			res := AssignWithServiceContext(tt.modelVarName)
 			buf.Reset()
 			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
