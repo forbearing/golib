@@ -7,20 +7,20 @@ import (
 
 // ServiceFileInfo contains information about an existing service file
 type ServiceFileInfo struct {
-	FilePath     string                    // Path to the service file
-	ModelName    string                    // Name of the model (e.g., "User")
-	PackageName  string                    // Package name (e.g., "service_system")
-	Methods      map[string]*ast.FuncDecl  // Existing hook methods
-	FileSet      *token.FileSet            // File set for parsing
-	File         *ast.File                 // Parsed AST file
-	BusinessCode map[string][]string       // Business logic code for each method
+	FilePath     string                   // Path to the service file
+	ModelName    string                   // Name of the model (e.g., "User")
+	PackageName  string                   // Package name (e.g., "service_system")
+	Methods      map[string]*ast.FuncDecl // Existing hook methods
+	FileSet      *token.FileSet           // File set for parsing
+	File         *ast.File                // Parsed AST file
+	BusinessCode map[string][]string      // Business logic code for each method
 }
 
 // ApplyConfig contains configuration for the apply operation
 type ApplyConfig struct {
+	Module     string   // Module path
 	ModelDir   string   // Model directory path
 	ServiceDir string   // Service directory path
-	Module     string   // Module path
 	Excludes   []string // Files to exclude
 }
 
@@ -31,3 +31,4 @@ type BusinessLogicSection struct {
 	EndLine    int      // End line of business logic
 	Code       []string // Lines of business logic code
 }
+
