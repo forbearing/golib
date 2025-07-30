@@ -15,7 +15,7 @@ import (
 func parseServiceFile(filePath string) (*ServiceFileInfo, error) {
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return nil, nil // File doesn't exist, not an error
+		return &ServiceFileInfo{}, nil // File doesn't exist, not an error
 	}
 
 	// Parse the file
@@ -35,6 +35,7 @@ func parseServiceFile(filePath string) (*ServiceFileInfo, error) {
 
 	// Extract model name from file name
 	baseName := filepath.Base(filePath)
+	// TODO: model name is same as file name?
 	modelName := strings.TrimSuffix(baseName, ".go")
 	info.ModelName = strings.Title(modelName)
 	info.PackageName = file.Name.Name
@@ -59,54 +60,6 @@ func parseServiceFile(filePath string) (*ServiceFileInfo, error) {
 	}
 
 	return info, nil
-}
-
-// getMethodNames extracts method names from a map of function declarations
-// TODO: 未来可能需要用于提取方法名列表的功能，暂时保留
-func getMethodNames(methods map[string]*ast.FuncDecl) []string {
-	names := make([]string, 0, len(methods))
-	for name := range methods {
-		names = append(names, name)
-	}
-	return names
-}
-
-// scanServiceFiles scans the service directory for existing service files
-// TODO: 未来可能需要用于批量扫描服务文件的功能，暂时保留
-func scanServiceFiles(serviceDir string, models []*gen.ModelInfo) (map[string]*ServiceFileInfo, error) {
-	serviceFiles := make(map[string]*ServiceFileInfo)
-	scannedCount := 0
-	foundCount := 0
-
-	for _, model := range models {
-		scannedCount++
-
-		// Generate service file path based on model info
-		// Extract the subdirectory from model file path to maintain directory structure
-		modelRelPath, err := filepath.Rel(filepath.Join(serviceDir, "..", "model"), model.ModelFileDir)
-		if err != nil {
-			return nil, err
-		}
-
-		serviceFilePath := filepath.Join(serviceDir, modelRelPath, strings.ToLower(model.ModelName)+".go")
-
-		// Update model with service file path
-		model.ServiceFilePath = serviceFilePath
-
-		// Parse the service file if it exists
-		serviceInfo, err := parseServiceFile(serviceFilePath)
-		if err != nil {
-			return nil, err
-		}
-
-		if serviceInfo != nil {
-			// Use model name as key
-			serviceFiles[model.ModelName] = serviceInfo
-			foundCount++
-		}
-	}
-
-	return serviceFiles, nil
 }
 
 // needsRegeneration checks if a service file needs to be regenerated

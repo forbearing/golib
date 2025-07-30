@@ -31,7 +31,7 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 		// Check if service file exists
 		if _, err := os.Stat(model.ServiceFilePath); os.IsNotExist(err) {
 			// Create new service file
-			if err := generateNewServiceFile(model, config); err != nil {
+			if err := generateServiceFile(model, config); err != nil {
 				return fmt.Errorf("failed to generate new service file for %s: %w", model.ModelName, err)
 			}
 			fmt.Printf("generate %s\n", model.ServiceFilePath)
@@ -59,30 +59,30 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 	return nil
 }
 
-// generateNewServiceFile creates a new service file for the given model
-func generateNewServiceFile(model *gen.ModelInfo, config *ApplyConfig) error {
+// generateServiceFile creates a new service file for the given model
+func generateServiceFile(info *gen.ModelInfo, config *ApplyConfig) error {
 	// Generate the service file using gen package
-	serviceFile := gen.GenerateServiceFile(model)
-	if serviceFile == nil {
-		return fmt.Errorf("failed to generate service file for model %s", model.ModelName)
+	file := gen.GenerateService(info)
+	if file == nil {
+		return fmt.Errorf("failed to generate service file for model %s", info.ModelName)
 	}
 
 	// Format the generated code
 	var buf strings.Builder
 	fset := token.NewFileSet()
-	if err := format.Node(&buf, fset, serviceFile); err != nil {
+	if err := format.Node(&buf, fset, file); err != nil {
 		return fmt.Errorf("failed to format service file: %w", err)
 	}
 
 	// Create directory if it doesn't exist
-	dir := filepath.Dir(model.ServiceFilePath)
+	dir := filepath.Dir(info.ServiceFilePath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Write the file
-	if err := os.WriteFile(model.ServiceFilePath, []byte(buf.String()), 0o644); err != nil {
-		return fmt.Errorf("failed to write service file %s: %w", model.ServiceFilePath, err)
+	if err := os.WriteFile(info.ServiceFilePath, []byte(buf.String()), 0o644); err != nil {
+		return fmt.Errorf("failed to write service file %s: %w", info.ServiceFilePath, err)
 	}
 
 	return nil
