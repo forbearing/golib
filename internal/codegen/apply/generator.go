@@ -144,4 +144,3 @@ func convertBusinessLogicToAST(businessCode []string) []ast.Stmt {
 
 	return statements
 }
-

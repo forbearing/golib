@@ -23,7 +23,7 @@ func ExampleApplyServiceGeneration() {
 	serviceDir := filepath.Join(tempDir, "service")
 
 	// Create model directory and a sample model file
-	if err := os.MkdirAll(modelDir, 0755); err != nil {
+	if err := os.MkdirAll(modelDir, 0o755); err != nil {
 		log.Fatal(err)
 	}
 
@@ -32,7 +32,7 @@ func ExampleApplyServiceGeneration() {
 
 go 1.21
 `
-	if err := os.WriteFile(filepath.Join(tempDir, "go.mod"), []byte(goModContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tempDir, "go.mod"), []byte(goModContent), 0o644); err != nil {
 		log.Fatal(err)
 	}
 
@@ -52,7 +52,7 @@ type User struct {
 }
 `
 
-	if err := os.WriteFile(filepath.Join(modelDir, "user.go"), []byte(modelContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(modelDir, "user.go"), []byte(modelContent), 0o644); err != nil {
 		log.Fatal(err)
 	}
 
@@ -79,3 +79,4 @@ type User struct {
 
 	// Output: Service file generated successfully
 }
+
