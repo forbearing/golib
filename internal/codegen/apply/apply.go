@@ -111,7 +111,7 @@ func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, con
 	// Check which methods are missing and need to be added
 	missingMethods := []string{}
 	for _, methodName := range requiredMethods {
-		if !hasMethod(serviceInfo.File, serviceStruct.Name.Name, methodName) {
+		if !codegen.HasMethod(serviceInfo.File, serviceStruct.Name.Name, methodName) {
 			missingMethods = append(missingMethods, methodName)
 		}
 	}
@@ -142,11 +142,6 @@ func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, con
 	}
 
 	return true, nil
-}
-
-// hasMethod checks if a struct has a specific method
-func hasMethod(file *ast.File, structName, methodName string) bool {
-	return codegen.HasMethod(file, structName, methodName)
 }
 
 // generateHookMethod generates a hook method for the service struct

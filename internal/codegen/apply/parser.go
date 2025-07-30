@@ -62,34 +62,64 @@ func parseServiceFile(filePath string) (*ServiceFileInfo, error) {
 	return info, nil
 }
 
-// needsRegeneration checks if a service file needs to be regenerated
-func needsRegeneration(model *gen.ModelInfo, serviceInfo *ServiceFileInfo) bool {
-	if serviceInfo == nil {
-		return true // File doesn't exist, needs generation
+// extractBusinessLogic extracts business logic from method body between markers
+func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []string {
+	if methodBody == nil || len(methodBody.List) == 0 {
+		return nil
 	}
 
-	// Check if all required methods exist
-	requiredMethods := []string{
-		"CreateBefore", "CreateAfter",
-		"UpdateBefore", "UpdateAfter",
-		"DeleteBefore", "DeleteAfter",
-		"GetBefore", "GetAfter",
-		"ListBefore", "ListAfter",
-		"BatchCreateBefore", "BatchCreateAfter",
-		"BatchUpdateBefore", "BatchUpdateAfter",
-		"BatchDeleteBefore", "BatchDeleteAfter",
-	}
+	var businessLogic []string
+	// inBusinessSection := false
 
-	missingMethods := []string{}
-	for _, methodName := range requiredMethods {
-		if _, exists := serviceInfo.Methods[methodName]; !exists {
-			missingMethods = append(missingMethods, methodName)
+	for _, stmt := range methodBody.List {
+		code, err := gen.FormatNode(stmt)
+		if err != nil {
+			continue
 		}
+		businessLogic = append(businessLogic, code)
+
+		// // Check if this is a comment statement
+		// if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
+		// 	if callExpr, ok := exprStmt.X.(*ast.CallExpr); ok {
+		// 		// Skip log statements and other generated code
+		// 		if isGeneratedStatement(callExpr) {
+		// 			continue
+		// 		}
+		// 	}
+		// }
+		//
+		// // Convert statement to string
+		// stmtStr, err := gen.FormatNode(stmt)
+		// if err != nil {
+		// 	continue
+		// }
+		//
+		// // Check for business logic markers
+		// if strings.Contains(stmtStr, "// ===== business logic start =====") {
+		// 	inBusinessSection = true
+		// 	continue
+		// }
+		// if strings.Contains(stmtStr, "// ===== business logic end =====") {
+		// 	inBusinessSection = false
+		// 	continue
+		// }
+		//
+		// // Collect business logic
+		// if inBusinessSection {
+		// 	businessLogic = append(businessLogic, stmtStr)
+		// }
 	}
 
-	if len(missingMethods) > 0 {
-		return true
-	}
-
-	return false // All methods exist, no regeneration needed
+	return businessLogic
 }
+
+// // isGeneratedStatement checks if a statement is generated code that should be skipped
+// func isGeneratedStatement(callExpr *ast.CallExpr) bool {
+// 	if sel, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
+// 		// Skip log.Info statements
+// 		if ident, ok := sel.X.(*ast.Ident); ok && ident.Name == "log" && sel.Sel.Name == "Info" {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
