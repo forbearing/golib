@@ -2,7 +2,7 @@ package model
 
 import "github.com/forbearing/golib/model"
 
-type Feishu struct {
+type User struct {
 	AppID       string
 	AppSecretID string
 

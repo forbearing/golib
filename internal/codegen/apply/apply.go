@@ -3,8 +3,6 @@ package apply
 import (
 	"fmt"
 	"go/ast"
-	"go/format"
-	"go/token"
 	"os"
 	"path/filepath"
 	"slices"
@@ -31,7 +29,7 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 		// Check if service file exists
 		if _, err := os.Stat(model.ServiceFilePath); os.IsNotExist(err) {
 			// Create new service file
-			if err := generateServiceFile(model, config); err != nil {
+			if err := generateServiceFile(model); err != nil {
 				return fmt.Errorf("failed to generate new service file for %s: %w", model.ModelName, err)
 			}
 			fmt.Printf("generate %s\n", model.ServiceFilePath)
@@ -43,7 +41,7 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 			}
 
 			// Apply changes to existing service file
-			updated, err := applyServiceChanges(model, serviceInfo, config)
+			updated, err := applyServiceChanges(model, serviceInfo)
 			if err != nil {
 				return fmt.Errorf("failed to apply service changes for %s: %w", model.ModelName, err)
 			}
@@ -60,18 +58,11 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 }
 
 // generateServiceFile creates a new service file for the given model
-func generateServiceFile(info *gen.ModelInfo, config *ApplyConfig) error {
+func generateServiceFile(info *gen.ModelInfo) error {
 	// Generate the service file using gen package
 	file := gen.GenerateService(info)
 	if file == nil {
 		return fmt.Errorf("failed to generate service file for model %s", info.ModelName)
-	}
-
-	// Format the generated code
-	var buf strings.Builder
-	fset := token.NewFileSet()
-	if err := format.Node(&buf, fset, file); err != nil {
-		return fmt.Errorf("failed to format service file: %w", err)
 	}
 
 	// Create directory if it doesn't exist
@@ -80,8 +71,14 @@ func generateServiceFile(info *gen.ModelInfo, config *ApplyConfig) error {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
+	// Format the generated code
+	code, err := gen.FormatNodeExtra(file)
+	if err != nil {
+		return fmt.Errorf("failed to format service file: %w", err)
+	}
+
 	// Write the file
-	if err := os.WriteFile(info.ServiceFilePath, []byte(buf.String()), 0o644); err != nil {
+	if err := os.WriteFile(info.ServiceFilePath, []byte(code), 0o644); err != nil {
 		return fmt.Errorf("failed to write service file %s: %w", info.ServiceFilePath, err)
 	}
 
@@ -89,11 +86,11 @@ func generateServiceFile(info *gen.ModelInfo, config *ApplyConfig) error {
 }
 
 // applyServiceChanges applies changes to existing service file while preserving business logic
-func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, config *ApplyConfig) (bool, error) {
+func applyServiceChanges(info *gen.ModelInfo, serviceInfo *ServiceFileInfo) (bool, error) {
 	// Find the service struct that inherits from service.Base[*Model]
-	serviceStruct := codegen.FindServiceStruct(serviceInfo.File, model.ModelName)
+	serviceStruct := codegen.FindServiceStruct(serviceInfo.File, info.ModelName)
 	if serviceStruct == nil {
-		return false, fmt.Errorf("service struct inheriting from service.Base[*%s] not found", model.ModelName)
+		return false, fmt.Errorf("service struct inheriting from service.Base[*%s] not found", info.ModelName)
 	}
 
 	// Get all hook methods that should exist
@@ -117,28 +114,26 @@ func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, con
 	}
 
 	// If no methods are missing, no need to update
+	// TODO: always update
 	if len(missingMethods) == 0 {
 		return false, nil
 	}
 
 	// Generate missing methods and add them to the file
 	for _, methodName := range missingMethods {
-		method := generateHookMethod(model, methodName, serviceStruct.Name.Name)
+		method := generateHookMethod(info, methodName, serviceStruct.Name.Name)
 		if method != nil {
 			serviceInfo.File.Decls = append(serviceInfo.File.Decls, method)
 		}
 	}
 
-	// Write the updated file
-	outputFile, err := os.Create(serviceInfo.FilePath)
-	if err != nil {
-		return false, fmt.Errorf("failed to create service file: %w", err)
-	}
-	defer outputFile.Close()
-
 	// Format and write
-	if err := format.Node(outputFile, serviceInfo.FileSet, serviceInfo.File); err != nil {
+	code, err := gen.FormatNodeExtra(serviceInfo.File)
+	if err != nil {
 		return false, fmt.Errorf("failed to format service file: %w", err)
+	}
+	if err := os.WriteFile(serviceInfo.FilePath, []byte(code), 0o644); err != nil {
+		return false, fmt.Errorf("failed to write service file: %w", err)
 	}
 
 	return true, nil
