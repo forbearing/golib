@@ -62,6 +62,7 @@ func parseServiceFile(filePath string) (*ServiceFileInfo, error) {
 }
 
 // getMethodNames extracts method names from a map of function declarations
+// TODO: 未来可能需要用于提取方法名列表的功能，暂时保留
 func getMethodNames(methods map[string]*ast.FuncDecl) []string {
 	names := make([]string, 0, len(methods))
 	for name := range methods {
@@ -71,6 +72,7 @@ func getMethodNames(methods map[string]*ast.FuncDecl) []string {
 }
 
 // scanServiceFiles scans the service directory for existing service files
+// TODO: 未来可能需要用于批量扫描服务文件的功能，暂时保留
 func scanServiceFiles(serviceDir string, models []*gen.ModelInfo) (map[string]*ServiceFileInfo, error) {
 	serviceFiles := make(map[string]*ServiceFileInfo)
 	scannedCount := 0

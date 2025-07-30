@@ -28,7 +28,7 @@ var genCmd = &cobra.Command{
 			checkErr(os.MkdirAll(dir, 0o755))
 
 			file := gen.GenerateServiceFile(m)
-			code, err := gen.FormatNode(file)
+			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			code = gen.MethodAddComments(code, m.ModelName)
 

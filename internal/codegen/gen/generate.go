@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/stoewer/go-strcase"
+	fumpt "mvdan.cc/gofumpt/format"
 )
 
 // ModelInfo 存储模型信息
@@ -82,8 +83,8 @@ func FindModelPackageName(file *ast.File) string {
 	return ""
 }
 
-// isModelBase 检查字段是否是 model.Base
-func isModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
+// IsModelBase 检查字段是否是 model.Base
+func IsModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
 	if field.Names != nil { // 不是匿名字段
 		return false
 	}
@@ -145,7 +146,7 @@ func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 			}
 			hasModelBase := false
 			for _, field := range structType.Fields.List {
-				if isModelBase(node, field, modelPkgName) {
+				if IsModelBase(node, field, modelPkgName) {
 					hasModelBase = true
 					break
 				}
@@ -187,8 +188,9 @@ func ModelPkg2ServicePkg(pkgName string) string {
 	return strings.Replace(pkgName, "model", "service", 1)
 }
 
-// generateServiceMethod1 使用 AST 生成 CreateBefore 等方法
-func generateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
+// GenerateServiceMethod1 使用 AST 生成 CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
+// DeleteBefore,DeleteAfter,GetBefore,GetAfter,UpdatePartialBefore,UpdatePartialAfter 方法.
+func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
@@ -200,7 +202,7 @@ func generateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 }
 
 // 使用 AST 生成 ListBefore, ListAfter 方法.
-func generateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
+func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
@@ -212,7 +214,7 @@ func generateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 }
 
 // 使用 AST 生成 Batch* 等方法.
-func generateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
+func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
@@ -236,11 +238,11 @@ func GenerateServiceFile(info *ModelInfo) *ast.File {
 
 	for _, method := range methods {
 		if strings.HasPrefix(method, "List") {
-			decls = append(decls, generateServiceMethod2(info, method))
+			decls = append(decls, GenerateServiceMethod2(info, method))
 		} else if strings.HasPrefix(method, "Batch") {
-			decls = append(decls, generateServiceMethod3(info, method))
+			decls = append(decls, GenerateServiceMethod3(info, method))
 		} else {
-			decls = append(decls, generateServiceMethod1(info, method))
+			decls = append(decls, GenerateServiceMethod1(info, method))
 		}
 	}
 
@@ -250,6 +252,7 @@ func GenerateServiceFile(info *ModelInfo) *ast.File {
 	}
 }
 
+// FormatNode use go standard lib "go/format" to format ast.Node into code.
 func FormatNode(node ast.Node) (string, error) {
 	var buf bytes.Buffer
 	fset := token.NewFileSet()
@@ -258,12 +261,27 @@ func FormatNode(node ast.Node) (string, error) {
 		return "", err
 	}
 
-	// TODO: 使用 gofumpt
 	formated, err := format.Source(buf.Bytes())
 	if err != nil {
 		return "", err
 	}
 	return string(formated), nil
+}
+
+// FormatNodeExtra use "https://github.com/mvdan/gofumpt" to format ast.Node into code.
+func FormatNodeExtra(node ast.Node) (string, error) {
+	var buf bytes.Buffer
+	fset := token.NewFileSet()
+
+	if err := format.Node(&buf, fset, node); err != nil {
+		return "", err
+	}
+
+	formatted, err := fumpt.Source(buf.Bytes(), fumpt.Options{
+		LangVersion: "",
+		ExtraRules:  true,
+	})
+	return string(formatted), err
 }
 
 func MethodAddComments(code string, modelName string) string {
