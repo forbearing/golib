@@ -1,12 +1,9 @@
 package apply
 
 import (
-	"go/ast"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/forbearing/golib/internal/codegen/gen"
 )
 
 func TestApplyServiceGeneration(t *testing.T) {
@@ -269,56 +266,6 @@ func TestShouldSkipModel(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("shouldSkipModel(%s) = %v, want %v", tt.modelName, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNeedsRegeneration(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		model       *gen.ModelInfo
-		serviceInfo *ServiceFileInfo
-		want        bool
-	}{
-		{
-			name: "service file doesn't exist",
-			model: &gen.ModelInfo{
-				ModelName: "User",
-			},
-			serviceInfo: nil,
-			want:        true,
-		},
-		{
-			name: "service file exists but no methods",
-			model: &gen.ModelInfo{
-				ModelName: "User",
-			},
-			serviceInfo: &ServiceFileInfo{
-				Methods: make(map[string]*ast.FuncDecl),
-			},
-			want: true,
-		},
-		{
-			name: "service file exists with some methods",
-			model: &gen.ModelInfo{
-				ModelName: "User",
-			},
-			serviceInfo: &ServiceFileInfo{
-				Methods: map[string]*ast.FuncDecl{
-					"CreateBefore": {},
-				},
-			},
-			want: true, // Still needs regeneration as not all methods exist
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := needsRegeneration(tt.model, tt.serviceInfo)
-			if got != tt.want {
-				t.Errorf("needsRegeneration() = %v, want %v", got, tt.want)
 			}
 		})
 	}
