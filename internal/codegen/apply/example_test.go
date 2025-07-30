@@ -63,11 +63,18 @@ type User struct {
 		serviceDir,          // service directory
 	)
 
-	// Apply service generation
+	// Apply service generation (suppress output for example test)
+	oldStdout := os.Stdout
+	os.Stdout = nil
+	defer func() { os.Stdout = oldStdout }()
+
 	if err := apply.ApplyServiceGeneration(config); err != nil {
 		fmt.Printf("Service generation failed: %v", err)
 		return
 	}
+
+	// Restore stdout
+	os.Stdout = oldStdout
 
 	// Check if service file was created
 	serviceFile := filepath.Join(serviceDir, "user.go")
@@ -79,4 +86,3 @@ type User struct {
 
 	// Output: Service file generated successfully
 }
-

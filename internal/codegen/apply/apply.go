@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/forbearing/golib/internal/codegen"
@@ -23,14 +24,7 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 
 	for _, model := range models {
 		// Skip excluded models
-		excluded := false
-		for _, exclude := range config.Excludes {
-			if model.ModelName == exclude {
-				excluded = true
-				break
-			}
-		}
-		if excluded {
+		if slices.Contains(config.Excludes, model.ModelName) {
 			continue
 		}
 
@@ -53,7 +47,7 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 			if err != nil {
 				return fmt.Errorf("failed to apply service changes for %s: %w", model.ModelName, err)
 			}
-			
+
 			if updated {
 				fmt.Printf("update %s\n", model.ServiceFilePath)
 			} else {
@@ -63,17 +57,6 @@ func ApplyServiceGeneration(config *ApplyConfig) error {
 	}
 
 	return nil
-}
-
-// generateServiceFilePath generates the service file path based on model info
-func generateServiceFilePath(serviceDir string, model *gen.ModelInfo) string {
-	// Extract the subdirectory from model file path to maintain directory structure
-	modelRelPath, err := filepath.Rel(filepath.Join(serviceDir, "..", "model"), model.ModelFileDir)
-	if err != nil {
-		// Fallback to simple path if relative path calculation fails
-		return filepath.Join(serviceDir, strings.ToLower(model.ModelName)+".go")
-	}
-	return filepath.Join(serviceDir, modelRelPath, strings.ToLower(model.ModelName)+".go")
 }
 
 // generateNewServiceFile creates a new service file for the given model
@@ -93,12 +76,12 @@ func generateNewServiceFile(model *gen.ModelInfo, config *ApplyConfig) error {
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(model.ServiceFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Write the file
-	if err := os.WriteFile(model.ServiceFilePath, []byte(buf.String()), 0644); err != nil {
+	if err := os.WriteFile(model.ServiceFilePath, []byte(buf.String()), 0o644); err != nil {
 		return fmt.Errorf("failed to write service file %s: %w", model.ServiceFilePath, err)
 	}
 
@@ -108,7 +91,7 @@ func generateNewServiceFile(model *gen.ModelInfo, config *ApplyConfig) error {
 // applyServiceChanges applies changes to existing service file while preserving business logic
 func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, config *ApplyConfig) (bool, error) {
 	// Find the service struct that inherits from service.Base[*Model]
-	serviceStruct := findServiceStruct(serviceInfo.File, model.ModelName)
+	serviceStruct := codegen.FindServiceStruct(serviceInfo.File, model.ModelName)
 	if serviceStruct == nil {
 		return false, fmt.Errorf("service struct inheriting from service.Base[*%s] not found", model.ModelName)
 	}
@@ -161,78 +144,9 @@ func applyServiceChanges(model *gen.ModelInfo, serviceInfo *ServiceFileInfo, con
 	return true, nil
 }
 
-// findServiceStruct finds the service struct that inherits from service.Base[*Model]
-func findServiceStruct(file *ast.File, modelName string) *ast.TypeSpec {
-	for _, decl := range file.Decls {
-		if genDecl, ok := decl.(*ast.GenDecl); ok {
-			for _, spec := range genDecl.Specs {
-				if typeSpec, ok := spec.(*ast.TypeSpec); ok {
-					if structType, ok := typeSpec.Type.(*ast.StructType); ok {
-						// Check if this struct embeds service.Base[*ModelName]
-						for _, field := range structType.Fields.List {
-							if len(field.Names) == 0 { // Embedded field
-								if isServiceBaseType(field.Type, modelName) {
-									return typeSpec
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-// isServiceBaseType checks if the type is service.Base[*ModelName]
-func isServiceBaseType(expr ast.Expr, modelName string) bool {
-	if indexExpr, ok := expr.(*ast.IndexExpr); ok {
-		// Check if X is service.Base
-		if selectorExpr, ok := indexExpr.X.(*ast.SelectorExpr); ok {
-			if ident, ok := selectorExpr.X.(*ast.Ident); ok && ident.Name == "service" {
-				if selectorExpr.Sel.Name == "Base" {
-					// Check if the type parameter is *ModelName
-					if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok {
-						// Handle qualified names like model_cmdb.DNS
-						switch x := starExpr.X.(type) {
-						case *ast.Ident:
-							return x.Name == modelName
-						case *ast.SelectorExpr:
-							return x.Sel.Name == modelName
-						}
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
 // hasMethod checks if a struct has a specific method
 func hasMethod(file *ast.File, structName, methodName string) bool {
-	for _, decl := range file.Decls {
-		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			if funcDecl.Recv != nil && len(funcDecl.Recv.List) > 0 {
-				// Check receiver type
-				recv := funcDecl.Recv.List[0]
-				var recvTypeName string
-
-				switch recvType := recv.Type.(type) {
-				case *ast.Ident:
-					recvTypeName = recvType.Name
-				case *ast.StarExpr:
-					if ident, ok := recvType.X.(*ast.Ident); ok {
-						recvTypeName = ident.Name
-					}
-				}
-
-				if recvTypeName == structName && funcDecl.Name.Name == methodName {
-					return true
-				}
-			}
-		}
-	}
-	return false
+	return codegen.HasMethod(file, structName, methodName)
 }
 
 // generateHookMethod generates a hook method for the service struct
@@ -250,7 +164,7 @@ func generateHookMethod(model *gen.ModelInfo, methodName, structName string) *as
 	// Create the model type expression based on package name
 	// The ModelInfo.PackageName contains the model package name (e.g., "model_cmdb")
 	var modelTypeExpr ast.Expr
-	
+
 	if model.PackageName == "model" {
 		// Simple case: *ModelName
 		modelTypeExpr = &ast.StarExpr{X: ast.NewIdent(model.ModelName)}

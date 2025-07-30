@@ -1,22 +1,12 @@
 package apply
 
 import (
-	"bytes"
 	"go/ast"
-	"go/format"
 	"go/token"
 	"strings"
-)
 
-// formatNode formats an AST node to Go source code
-func formatNode(node ast.Node) (string, error) {
-	var buf bytes.Buffer
-	fset := token.NewFileSet()
-	if err := format.Node(&buf, fset, node); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
+	"github.com/forbearing/golib/internal/codegen/gen"
+)
 
 // extractBusinessLogic extracts business logic from method body between markers
 func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []string {
@@ -39,7 +29,7 @@ func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []stri
 		}
 
 		// Convert statement to string
-		stmtStr, err := formatNode(stmt)
+		stmtStr, err := gen.FormatNodeExtra(stmt)
 		if err != nil {
 			continue
 		}
@@ -75,6 +65,7 @@ func isGeneratedStatement(callExpr *ast.CallExpr) bool {
 }
 
 // findMethodByName finds a method declaration by name in the AST file
+// TODO: 未来可能需要用于查找特定方法的功能，暂时保留
 func findMethodByName(file *ast.File, methodName string) *ast.FuncDecl {
 	for _, decl := range file.Decls {
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
@@ -87,12 +78,13 @@ func findMethodByName(file *ast.File, methodName string) *ast.FuncDecl {
 }
 
 // hasBusinessLogicMarkers checks if a method has business logic markers
+// TODO: 未来可能需要用于检查业务逻辑标记的功能，暂时保留
 func hasBusinessLogicMarkers(methodBody *ast.BlockStmt, fset *token.FileSet) bool {
 	if methodBody == nil {
 		return false
 	}
 
-	bodyStr, err := formatNode(methodBody)
+	bodyStr, err := gen.FormatNodeExtra(methodBody)
 	if err != nil {
 		return false
 	}
@@ -100,4 +92,3 @@ func hasBusinessLogicMarkers(methodBody *ast.BlockStmt, fset *token.FileSet) boo
 	return strings.Contains(bodyStr, "// ===== business logic start =====") &&
 		strings.Contains(bodyStr, "// ===== business logic end =====")
 }
-
