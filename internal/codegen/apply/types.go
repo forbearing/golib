@@ -31,4 +31,3 @@ type BusinessLogicSection struct {
 	EndLine    int      // End line of business logic
 	Code       []string // Lines of business logic code
 }
-

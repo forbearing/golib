@@ -26,7 +26,7 @@ func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []stri
 
 	var businessLogic []string
 	inBusinessSection := false
-	
+
 	for _, stmt := range methodBody.List {
 		// Check if this is a comment statement
 		if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
@@ -37,13 +37,13 @@ func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []stri
 				}
 			}
 		}
-		
+
 		// Convert statement to string
 		stmtStr, err := formatNode(stmt)
 		if err != nil {
 			continue
 		}
-		
+
 		// Check for business logic markers
 		if strings.Contains(stmtStr, "// ===== business logic start =====") {
 			inBusinessSection = true
@@ -53,13 +53,13 @@ func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []stri
 			inBusinessSection = false
 			continue
 		}
-		
+
 		// Collect business logic
 		if inBusinessSection {
 			businessLogic = append(businessLogic, stmtStr)
 		}
 	}
-	
+
 	return businessLogic
 }
 
@@ -91,12 +91,13 @@ func hasBusinessLogicMarkers(methodBody *ast.BlockStmt, fset *token.FileSet) boo
 	if methodBody == nil {
 		return false
 	}
-	
+
 	bodyStr, err := formatNode(methodBody)
 	if err != nil {
 		return false
 	}
-	
+
 	return strings.Contains(bodyStr, "// ===== business logic start =====") &&
-		   strings.Contains(bodyStr, "// ===== business logic end =====")
+		strings.Contains(bodyStr, "// ===== business logic end =====")
 }
+
