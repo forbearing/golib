@@ -63,32 +63,3 @@ func isGeneratedStatement(callExpr *ast.CallExpr) bool {
 	}
 	return false
 }
-
-// findMethodByName finds a method declaration by name in the AST file
-// TODO: 未来可能需要用于查找特定方法的功能，暂时保留
-func findMethodByName(file *ast.File, methodName string) *ast.FuncDecl {
-	for _, decl := range file.Decls {
-		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-			if funcDecl.Name.Name == methodName {
-				return funcDecl
-			}
-		}
-	}
-	return nil
-}
-
-// hasBusinessLogicMarkers checks if a method has business logic markers
-// TODO: 未来可能需要用于检查业务逻辑标记的功能，暂时保留
-func hasBusinessLogicMarkers(methodBody *ast.BlockStmt, fset *token.FileSet) bool {
-	if methodBody == nil {
-		return false
-	}
-
-	bodyStr, err := gen.FormatNodeExtra(methodBody)
-	if err != nil {
-		return false
-	}
-
-	return strings.Contains(bodyStr, "// ===== business logic start =====") &&
-		strings.Contains(bodyStr, "// ===== business logic end =====")
-}

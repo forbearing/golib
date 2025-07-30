@@ -225,7 +225,7 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	)
 }
 
-func GenerateServiceFile(info *ModelInfo) *ast.File {
+func GenerateService(info *ModelInfo) *ast.File {
 	if !IsValidModelPackage(info.PackageName) {
 		return nil
 	}
