@@ -83,25 +83,57 @@ func FindModelPackageName(file *ast.File) string {
 	return ""
 }
 
-// IsModelBase 检查字段是否是 model.Base
-func IsModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
-	if field.Names != nil { // 不是匿名字段
+// // IsModelBase 检查字段是否是 model.Base
+//
+//	func IsModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
+//		if field.Names != nil { // 不是匿名字段
+//			return false
+//		}
+//
+//		getAliasName := func(file *ast.File) string {
+//			for _, imp := range file.Imports {
+//				path := strings.Trim(imp.Path.Value, `"`)
+//				if strings.HasSuffix(path, "github.com/forbearing/golib/model") {
+//					if imp.Name != nil {
+//						return imp.Name.Name // 使用重命名的包名
+//					}
+//					return "model" // 默认包名
+//				}
+//			}
+//			return ""
+//		}
+//		aliasName := getAliasName(file)
+//
+//		switch t := field.Type.(type) {
+//		case *ast.SelectorExpr:
+//			if ident, ok := t.X.(*ast.Ident); ok {
+//				return ident.Name == aliasName && t.Sel.Name == "Base"
+//			}
+//		case *ast.Ident:
+//			// 处理同包的情况
+//			return t.Name == "Base"
+//		}
+//
+//		return false
+//	}
+func IsModelBase(file *ast.File, field *ast.Field) bool {
+	// Not anonymouse field.
+	if len(field.Names) != 0 {
 		return false
 	}
 
-	getAliasName := func(file *ast.File) string {
-		for _, imp := range file.Imports {
-			path := strings.Trim(imp.Path.Value, `"`)
-			if strings.HasSuffix(path, "github.com/forbearing/golib/model") {
-				if imp.Name != nil {
-					return imp.Name.Name // 使用重命名的包名
-				}
-				return "model" // 默认包名
-			}
+	aliasName := "model"
+	for _, imp := range file.Imports {
+		if imp.Path == nil {
+			continue
 		}
-		return ""
+		if imp.Path.Value == `"github.com/forbearing/golib/model"` {
+			if imp.Name != nil {
+				aliasName = imp.Name.Name
+			}
+			break
+		}
 	}
-	aliasName := getAliasName(file)
 
 	switch t := field.Type.(type) {
 	case *ast.SelectorExpr:
@@ -109,7 +141,6 @@ func IsModelBase(file *ast.File, field *ast.Field, modelPkgName string) bool {
 			return ident.Name == aliasName && t.Sel.Name == "Base"
 		}
 	case *ast.Ident:
-		// 处理同包的情况
 		return t.Name == "Base"
 	}
 
@@ -137,7 +168,7 @@ func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 		}
 		for _, spec := range genDecl.Specs {
 			typeSpec, ok := spec.(*ast.TypeSpec)
-			if !ok || typeSpec == nil {
+			if !ok || typeSpec == nil || typeSpec.Type == nil {
 				continue
 			}
 			structType, ok := typeSpec.Type.(*ast.StructType)
@@ -146,7 +177,7 @@ func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 			}
 			hasModelBase := false
 			for _, field := range structType.Fields.List {
-				if IsModelBase(node, field, modelPkgName) {
+				if IsModelBase(node, field) {
 					hasModelBase = true
 					break
 				}
