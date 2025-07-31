@@ -5,7 +5,7 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
-var methods = []string{
+var Methods = []string{
 	strcase.UpperCamelCase(string(consts.PHASE_CREATE_BEFORE)),
 	strcase.UpperCamelCase(string(consts.PHASE_CREATE_AFTER)),
 	strcase.UpperCamelCase(string(consts.PHASE_DELETE_BEFORE)),

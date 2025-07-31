@@ -236,7 +236,7 @@ func GenerateService(info *ModelInfo) *ast.File {
 		Types(info.ModelName, info.PackageName),
 	}
 
-	for _, method := range methods {
+	for _, method := range Methods {
 		if strings.HasPrefix(method, "List") {
 			decls = append(decls, GenerateServiceMethod2(info, method))
 		} else if strings.HasPrefix(method, "Batch") {
@@ -285,7 +285,7 @@ func FormatNodeExtra(node ast.Node) (string, error) {
 }
 
 func MethodAddComments(code string, modelName string) string {
-	for _, method := range methods {
+	for _, method := range Methods {
 		str := strings.ReplaceAll(strcase.SnakeCase(method), "_", " ")
 		// 在 log.Info 之后添加注释
 		searchStr := fmt.Sprintf(`log.Info("%s %s")`, strings.ToLower(modelName), str)

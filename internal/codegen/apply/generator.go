@@ -125,19 +125,20 @@ func createCommentStmt(comment string) ast.Stmt {
 
 // convertBusinessLogicToAST converts business logic strings back to AST statements
 func convertBusinessLogicToAST(businessCode []string) []ast.Stmt {
-	// For now, we'll create simple expression statements
-	// In a more complete implementation, we would parse these back to proper AST
-	var statements []ast.Stmt
+	if len(businessCode) == 0 {
+		return nil
+	}
 
+	var statements []ast.Stmt
 	for _, code := range businessCode {
-		if strings.TrimSpace(code) == "" {
+		trimmed := strings.TrimSpace(code)
+		if trimmed == "" {
 			statements = append(statements, gen.EmptyLine())
 		} else {
-			// Create a simple comment statement for preserved code
+			// Parse the code back to proper AST
+			// For now, create a raw statement that will be formatted properly
 			statements = append(statements, &ast.ExprStmt{
-				X: &ast.BasicLit{
-					Value: "// " + strings.TrimSpace(code),
-				},
+				X: &ast.Ident{Name: trimmed},
 			})
 		}
 	}
