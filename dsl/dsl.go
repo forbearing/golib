@@ -11,8 +11,8 @@ func BatchDelete(func())        {}
 func BatchUpdate(func())        {}
 func BatchUpdatePartial(func()) {}
 
-func Payload(any) {}
-func Result(any)  {}
+func Payload[T any]() {}
+func Result[T any]()  {}
 
 func Endpoint(string) {}
 func Enabled(bool)    {}
