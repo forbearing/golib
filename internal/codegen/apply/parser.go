@@ -69,45 +69,35 @@ func extractBusinessLogic(methodBody *ast.BlockStmt, fset *token.FileSet) []stri
 	}
 
 	var businessLogic []string
-	// inBusinessSection := false
+	inBusinessSection := false
 
 	for _, stmt := range methodBody.List {
-		code, err := gen.FormatNode(stmt)
+		// Convert statement to string
+		stmtStr, err := gen.FormatNode(stmt)
 		if err != nil {
 			continue
 		}
-		businessLogic = append(businessLogic, code)
 
-		// // Check if this is a comment statement
-		// if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
-		// 	if callExpr, ok := exprStmt.X.(*ast.CallExpr); ok {
-		// 		// Skip log statements and other generated code
-		// 		if isGeneratedStatement(callExpr) {
-		// 			continue
-		// 		}
-		// 	}
-		// }
-		//
-		// // Convert statement to string
-		// stmtStr, err := gen.FormatNode(stmt)
-		// if err != nil {
-		// 	continue
-		// }
-		//
-		// // Check for business logic markers
-		// if strings.Contains(stmtStr, "// ===== business logic start =====") {
-		// 	inBusinessSection = true
-		// 	continue
-		// }
-		// if strings.Contains(stmtStr, "// ===== business logic end =====") {
-		// 	inBusinessSection = false
-		// 	continue
-		// }
-		//
-		// // Collect business logic
-		// if inBusinessSection {
-		// 	businessLogic = append(businessLogic, stmtStr)
-		// }
+		// Check for business logic markers
+		if strings.Contains(stmtStr, "// ===== business logic start =====") {
+			inBusinessSection = true
+			continue
+		}
+		if strings.Contains(stmtStr, "// ===== business logic end =====") {
+			inBusinessSection = false
+			continue
+		}
+
+		// Collect business logic only within the marked section
+		if inBusinessSection {
+			// Skip empty lines and placeholder comments
+			trimmed := strings.TrimSpace(stmtStr)
+			if trimmed != "" && 
+			   !strings.Contains(trimmed, "Add your business logic here") &&
+			   !strings.HasPrefix(trimmed, "// =====") {
+				businessLogic = append(businessLogic, stmtStr)
+			}
+		}
 	}
 
 	return businessLogic

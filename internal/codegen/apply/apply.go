@@ -93,10 +93,11 @@ func applyServiceChanges(info *gen.ModelInfo, serviceInfo *ServiceFileInfo) (boo
 		return false, fmt.Errorf("service struct inheriting from service.Base[*%s] not found", info.ModelName)
 	}
 
-	// Get all hook methods that should exist
+	// Define all hook methods that should exist
 	requiredMethods := []string{
 		"CreateBefore", "CreateAfter",
 		"UpdateBefore", "UpdateAfter",
+		"UpdatePartialBefore", "UpdatePartialAfter",
 		"DeleteBefore", "DeleteAfter",
 		"GetBefore", "GetAfter",
 		"ListBefore", "ListAfter",
@@ -105,23 +106,25 @@ func applyServiceChanges(info *gen.ModelInfo, serviceInfo *ServiceFileInfo) (boo
 		"BatchDeleteBefore", "BatchDeleteAfter",
 	}
 
-	// Check which methods are missing and need to be added
-	missingMethods := []string{}
-	for _, methodName := range requiredMethods {
-		if !codegen.HasMethod(serviceInfo.File, serviceStruct.Name.Name, methodName) {
-			missingMethods = append(missingMethods, methodName)
+	// Always regenerate all hook methods to ensure consistency
+	// This preserves business logic while updating method signatures and structure
+	// Only generate methods that are actually missing to avoid duplicates
+	var methodsToGenerate []string
+	for _, method := range requiredMethods {
+		if !codegen.HasMethod(serviceInfo.File, serviceStruct.Name.Name, method) {
+			methodsToGenerate = append(methodsToGenerate, method)
 		}
 	}
 
-	// If no methods are missing, no need to update
-	// TODO: always update
-	if len(missingMethods) == 0 {
+	// If no methods are missing, no need to regenerate
+	if len(methodsToGenerate) == 0 {
 		return false, nil
 	}
 
-	// Generate missing methods and add them to the file
-	for _, methodName := range missingMethods {
-		method := generateHookMethod(info, methodName, serviceStruct.Name.Name)
+	// Generate methods and add them to the file
+	for _, methodName := range methodsToGenerate {
+		// Generate new method with preserved business logic
+		method := generateServiceMethod(info, methodName, serviceInfo)
 		if method != nil {
 			serviceInfo.File.Decls = append(serviceInfo.File.Decls, method)
 		}
