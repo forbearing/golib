@@ -13,3 +13,6 @@ func BatchUpdatePartial(func()) {}
 
 func Payload(any) {}
 func Result(any)  {}
+
+func Endpoint(string) {}
+func Enabled(bool)    {}
