@@ -1,10 +1,13 @@
 package model
 
-import "github.com/forbearing/golib/model"
+import (
+	. "github.com/forbearing/golib/dsl"
+	"github.com/forbearing/golib/model"
+)
 
 type User struct {
-	AppID       string
-	AppSecretID string
+	Name string
+	Addr string
 
 	model.Base
 }
