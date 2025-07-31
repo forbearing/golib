@@ -93,24 +93,11 @@ func applyServiceChanges(info *gen.ModelInfo, serviceInfo *ServiceFileInfo) (boo
 		return false, fmt.Errorf("service struct inheriting from service.Base[*%s] not found", info.ModelName)
 	}
 
-	// Define all hook methods that should exist
-	requiredMethods := []string{
-		"CreateBefore", "CreateAfter",
-		"UpdateBefore", "UpdateAfter",
-		"UpdatePartialBefore", "UpdatePartialAfter",
-		"DeleteBefore", "DeleteAfter",
-		"GetBefore", "GetAfter",
-		"ListBefore", "ListAfter",
-		"BatchCreateBefore", "BatchCreateAfter",
-		"BatchUpdateBefore", "BatchUpdateAfter",
-		"BatchDeleteBefore", "BatchDeleteAfter",
-	}
-
 	// Always regenerate all hook methods to ensure consistency
 	// This preserves business logic while updating method signatures and structure
 	// Only generate methods that are actually missing to avoid duplicates
 	var methodsToGenerate []string
-	for _, method := range requiredMethods {
+	for _, method := range gen.Methods {
 		if !codegen.HasMethod(serviceInfo.File, serviceStruct.Name.Name, method) {
 			methodsToGenerate = append(methodsToGenerate, method)
 		}
