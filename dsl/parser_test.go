@@ -179,24 +179,24 @@ func TestParse(t *testing.T) {
 		code string
 		want map[string]*Design
 	}{
-		// {
-		// 	name: "input1",
-		// 	code: input1,
-		// 	want: map[string]*Design{
-		// 		"User": {
-		// 			Enabled:  true,
-		// 			Endpoint: "user2",
-		// 			Create: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 			Update: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 		},
-		// 	},
-		// },
+		{
+			name: "input1",
+			code: input1,
+			want: map[string]*Design{
+				"User": {
+					Enabled:  true,
+					Endpoint: "user2",
+					Create: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+					Update: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+				},
+			},
+		},
 		{
 			name: "input2",
 			code: input2,
@@ -215,6 +215,41 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "input3",
+			code: input3,
+			want: map[string]*Design{
+				"User3": {
+					Enabled:  true,
+					Endpoint: "user",
+					Create: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+					Update: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+				},
+				"User4": {
+					Enabled:  true,
+					Endpoint: "user4",
+					Create: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+					Update: &Action{
+						Payload: "User",
+						Result:  "User",
+					},
+				},
+			},
+		},
+		{
+			name: "input4",
+			code: input4,
+			want: map[string]*Design{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -225,8 +260,6 @@ func TestParse(t *testing.T) {
 				return
 			}
 			got := Parse(f)
-			pretty.Println(got)
-			pretty.Println(tt.want)
 			if len(got) != len(tt.want) {
 				t.Fatalf("Parse() = %v, want %v", got, tt.want)
 			}
@@ -245,6 +278,8 @@ func TestParse(t *testing.T) {
 			}
 			for _, k := range keys1 {
 				if !reflect.DeepEqual(got[k], tt.want[k]) {
+					pretty.Println(got)
+					pretty.Println(tt.want)
 					t.Fatalf("Parse() = %v, want %v", got[k], tt.want[k])
 				}
 			}

@@ -80,6 +80,9 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 	}
 	stmts := fn.Body.List
 
+	// Set default values
+	design.Enabled = true // default enabled.
+
 	for _, stmt := range stmts {
 		callExpr, ok := stmt.(*ast.ExprStmt)
 		if !ok || callExpr == nil {
@@ -89,17 +92,27 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		if !ok || call == nil || call.Fun == nil || len(call.Args) == 0 {
 			continue
 		}
-		ident, ok := call.Fun.(*ast.Ident)
-		if !ok || ident == nil {
+		var funcName string
+		switch fun := call.Fun.(type) {
+		case *ast.Ident:
+			if fun == nil {
+				continue
+			}
+			funcName = fun.Name
+		case *ast.SelectorExpr:
+			if fun == nil || fun.Sel == nil {
+				continue
+			}
+			funcName = fun.Sel.Name
+		default:
 			continue
 		}
-		if !is(ident.Name) {
+		if !is(funcName) {
 			continue
 		}
 
 		// Parse "Enabled" design.
-		design.Enabled = true // default enabled.
-		if ident.Name == "Enabled" && len(call.Args) == 1 {
+		if funcName == "Enabled" && len(call.Args) == 1 {
 			arg, ok := call.Args[0].(*ast.Ident)
 			if ok && arg != nil {
 				design.Enabled = arg.Name == "true"
@@ -107,28 +120,28 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		}
 
 		// Parse "Endpoint" design
-		if ident.Name == "Endpoint" && len(call.Args) == 1 {
+		if funcName == "Endpoint" && len(call.Args) == 1 {
 			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
 				design.Endpoint = trimQuote(arg.Value)
 			}
 		}
 
-		if payload, result, exists := parseAction("Create", ident, call.Args); exists {
+		if payload, result, exists := parseAction("Create", funcName, call.Args); exists {
 			design.Create = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("Update", ident, call.Args); exists {
+		if payload, result, exists := parseAction("Update", funcName, call.Args); exists {
 			design.Update = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("UpdatePartial", ident, call.Args); exists {
+		if payload, result, exists := parseAction("UpdatePartial", funcName, call.Args); exists {
 			design.UpdatePartial = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchCreate", ident, call.Args); exists {
+		if payload, result, exists := parseAction("BatchCreate", funcName, call.Args); exists {
 			design.BatchCreate = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchUpdate", ident, call.Args); exists {
+		if payload, result, exists := parseAction("BatchUpdate", funcName, call.Args); exists {
 			design.BatchUpdate = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchUpdatePartial", ident, call.Args); exists {
+		if payload, result, exists := parseAction("BatchUpdatePartial", funcName, call.Args); exists {
 			design.BatchUpdatePartial = &Action{Payload: payload, Result: result}
 		}
 
@@ -137,11 +150,11 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 	return design
 }
 
-func parseAction(name string, ident *ast.Ident, args []ast.Expr) (string, string, bool) {
+func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool) {
 	var payload string
 	var result string
 
-	if ident.Name == name && len(args) == 1 {
+	if funcName == name && len(args) == 1 {
 		if flit, ok := args[0].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
 			// Payload or Result.
 			for _, stmt := range flit.Body.List {
@@ -150,14 +163,22 @@ func parseAction(name string, ident *ast.Ident, args []ast.Expr) (string, string
 						if identExpr, ok := call.Fun.(*ast.IndexExpr); ok && identExpr != nil {
 							var isPayload bool
 							var isResult bool
-							_ = isResult
-							if ident, ok := identExpr.X.(*ast.Ident); ok && ident != nil {
-								switch ident.Name {
-								case "Payload":
-									isPayload = true
-								case "Result":
-									isResult = true
+							var funcName string
+							switch x := identExpr.X.(type) {
+							case *ast.Ident:
+								if x != nil {
+									funcName = x.Name
 								}
+							case *ast.SelectorExpr:
+								if x != nil && x.Sel != nil {
+									funcName = x.Sel.Name
+								}
+							}
+							switch funcName {
+							case "Payload":
+								isPayload = true
+							case "Result":
+								isResult = true
 							}
 							if isPayload {
 								if ident, ok := identExpr.Index.(*ast.Ident); ok && ident != nil { // Payload[User]

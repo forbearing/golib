@@ -127,7 +127,7 @@ func (User4) Design() {
 	dsl.Enabled(true)
 
 	// Default Endpoint is the lower case of the model name.
-	dsl.Endpoint("user")
+	// dsl.Endpoint("user4")
 
 	// Custom create action request "Payload" and response "Result".
 	dsl.Create(func() {
