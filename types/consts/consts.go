@@ -155,3 +155,5 @@ const (
 )
 
 const LayoutTimeEncoder = "2006-01-02|15:04:05"
+
+const IMPORT_PATH_MODEL = `"github.com/forbearing/golib/model"`

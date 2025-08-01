@@ -26,12 +26,12 @@ type Design struct {
 	Enabled  bool
 	Endpoint string
 
-	Create             Action
-	Update             Action
-	UpdatePartial      Action
-	BatchCreate        Action
-	BatchUpdate        Action
-	BatchUpdatePartial Action
+	Create             *Action
+	Update             *Action
+	UpdatePartial      *Action
+	BatchCreate        *Action
+	BatchUpdate        *Action
+	BatchUpdatePartial *Action
 }
 
 type Action struct {
