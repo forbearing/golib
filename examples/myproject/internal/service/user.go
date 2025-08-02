@@ -50,13 +50,13 @@ func (u *user) UpdateAfter(ctx *types.ServiceContext, user *pkgmodel.User) error
 	return nil
 }
 
-func (u *user) UpdatePartialBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
+func (u *user) PatchBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update partial before")
 	return nil
 }
 
-func (u *user) UpdatePartialAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
+func (u *user) PatchAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user update partial after")
 	return nil
@@ -86,49 +86,49 @@ func (u *user) GetAfter(ctx *types.ServiceContext, user *pkgmodel.User) error {
 	return nil
 }
 
-func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) CreateManyBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch create before")
 	return nil
 }
 
-func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) CreateManyAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch create after")
 	return nil
 }
 
-func (u *user) BatchDeleteBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) DeleteManyBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch delete before")
 	return nil
 }
 
-func (u *user) BatchDeleteAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) DeleteManyAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch delete after")
 	return nil
 }
 
-func (u *user) BatchUpdateBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdateManyBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update before")
 	return nil
 }
 
-func (u *user) BatchUpdateAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) UpdateManyAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update after")
 	return nil
 }
 
-func (u *user) BatchUpdatePartialBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) PatchManyBefore(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update partial before")
 	return nil
 }
 
-func (u *user) BatchUpdatePartialAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
+func (u *user) PatchManyAfter(ctx *types.ServiceContext, users ...*pkgmodel.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user batch update partial after")
 	return nil

@@ -70,7 +70,7 @@ func (g *group) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error
 	return nil
 }
 
-func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, group *model.Group) error {
+func (g *group) PatchBefore(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
@@ -81,7 +81,7 @@ func (g *group) UpdatePartialBefore(ctx *types.ServiceContext, group *model.Grou
 	return nil
 }
 
-func (g *group) UpdatePartialAfter(ctx *types.ServiceContext, group *model.Group) error {
+func (g *group) PatchAfter(ctx *types.ServiceContext, group *model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group update partial after")
 	return nil
@@ -111,7 +111,7 @@ func (g *group) GetAfter(ctx *types.ServiceContext, group *model.Group) error {
 	return nil
 }
 
-func (g *group) BatchCreateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) CreateManyBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
@@ -122,25 +122,25 @@ func (g *group) BatchCreateBefore(ctx *types.ServiceContext, groups ...*model.Gr
 	return nil
 }
 
-func (g *group) BatchCreateAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) CreateManyAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group batch create after")
 	return nil
 }
 
-func (g *group) BatchDeleteBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) DeleteManyBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group batch delete before")
 	return nil
 }
 
-func (g *group) BatchDeleteAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) DeleteManyAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group batch delete after")
 	return nil
 }
 
-func (g *group) BatchUpdateBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdateManyBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
@@ -151,13 +151,13 @@ func (g *group) BatchUpdateBefore(ctx *types.ServiceContext, groups ...*model.Gr
 	return nil
 }
 
-func (g *group) BatchUpdateAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) UpdateManyAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group batch update after")
 	return nil
 }
 
-func (g *group) BatchUpdatePartialBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) PatchManyBefore(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	resp, ok := ctx.GetResponse().(*model.GroupResponse)
 	if ok {
@@ -168,7 +168,7 @@ func (g *group) BatchUpdatePartialBefore(ctx *types.ServiceContext, groups ...*m
 	return nil
 }
 
-func (g *group) BatchUpdatePartialAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
+func (g *group) PatchManyAfter(ctx *types.ServiceContext, groups ...*model.Group) error {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group batch update partial after")
 	return nil

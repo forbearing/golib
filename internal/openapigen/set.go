@@ -325,10 +325,10 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addSchemaTitleDesc[M](reqSchemaRef)
 
 	pathItem.Patch = &openapi3.Operation{
-		OperationID: operationID(consts.UpdatePartial, typ),
-		Summary:     summary(consts.UpdatePartial, typ),
-		Description: description(consts.UpdatePartial, typ),
-		Tags:        tags(path, consts.UpdatePartial, typ),
+		OperationID: operationID(consts.Patch, typ),
+		Summary:     summary(consts.Patch, typ),
+		Description: description(consts.Patch, typ),
+		Tags:        tags(path, consts.Patch, typ),
 		Parameters:  idParameters,
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
@@ -583,7 +583,7 @@ func setImport[M types.Model](path string, pathItem *openapi3.PathItem) {
 func setExport[M types.Model](path string, pathItem *openapi3.PathItem) {
 }
 
-func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setCreateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -633,10 +633,10 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Post = &openapi3.Operation{
-		OperationID: operationID(consts.BatchCreate, typ),
-		Summary:     summary(consts.BatchCreate, typ),
-		Description: description(consts.BatchCreate, typ),
-		Tags:        tags(path, consts.BatchCreate, typ),
+		OperationID: operationID(consts.CreateMany, typ),
+		Summary:     summary(consts.CreateMany, typ),
+		Description: description(consts.CreateMany, typ),
+		Tags:        tags(path, consts.CreateMany, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch creating %s", name),
@@ -711,7 +711,7 @@ func setBatchCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Post)
 }
 
-func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setDeleteMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
@@ -736,10 +736,10 @@ func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 	}
 
 	pathItem.Delete = &openapi3.Operation{
-		OperationID: operationID(consts.BatchDelete, typ),
-		Summary:     summary(consts.BatchDelete, typ),
-		Description: description(consts.BatchDelete, typ),
-		Tags:        tags(path, consts.BatchDelete, typ),
+		OperationID: operationID(consts.DeleteMany, typ),
+		Summary:     summary(consts.DeleteMany, typ),
+		Description: description(consts.DeleteMany, typ),
+		Tags:        tags(path, consts.DeleteMany, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Required:    true,
@@ -797,7 +797,7 @@ func setBatchDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Delete)
 }
 
-func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setUpdateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -822,10 +822,10 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Put = &openapi3.Operation{
-		OperationID: operationID(consts.BatchUpdate, typ),
-		Summary:     summary(consts.BatchUpdate, typ),
-		Description: description(consts.BatchUpdate, typ),
-		Tags:        tags(path, consts.BatchUpdate, typ),
+		OperationID: operationID(consts.UpdateMany, typ),
+		Summary:     summary(consts.UpdateMany, typ),
+		Description: description(consts.UpdateMany, typ),
+		Tags:        tags(path, consts.UpdateMany, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch updating %s", name),
@@ -896,7 +896,7 @@ func setBatchUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Put)
 }
 
-func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setPatchMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -921,10 +921,10 @@ func setBatchUpdatePartial[M types.Model](path string, pathItem *openapi3.PathIt
 	setupBatchExample(reqSchemaRef)
 
 	pathItem.Patch = &openapi3.Operation{
-		OperationID: operationID(consts.BatchUpdatePartial, typ),
-		Summary:     summary(consts.BatchUpdatePartial, typ),
-		Description: description(consts.BatchUpdatePartial, typ),
-		Tags:        tags(path, consts.BatchUpdatePartial, typ),
+		OperationID: operationID(consts.PatchMany, typ),
+		Summary:     summary(consts.PatchMany, typ),
+		Description: description(consts.PatchMany, typ),
+		Tags:        tags(path, consts.PatchMany, typ),
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Request body for batch partial updating %s", name),
@@ -1257,7 +1257,7 @@ func operationID(op consts.HTTPVerb, typ reflect.Type) string {
 
 func summary(op consts.HTTPVerb, typ reflect.Type) string {
 	switch op {
-	case consts.List, consts.BatchCreate, consts.BatchDelete, consts.BatchUpdate, consts.BatchUpdatePartial:
+	case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
 		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(typ.Elem().Name()))
 	}
 	return fmt.Sprintf("%s %s", op, typ.Elem().Name())
@@ -1265,7 +1265,7 @@ func summary(op consts.HTTPVerb, typ reflect.Type) string {
 
 func description(op consts.HTTPVerb, typ reflect.Type) string {
 	switch op {
-	case consts.List, consts.BatchCreate, consts.BatchDelete, consts.BatchUpdate, consts.BatchUpdatePartial:
+	case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
 		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(typ.Elem().Name()))
 	}
 	return fmt.Sprintf("%s %s", op, typ.Elem().Name())

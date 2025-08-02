@@ -9,19 +9,19 @@ func init() {
 }
 
 const (
-	OperationTypeCreate        OperationType = "create"
-	OperationTypeDelete        OperationType = "delete"
-	OperationTypeUpdate        OperationType = "update"
-	OperationTypeUpdatePartial OperationType = "update_partial"
-	OperationTypeList          OperationType = "list"
-	OperationTypeGet           OperationType = "get"
-	OperationTypeExport        OperationType = "export"
-	OperationTypeImport        OperationType = "import"
+	OperationTypeCreate OperationType = "create"
+	OperationTypeDelete OperationType = "delete"
+	OperationTypeUpdate OperationType = "update"
+	OperationTypePatch  OperationType = "patch"
+	OperationTypeList   OperationType = "list"
+	OperationTypeGet    OperationType = "get"
+	OperationTypeExport OperationType = "export"
+	OperationTypeImport OperationType = "import"
 
-	OperationTypeBatchCreate        OperationType = "batch_create"
-	OperationTypeBatchDelete        OperationType = "batch_delete"
-	OperationTypeBatchUpdate        OperationType = "batch_update"
-	OperationTypeBatchUpdatePartial OperationType = "batch_update_partial"
+	OperationTypeCreateMany OperationType = "create_many"
+	OperationTypeDeleteMany OperationType = "delete_many"
+	OperationTypeUpdateMany OperationType = "update_many"
+	OperationTypePatchMany  OperationType = "patch_many"
 )
 
 type OperationLog struct {
