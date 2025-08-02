@@ -152,16 +152,16 @@ func Stop() {
 //   - DELETE /{path}/:id     -> Delete
 //   - PUT    /{path}         -> Update
 //   - PUT    /{path}/:id     -> Update
-//   - PATCH  /{path}         -> UpdatePartial
-//   - PATCH  /{path}/:id     -> UpdatePartial
+//   - PATCH  /{path}         -> Patch
+//   - PATCH  /{path}/:id     -> Patch
 //   - GET    /{path}         -> List
 //   - GET    /{path}/:id     -> Get
 //   - POST   /{path}/import  -> Import
 //   - GET    /{path}/export  -> Export
-//   - POST   /{path}/batch   -> BatchCreate
-//   - DELETE /{path}/batch   -> BatchDelete
-//   - PUT    /{path}/batch   -> BatchUpdate
-//   - PATCH  /{path}/batch   -> BatchUpdatePartial
+//   - POST   /{path}/batch   -> CreateMany
+//   - DELETE /{path}/batch   -> DeleteMany
+//   - PUT    /{path}/batch   -> UpdateMany
+//   - PATCH  /{path}/batch   -> PatchMany
 //
 // For custom controller configuration, pass a ControllerConfig object.
 func Register[M types.Model](router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
@@ -235,16 +235,16 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		openapigen.Set[M](endpoint, consts.Update)
 
 	}
-	if verbMap[consts.UpdatePartial] {
+	if verbMap[consts.Patch] {
 		endpoint := gopath.Join(base, path)
 		endpoint2 := gopath.Join(base, path, "/:id")
-		router.PATCH(path, controller.UpdatePartialFactory(cfg...))
-		router.PATCH(path+"/:id", controller.UpdatePartialFactory(cfg...))
+		router.PATCH(path, controller.PatchFactory(cfg...))
+		router.PATCH(path+"/:id", controller.PatchFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.UpdatePartial)
+		openapigen.Set[M](endpoint, consts.Patch)
 	}
 	if verbMap[consts.List] {
 		endpoint := gopath.Join(base, path)
@@ -262,33 +262,33 @@ func register[M types.Model](router gin.IRouter, path string, verbMap map[consts
 		openapigen.Set[M](endpoint, consts.Get)
 	}
 
-	if verbMap[consts.BatchCreate] {
+	if verbMap[consts.CreateMany] {
 		endpoint := gopath.Join(base, path, "/batch")
-		router.POST(path+"/batch", controller.BatchCreateFactory(cfg...))
+		router.POST(path+"/batch", controller.CreateManyFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
 		middleware.RouteManager.Add(gopath.Join(base, path, "/batch"))
-		openapigen.Set[M](endpoint, consts.BatchCreate)
+		openapigen.Set[M](endpoint, consts.CreateMany)
 	}
-	if verbMap[consts.BatchDelete] {
+	if verbMap[consts.DeleteMany] {
 		endpoint := gopath.Join(base, path, "/batch")
-		router.DELETE(path+"/batch", controller.BatchDeleteFactory(cfg...))
+		router.DELETE(path+"/batch", controller.DeleteManyFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodDelete)
 		middleware.RouteManager.Add(endpoint)
-		openapigen.Set[M](endpoint, consts.BatchDelete)
+		openapigen.Set[M](endpoint, consts.DeleteMany)
 	}
-	if verbMap[consts.BatchUpdate] {
+	if verbMap[consts.UpdateMany] {
 		endpoint := gopath.Join(base, path, "/batch")
-		router.PUT(path+"/batch", controller.BatchUpdateFactory(cfg...))
+		router.PUT(path+"/batch", controller.UpdateManyFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPut)
 		middleware.RouteManager.Add(endpoint)
-		openapigen.Set[M](endpoint, consts.BatchUpdate)
+		openapigen.Set[M](endpoint, consts.UpdateMany)
 	}
-	if verbMap[consts.BatchUpdatePartial] {
+	if verbMap[consts.PatchMany] {
 		endpoint := gopath.Join(base, path, "/batch")
-		router.PATCH(path+"/batch", controller.BatchUpdatePartialFactory(cfg...))
+		router.PATCH(path+"/batch", controller.PatchManyFactory(cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint)
-		openapigen.Set[M](endpoint, consts.BatchUpdatePartial)
+		openapigen.Set[M](endpoint, consts.PatchMany)
 	}
 
 	if verbMap[consts.Import] {
@@ -335,15 +335,15 @@ func buildVerbMap(verbs ...consts.HTTPVerb) map[consts.HTTPVerb]bool {
 		verbMap[consts.Create] = true
 		verbMap[consts.Delete] = true
 		verbMap[consts.Update] = true
-		verbMap[consts.UpdatePartial] = true
+		verbMap[consts.Patch] = true
 		verbMap[consts.List] = true
 		verbMap[consts.Get] = true
 	}
 	if verbMap[consts.MostBatch] {
-		verbMap[consts.BatchCreate] = true
-		verbMap[consts.BatchDelete] = true
-		verbMap[consts.BatchUpdate] = true
-		verbMap[consts.BatchUpdatePartial] = true
+		verbMap[consts.CreateMany] = true
+		verbMap[consts.DeleteMany] = true
+		verbMap[consts.UpdateMany] = true
+		verbMap[consts.PatchMany] = true
 	}
 	return verbMap
 }

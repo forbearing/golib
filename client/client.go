@@ -27,13 +27,13 @@ const (
 	create action = iota
 	delete_
 	update
-	update_partial
+	patch
 	list
 	get
-	batch_create
-	batch_delete
-	batch_update
-	batch_update_partial
+	create_many
+	delete_many
+	update_many
+	patch_many
 )
 
 var (
@@ -159,9 +159,9 @@ func (c *Client) Update(payload any) (*Resp, error) {
 	return c.request(update, payload)
 }
 
-// UpdatePartial send a PATCH request to partially update a resource.
-func (c *Client) UpdatePartial(payload any) (*Resp, error) {
-	return c.request(update_partial, payload)
+// Patch send a PATCH request to partially update a resource.
+func (c *Client) Patch(payload any) (*Resp, error) {
+	return c.request(patch, payload)
 }
 
 // List send a GET request to retrieve a list of resources.
@@ -253,40 +253,40 @@ func isStringSlice(payload any) bool {
 	return typ.Kind() == reflect.Slice && typ.Elem().Kind() == reflect.String
 }
 
-// BatchCreate send a POST request to batch create multiple resources.
+// CreateMany send a POST request to batch create multiple resources.
 // payload should be a struct slice, eg: []User or []*User
-func (c *Client) BatchCreate(payload any) (*Resp, error) {
+func (c *Client) CreateMany(payload any) (*Resp, error) {
 	if !isStructSlice(payload) {
 		return nil, ErrNotStructSlice
 	}
-	return c.request(batch_create, batchReq{Items: payload})
+	return c.request(create_many, batchReq{Items: payload})
 }
 
-// BatchDelete send a DELETE request to batch delete multiple resources.
+// DeleteMany send a DELETE request to batch delete multiple resources.
 // payload should be a string slice contains id list.
-func (c *Client) BatchDelete(payload any) (*Resp, error) {
+func (c *Client) DeleteMany(payload any) (*Resp, error) {
 	if !isStringSlice(payload) {
 		return nil, ErrNotStringSlice
 	}
-	return c.request(batch_delete, batchReq{Ids: payload})
+	return c.request(delete_many, batchReq{Ids: payload})
 }
 
-// BatchUpdate send a PUT request to batch update multiple resources.
+// UpdateMany send a PUT request to batch update multiple resources.
 // payload should be a struct slice, eg: []User or []*User
-func (c *Client) BatchUpdate(payload any) (*Resp, error) {
+func (c *Client) UpdateMany(payload any) (*Resp, error) {
 	if !isStructSlice(payload) {
 		return nil, ErrNotStructSlice
 	}
-	return c.request(batch_update, batchReq{Items: payload})
+	return c.request(update_many, batchReq{Items: payload})
 }
 
-// BatchUpdatePartial send a PATCH request to batch partially update multiple resources.
+// PatchMany send a PATCH request to batch partially update multiple resources.
 // payload should be a struct slice, eg: []User or []*User
-func (c *Client) BatchUpdatePartial(payload any) (*Resp, error) {
+func (c *Client) PatchMany(payload any) (*Resp, error) {
 	if !isStructSlice(payload) {
 		return nil, ErrNotStructSlice
 	}
-	return c.request(batch_update_partial, batchReq{Items: payload})
+	return c.request(patch_many, batchReq{Items: payload})
 }
 
 // request send a request to backend server.
@@ -312,19 +312,19 @@ func (c *Client) request(action action, payload any) (*Resp, error) {
 	case update:
 		method = http.MethodPut
 		url = c.addr
-	case update_partial:
+	case patch:
 		method = http.MethodPatch
 		url = c.addr
-	case batch_create:
+	case create_many:
 		method = http.MethodPost
 		url = fmt.Sprintf("%s/batch", c.addr)
-	case batch_delete:
+	case delete_many:
 		method = http.MethodDelete
 		url = fmt.Sprintf("%s/batch", c.addr)
-	case batch_update:
+	case update_many:
 		method = http.MethodPut
 		url = fmt.Sprintf("%s/batch", c.addr)
-	case batch_update_partial:
+	case patch_many:
 		method = http.MethodPatch
 		url = fmt.Sprintf("%s/batch", c.addr)
 	case list:

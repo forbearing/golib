@@ -285,21 +285,21 @@ type Service[M Model] interface {
 	DeleteAfter(*ServiceContext, M) error
 	UpdateBefore(*ServiceContext, M) error
 	UpdateAfter(*ServiceContext, M) error
-	UpdatePartialBefore(*ServiceContext, M) error
-	UpdatePartialAfter(*ServiceContext, M) error
-	ListBefore(*ServiceContext, *[]M) error // 必须是指针类型, 因为有时候需要修改原数据
-	ListAfter(*ServiceContext, *[]M) error  // 必须是指针类型, 因为有时候需要修改原数据
+	PatchBefore(*ServiceContext, M) error
+	PatchAfter(*ServiceContext, M) error
+	ListBefore(*ServiceContext, *[]M) error
+	ListAfter(*ServiceContext, *[]M) error
 	GetBefore(*ServiceContext, M) error
 	GetAfter(*ServiceContext, M) error
 
-	BatchCreateBefore(*ServiceContext, ...M) error
-	BatchCreateAfter(*ServiceContext, ...M) error
-	BatchDeleteBefore(*ServiceContext, ...M) error
-	BatchDeleteAfter(*ServiceContext, ...M) error
-	BatchUpdateBefore(*ServiceContext, ...M) error
-	BatchUpdateAfter(*ServiceContext, ...M) error
-	BatchUpdatePartialBefore(*ServiceContext, ...M) error
-	BatchUpdatePartialAfter(*ServiceContext, ...M) error
+	CreateManyBefore(*ServiceContext, ...M) error
+	CreateManyAfter(*ServiceContext, ...M) error
+	DeleteManyBefore(*ServiceContext, ...M) error
+	DeleteManyAfter(*ServiceContext, ...M) error
+	UpdateManyBefore(*ServiceContext, ...M) error
+	UpdateManyAfter(*ServiceContext, ...M) error
+	PatchManyBefore(*ServiceContext, ...M) error
+	PatchManyAfter(*ServiceContext, ...M) error
 
 	Import(*ServiceContext, io.Reader) ([]M, error)
 	Export(*ServiceContext, ...M) ([]byte, error)
