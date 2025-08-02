@@ -27,7 +27,7 @@ func CreateSession(c *gin.Context) *model.Session {
 	}
 }
 
-func partialUpdateValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal reflect.Value) {
+func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal reflect.Value) {
 	for i := range typ.NumField() {
 		// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
 		switch typ.Field(i).Type.Kind() {

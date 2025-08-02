@@ -63,7 +63,7 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 			setDelete[M](pathid, pathidItem)
 		case consts.Update:
 			setUpdate[M](pathid, pathidItem)
-		case consts.UpdatePartial:
+		case consts.Patch:
 			setUpdatePartial[M](pathid, pathidItem)
 		case consts.List:
 			setList[M](path, pathItem)
@@ -73,14 +73,14 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 			setImport[M](pathipt, pathiptItem)
 		case consts.Export:
 			setExport[M](pathexpt, pathexptItem)
-		case consts.BatchCreate:
-			setBatchCreate[M](pathbatch, pathbatchItem)
-		case consts.BatchDelete:
-			setBatchDelete[M](pathbatch, pathbatchItem)
-		case consts.BatchUpdate:
-			setBatchUpdate[M](pathbatch, pathbatchItem)
-		case consts.BatchUpdatePartial:
-			setBatchUpdatePartial[M](pathbatch, pathbatchItem)
+		case consts.CreateMany:
+			setCreateMany[M](pathbatch, pathbatchItem)
+		case consts.DeleteMany:
+			setDeleteMany[M](pathbatch, pathbatchItem)
+		case consts.UpdateMany:
+			setUpdateMany[M](pathbatch, pathbatchItem)
+		case consts.PatchMany:
+			setPatchMany[M](pathbatch, pathbatchItem)
 		}
 	}
 
@@ -269,13 +269,13 @@ func buildVerbs(verbs ...consts.HTTPVerb) []consts.HTTPVerb {
 		verbMap[consts.Create] = true
 		verbMap[consts.Delete] = true
 		verbMap[consts.Update] = true
-		verbMap[consts.UpdatePartial] = true
+		verbMap[consts.Patch] = true
 		verbMap[consts.List] = true
 		verbMap[consts.Get] = true
-		verbMap[consts.BatchCreate] = true
-		verbMap[consts.BatchDelete] = true
-		verbMap[consts.BatchUpdate] = true
-		verbMap[consts.BatchUpdatePartial] = true
+		verbMap[consts.CreateMany] = true
+		verbMap[consts.DeleteMany] = true
+		verbMap[consts.UpdateMany] = true
+		verbMap[consts.PatchMany] = true
 	}
 
 	vs := make([]consts.HTTPVerb, 0, len(verbMap))

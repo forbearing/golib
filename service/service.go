@@ -90,27 +90,27 @@ func (f factory[M]) Service() types.Service[M] {
 
 type Base[M types.Model] struct{ types.Logger }
 
-func (Base[M]) CreateBefore(*types.ServiceContext, M) error        { return nil }
-func (Base[M]) CreateAfter(*types.ServiceContext, M) error         { return nil }
-func (Base[M]) DeleteBefore(*types.ServiceContext, M) error        { return nil }
-func (Base[M]) DeleteAfter(*types.ServiceContext, M) error         { return nil }
-func (Base[M]) UpdateBefore(*types.ServiceContext, M) error        { return nil }
-func (Base[M]) UpdateAfter(*types.ServiceContext, M) error         { return nil }
-func (Base[M]) UpdatePartialBefore(*types.ServiceContext, M) error { return nil }
-func (Base[M]) UpdatePartialAfter(*types.ServiceContext, M) error  { return nil }
-func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error       { return nil }
-func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error        { return nil }
-func (Base[M]) GetBefore(*types.ServiceContext, M) error           { return nil }
-func (Base[M]) GetAfter(*types.ServiceContext, M) error            { return nil }
+func (Base[M]) CreateBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M]) CreateAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M]) DeleteBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M]) DeleteAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M]) UpdateBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M]) UpdateAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M]) PatchBefore(*types.ServiceContext, M) error   { return nil }
+func (Base[M]) PatchAfter(*types.ServiceContext, M) error    { return nil }
+func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error { return nil }
+func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error  { return nil }
+func (Base[M]) GetBefore(*types.ServiceContext, M) error     { return nil }
+func (Base[M]) GetAfter(*types.ServiceContext, M) error      { return nil }
 
-func (Base[M]) BatchCreateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) BatchCreateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) BatchDeleteBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) BatchDeleteAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) BatchUpdateBefore(*types.ServiceContext, ...M) error        { return nil }
-func (Base[M]) BatchUpdateAfter(*types.ServiceContext, ...M) error         { return nil }
-func (Base[M]) BatchUpdatePartialBefore(*types.ServiceContext, ...M) error { return nil }
-func (Base[M]) BatchUpdatePartialAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) CreateManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M]) CreateManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) DeleteManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M]) DeleteManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) UpdateManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M]) UpdateManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) PatchManyBefore(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M]) PatchManyAfter(*types.ServiceContext, ...M) error   { return nil }
 
 func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
 func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)   { return make([]byte, 0), nil }

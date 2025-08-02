@@ -87,7 +87,7 @@ func Test_setBatchDelete(t *testing.T) {
 		pathItem := &openapi3.PathItem{}
 
 		// Call setBatchDelete function
-		setBatchDelete[*TestUser]("/users/batch", pathItem)
+		setDeleteMany[*TestUser]("/users/batch", pathItem)
 
 		// Verify that DELETE operation is created
 		assert.NotNil(t, pathItem.Delete)
@@ -436,7 +436,7 @@ func Test_setBatchUpdate(t *testing.T) {
 		pathItem := &openapi3.PathItem{}
 
 		// Call setBatchUpdate function
-		setBatchUpdate[*TestUser]("/testusers", pathItem)
+		setUpdateMany[*TestUser]("/testusers", pathItem)
 
 		// Verify that the PUT operation is created
 		assert.NotNil(t, pathItem.Put)
@@ -519,7 +519,7 @@ func Test_setBatchUpdatePartial(t *testing.T) {
 		pathItem := &openapi3.PathItem{}
 
 		// Call setBatchUpdatePartial function
-		setBatchUpdatePartial[*TestUser]("/testusers", pathItem)
+		setPatchMany[*TestUser]("/testusers", pathItem)
 
 		// Verify that the PATCH operation is created
 		assert.NotNil(t, pathItem.Patch)
