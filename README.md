@@ -210,28 +210,40 @@ type Hooker interface {
 ### Service
 
 ```go
-type Service[M Model] interface {
+type Service[M Model, REQ Request, RSP Response] interface {
+	Create(*ServiceContext, REQ) (RSP, error)
+	Delete(*ServiceContext, REQ) (RSP, error)
+	Update(*ServiceContext, REQ) (RSP, error)
+	Patch(*ServiceContext, REQ) (RSP, error)
+	List(*ServiceContext, REQ) (RSP, error)
+	Get(*ServiceContext, REQ) (RSP, error)
+
+	CreateMany(*ServiceContext, REQ) (RSP, error)
+	DeleteMany(*ServiceContext, REQ) (RSP, error)
+	UpdateMany(*ServiceContext, REQ) (RSP, error)
+	PatchMany(*ServiceContext, REQ) (RSP, error)
+
 	CreateBefore(*ServiceContext, M) error
 	CreateAfter(*ServiceContext, M) error
 	DeleteBefore(*ServiceContext, M) error
 	DeleteAfter(*ServiceContext, M) error
 	UpdateBefore(*ServiceContext, M) error
 	UpdateAfter(*ServiceContext, M) error
-	UpdatePartialBefore(*ServiceContext, M) error
-	UpdatePartialAfter(*ServiceContext, M) error
+	PatchBefore(*ServiceContext, M) error
+	PatchAfter(*ServiceContext, M) error
 	ListBefore(*ServiceContext, *[]M) error
 	ListAfter(*ServiceContext, *[]M) error
 	GetBefore(*ServiceContext, M) error
 	GetAfter(*ServiceContext, M) error
 
-	BatchCreateBefore(*ServiceContext, ...M) error
-	BatchCreateAfter(*ServiceContext, ...M) error
-	BatchDeleteBefore(*ServiceContext, ...M) error
-	BatchDeleteAfter(*ServiceContext, ...M) error
-	BatchUpdateBefore(*ServiceContext, ...M) error
-	BatchUpdateAfter(*ServiceContext, ...M) error
-	BatchUpdatePartialBefore(*ServiceContext, ...M) error
-	BatchUpdatePartialAfter(*ServiceContext, ...M) error
+	CreateManyBefore(*ServiceContext, ...M) error
+	CreateManyAfter(*ServiceContext, ...M) error
+	DeleteManyBefore(*ServiceContext, ...M) error
+	DeleteManyAfter(*ServiceContext, ...M) error
+	UpdateManyBefore(*ServiceContext, ...M) error
+	UpdateManyAfter(*ServiceContext, ...M) error
+	PatchManyBefore(*ServiceContext, ...M) error
+	PatchManyAfter(*ServiceContext, ...M) error
 
 	Import(*ServiceContext, io.Reader) ([]M, error)
 	Export(*ServiceContext, ...M) ([]byte, error)
