@@ -13,7 +13,7 @@ func init() {
 }
 
 type group struct {
-	service.Base[*model.Group]
+	service.Base[*model.Group, *model.Group, *model.Group]
 }
 
 func (g *group) CreateBefore(ctx *types.ServiceContext, group *model.Group) error {

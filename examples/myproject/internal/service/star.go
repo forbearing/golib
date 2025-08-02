@@ -11,7 +11,7 @@ func init() {
 }
 
 type star struct {
-	service.Base[*model.Star]
+	service.Base[*model.Star, *model.Star, *model.Star]
 }
 
 func (s *star) CreateBefore(ctx *types.ServiceContext, star *model.Star) error {
