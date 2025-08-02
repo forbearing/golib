@@ -11,7 +11,7 @@ func init() {
 }
 
 type user struct {
-	service.Base[*pkgmodel.User]
+	service.Base[*pkgmodel.User, *pkgmodel.User, *pkgmodel.User]
 }
 
 func (u *user) CreateBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {

@@ -12,7 +12,7 @@ func init() {
 }
 
 type department struct {
-	service.Base[*model.Department]
+	service.Base[*model.Department, *model.Department, *model.DepartmentReq]
 }
 
 func (d *department) CreateBefore(ctx *types.ServiceContext, department *model.Department) error {
