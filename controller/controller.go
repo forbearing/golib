@@ -114,12 +114,12 @@ func Clean() {
 
 // Create is a generic function to product gin handler to create one resource.
 // The resource type depends on the type of interface types.Model.
-func Create[M types.Model](c *gin.Context) {
-	CreateFactory[M]()(c)
+func Create[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	CreateFactory[M, REQ, RSP]()(c)
 }
 
 // CreateFactory is a factory function to product gin handler to create one resource.
-func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
@@ -163,7 +163,7 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			}
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before create resource.
 		if err = svc.CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
 			log.Error(err)
@@ -238,12 +238,12 @@ func CreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 //
 // Delete multiple resources:
 // - specify resource `id` slice in "http body data".
-func Delete[M types.Model](c *gin.Context) {
-	DeleteFactory[M]()(c)
+func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	DeleteFactory[M, REQ, RSP]()(c)
 }
 
 // DeleteFactory is a factory function to product gin handler to delete one or multiple resources.
-func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
@@ -289,7 +289,7 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 		}
 		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before delete resources.
 		// TODO: Should there be one service hook(DeleteBefore), or multiple?
 		for _, m := range ml {
@@ -362,12 +362,12 @@ func DeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 //
 // "router parameter `id`" has more priority than "http body data".
 // It will skip decode id from "http body data" if "router parameter `id`" not empty.
-func Update[M types.Model](c *gin.Context) {
-	UpdateFactory[M]()(c)
+func Update[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	UpdateFactory[M, REQ, RSP]()(c)
 }
 
 // UpdateFactory is a factory function to product gin handler to update one resource.
-func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
@@ -441,7 +441,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before update resource.
 		if err := svc.UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
 			log.Error(err)
@@ -512,12 +512,12 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 // which one or multiple resources desired modify.
 // - specified in "query parameter".
 // - specified in "http body data".
-func Patch[M types.Model](c *gin.Context) {
-	PatchFactory[M]()(c)
+func Patch[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	PatchFactory[M, REQ, RSP]()(c)
 }
 
 // PatchFactory is a factory function to product gin handler to partial update one resource.
-func PatchFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var id string
@@ -582,7 +582,7 @@ func PatchFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerF
 			patchValue(log, typ, oldVal, newVal)
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before partial update resource.
 		if err := svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
@@ -674,12 +674,12 @@ func PatchFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerF
 //     fuzzy match records in database, default to fase.
 //     For examples:
 //     /department/myid?_fuzzy=true
-func List[M types.Model](c *gin.Context) {
-	ListFactory[M]()(c)
+func List[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	ListFactory[M, REQ, RSP]()(c)
 }
 
 // ListFactory is a factory function to product gin handler to list resources in backend.
-func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_LIST)
@@ -788,7 +788,7 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 			// fmt.Println("expands: ", expands)
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		svcCtx := helper.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
 		if err = svc.ListBefore(svcCtx.WithPhase(consts.PHASE_LIST_BEFORE), &data); err != nil {
@@ -902,12 +902,12 @@ func ListFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFu
 //
 // Route parameters:
 // - id: string or integer.
-func Get[M types.Model](c *gin.Context) {
-	GetFactory[M]()(c)
+func Get[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	GetFactory[M, REQ, RSP]()(c)
 }
 
 // GetFactory is a factory function to product gin handler to list resource in backend.
-func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_GET)
@@ -986,7 +986,7 @@ func GetFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFun
 		}
 		log.Infoz("", zap.Object(typ.Name(), m))
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before get resource.
 		if err = svc.GetBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_GET_BEFORE), m); err != nil {
 			log.Error(err)
@@ -1153,12 +1153,12 @@ type summary struct {
 	Failed    int `json:"failed"`
 }
 
-func CreateMany[M types.Model](c *gin.Context) {
-	CreateManyFactory[M]()(c)
+func CreateMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	CreateManyFactory[M, REQ, RSP]()(c)
 }
 
 // CreateManyFactory
-func CreateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
@@ -1208,7 +1208,7 @@ func CreateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 			}
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before batch create resource.
 		if err = svc.CreateManyBefore(ctx.WithPhase(consts.PHASE_CREATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
@@ -1277,12 +1277,12 @@ func CreateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 }
 
 // DeleteMany
-func DeleteMany[M types.Model](c *gin.Context) {
-	DeleteManyFactory[M]()(c)
+func DeleteMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	DeleteManyFactory[M, REQ, RSP]()(c)
 }
 
 // DeleteManyFactory
-func DeleteManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
@@ -1301,7 +1301,7 @@ func DeleteManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 		}
 
 		// 1.Perform business logic processing before batch delete resources.
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req.Items = make([]M, 0, len(req.Ids))
 		for _, id := range req.Ids {
@@ -1368,12 +1368,12 @@ func DeleteManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 }
 
 // UpdateMany
-func UpdateMany[M types.Model](c *gin.Context) {
-	UpdateManyFactory[M]()(c)
+func UpdateMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	UpdateManyFactory[M, REQ, RSP]()(c)
 }
 
 // UpdateManyFactory
-func UpdateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
@@ -1412,7 +1412,7 @@ func UpdateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 			}
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before batch update resource.
 		if err = svc.UpdateManyBefore(ctx.WithPhase(consts.PHASE_UPDATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
@@ -1480,12 +1480,12 @@ func UpdateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Han
 }
 
 // PatchMany
-func PatchMany[M types.Model](c *gin.Context) {
-	PatchManyFactory[M]()(c)
+func PatchMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	PatchManyFactory[M, REQ, RSP]()(c)
 }
 
 // PatchManyFactory
-func PatchManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
@@ -1546,7 +1546,7 @@ func PatchManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Hand
 			}
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before batch patch resource.
 		if err = svc.PatchManyBefore(ctx.WithPhase(consts.PHASE_PATCH_MANY_BEFORE), shouldUpdates...); err != nil {
 			log.Error(err)
@@ -1642,12 +1642,12 @@ func PatchManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Hand
 //     fuzzy match records in database, default to fase.
 //     For examples:
 //     /department/myid?_fuzzy=true
-func Export[M types.Model](c *gin.Context) {
-	ExportFactory[M]()(c)
+func Export[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	ExportFactory[M, REQ, RSP]()(c)
 }
 
 // ExportFactory is a factory function to export resources to frontend.
-func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_EXPORT)
@@ -1744,7 +1744,7 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 			// fmt.Println("expands: ", expands)
 		}
 
-		svc := service.Factory[M]().Service()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		svcCtx := helper.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
 		if err = svc.ListBefore(svcCtx.WithPhase(consts.PHASE_EXPORT), &data); err != nil {
@@ -1814,12 +1814,12 @@ func ExportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 }
 
 // Import
-func Import[M types.Model](c *gin.Context) {
-	ImportFactory[M]()(c)
+func Import[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
+	ImportFactory[M, REQ, RSP]()(c)
 }
 
 // ImportFactory
-func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_IMPORT)
@@ -1856,7 +1856,7 @@ func ImportFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 
 		// check filetype
 
-		ml, err := service.Factory[M]().Service().Import(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), buf)
+		ml, err := service.Factory[M, REQ, RSP]().Service().Import(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), buf)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
