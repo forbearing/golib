@@ -249,8 +249,8 @@ func service_method_2(recvName, modelName, methodName, modelPkgName string, body
 // service_method_3
 // For example:
 //
-//	"func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-//	"func (u *user) BatchCreateAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+//	"func (u *user) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+//	"func (u *user) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
 func service_method_3(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
