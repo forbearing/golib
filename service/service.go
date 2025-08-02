@@ -31,7 +31,7 @@ func serviceKey[M types.Model]() string {
 // Register service instance into serviceMap.
 // pass parameters to replace the default service instance.
 // If the passed parameters is nil, skip replace.
-func Register[S types.Service[M], M types.Model](s ...S) {
+func Register[S types.Service[M, REQ, RSP], M types.Model, REQ types.Request, RSP types.Response](s ...S) {
 	mu.Lock()
 	defer mu.Unlock()
 	key := serviceKey[M]()
@@ -68,8 +68,8 @@ func Init() error {
 	return nil
 }
 
-func Factory[M types.Model]() *factory[M] {
-	return &factory[M]{}
+func Factory[M types.Model, REQ types.Request, RSP types.Response]() *factory[M, REQ, RSP] {
+	return &factory[M, REQ, RSP]{}
 }
 
 // factory is a service factory used to product service instance.
@@ -77,43 +77,55 @@ func Factory[M types.Model]() *factory[M] {
 //
 // The service defined by user should be unexported (structure name is lowercase).
 // service instance are only returns by the `factory`.
-type factory[M types.Model] struct{}
+type factory[M types.Model, REQ types.Request, RSP types.Response] struct{}
 
-func (f factory[M]) Service() types.Service[M] {
+func (f factory[M, REQ, RSP]) Service() types.Service[M, REQ, RSP] {
 	svc, ok := serviceMap[serviceKey[M]()]
 	if !ok {
 		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
-		return new(Base[M])
+		return new(Base[M, REQ, RSP])
 	}
-	return svc.(types.Service[M])
+	return svc.(types.Service[M, REQ, RSP])
 }
 
-type Base[M types.Model] struct{ types.Logger }
+type Base[M types.Model, REQ types.Request, RSP types.Response] struct{ types.Logger }
 
-func (Base[M]) CreateBefore(*types.ServiceContext, M) error  { return nil }
-func (Base[M]) CreateAfter(*types.ServiceContext, M) error   { return nil }
-func (Base[M]) DeleteBefore(*types.ServiceContext, M) error  { return nil }
-func (Base[M]) DeleteAfter(*types.ServiceContext, M) error   { return nil }
-func (Base[M]) UpdateBefore(*types.ServiceContext, M) error  { return nil }
-func (Base[M]) UpdateAfter(*types.ServiceContext, M) error   { return nil }
-func (Base[M]) PatchBefore(*types.ServiceContext, M) error   { return nil }
-func (Base[M]) PatchAfter(*types.ServiceContext, M) error    { return nil }
-func (Base[M]) ListBefore(*types.ServiceContext, *[]M) error { return nil }
-func (Base[M]) ListAfter(*types.ServiceContext, *[]M) error  { return nil }
-func (Base[M]) GetBefore(*types.ServiceContext, M) error     { return nil }
-func (Base[M]) GetAfter(*types.ServiceContext, M) error      { return nil }
+func (Base[M, REQ, RSP]) Create(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) Delete(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) Update(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) Patch(*types.ServiceContext, REQ) (RSP, error)  { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) List(*types.ServiceContext, REQ) (RSP, error)   { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) Get(*types.ServiceContext, REQ) (RSP, error)    { return *new(RSP), nil }
 
-func (Base[M]) CreateManyBefore(*types.ServiceContext, ...M) error { return nil }
-func (Base[M]) CreateManyAfter(*types.ServiceContext, ...M) error  { return nil }
-func (Base[M]) DeleteManyBefore(*types.ServiceContext, ...M) error { return nil }
-func (Base[M]) DeleteManyAfter(*types.ServiceContext, ...M) error  { return nil }
-func (Base[M]) UpdateManyBefore(*types.ServiceContext, ...M) error { return nil }
-func (Base[M]) UpdateManyAfter(*types.ServiceContext, ...M) error  { return nil }
-func (Base[M]) PatchManyBefore(*types.ServiceContext, ...M) error  { return nil }
-func (Base[M]) PatchManyAfter(*types.ServiceContext, ...M) error   { return nil }
+func (Base[M, REQ, RSP]) CreateMany(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) DeleteMany(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) UpdateMany(*types.ServiceContext, REQ) (RSP, error) { return *new(RSP), nil }
+func (Base[M, REQ, RSP]) PatchMany(*types.ServiceContext, REQ) (RSP, error)  { return *new(RSP), nil }
 
-func (Base[M]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
-func (Base[M]) Export(*types.ServiceContext, ...M) ([]byte, error)   { return make([]byte, 0), nil }
+func (Base[M, REQ, RSP]) CreateBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M, REQ, RSP]) CreateAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M, REQ, RSP]) DeleteBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M, REQ, RSP]) DeleteAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M, REQ, RSP]) UpdateBefore(*types.ServiceContext, M) error  { return nil }
+func (Base[M, REQ, RSP]) UpdateAfter(*types.ServiceContext, M) error   { return nil }
+func (Base[M, REQ, RSP]) PatchBefore(*types.ServiceContext, M) error   { return nil }
+func (Base[M, REQ, RSP]) PatchAfter(*types.ServiceContext, M) error    { return nil }
+func (Base[M, REQ, RSP]) ListBefore(*types.ServiceContext, *[]M) error { return nil }
+func (Base[M, REQ, RSP]) ListAfter(*types.ServiceContext, *[]M) error  { return nil }
+func (Base[M, REQ, RSP]) GetBefore(*types.ServiceContext, M) error     { return nil }
+func (Base[M, REQ, RSP]) GetAfter(*types.ServiceContext, M) error      { return nil }
 
-func (Base[M]) Filter(_ *types.ServiceContext, m M) M    { return m }
-func (Base[M]) FilterRaw(_ *types.ServiceContext) string { return "" }
+func (Base[M, REQ, RSP]) CreateManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M, REQ, RSP]) CreateManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M, REQ, RSP]) DeleteManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M, REQ, RSP]) DeleteManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M, REQ, RSP]) UpdateManyBefore(*types.ServiceContext, ...M) error { return nil }
+func (Base[M, REQ, RSP]) UpdateManyAfter(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M, REQ, RSP]) PatchManyBefore(*types.ServiceContext, ...M) error  { return nil }
+func (Base[M, REQ, RSP]) PatchManyAfter(*types.ServiceContext, ...M) error   { return nil }
+
+func (Base[M, REQ, RSP]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
+func (Base[M, REQ, RSP]) Export(*types.ServiceContext, ...M) ([]byte, error) { return make([]byte, 0), nil }
+
+func (Base[M, REQ, RSP]) Filter(_ *types.ServiceContext, m M) M    { return m }
+func (Base[M, REQ, RSP]) FilterRaw(_ *types.ServiceContext) string { return "" }

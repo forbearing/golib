@@ -271,14 +271,26 @@ type Model interface {
 	Hooker
 }
 
+type (
+	Request  interface{}
+	Response interface{}
+)
+
 // Service interface.
 // The object that implements this interface must be pointer to struct.
-//
-// xxxBefore
-// - 权限校验
-// xxxAfter
-// - 操作行为记录
-type Service[M Model] interface {
+type Service[M Model, REQ Request, RSP Response] interface {
+	Create(*ServiceContext, REQ) (RSP, error)
+	Delete(*ServiceContext, REQ) (RSP, error)
+	Update(*ServiceContext, REQ) (RSP, error)
+	Patch(*ServiceContext, REQ) (RSP, error)
+	List(*ServiceContext, REQ) (RSP, error)
+	Get(*ServiceContext, REQ) (RSP, error)
+
+	CreateMany(*ServiceContext, REQ) (RSP, error)
+	DeleteMany(*ServiceContext, REQ) (RSP, error)
+	UpdateMany(*ServiceContext, REQ) (RSP, error)
+	PatchMany(*ServiceContext, REQ) (RSP, error)
+
 	CreateBefore(*ServiceContext, M) error
 	CreateAfter(*ServiceContext, M) error
 	DeleteBefore(*ServiceContext, M) error
