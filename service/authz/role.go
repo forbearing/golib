@@ -11,7 +11,7 @@ import (
 )
 
 type role struct {
-	service.Base[*model_authz.Role]
+	service.Base[*model_authz.Role, *model_authz.Role, *model_authz.Role]
 }
 
 func init() {

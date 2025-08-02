@@ -11,7 +11,7 @@ import (
 )
 
 type rolePermission struct {
-	service.Base[*model_authz.RolePermission]
+	service.Base[*model_authz.RolePermission, *model_authz.RolePermission, *model_authz.RolePermission]
 }
 
 func init() {
