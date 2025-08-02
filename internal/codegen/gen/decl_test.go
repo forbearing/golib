@@ -204,20 +204,20 @@ func Test_ServiceMethod3(t *testing.T) {
 		want         string
 	}{
 		{
-			name:         "BatchCreateBefore",
+			name:         "CreateManyBefore",
 			recvName:     "u",
 			modelName:    "User",
-			methodName:   "BatchCreateBefore",
+			methodName:   "CreateManyBefore",
 			modelPkgName: "model",
-			want:         "func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}",
+			want:         "func (u *user) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}",
 		},
 		{
-			name:         "BatchUpdateAfter",
+			name:         "UpdateManyBefore",
 			recvName:     "g",
 			modelName:    "Group",
-			methodName:   "BatchUpdateAfter",
+			methodName:   "UpdateManyBefore",
 			modelPkgName: "model_auth",
-			want:         "func (g *group) BatchUpdateAfter(ctx *types.ServiceContext, groups ...*model_auth.Group) error {\n}",
+			want:         "func (g *group) UpdateManyBefore(ctx *types.ServiceContext, groups ...*model_auth.Group) error {\n}",
 		},
 	}
 	for _, tt := range tests {

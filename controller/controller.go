@@ -502,7 +502,7 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 	}
 }
 
-// UpdatePartial is a generic function to product gin handler to partial update one resource.
+// Patch is a generic function to product gin handler to partial update one resource.
 // The resource type depends on the type of interface types.Model.
 //
 // resource id must be specified.
@@ -512,16 +512,16 @@ func UpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Handler
 // which one or multiple resources desired modify.
 // - specified in "query parameter".
 // - specified in "http body data".
-func UpdatePartial[M types.Model](c *gin.Context) {
-	UpdatePartialFactory[M]()(c)
+func Patch[M types.Model](c *gin.Context) {
+	PatchFactory[M]()(c)
 }
 
-// UpdatePartialFactory is a factory function to product gin handler to partial update one resource.
-func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+// PatchFactory is a factory function to product gin handler to partial update one resource.
+func PatchFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var id string
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_PARTIAL)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH)
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req := reflect.New(typ).Interface().(M)
 		oldVal := reflect.ValueOf(req).Elem()
@@ -579,89 +579,12 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 
 			newVal = reflect.ValueOf(req).Elem()
 			oldVal = reflect.ValueOf(data[0]).Elem()
-			partialUpdateValue(log, typ, oldVal, newVal)
-			// for i := range typ.NumField() {
-			// 	// fmt.Println(typ.Field(i).Name, typ.Field(i).Type, typ.Field(i).Type.Kind(), newVal.Field(i).IsValid(), newVal.Field(i).CanSet())
-			// 	switch typ.Field(i).Type.Kind() {
-			// 	case reflect.Struct: // skip update base model.
-			// 		switch typ.Field(i).Type.Name() {
-			// 		case "GormTime": // The underlying type of model.GormTime(type of time.Time) is struct, we should continue handle.
-			//
-			// 		case "Asset", "Base":
-			// 			// AssetChecking 有匿名继承 Asset, 所以要检查是不是结构体 Asset.
-			// 			//
-			// 			// 可以自动深度查找,不需要链式查找, 例如
-			// 			// newVal.FieldByName("Asset").FieldByName("Remark").IsValid() 可以简化为
-			// 			// newVal.FieldByName("Remark").IsValid()
-			//
-			// 			// Make sure the type of "Remark" is pointer to golang base type.
-			// 			fieldRemark := "Remark"
-			// 			if newVal.FieldByName(fieldRemark).IsValid() { // WARN: oldVal.FieldByName(fieldRemark) maybe <invalid reflect.Value>
-			// 				if !newVal.FieldByName(fieldRemark).IsZero() {
-			// 					if newVal.FieldByName(fieldRemark).CanSet() {
-			// 						// output log must before set value.
-			// 						if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
-			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-			// 								oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
-			// 						} else {
-			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldRemark, typ.Name(),
-			// 								oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
-			// 						}
-			// 						oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
-			// 					}
-			// 				}
-			// 			}
-			// 			// Make sure the type of "Order" is pointer to golang base type.
-			// 			fieldOrder := "Order"
-			// 			if newVal.FieldByName(fieldOrder).IsValid() { // WARN: oldVal.FieldByName(fieldOrder) maybe <invalid reflect.Value>
-			// 				if !newVal.FieldByName(fieldOrder).IsZero() {
-			// 					if newVal.FieldByName(fieldOrder).CanSet() {
-			// 						// output log must before set value.
-			// 						if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
-			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-			// 								oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
-			// 						} else {
-			// 							log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", fieldOrder, typ.Name(),
-			// 								oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
-			// 						}
-			// 						oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
-			// 					}
-			// 				}
-			// 			}
-			// 			continue
-			//
-			// 		default:
-			// 			continue
-			// 		}
-			// 	}
-			// 	if !newVal.Field(i).IsValid() {
-			// 		// log.Warnf("field %s is invalid, skip", typ.Field(i).Name)
-			// 		continue
-			// 	}
-			// 	// base type such like int and string have default value(zero value).
-			// 	// If the struct field(the field type is golang base type) supported by patch update,
-			// 	// the field type must be pointer to base type, such like *string, *int.
-			// 	if newVal.Field(i).IsZero() {
-			// 		// log.Warnf("field %s is zero value, skip", typ.Field(i).Name)
-			// 		// log.Warnf("DeepEqual: %v : %v : %v : %v", typ.Field(i).Name, newVal.Field(i).Interface(), oldVal.Field(i).Interface(), reflect.DeepEqual(newVal.Field(i), oldVal.Field(i)))
-			// 		continue
-			// 	}
-			// 	if newVal.Field(i).CanSet() {
-			// 		// output log must before set value.
-			// 		if newVal.Field(i).Kind() == reflect.Pointer {
-			// 			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
-			// 		} else {
-			// 			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %s: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
-			// 		}
-			// 		oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
-			// 	}
-			// }
-			// zap.L().Info("[UpdatePartial]", zap.Object(typ.String(), oldVal.Addr().Interface().(M)))
+			patchValue(log, typ, oldVal, newVal)
 		}
 
 		svc := service.Factory[M]().Service()
 		// 1.Perform business logic processing before partial update resource.
-		if err := svc.UpdatePartialBefore(ctx.WithPhase(consts.PHASE_UPDATE_PARTIAL_BEFORE), oldVal.Addr().Interface().(M)); err != nil {
+		if err := svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -675,7 +598,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 			}
 		}
 		// 3.Perform business logic processing after partial update resource.
-		if err := svc.UpdatePartialAfter(ctx.WithPhase(consts.PHASE_UPDATE_PARTIAL_AFTER), oldVal.Addr().Interface().(M)); err != nil {
+		if err := svc.PatchAfter(ctx.WithPhase(consts.PHASE_PATCH_AFTER), oldVal.Addr().Interface().(M)); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -692,7 +615,7 @@ func UpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.
 		reqData, _ := json.Marshal(ctx.GetRequest())
 		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdatePartial,
+			Op:        model_log.OperationTypePatch,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
@@ -1230,18 +1153,18 @@ type summary struct {
 	Failed    int `json:"failed"`
 }
 
-func BatchCreate[M types.Model](c *gin.Context) {
-	BatchCreateFactory[M]()(c)
+func CreateMany[M types.Model](c *gin.Context) {
+	CreateManyFactory[M]()(c)
 }
 
-// BatchCreateFactory
-func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+// CreateManyFactory
+func CreateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
 		var req requestData[M]
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_CREATE)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE_MANY)
 		typ := reflect.TypeOf(*new(M)).Elem()
 		val := reflect.New(typ).Interface().(M)
 		ctx := helper.NewServiceContext(c)
@@ -1281,13 +1204,13 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			for _, m := range req.Items {
 				m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
 				m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-				log.Infoz("batch create", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
+				log.Infoz("create_many", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
 			}
 		}
 
 		svc := service.Factory[M]().Service()
 		// 1.Perform business logic processing before batch create resource.
-		if err = svc.BatchCreateBefore(ctx.WithPhase(consts.PHASE_BATCH_CREATE_BEFORE), req.Items...); err != nil {
+		if err = svc.CreateManyBefore(ctx.WithPhase(consts.PHASE_CREATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1302,7 +1225,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch create resource
-		if err = svc.BatchCreateAfter(ctx.WithPhase(consts.PHASE_BATCH_CREATE_AFTER), req.Items...); err != nil {
+		if err = svc.CreateManyAfter(ctx.WithPhase(consts.PHASE_CREATE_MANY_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1318,7 +1241,7 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		reqData, _ := json.Marshal(ctx.GetRequest())
 		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeBatchCreate,
+			Op:        model_log.OperationTypeCreateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -1353,17 +1276,17 @@ func BatchCreateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 	}
 }
 
-// BatchDelete
-func BatchDelete[M types.Model](c *gin.Context) {
-	BatchDeleteFactory[M]()(c)
+// DeleteMany
+func DeleteMany[M types.Model](c *gin.Context) {
+	DeleteManyFactory[M]()(c)
 }
 
-// BatchDeleteFactory
-func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+// DeleteManyFactory
+func DeleteManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_DELETE)
-		log.Info("batch delete")
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
+		log.Info("delete_many")
 
 		var err error
 		var reqErr error
@@ -1386,7 +1309,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
-		if err = svc.BatchDeleteBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_BATCH_DELETE_BEFORE), req.Items...); err != nil {
+		if err = svc.DeleteManyBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1403,7 +1326,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch delete resources.
-		if err = svc.BatchDeleteAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_BATCH_DELETE_AFTER), req.Items...); err != nil {
+		if err = svc.DeleteManyAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_MANY_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1417,7 +1340,7 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		}
 		record, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeBatchDelete,
+			Op:        model_log.OperationTypeDeleteMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -1444,19 +1367,19 @@ func BatchDeleteFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 	}
 }
 
-// BatchUpdate
-func BatchUpdate[M types.Model](c *gin.Context) {
-	BatchUpdateFactory[M]()(c)
+// UpdateMany
+func UpdateMany[M types.Model](c *gin.Context) {
+	UpdateManyFactory[M]()(c)
 }
 
-// BatchUpdateFactory
-func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+// UpdateManyFactory
+func UpdateManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
 		var req requestData[M]
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_MANY)
 		ctx := helper.NewServiceContext(c)
 		hasCustomReq := model.HasRequest[M]()
 		hasCustomResp := model.HasResponse[M]()
@@ -1491,7 +1414,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 
 		svc := service.Factory[M]().Service()
 		// 1.Perform business logic processing before batch update resource.
-		if err = svc.BatchUpdateBefore(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_BEFORE), req.Items...); err != nil {
+		if err = svc.UpdateManyBefore(ctx.WithPhase(consts.PHASE_UPDATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1505,7 +1428,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 			}
 		}
 		// 3.Perform business logic processing after batch update resource.
-		if err = svc.BatchUpdateAfter(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_AFTER), req.Items...); err != nil {
+		if err = svc.UpdateManyAfter(ctx.WithPhase(consts.PHASE_UPDATE_MANY_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1522,7 +1445,7 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 		reqData, _ := json.Marshal(ctx.GetRequest())
 		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeBatchUpdate,
+			Op:        model_log.OperationTypeUpdateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -1556,20 +1479,20 @@ func BatchUpdateFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.Ha
 	}
 }
 
-// BatchUpdatePartial
-func BatchUpdatePartial[M types.Model](c *gin.Context) {
-	BatchUpdatePartialFactory[M]()(c)
+// PatchMany
+func PatchMany[M types.Model](c *gin.Context) {
+	PatchManyFactory[M]()(c)
 }
 
-// BatchUpdatePartialFactory
-func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
+// PatchManyFactory
+func PatchManyFactory[M types.Model](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
 		var req requestData[M]
 		var shouldUpdates []M
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_BATCH_UPDATE_PARTIAL)
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH_MANY)
 		typ := reflect.TypeOf(*new(M)).Elem()
 		ctx := helper.NewServiceContext(c)
 		hasCustomReq := model.HasRequest[M]()
@@ -1618,14 +1541,14 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 					continue
 				}
 				oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
-				partialUpdateValue(log, typ, oldVal, newVal)
+				patchValue(log, typ, oldVal, newVal)
 				shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
 			}
 		}
 
 		svc := service.Factory[M]().Service()
-		// 1.Perform business logic processing before batch partial update resource.
-		if err = svc.BatchUpdatePartialBefore(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_PARTIAL_BEFORE), shouldUpdates...); err != nil {
+		// 1.Perform business logic processing before batch patch resource.
+		if err = svc.PatchManyBefore(ctx.WithPhase(consts.PHASE_PATCH_MANY_BEFORE), shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1638,8 +1561,8 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 				return
 			}
 		}
-		// 3.Perform business logic processing after batch partial update resource.
-		if err := svc.BatchUpdatePartialAfter(ctx.WithPhase(consts.PHASE_BATCH_UPDATE_PARTIAL_AFTER), shouldUpdates...); err != nil {
+		// 3.Perform business logic processing after batch patch resource.
+		if err := svc.PatchManyAfter(ctx.WithPhase(consts.PHASE_PATCH_MANY_AFTER), shouldUpdates...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1656,7 +1579,7 @@ func BatchUpdatePartialFactory[M types.Model](cfg ...*types.ControllerConfig[M])
 		reqData, _ := json.Marshal(ctx.GetRequest())
 		respData, _ := json.Marshal(ctx.GetResponse())
 		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeBatchUpdatePartial,
+			Op:        model_log.OperationTypePatchMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),

@@ -196,9 +196,9 @@ func Test_Client(t *testing.T) {
 		require.Empty(t, user.Avatar)
 	})
 
-	// Test UpdatePartial
-	t.Run("update_partial", func(t *testing.T) {
-		resp, err := cli.UpdatePartial(&User{Avatar: avatar1Modified, Base: model.Base{ID: id1}})
+	// Test Patch
+	t.Run("patch", func(t *testing.T) {
+		resp, err := cli.Patch(&User{Avatar: avatar1Modified, Base: model.Base{ID: id1}})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -212,7 +212,7 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, email1Modified, user.Email)
 		require.Equal(t, avatar1Modified, user.Avatar)
 
-		resp, err = cli.UpdatePartial(&User{Name: name1, Base: model.Base{ID: id1}})
+		resp, err = cli.Patch(&User{Name: name1, Base: model.Base{ID: id1}})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -226,7 +226,7 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, email1Modified, user.Email)
 		require.Equal(t, avatar1Modified, user.Avatar)
 
-		resp, err = cli.UpdatePartial(&User{Email: email1, Avatar: avatar1, Base: model.Base{ID: id1}})
+		resp, err = cli.Patch(&User{Email: email1, Avatar: avatar1, Base: model.Base{ID: id1}})
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
 		require.NoError(t, err)
@@ -240,17 +240,17 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, avatar1, user.Avatar)
 	})
 
-	// Test BatchCreate
-	t.Run("batch_create", func(t *testing.T) {
+	// Test CreateMany
+	t.Run("create_many", func(t *testing.T) {
 		cli, err := client.New(addr2, client.WithToken(token))
 		require.NoError(t, err)
 		items := make([]User, 0)
 		total := *new(int64)
 
 		// 1. delete all resources.
-		_, err = cli.BatchDelete([]string{id1, id2, id3, id4, id5})
+		_, err = cli.DeleteMany([]string{id1, id2, id3, id4, id5})
 		require.NoError(t, err)
-		_, err = cli.BatchCreate(user1)
+		_, err = cli.CreateMany(user1)
 		require.ErrorIs(t, err, client.ErrNotStructSlice)
 
 		// 2.check the number of resources after create.
@@ -260,7 +260,7 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, int64(0), total)
 
 		// 3.create resources.
-		resp, err := cli.BatchCreate([]User{user1, user2, user3, user4, user5})
+		resp, err := cli.CreateMany([]User{user1, user2, user3, user4, user5})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -272,15 +272,15 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, int64(5), total)
 	})
 
-	// Test BatchDelete
-	t.Run("batch_delete", func(t *testing.T) {
+	// Test DeleteMany
+	t.Run("delete_many", func(t *testing.T) {
 		cli, err := client.New(addr2, client.WithToken(token))
 		require.NoError(t, err)
 		items := make([]User, 0)
 		total := *new(int64)
 
 		// 1.create resources.
-		_, err = cli.BatchUpdate([]User{user1, user2, user3, user4, user5})
+		_, err = cli.UpdateMany([]User{user1, user2, user3, user4, user5})
 		require.NoError(t, err)
 
 		// 2.check the number of resources after create.
@@ -290,12 +290,12 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, int64(5), total)
 
 		// 3.delete resources
-		resp, err := cli.BatchDelete([]string{id1, id2, id3, id4, id5})
+		resp, err := cli.DeleteMany([]string{id1, id2, id3, id4, id5})
 		require.NoError(t, err)
 		_ = resp
 		// require.NotNil(t, resp)
 		// require.NotEmpty(t, resp.RequestID)
-		_, err = cli.BatchDelete([]int{1})
+		_, err = cli.DeleteMany([]int{1})
 		require.ErrorIs(t, err, client.ErrNotStringSlice)
 
 		// 4.check the number of resources after delete
@@ -305,17 +305,17 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, int64(0), total)
 	})
 
-	// Test BatchUpdate
-	t.Run("batch_update", func(t *testing.T) {
+	// Test UpdateMany
+	t.Run("update_many", func(t *testing.T) {
 		cli, err := client.New(addr2, client.WithToken(token))
 		require.NoError(t, err)
 
 		// 1.delete all resources
-		_, err = cli.BatchDelete([]string{id1, id2, id3, id4, id5})
+		_, err = cli.DeleteMany([]string{id1, id2, id3, id4, id5})
 		require.NoError(t, err)
 
 		// 2.creat all resources
-		_, err = cli.BatchCreate([]User{user1, user2, user3, user4, user5})
+		_, err = cli.CreateMany([]User{user1, user2, user3, user4, user5})
 		require.NoError(t, err)
 
 		// u1 only modified email
@@ -324,7 +324,7 @@ func Test_Client(t *testing.T) {
 		// u2 only modified avator
 		u2 := user2
 		u2.Avatar = avatar2Modified
-		resp, err := cli.BatchUpdate([]User{u1, u2})
+		resp, err := cli.UpdateMany([]User{u1, u2})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -354,16 +354,18 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, u.Email, user4.Email)
 		require.Equal(t, u.Avatar, user4.Avatar)
 	})
-	t.Run("batch_update_partial", func(t *testing.T) {
+
+	// Test PatchMany
+	t.Run("patch_many", func(t *testing.T) {
 		cli, err := client.New(addr2, client.WithToken(token))
 		require.NoError(t, err)
 
 		// 1.delete all resources
-		_, err = cli.BatchDelete([]string{id1, id2, id3, id4, id5})
+		_, err = cli.DeleteMany([]string{id1, id2, id3, id4, id5})
 		require.NoError(t, err)
 
 		// 2.creat all resources
-		_, err = cli.BatchCreate([]User{user1, user2, user3, user4, user5})
+		_, err = cli.CreateMany([]User{user1, user2, user3, user4, user5})
 		require.NoError(t, err)
 
 		// u1 only modified email
@@ -372,7 +374,7 @@ func Test_Client(t *testing.T) {
 		// u2 only modified avator
 		u2 := &User{Avatar: avatar2Modified}
 		u2.ID = id2
-		resp, err := cli.BatchUpdatePartial([]*User{u1, u2})
+		resp, err := cli.PatchMany([]*User{u1, u2})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)

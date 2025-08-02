@@ -118,12 +118,12 @@ type ServiceContext struct {
 
 // SetRequest is called in the controller layer when the model has custom request type.
 // The custom request only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
-// BATCH_CREATE(POST), BATCH_UPDATE(PUT) and BATCH_UPDATE_PARTIAL(PATCH) operations.
+// CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
 func (sc *ServiceContext) SetRequest(m any) { sc.request = m }
 
 // SetResponse is called in the controller layer if the model has custom response type.
-// The custom response only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
-// BATCH_CREATE(POST), BATCH_UPDATE(PUT) and BATCH_UPDATE_PARTIAL(PATCH) operations.
+// The custom response only take effect for Create(POST), Update(PUT), Patch(PATCH)
+// CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
 func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
 
 // GetRequest is called in the service layer when the model has a custom request type.
@@ -133,10 +133,10 @@ func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
 //
 //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
 //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-//	UPDATE_PARTIAL_BEFORE (PATCH), UPDATE_PARTIAL_AFTER (PATCH)
-//	BATCH_CREATE_BEFORE (POST), BATCH_CREATE_AFTER (POST)
-//	BATCH_UPDATE_BEFORE (PUT), BATCH_UPDATE_AFTER (PUT)
-//	BATCH_UPDATE_PARTIAL_BEFORE (PATCH), BATCH_UPDATE_PARTIAL_AFTER (PATCH)
+//	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
+//	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
+//	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
+//	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
 //
 // For all other service hooks, GetRequest always returns nil, including:
 //
@@ -150,10 +150,10 @@ func (sc *ServiceContext) GetRequest() any { return sc.request }
 //
 //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
 //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-//	UPDATE_PARTIAL_BEFORE (PATCH), UPDATE_PARTIAL_AFTER (PATCH)
-//	BATCH_CREATE_BEFORE (POST), BATCH_CREATE_AFTER (POST)
-//	BATCH_UPDATE_BEFORE (PUT), BATCH_UPDATE_AFTER (PUT)
-//	BATCH_UPDATE_PARTIAL_BEFORE (PATCH), BATCH_UPDATE_PARTIAL_AFTER (PATCH)
+//	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
+//	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
+//	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
+//	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
 func (sc *ServiceContext) GetResponse() any { return sc.response }
 
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }

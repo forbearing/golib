@@ -82,37 +82,39 @@ const (
 type Phase string
 
 const (
-	PHASE_CREATE                Phase = "create"
-	PHASE_CREATE_BEFORE         Phase = "create_before"
-	PHASE_CREATE_AFTER          Phase = "create_after"
-	PHASE_UPDATE                Phase = "update"
-	PHASE_UPDATE_BEFORE         Phase = "update_before"
-	PHASE_UPDATE_AFTER          Phase = "update_after"
-	PHASE_UPDATE_PARTIAL        Phase = "update_partial"
-	PHASE_UPDATE_PARTIAL_BEFORE Phase = "update_partial_before"
-	PHASE_UPDATE_PARTIAL_AFTER  Phase = "update_partial_after"
-	PHASE_DELETE                Phase = "delete"
-	PHASE_DELETE_BEFORE         Phase = "delete_before"
-	PHASE_DELETE_AFTER          Phase = "delete_after"
-	PHASE_LIST                  Phase = "list"
-	PHASE_LIST_BEFORE           Phase = "list_before"
-	PHASE_LIST_AFTER            Phase = "list_after"
-	PHASE_GET                   Phase = "get"
-	PHASE_GET_BEFORE            Phase = "get_before"
-	PHASE_GET_AFTER             Phase = "get_after"
+	PHASE_CREATE Phase = "create"
+	PHASE_DELETE Phase = "delete"
+	PHASE_UPDATE Phase = "update"
+	PHASE_PATCH  Phase = "patch"
+	PHASE_LIST   Phase = "list"
+	PHASE_GET    Phase = "get"
 
-	PHASE_BATCH_CREATE                Phase = "batch_create"
-	PHASE_BATCH_CREATE_BEFORE         Phase = "batch_create_before"
-	PHASE_BATCH_CREATE_AFTER          Phase = "batch_create_after"
-	PHASE_BATCH_DELETE                Phase = "batch_delete"
-	PHASE_BATCH_DELETE_BEFORE         Phase = "batch_delete_before"
-	PHASE_BATCH_DELETE_AFTER          Phase = "batch_delete_after"
-	PHASE_BATCH_UPDATE                Phase = "batch_update"
-	PHASE_BATCH_UPDATE_BEFORE         Phase = "batch_update_before"
-	PHASE_BATCH_UPDATE_AFTER          Phase = "batch_update_after"
-	PHASE_BATCH_UPDATE_PARTIAL        Phase = "batch_update_partial"
-	PHASE_BATCH_UPDATE_PARTIAL_BEFORE Phase = "batch_update_partial_before"
-	PHASE_BATCH_UPDATE_PARTIAL_AFTER  Phase = "batch_update_partial_after"
+	PHASE_CREATE_MANY Phase = "create_many"
+	PHASE_DELETE_MANY Phase = "delete_many"
+	PHASE_UPDATE_MANY Phase = "update_many"
+	PHASE_PATCH_MANY  Phase = "patch_many"
+
+	PHASE_CREATE_BEFORE Phase = "create_before"
+	PHASE_CREATE_AFTER  Phase = "create_after"
+	PHASE_DELETE_BEFORE Phase = "delete_before"
+	PHASE_DELETE_AFTER  Phase = "delete_after"
+	PHASE_UPDATE_BEFORE Phase = "update_before"
+	PHASE_UPDATE_AFTER  Phase = "update_after"
+	PHASE_PATCH_BEFORE  Phase = "patch_before"
+	PHASE_PATCH_AFTER   Phase = "patch_after"
+	PHASE_LIST_BEFORE   Phase = "list_before"
+	PHASE_LIST_AFTER    Phase = "list_after"
+	PHASE_GET_BEFORE    Phase = "get_before"
+	PHASE_GET_AFTER     Phase = "get_after"
+
+	PHASE_CREATE_MANY_BEFORE Phase = "create_many_before"
+	PHASE_CREATE_MANY_AFTER  Phase = "create_many_after"
+	PHASE_DELETE_MANY_BEFORE Phase = "delete_many_before"
+	PHASE_DELETE_MANY_AFTER  Phase = "delete_many_after"
+	PHASE_UPDATE_MANY_BEFORE Phase = "update_many_before"
+	PHASE_UPDATE_MANY_AFTER  Phase = "update_many_after"
+	PHASE_PATCH_MANY_BEFORE  Phase = "patch_many_before"
+	PHASE_PATCH_MANY_AFTER   Phase = "patch_many_after"
 
 	PHASE_FILTER Phase = "filter"
 	PHASE_IMPORT Phase = "import"
@@ -124,24 +126,24 @@ type HTTPVerb string
 
 const (
 	// Basic operations
-	Create        HTTPVerb = "create"         // POST /resource
-	Delete        HTTPVerb = "delete"         // DELETE /resource, DELETE /resource/:id
-	Update        HTTPVerb = "update"         // PUT /resource, PUT /resource/:id
-	UpdatePartial HTTPVerb = "update_partial" // PATCH /resource, PATCH /resource/:id
-	List          HTTPVerb = "list"           // GET /resource
-	Get           HTTPVerb = "get"            // GET /resource/:id
+	Create HTTPVerb = "create" // POST /resource
+	Delete HTTPVerb = "delete" // DELETE /resource, DELETE /resource/:id
+	Update HTTPVerb = "update" // PUT /resource, PUT /resource/:id
+	Patch  HTTPVerb = "patch"  // PATCH /resource, PATCH /resource/:id
+	List   HTTPVerb = "list"   // GET /resource
+	Get    HTTPVerb = "get"    // GET /resource/:id
 
-	BatchCreate        HTTPVerb = "batch_create"         // POST /resource/batch
-	BatchDelete        HTTPVerb = "batch_delete"         // DELETE /resource/batch
-	BatchUpdate        HTTPVerb = "batch_update"         // PUT /resource/batch
-	BatchUpdatePartial HTTPVerb = "batch_update_partial" // PATCH /resource/batch
+	CreateMany HTTPVerb = "create_many" // POST /resource/batch
+	DeleteMany HTTPVerb = "delete_many" // DELETE /resource/batch
+	UpdateMany HTTPVerb = "update_many" // PUT /resource/batch
+	PatchMany  HTTPVerb = "patch_many"  // PATCH /resource/batch
 
 	Export HTTPVerb = "export" // GET /resource/export
 	Import HTTPVerb = "import" // POST /resource/import
 
 	// Verb groups
 	Most      HTTPVerb = "most"       // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
-	MostBatch HTTPVerb = "most_batch" // Basic batch operations (BatchCreate, BatchDelete, BatchUpdate, BatchUpdatePartial)
+	MostBatch HTTPVerb = "most_batch" // Basic batch operations (CreateMany, DeleteMany, UpdateMany, PatchMany)
 	All       HTTPVerb = "all"        // All operations including Most, MostBatch, Import and Export
 )
 
