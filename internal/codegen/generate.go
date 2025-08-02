@@ -203,7 +203,8 @@ func generateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 	)
 }
 
-// 使用 AST 生成 Batch* 等方法.
+// 使用 AST 生成 CreateManyBefore, CreateManyAfter, DeleteManyBefore, DeleteManyAfter
+// UpdateManyBefore, UpdateManyAfter, PatchManyBefore, PatchManyAfter.
 func generateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
@@ -229,7 +230,7 @@ func generateServiceFile(info *ModelInfo) *ast.File {
 	for _, method := range methods {
 		if strings.HasPrefix(method, "List") {
 			decls = append(decls, generateServiceMethod2(info, method))
-		} else if strings.HasPrefix(method, "Batch") {
+		} else if strings.Contains(method, "Many") {
 			decls = append(decls, generateServiceMethod3(info, method))
 		} else {
 			decls = append(decls, generateServiceMethod1(info, method))
