@@ -50,6 +50,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
 	github.com/karlseguin/ccache/v3 v3.0.6
+	github.com/kr/pretty v0.3.1
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.18
 	github.com/minio/minio-go/v7 v7.0.92
 	github.com/mssola/useragent v1.0.0
@@ -183,7 +184,6 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/kr/fs v0.1.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
