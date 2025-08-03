@@ -118,37 +118,62 @@ func Create[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 	CreateFactory[M, REQ, RSP]()(c)
 }
 
-// CreateFactory is a factory function to product gin handler to create one resource.
+// CreateFactory is a factory function that produces a gin handler for creating one resource.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles resource creation in database
+//   - Service hooks (CreateBefore/CreateAfter) are executed for business logic
+//   - Processing flow: Request -> ServiceBefore -> ModelBefore -> Database -> ModelAfter -> ServiceAfter -> Response
+//   - The request body is directly bound to the model type M
+//   - Automatic setting of CreatedBy/UpdatedBy fields from context
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over resource creation
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.Create -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic and database operations
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP POST requests
+//
+// HTTP Response:
+//   - Success: 201 Created with the created resource data
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// Examples:
+//
+// Unified types (automatic mode):
+//
+//	CreateFactory[*model.User, *model.User, *model.User]()
+//
+// Custom types (manual mode):
+//
+//	CreateFactory[*model.User, *CreateUserRequest, *CreateUserResponse]()
 func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
+		var rsp any
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
-		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request.
-			req := model.NewRequest[M]()
-			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				return
-			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				// Has custom response
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
+		if model.AreTypesEqual[M, REQ, RSP]() {
+			// The M type always is the pointer to struct, eg: *User, *Group.
+			req := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -161,69 +186,70 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 				log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 			}
-		}
-
-		svc := service.Factory[M, REQ, RSP]().Service()
-		// 1.Perform business logic processing before create resource.
-		if err = svc.CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		// 2.Create resource in database.
-		// database.Database().Delete just set "deleted_at" field to current time, not really delete.
-		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
-		// NOTE: WithExpand(req.Expands()...) is not a good choices.
-		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-		if reqErr != io.EOF && !hasCustomReq {
-			if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
+			// 1.Perform business logic processing before create resource.
+			if err = svc.CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			// 2.Create resource in database.
+			// database.Database().Delete just set "deleted_at" field to current time, not really delete.
+			if reqErr != io.EOF {
+				if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
+					log.Error(err)
+					ResponseJSON(c, CodeFailure.WithErr(err))
+					return
+				}
+			}
+			// 3.Perform business logic processing after create resource
+			if err = svc.CreateAfter(ctx.WithPhase(consts.PHASE_CREATE_AFTER), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			rsp = req
+		} else {
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			if rsp, err = svc.Create(ctx.WithPhase(consts.PHASE_CREATE), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
 		}
-		// 3.Perform business logic processing after create resource
-		if err = svc.CreateAfter(ctx.WithPhase(consts.PHASE_CREATE_AFTER), req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
 
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetRequest())
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		})
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typM.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(req)
+		// reqData, _ := json.Marshal(ctx.GetRequest())
+		// respData, _ := json.Marshal(ctx.GetRequest())
+		// cb.Enqueue(&model_log.OperationLog{
+		// 	Op:        model_log.OperationTypeCreate,
+		// 	Model:     typM.Name(),
+		// 	Table:     tableName,
+		// 	Record:    util.BytesToString(record),
+		// 	Request:   util.BytesToString(reqData),
+		// 	Response:  util.BytesToString(respData),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// })
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated))
-		} else {
-			// Does not have custom response, the response type is the same as the resource type.
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
-		}
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), rsp)
 	}
 }
 
