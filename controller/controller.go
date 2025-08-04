@@ -961,7 +961,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				return
 			}
-			if rsp, err = svc.List(ctx, req); err != nil {
+			if rsp, err = svc.List(ctx.WithPhase(consts.PHASE_LIST), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -1282,7 +1282,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				return
 			}
-			if rsp, err = svc.Get(ctx, req); err != nil {
+			if rsp, err = svc.Get(ctx.WithPhase(consts.PHASE_GET), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -1615,14 +1615,14 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			var rsp RSP
 			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-				log.Error(err)
-				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				return
 			}
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			if rsp, err = svc.CreateMany(ctx, req); err != nil {
+			if rsp, err = svc.CreateMany(ctx.WithPhase(consts.PHASE_CREATE_MANY), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -1636,7 +1636,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		val := reflect.New(typ).Interface().(M)
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
-			ResponseJSON(c, CodeInvalidParam.WithErr(err))
+			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 			return
 		}
 		if reqErr == io.EOF {
@@ -1716,14 +1716,101 @@ func DeleteMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Con
 	DeleteManyFactory[M, REQ, RSP]()(c)
 }
 
-// DeleteManyFactory
+// CreateManyFactory is a factory function that produces a gin handler for batch creating multiple resources.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles batch resource creation in database
+//   - Service hooks (CreateManyBefore/CreateManyAfter) are executed for business logic
+//   - Processing flow: Request -> ServiceBefore -> Database -> ServiceAfter -> Response
+//   - The request body is bound to requestData[M] structure containing Items slice
+//   - Automatic setting of CreatedBy/UpdatedBy fields from context for each item
+//   - Supports atomic operations through options configuration
+//   - Operation logging is automatically recorded to database
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over batch resource creation
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.CreateMany -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic and database operations
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP POST requests
+//
+// HTTP Response:
+//   - Success: 201 Created with batch operation summary and created resources
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// Request Body Format (Unified Types):
+//
+//	{
+//	  "items": [/* array of resources to create */],
+//	  "options": {
+//	    "atomic": true  // optional: whether to perform atomic operation
+//	  }
+//	}
+//
+// Response Format (Unified Types):
+//
+//	{
+//	  "items": [/* array of created resources */],
+//	  "summary": {
+//	    "total": 10,
+//	    "succeeded": 10,
+//	    "failed": 0
+//	  }
+//	}
+//
+// Examples:
+//
+// Unified types (automatic mode):
+//
+//	CreateManyFactory[*model.User, *model.User, *model.User]()
+//
+// Custom types (manual mode):
+//
+//	CreateManyFactory[*model.User, *CreateManyUsersRequest, *CreateManyUsersResponse]()
+//	// Service layer controls all batch creation logic
 func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
-
 		var err error
 		var reqErr error
+		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
+		svc := service.Factory[M, REQ, RSP]().Service()
+		ctx := helper.NewServiceContext(c)
+
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+				return
+			}
+			if reqErr == io.EOF {
+				log.Warn("empty request body")
+			}
+			if rsp, err = svc.DeleteMany(ctx.WithPhase(consts.PHASE_DELETE_MANY), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
+		}
+
 		var req requestData[M]
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
@@ -1735,7 +1822,6 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 1.Perform business logic processing before batch delete resources.
-		svc := service.Factory[M, REQ, RSP]().Service()
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req.Items = make([]M, 0, len(req.Ids))
 		for _, id := range req.Ids {
@@ -1743,7 +1829,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
-		if err = svc.DeleteManyBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_MANY_BEFORE), req.Items...); err != nil {
+		if err = svc.DeleteManyBefore(ctx.WithPhase(consts.PHASE_DELETE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1760,7 +1846,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch delete resources.
-		if err = svc.DeleteManyAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_DELETE_MANY_AFTER), req.Items...); err != nil {
+		if err = svc.DeleteManyAfter(ctx.WithPhase(consts.PHASE_DELETE_MANY_AFTER), req.Items...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
