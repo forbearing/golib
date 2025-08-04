@@ -277,8 +277,6 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// These methods implement types.Hooker interface.
-// model should create custom hook to overwrite default hooks.
 func (*Base) CreateBefore() error { return nil }
 func (*Base) CreateAfter() error  { return nil }
 func (*Base) DeleteBefore() error { return nil }
