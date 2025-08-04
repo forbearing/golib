@@ -653,39 +653,83 @@ func Patch[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context)
 	PatchFactory[M, REQ, RSP]()(c)
 }
 
-// PatchFactory is a factory function to product gin handler to partial update one resource.
+// PatchFactory is a factory function that produces a gin handler for partially updating one resource.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles partial resource update in database
+//   - Service hooks (PatchBefore/PatchAfter) are executed for business logic
+//   - Processing flow: Request -> ServiceBefore -> ModelBefore -> Database -> ModelAfter -> ServiceAfter -> Response
+//   - Resource ID can be specified in two ways (route parameter has higher priority):
+//   - Route parameter: PATCH /api/users/123
+//   - Request body: PATCH /api/users with JSON {"id": "123", "name": "new name"}
+//   - Only non-zero fields from request are applied to existing resource (partial update)
+//   - Automatic setting of updated_by field to current user
+//   - Validates resource existence before update
+//   - Preserves original created_at and created_by fields automatically
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over partial resource update logic
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.Patch -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic, validation, and database operations
+//
+// Partial Update Logic (Mode 1):
+//   - Retrieves existing resource from database using provided ID
+//   - Uses reflection to copy only non-zero fields from request to existing resource
+//   - Maintains original timestamps and audit fields
+//   - Updates only the modified fields in database
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP PATCH requests
+//
+// HTTP Response:
+//   - Success: 200 OK with the updated resource data
+//   - Error: 400 Bad Request for invalid parameters, 404 Not Found if resource doesn't exist, 500 Internal Server Error for other failures
+//
+// Resource ID Priority:
+//  1. Route parameter (/api/users/123) - highest priority
+//  2. Request body ID field - fallback if route parameter is empty
+//  3. Error if neither is provided
+//
+// Examples:
+//
+// Unified types (automatic partial update):
+//
+//	PatchFactory[*model.User, *model.User, *model.User]()
+//	// Request: PATCH /users/123 with {"name": "John"} - only updates name field
+//
+// Custom types (manual mode):
+//
+//	PatchFactory[*model.User, *PatchUserRequest, *PatchUserResponse]()
+//	// Service layer controls all partial update logic
 func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		var id string
+		var err error
+		var rsp any
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH)
-		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
-		oldVal := reflect.ValueOf(req).Elem()
-		newVal := reflect.ValueOf(req).Elem()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request.
-			req := model.NewRequest[M]()
-			if err := c.ShouldBindJSON(req); err != nil {
+		if model.AreTypesEqual[M, REQ, RSP]() {
+			id := c.Param(consts.PARAM_ID)
+			typ := reflect.TypeOf(*new(M)).Elem()
+			req := reflect.New(typ).Interface().(M)
+			if err = c.ShouldBindJSON(&req); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				// Has custom response.
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
-			id = c.Param(consts.PARAM_ID)
-			if err := c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				return
 			}
 			if len(id) == 0 {
@@ -699,9 +743,9 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			m.SetID(id)
 
 			// Make sure the record must be already exists.
-			if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				ResponseJSON(c, CodeNotFound.WithErr(err))
 				return
 			}
 			if len(data) != 1 {
@@ -714,71 +758,71 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
 			data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 
-			newVal = reflect.ValueOf(req).Elem()
-			oldVal = reflect.ValueOf(data[0]).Elem()
+			newVal := reflect.ValueOf(req).Elem()
+			oldVal := reflect.ValueOf(data[0]).Elem()
 			patchValue(log, typ, oldVal, newVal)
-		}
+			cur := oldVal.Addr().Interface().(M)
 
-		svc := service.Factory[M, REQ, RSP]().Service()
-		// 1.Perform business logic processing before partial update resource.
-		if err := svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), oldVal.Addr().Interface().(M)); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		// 2.Partial update resource in database.
-		if !hasCustomReq {
-			if err := handler(helper.NewDatabaseContext(c)).Update(oldVal.Addr().Interface().(M)); err != nil {
+			// 1.Perform business logic processing before partial update resource.
+			if err = svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), cur); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			// 2.Partial update resource in database.
+			if err = handler(helper.NewDatabaseContext(c)).Update(cur); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			// 3.Perform business logic processing after partial update resource.
+			if err = svc.PatchAfter(ctx.WithPhase(consts.PHASE_PATCH_AFTER), cur); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			rsp = cur
+		} else {
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if err = c.ShouldBindJSON(&req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+				return
+			}
+			if rsp, err = svc.Patch(ctx, req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
 		}
-		// 3.Perform business logic processing after partial update resource.
-		if err := svc.PatchAfter(ctx.WithPhase(consts.PHASE_PATCH_AFTER), oldVal.Addr().Interface().(M)); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
 
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatch,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		})
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// // NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
+		// record, _ := json.Marshal(req)
+		// reqData, _ := json.Marshal(ctx.GetRequest())
+		// respData, _ := json.Marshal(ctx.GetResponse())
+		// cb.Enqueue(&model_log.OperationLog{
+		// 	Op:        model_log.OperationTypePatch,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	RecordId:  req.GetID(),
+		// 	Record:    util.BytesToString(record),
+		// 	Request:   util.BytesToString(reqData),
+		// 	Response:  util.BytesToString(respData),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// })
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
-		} else {
-			// Does not have custom response, the response type is the same as the resource type.
-			// NOTE: You should response `oldVal` instead of `req`.
-			// The req is `newVal`.
-			ResponseJSON(c, CodeSuccess, oldVal.Addr().Interface())
-		}
+		ResponseJSON(c, CodeSuccess, rsp)
 	}
 }
 
