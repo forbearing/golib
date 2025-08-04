@@ -1,6 +1,10 @@
 package consts
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/stoewer/go-strcase"
+)
 
 type AppSide string
 
@@ -80,6 +84,10 @@ const (
 )
 
 type Phase string
+
+func (p Phase) MethodName() string {
+	return strcase.UpperCamelCase(string(p))
+}
 
 const (
 	PHASE_CREATE Phase = "create"
