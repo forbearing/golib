@@ -325,133 +325,131 @@ func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		var err error
-		var rsp any
-		var reqErr error
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
 		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
 
-		if model.AreTypesEqual[M, REQ, RSP]() {
-			// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-			// 'typ' is the structure type, such as: model.User.
-			typ := reflect.TypeOf(*new(M)).Elem()
-			ml := make([]M, 0)
-			idsSet := make(map[string]struct{})
-
-			addId := func(id string) {
-				if len(id) == 0 {
-					return
-				}
-				if _, exists := idsSet[id]; exists {
-					return
-				}
-				// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-				m := reflect.New(typ).Interface().(M)
-				m.SetID(id)
-				ml = append(ml, m)
-				idsSet[id] = struct{}{}
-			}
-
-			// Delete one record accoding to "query parameter `id`".
-			if id, ok := c.GetQuery(consts.QUERY_ID); ok {
-				addId(id)
-			}
-			// Delete one record accoding to "route parameter `id`".
-			if id := c.Param(consts.PARAM_ID); len(id) != 0 {
-				addId(id)
-			}
-			// Delete multiple records accoding to "http body data".
-			bodyIds := make([]string, 0)
-			if err = c.ShouldBindJSON(&bodyIds); err == nil && len(bodyIds) > 0 {
-				for _, id := range bodyIds {
-					addId(id)
-				}
-			}
-
-			ids := make([]string, 0, len(idsSet))
-			for id := range idsSet {
-				ids = append(ids, id)
-			}
-			log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
-
-			// 1.Perform business logic processing before delete resources.
-			// TODO: Should there be one service hook(DeleteBefore), or multiple?
-			for _, m := range ml {
-				if err = svc.DeleteBefore(ctx.WithPhase(consts.PHASE_DELETE_BEFORE), m); err != nil {
-					log.Error(err)
-					ResponseJSON(c, CodeFailure.WithErr(err))
-					return
-				}
-			}
-
-			// find out the records and record to operation log.
-			copied := make([]M, len(ml))
-			for i := range ml {
-				m := reflect.New(typ).Interface().(M)
-				m.SetID(ml[i].GetID())
-				if err = handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
-					log.Error(err)
-				}
-				copied[i] = m
-			}
-
-			// 2.Delete resources in database.
-			if err = handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 3.Perform business logic processing after delete resources.
-			// TODO: Should there be one service hook(DeleteAfter), or multiple?
-			for _, m := range ml {
-				if err = svc.DeleteAfter(ctx.WithPhase(consts.PHASE_DELETE_AFTER), m); err != nil {
-					log.Error(err)
-					ResponseJSON(c, CodeFailure.WithErr(err))
-					return
-				}
-			}
-		} else {
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var err error
+			var rsp RSP
 			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				return
 			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
+			if rsp, err = svc.Delete(ctx.WithPhase(consts.PHASE_DELETE), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
 			}
-			if rsp, err = svc.Delete(ctx, req); err != nil {
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
+		}
+
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		typ := reflect.TypeOf(*new(M)).Elem()
+		ml := make([]M, 0)
+		idsSet := make(map[string]struct{})
+
+		addId := func(id string) {
+			if len(id) == 0 {
+				return
+			}
+			if _, exists := idsSet[id]; exists {
+				return
+			}
+			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(id)
+			ml = append(ml, m)
+			idsSet[id] = struct{}{}
+		}
+
+		// Delete one record accoding to "query parameter `id`".
+		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
+			addId(id)
+		}
+		// Delete one record accoding to "route parameter `id`".
+		if id := c.Param(consts.PARAM_ID); len(id) != 0 {
+			addId(id)
+		}
+		// Delete multiple records accoding to "http body data".
+		bodyIds := make([]string, 0)
+		if err := c.ShouldBindJSON(&bodyIds); err == nil && len(bodyIds) > 0 {
+			for _, id := range bodyIds {
+				addId(id)
+			}
+		}
+
+		ids := make([]string, 0, len(idsSet))
+		for id := range idsSet {
+			ids = append(ids, id)
+		}
+		log.Info(fmt.Sprintf("%s delete %v", typ.Name(), ids))
+
+		// 1.Perform business logic processing before delete resources.
+		// TODO: Should there be one service hook(DeleteBefore), or multiple?
+		for _, m := range ml {
+			if err := svc.DeleteBefore(ctx.WithPhase(consts.PHASE_DELETE_BEFORE), m); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// for i := range ml {
-		// 	record, _ := json.Marshal(copied[i])
-		// 	cb.Enqueue(&model_log.OperationLog{
-		// 		Op:        model_log.OperationTypeDelete,
-		// 		Model:     typ.Name(),
-		// 		Table:     tableName,
-		// 		RecordId:  ml[i].GetID(),
-		// 		Record:    util.BytesToString(record),
-		// 		IP:        c.ClientIP(),
-		// 		User:      c.GetString(consts.CTX_USERNAME),
-		// 		RequestId: c.GetString(consts.REQUEST_ID),
-		// 		URI:       c.Request.RequestURI,
-		// 		Method:    c.Request.Method,
-		// 		UserAgent: c.Request.UserAgent(),
-		// 	})
-		// }
+		// find out the records and record to operation log.
+		copied := make([]M, len(ml))
+		for i := range ml {
+			m := reflect.New(typ).Interface().(M)
+			m.SetID(ml[i].GetID())
+			if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+				log.Error(err)
+			}
+			copied[i] = m
+		}
 
-		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusNoContent), rsp)
+		// 2.Delete resources in database.
+		if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 3.Perform business logic processing after delete resources.
+		// TODO: Should there be one service hook(DeleteAfter), or multiple?
+		for _, m := range ml {
+			if err := svc.DeleteAfter(ctx.WithPhase(consts.PHASE_DELETE_AFTER), m); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+		}
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		for i := range ml {
+			record, _ := json.Marshal(copied[i])
+			cb.Enqueue(&model_log.OperationLog{
+				Op:        model_log.OperationTypeDelete,
+				Model:     typ.Name(),
+				Table:     tableName,
+				RecordId:  ml[i].GetID(),
+				Record:    util.BytesToString(record),
+				IP:        c.ClientIP(),
+				User:      c.GetString(consts.CTX_USERNAME),
+				RequestId: c.GetString(consts.REQUEST_ID),
+				URI:       c.Request.RequestURI,
+				Method:    c.Request.Method,
+				UserAgent: c.Request.UserAgent(),
+			})
+		}
+
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusNoContent))
 	}
 }
 
