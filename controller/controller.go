@@ -1536,58 +1536,122 @@ func CreateMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Con
 	CreateManyFactory[M, REQ, RSP]()(c)
 }
 
-// CreateManyFactory
+// CreateManyFactory is a factory function that produces a gin handler for batch creating multiple resources.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles batch resource creation in database
+//   - Service hooks (CreateManyBefore/CreateManyAfter) are executed for business logic
+//   - Processing flow: Request -> ServiceBefore -> Database -> ServiceAfter -> Response
+//   - The request body is bound to requestData[M] structure containing Items slice
+//   - Automatic setting of CreatedBy/UpdatedBy fields from context for each item
+//   - Supports atomic operations through options configuration
+//   - Operation logging is automatically recorded to database
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over batch resource creation
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.CreateMany -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic and database operations
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP POST requests
+//
+// HTTP Response:
+//   - Success: 201 Created with batch operation summary and created resources
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// Request Body Format (Unified Types):
+//
+//	{
+//	  "items": [/* array of resources to create */],
+//	  "options": {
+//	    "atomic": true  // optional: whether to perform atomic operation
+//	  }
+//	}
+//
+// Response Format (Unified Types):
+//
+//	{
+//	  "items": [/* array of created resources */],
+//	  "summary": {
+//	    "total": 10,
+//	    "succeeded": 10,
+//	    "failed": 0
+//	  }
+//	}
+//
+// Examples:
+//
+// Unified types (automatic mode):
+//
+//	CreateManyFactory[*model.User, *model.User, *model.User]()
+//
+// Custom types (manual mode):
+//
+//	CreateManyFactory[*model.User, *CreateManyUsersRequest, *CreateManyUsersResponse]()
+//	// Service layer controls all batch creation logic
 func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		var req requestData[M]
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE_MANY)
-		typ := reflect.TypeOf(*new(M)).Elem()
-		val := reflect.New(typ).Interface().(M)
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request.
-			req := model.NewRequest[M]()
-			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				// Has custom response.
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				log.Error(err)
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				return
 			}
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-
-			if req.Options == nil {
-				req.Options = new(options)
+			if rsp, err = svc.CreateMany(ctx, req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
 			}
-			for _, m := range req.Items {
-				m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
-				m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-				log.Infoz("create_many", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
-			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		svc := service.Factory[M, REQ, RSP]().Service()
+		var req requestData[M]
+		typ := reflect.TypeOf(*new(M)).Elem()
+		val := reflect.New(typ).Interface().(M)
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeInvalidParam.WithErr(err))
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+
+		if req.Options == nil {
+			req.Options = new(options)
+		}
+		for _, m := range req.Items {
+			m.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+			m.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+			log.Infoz("create_many", zap.Bool("atomic", req.Options.Atomic), zap.Object(typ.Name(), m))
+		}
+
 		// 1.Perform business logic processing before batch create resource.
 		if err = svc.CreateManyBefore(ctx.WithPhase(consts.PHASE_CREATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
@@ -1596,7 +1660,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 2.Batch create resource in database.
-		if reqErr != io.EOF && !hasCustomReq {
+		if reqErr != io.EOF {
 			if err = handler(helper.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1634,24 +1698,16 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated))
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
-			// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
-			if reqErr != io.EOF {
-				req.Summary = &summary{
-					Total:     len(req.Items),
-					Succeeded: len(req.Items),
-					Failed:    0,
-				}
+		// Does not have custom request, the request type is the same as the resource type.
+		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
 			}
-			ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 		}
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 	}
 }
 
@@ -1665,7 +1721,6 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
-		log.Info("delete_many")
 
 		var err error
 		var reqErr error
