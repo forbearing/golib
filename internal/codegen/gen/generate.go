@@ -226,7 +226,7 @@ func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 
 	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
 		StmtLogWithServiceContext(info.ModelVarName),
-		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),
 	)
@@ -238,7 +238,7 @@ func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 
 	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
 		StmtLogWithServiceContext(info.ModelVarName),
-		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),
 	)
@@ -251,7 +251,7 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 
 	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
 		StmtLogWithServiceContext(info.ModelVarName),
-		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),
 	)

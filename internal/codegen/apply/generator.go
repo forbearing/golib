@@ -45,7 +45,7 @@ func generateCRUDMethod(model *gen.ModelInfo, methodName string, businessLogic [
 	// Create method body
 	body := []ast.Stmt{
 		gen.StmtLogWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
+		gen.StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
@@ -64,7 +64,7 @@ func generateListMethod(model *gen.ModelInfo, methodName string, businessLogic [
 	// Create method body
 	body := []ast.Stmt{
 		gen.StmtLogWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
+		gen.StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
@@ -83,7 +83,7 @@ func generateBatchMethod(model *gen.ModelInfo, methodName string, businessLogic 
 	// Create method body
 	body := []ast.Stmt{
 		gen.StmtLogWithServiceContext(modelVarName),
-		gen.ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
+		gen.StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(model.ModelName),
 			strings.ToLower(methodName))),
 		gen.EmptyLine(),
 	}
