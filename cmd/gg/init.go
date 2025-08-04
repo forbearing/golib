@@ -67,10 +67,10 @@ temp/
 dist/
 build/`
 
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "init project",
-	Long:  "init project",
+var newCmd = &cobra.Command{
+	Use:   "new",
+	Short: "new a project",
+	Long:  "new a project",
 	Args:  cobra.ExactArgs(1),
 	// Steps to execute:
 	// 1. Initialize a Go project
@@ -78,23 +78,23 @@ var initCmd = &cobra.Command{
 	// 3. Create main.go file with content: mainContent
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		initProject(projectName)
+		newProject(projectName)
 	},
 }
 
-// initProject initializes a new Go project with the specified name
-func initProject(projectName string) {
+// newProject initializes a new Go project with the specified name
+func newProject(projectName string) {
 	// Extract project name from module path (e.g., "github.com/user/project" -> "project")
 	projectDir := filepath.Base(projectName)
-	
+
 	// Step 1: Create project directory
 	fmt.Printf("Creating project directory: %s\n", projectDir)
 	checkErr(os.MkdirAll(projectDir, 0o755))
-	
+
 	// Step 2: Change to project directory
 	fmt.Printf("Entering directory: %s\n", projectDir)
 	checkErr(os.Chdir(projectDir))
-	
+
 	// Step 3: Initialize Go module
 	fmt.Printf("Initializing Go module: %s\n", projectName)
 	cmd := exec.Command("go", "mod", "init", projectName)
