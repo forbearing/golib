@@ -225,7 +225,7 @@ func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		AssignWithServiceContext(info.ModelVarName),
+		StmtLogWithServiceContext(info.ModelVarName),
 		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),
@@ -237,7 +237,7 @@ func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		AssignWithServiceContext(info.ModelVarName),
+		StmtLogWithServiceContext(info.ModelVarName),
 		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),
@@ -250,7 +250,7 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
 	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
-		AssignWithServiceContext(info.ModelVarName),
+		StmtLogWithServiceContext(info.ModelVarName),
 		ExprLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns("nil"),

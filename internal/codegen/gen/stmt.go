@@ -42,9 +42,9 @@ func Returns(strs ...string) *ast.ReturnStmt {
 	}
 }
 
-// AssignWithServiceContext create *ast.AssignStmt represents `log := u.WithServiceContext(ctx, ctx.GetPhase())`
+// StmtLogWithServiceContext create *ast.AssignStmt represents `log := u.WithServiceContext(ctx, ctx.GetPhase())`
 // modelVarName is model variable name.
-func AssignWithServiceContext(modelVarName string) *ast.AssignStmt {
+func StmtLogWithServiceContext(modelVarName string) *ast.AssignStmt {
 	return &ast.AssignStmt{
 		Lhs: []ast.Expr{
 			ast.NewIdent("log"),
