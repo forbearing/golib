@@ -523,123 +523,125 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
-		var rsp any
+		var reqErr error
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
 		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
 
-		if model.AreTypesEqual[M, REQ, RSP]() {
-			typ := reflect.TypeOf(*new(M)).Elem()
-			req := reflect.New(typ).Interface().(M)
-			if err = c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeInvalidParam.WithErr(err))
-				return
-			}
-
-			// param id has more priority than http body data id
-			paramId := c.Param(consts.PARAM_ID)
-			bodyId := req.GetID()
-			var id string
-			log.Infoz("update from request",
-				zap.String("param_id", paramId),
-				zap.String("body_id", bodyId),
-				zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
-			)
-			if paramId != "" {
-				req.SetID(paramId)
-				id = paramId
-			} else if bodyId != "" {
-				paramId = bodyId
-				id = bodyId
-			} else {
-				log.Error("id missing")
-				ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
-				return
-			}
-
-			data := make([]M, 0)
-			// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-			// 'typ' is the structure type, such as: model.User.
-			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
-			m.SetID(id)
-			// Make sure the record must be already exists.
-			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			if len(data) != 1 {
-				log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
-				ResponseJSON(c, CodeNotFound)
-				return
-			}
-
-			req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
-			req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
-			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
-
-			// 1.Perform business logic processing before update resource.
-			if err = svc.UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 2.Update resource in database.
-			log.Infoz("update in database", zap.Object(typ.Name(), req))
-			if err = handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 3.Perform business logic processing after update resource.
-			if err = svc.UpdateAfter(ctx.WithPhase(consts.PHASE_UPDATE_AFTER), req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			rsp = req
-		} else {
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
 			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
-			if err = c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				return
 			}
-			if rsp, err = svc.Update(ctx, req); err != nil {
+			if rsp, err = svc.Update(ctx.WithPhase(consts.PHASE_UPDATE), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// record, _ := json.Marshal(req)
-		// reqData, _ := json.Marshal(ctx.GetRequest())
-		// respData, _ := json.Marshal(ctx.GetResponse())
-		// cb.Enqueue(&model_log.OperationLog{
-		// 	Op:        model_log.OperationTypeUpdate,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	RecordId:  req.GetID(),
-		// 	Record:    util.BytesToString(record),
-		// 	Request:   util.BytesToString(reqData),
-		// 	Response:  util.BytesToString(respData),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// })
+		typ := reflect.TypeOf(*new(M)).Elem()
+		req := reflect.New(typ).Interface().(M)
+		if reqErr := c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+			return
+		}
 
-		ResponseJSON(c, CodeSuccess, rsp)
+		// param id has more priority than http body data id
+		paramId := c.Param(consts.PARAM_ID)
+		bodyId := req.GetID()
+		var id string
+		log.Infoz("update from request",
+			zap.String("param_id", paramId),
+			zap.String("body_id", bodyId),
+			zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
+		)
+		if paramId != "" {
+			req.SetID(paramId)
+			id = paramId
+		} else if bodyId != "" {
+			paramId = bodyId
+			id = bodyId
+		} else {
+			log.Error("id missing")
+			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
+			return
+		}
+
+		data := make([]M, 0)
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+		m := reflect.New(typ).Interface().(M)
+		m.SetID(id)
+		// Make sure the record must be already exists.
+		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		if len(data) != 1 {
+			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
+			ResponseJSON(c, CodeNotFound)
+			return
+		}
+
+		req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
+		req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
+		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
+
+		// 1.Perform business logic processing before update resource.
+		if err := svc.UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 2.Update resource in database.
+		log.Infoz("update in database", zap.Object(typ.Name(), req))
+		if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 3.Perform business logic processing after update resource.
+		if err := svc.UpdateAfter(ctx.WithPhase(consts.PHASE_UPDATE_AFTER), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeUpdate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
+
+		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
