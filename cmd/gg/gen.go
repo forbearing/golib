@@ -27,15 +27,17 @@ func genRun() {
 		checkErr(err)
 	}
 
-	allModels, err := codegen.FindModelsInDirectory(module, modelDir, serviceDir, excludes)
+	allModels, err := codegen.FindModelInfos(module, modelDir, serviceDir, excludes)
 	checkErr(err)
+
 	stmts := make([]ast.Stmt, 0)
 	for _, m := range allModels {
 		stmts = append(stmts, gen.StmtRouterRegister(m.PackageName, m.ModelName, m.ModelName, m.ModelName, strings.ToLower(m.ModelName)))
 	}
+
 	routerCode, err := gen.BuildRouterFile("router", stmts...)
 	checkErr(err)
-	checkErr(os.WriteFile("router/router.go", []byte(routerCode), 0o644))
+	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
 
 	for _, m := range allModels {
 		dir := filepath.Dir(m.ServiceFilePath)
