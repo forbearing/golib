@@ -15,6 +15,9 @@ var rootCmd = &cobra.Command{
 	Short:   "golib code generator",
 	Long:    "golib code generator",
 	Version: "1.0.0",
+	Run: func(cmd *cobra.Command, args []string) {
+		genRun()
+	},
 }
 
 func init() {
