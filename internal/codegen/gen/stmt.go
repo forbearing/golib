@@ -5,8 +5,8 @@ import (
 	"go/token"
 )
 
-// ExprLogInfo create *ast.ExprStmt represents `log.Info(str)`
-func ExprLogInfo(str string) *ast.ExprStmt {
+// StmtLogInfo create *ast.ExprStmt represents `log.Info(str)`
+func StmtLogInfo(str string) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			// log.Info

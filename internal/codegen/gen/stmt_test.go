@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_ExprLogInfo(t *testing.T) {
+func Test_StmtLogInfo(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -25,14 +25,14 @@ func Test_ExprLogInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf.Reset()
-			res := ExprLogInfo(tt.str)
+			res := StmtLogInfo(tt.str)
 			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
 				return
 			}
 			got := buf.String()
 			if got != tt.want {
-				t.Errorf("expr_log_info() = %v, want %v", got, tt.want)
+				t.Errorf("StmtLogInfo() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -69,7 +69,7 @@ func Test_Returns(t *testing.T) {
 			}
 			got := buf.String()
 			if got != tt.want {
-				t.Errorf("return_one() = %v, want %v", got, tt.want)
+				t.Errorf("Returns() = %v, want %v", got, tt.want)
 			}
 		})
 	}
