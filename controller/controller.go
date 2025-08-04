@@ -1716,24 +1716,24 @@ func DeleteMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Con
 	DeleteManyFactory[M, REQ, RSP]()(c)
 }
 
-// CreateManyFactory is a factory function that produces a gin handler for batch creating multiple resources.
+// DeleteManyFactory is a factory function that produces a gin handler for batch deleting multiple resources.
 // It supports two different processing modes based on the type relationship between M, REQ, and RSP:
 //
 // Mode 1: Unified Types (M == REQ == RSP)
 // When all three generic types are identical, the factory enables automatic resource management:
-//   - Controller layer automatically handles batch resource creation in database
-//   - Service hooks (CreateManyBefore/CreateManyAfter) are executed for business logic
+//   - Controller layer automatically handles batch resource deletion from database
+//   - Service hooks (DeleteManyBefore/DeleteManyAfter) are executed for business logic
 //   - Processing flow: Request -> ServiceBefore -> Database -> ServiceAfter -> Response
-//   - The request body is bound to requestData[M] structure containing Items slice
-//   - Automatic setting of CreatedBy/UpdatedBy fields from context for each item
-//   - Supports atomic operations through options configuration
+//   - The request body is bound to requestData[M] structure containing Ids slice
+//   - Resources are identified by their IDs and converted to model instances for processing
+//   - Supports soft delete and hard delete (purge) through options configuration
 //   - Operation logging is automatically recorded to database
 //
 // Mode 2: Custom Types (M != REQ or REQ != RSP)
 // When types differ, the factory delegates full control to the service layer:
-//   - Service layer has complete control over batch resource creation
+//   - Service layer has complete control over batch resource deletion
 //   - No automatic database operations or service hooks
-//   - Processing flow: Request -> Service.CreateMany -> Response
+//   - Processing flow: Request -> Service.DeleteMany -> Response
 //   - The request body is bound to the REQ type
 //   - Service must handle all business logic and database operations
 //
@@ -1746,42 +1746,36 @@ func DeleteMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Con
 //   - cfg: Optional controller configuration for customizing database handler
 //
 // Returns:
-//   - gin.HandlerFunc: A gin handler function for HTTP POST requests
+//   - gin.HandlerFunc: A gin handler function for HTTP DELETE requests
 //
 // HTTP Response:
-//   - Success: 201 Created with batch operation summary and created resources
-//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//   - Success: 204 No Content (unified types) or 200 OK (custom types) with optional response data
+//   - Error: 400 Bad Request for invalid parameters, 404 Not Found if resource doesn't exist, 500 Internal Server Error for other failures
 //
 // Request Body Format (Unified Types):
 //
 //	{
-//	  "items": [/* array of resources to create */],
+//	  "ids": ["id1", "id2", "id3"],  // array of resource IDs to delete
 //	  "options": {
-//	    "atomic": true  // optional: whether to perform atomic operation
+//	    "purge": false  // optional: true for hard delete, false for soft delete (default)
 //	  }
 //	}
 //
 // Response Format (Unified Types):
 //
-//	{
-//	  "items": [/* array of created resources */],
-//	  "summary": {
-//	    "total": 10,
-//	    "succeeded": 10,
-//	    "failed": 0
-//	  }
-//	}
+//	HTTP 204 No Content (empty response body)
 //
 // Examples:
 //
 // Unified types (automatic mode):
 //
-//	CreateManyFactory[*model.User, *model.User, *model.User]()
+//	DeleteManyFactory[*model.User, *model.User, *model.User]()
+//	// DELETE /users with {"ids": ["user1", "user2"], "options": {"purge": false}}
 //
 // Custom types (manual mode):
 //
-//	CreateManyFactory[*model.User, *CreateManyUsersRequest, *CreateManyUsersResponse]()
-//	// Service layer controls all batch creation logic
+//	DeleteManyFactory[*model.User, *DeleteManyUsersRequest, *DeleteManyUsersResponse]()
+//	// Service layer controls all batch deletion logic
 func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
