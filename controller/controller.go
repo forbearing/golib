@@ -1698,7 +1698,6 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		// Does not have custom request, the request type is the same as the resource type.
 		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
 		if reqErr != io.EOF {
 			req.Summary = &summary{
@@ -2027,38 +2026,61 @@ func PatchMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Cont
 	PatchManyFactory[M, REQ, RSP]()(c)
 }
 
-// PatchManyFactory
+// PatchManyFactory is a generic factory function that creates a Gin handler for batch partial updating resources.
+// It supports two processing modes based on type relationships:
+//
+// 1. **Unified Types Mode** (M == REQ == RSP):
+//   - All type parameters represent the same underlying type
+//   - Automatic database operations and service hooks are executed
+//   - Request body is parsed as requestData[M] containing Items array
+//   - Performs field-level partial updates by comparing existing and new values
+//   - Four-phase processing: pre-patch hooks → database update → post-patch hooks → operation logging
+//
+// 2. **Custom Types Mode** (M != REQ or REQ != RSP):
+//   - Different types for Model, Request, and Response
+//   - Service layer controls all patch logic through PatchMany method
+//   - No automatic database operations - service handles everything
+//   - Custom request/response type handling
+//
+// Type Parameters:
+//   - M: Model type implementing types.Model interface (database entity)
+//   - REQ: Request type implementing types.Request interface (input data structure)
+//   - RSP: Response type implementing types.Response interface (output data structure)
+//
+// Request Format (Unified Types Mode):
+//   - Content-Type: application/json
+//   - Body: {"items": [M, M, ...], "options": {"atomic": bool}}
+//   - Empty body is allowed (treated as no-op)
+//   - Only non-zero fields in request items will be updated (partial update behavior)
+//
+// Response Format:
+//   - Success (200): Updated resource data with operation summary
+//   - Error (400): Invalid request parameters
+//   - Error (500): Internal server error
+//
+// Automatic Features (Unified Types Mode):
+//   - Service hooks: PatchManyBefore/PatchManyAfter for business logic
+//   - Field-level partial update logic with existing record retrieval
+//   - Database batch update operations
+//   - Operation logging with request/response capture
+//   - Error handling and logging throughout all phases
+//   - Request validation and empty body handling
+//
+// The function handles both empty and non-empty request bodies gracefully,
+// with comprehensive error handling and detailed operation logging for audit purposes.
+// Unlike UpdateMany, this function performs partial updates by only modifying non-zero fields.
 func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		var req requestData[M]
-		var shouldUpdates []M
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH_MANY)
-		typ := reflect.TypeOf(*new(M)).Elem()
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request
-			req := model.NewRequest[M]()
-			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				return
-			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				// Has custom response
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
@@ -2067,29 +2089,47 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
-			for _, m := range req.Items {
-				var results []M
-				v := reflect.New(typ).Interface().(M)
-				v.SetID(m.GetID())
-				if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
-					log.Error(err)
-					continue
-				}
-				if len(results) != 1 {
-					log.Warnf(fmt.Sprintf("partial update resource not found, expect 1 but got: %d", len(results)))
-					continue
-				}
-				if len(results[0].GetID()) == 0 {
-					log.Warnf("partial update resource not found, id is empty")
-					continue
-				}
-				oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
-				patchValue(log, typ, oldVal, newVal)
-				shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+			if rsp, err = svc.PatchMany(ctx.WithPhase(consts.PHASE_PATCH_MANY), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
 			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		svc := service.Factory[M, REQ, RSP]().Service()
+		var req requestData[M]
+		var shouldUpdates []M
+		typ := reflect.TypeOf(*new(M)).Elem()
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure.WithErr(reqErr))
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+		for _, m := range req.Items {
+			var results []M
+			v := reflect.New(typ).Interface().(M)
+			v.SetID(m.GetID())
+			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
+				log.Error(err)
+				continue
+			}
+			if len(results) != 1 {
+				log.Warnf(fmt.Sprintf("partial update resource not found, expect 1 but got: %d", len(results)))
+				continue
+			}
+			if len(results[0].GetID()) == 0 {
+				log.Warnf("partial update resource not found, id is empty")
+				continue
+			}
+			oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
+			patchValue(log, typ, oldVal, newVal)
+			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+		}
+
 		// 1.Perform business logic processing before batch patch resource.
 		if err = svc.PatchManyBefore(ctx.WithPhase(consts.PHASE_PATCH_MANY_BEFORE), shouldUpdates...); err != nil {
 			log.Error(err)
@@ -2097,7 +2137,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			return
 		}
 		// 2.Batch partial update resource in database.
-		if reqErr != io.EOF && !hasCustomReq {
+		if reqErr != io.EOF {
 			if err = handler(helper.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -2136,22 +2176,14 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
-		} else {
-			if reqErr != io.EOF {
-				req.Summary = &summary{
-					Total:     len(req.Items),
-					Succeeded: len(req.Items),
-					Failed:    0,
-				}
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
 			}
-			ResponseJSON(c, CodeSuccess, req)
 		}
+		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
