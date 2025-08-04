@@ -1924,7 +1924,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			// Does not have custom request, the request type is the same as the resource type.
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				ResponseJSON(c, CodeFailure.WithErr(reqErr))
 				return
 			}
 			if reqErr == io.EOF {
@@ -2038,7 +2038,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			// Does not have custom request
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				ResponseJSON(c, CodeFailure.WithErr(reqErr))
 				return
 			}
 			if reqErr == io.EOF {
