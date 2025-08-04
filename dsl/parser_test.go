@@ -208,7 +208,7 @@ func TestParse(t *testing.T) {
 						Payload: "User2",
 						Result:  "User3",
 					},
-					UpdatePartial: &Action{
+					Patch: &Action{
 						Payload: "User",
 						Result:  "User",
 					},

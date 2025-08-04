@@ -65,13 +65,13 @@ func (User2) Design() {
 	})
 
 	// Custom update partial action request "Payload" and response "Result".
-	dsl.UpdatePartial(func() {
+	dsl.Patch(func() {
 		dsl.Payload[*User]()
 		dsl.Result[User]()
 	})
 
 	// Invalid design.
-	dsl.UpdatePartial2(func() {
+	dsl.Patch2(func() {
 		dsl.Payload[*User]()
 		dsl.Result[User]()
 	})

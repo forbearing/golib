@@ -3,35 +3,42 @@ package dsl
 import (
 	"slices"
 	"strings"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
-func Create(func())             {}
-func Delete(func())             {}
-func Update(func())             {}
-func UpdatePartial(func())      {}
-func Get(func())                {}
-func List(func())               {}
-func BatchCreate(func())        {}
-func BatchDelete(func())        {}
-func BatchUpdate(func())        {}
-func BatchUpdatePartial(func()) {}
-
+func Enabled(bool)    {}
+func Endpoint(string) {}
 func Payload[T any]() {}
 func Result[T any]()  {}
 
-func Endpoint(string) {}
-func Enabled(bool)    {}
+func Create(func()) {}
+func Delete(func()) {}
+func Update(func()) {}
+func Patch(func())  {}
+func List(func())   {}
+func Get(func())    {}
+
+func CreateMany(func()) {}
+func DeleteMany(func()) {}
+func UpdateMany(func()) {}
+func PatchMany(func())  {}
 
 type Design struct {
 	Enabled  bool
 	Endpoint string
 
-	Create             *Action
-	Update             *Action
-	UpdatePartial      *Action
-	BatchCreate        *Action
-	BatchUpdate        *Action
-	BatchUpdatePartial *Action
+	Create *Action
+	Delete *Action
+	Update *Action
+	Patch  *Action
+	List   *Action
+	Get    *Action
+
+	CreateMany *Action
+	DeleteMany *Action
+	UpdateMany *Action
+	PatchMany  *Action
 }
 
 type Action struct {
@@ -40,21 +47,22 @@ type Action struct {
 }
 
 var methodList = []string{
-	"Create",
-	"Delete",
-	"Update",
-	"UpdatePartial",
-	"Get",
-	"List",
-	"BatchCreate",
-	"BatchDelete",
-	"BatchUpdate",
-	"BatchUpdatePartial",
-
 	"Enabled",
 	"Endpoint",
 	"Payload",
 	"Result",
+
+	consts.PHASE_CREATE.MethodName(),
+	consts.PHASE_DELETE.MethodName(),
+	consts.PHASE_UPDATE.MethodName(),
+	consts.PHASE_PATCH.MethodName(),
+	consts.PHASE_LIST.MethodName(),
+	consts.PHASE_GET.MethodName(),
+
+	consts.PHASE_CREATE_MANY.MethodName(),
+	consts.PHASE_DELETE_MANY.MethodName(),
+	consts.PHASE_UPDATE_MANY.MethodName(),
+	consts.PHASE_PATCH_MANY.MethodName(),
 }
 
 func is(name string) bool {

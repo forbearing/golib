@@ -126,23 +126,32 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			}
 		}
 
-		if payload, result, exists := parseAction("Create", funcName, call.Args); exists {
+		if payload, result, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
 			design.Create = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("Update", funcName, call.Args); exists {
+		if payload, result, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
+			design.Delete = &Action{Payload: payload, Result: result}
+		}
+		if payload, result, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
 			design.Update = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("UpdatePartial", funcName, call.Args); exists {
-			design.UpdatePartial = &Action{Payload: payload, Result: result}
+		if payload, result, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
+			design.Patch = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchCreate", funcName, call.Args); exists {
-			design.BatchCreate = &Action{Payload: payload, Result: result}
+		if payload, result, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
+			design.List = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchUpdate", funcName, call.Args); exists {
-			design.BatchUpdate = &Action{Payload: payload, Result: result}
+		if payload, result, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
+			design.Get = &Action{Payload: payload, Result: result}
 		}
-		if payload, result, exists := parseAction("BatchUpdatePartial", funcName, call.Args); exists {
-			design.BatchUpdatePartial = &Action{Payload: payload, Result: result}
+		if payload, result, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
+			design.CreateMany = &Action{Payload: payload, Result: result}
+		}
+		if payload, result, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
+			design.UpdateMany = &Action{Payload: payload, Result: result}
+		}
+		if payload, result, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
+			design.PatchMany = &Action{Payload: payload, Result: result}
 		}
 
 	}
