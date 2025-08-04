@@ -240,7 +240,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeCreate,
 			Model:     typ.Name(),
@@ -628,8 +628,8 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdate,
 			Model:     typ.Name(),
@@ -821,8 +821,8 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(cur)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypePatch,
 			Model:     typ.Name(),
@@ -1700,8 +1700,8 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeCreateMany,
 			Model:     typ.Name(),
@@ -2012,8 +2012,8 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypeUpdateMany,
 			Model:     typ.Name(),
@@ -2178,8 +2178,8 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(req)
 		cb.Enqueue(&model_log.OperationLog{
 			Op:        model_log.OperationTypePatchMany,
 			Model:     typ.Name(),
