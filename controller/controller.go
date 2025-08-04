@@ -166,49 +166,12 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		var rsp any
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
 		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
 
-		if model.AreTypesEqual[M, REQ, RSP]() {
-			// The M type always is the pointer to struct, eg: *User, *Group.
-			req := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				return
-			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
-			} else {
-				req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
-				req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-				log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
-			}
-			// 1.Perform business logic processing before create resource.
-			if err = svc.CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 2.Create resource in database.
-			// database.Database().Delete just set "deleted_at" field to current time, not really delete.
-			if reqErr != io.EOF {
-				if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
-					log.Error(err)
-					ResponseJSON(c, CodeFailure.WithErr(err))
-					return
-				}
-			}
-			// 3.Perform business logic processing after create resource
-			if err = svc.CreateAfter(ctx.WithPhase(consts.PHASE_CREATE_AFTER), req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			rsp = req
-		} else {
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
 			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
@@ -223,33 +186,76 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typM.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// record, _ := json.Marshal(req)
-		// reqData, _ := json.Marshal(ctx.GetRequest())
-		// respData, _ := json.Marshal(ctx.GetRequest())
-		// cb.Enqueue(&model_log.OperationLog{
-		// 	Op:        model_log.OperationTypeCreate,
-		// 	Model:     typM.Name(),
-		// 	Table:     tableName,
-		// 	Record:    util.BytesToString(record),
-		// 	Request:   util.BytesToString(reqData),
-		// 	Response:  util.BytesToString(respData),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// })
+		typ := reflect.TypeOf(*new(M)).Elem()
+		req := reflect.New(typ).Interface().(M)
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		} else {
+			req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
+			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+			log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
+		}
 
-		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), rsp)
+		// 1.Perform business logic processing before create resource.
+		if err = svc.CreateBefore(ctx.WithPhase(consts.PHASE_CREATE_BEFORE), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 2.Create resource in database.
+		// database.Database().Delete just set "deleted_at" field to current time, not really delete.
+		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
+		// NOTE: WithExpand(req.Expands()...) is not a good choices.
+		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
+		if reqErr != io.EOF {
+			if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+		}
+		// 3.Perform business logic processing after create resource
+		if err = svc.CreateAfter(ctx.WithPhase(consts.PHASE_CREATE_AFTER), req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(req)
+		respData, _ := json.Marshal(ctx.GetRequest())
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypeCreate,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
+
+		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 	}
 }
 
