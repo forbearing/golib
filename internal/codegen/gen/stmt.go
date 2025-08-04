@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 )
@@ -72,7 +73,7 @@ func StmtLogWithServiceContext(modelVarName string) *ast.AssignStmt {
 
 // StmtRouterRegister creates
 // TODO: how to get request and response stuct package name?
-func StmtRouterRegister(modelPkgName, modelName, reqName, respName string) *ast.ExprStmt {
+func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpoint string) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.IndexListExpr{
@@ -99,6 +100,18 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, respName string) *ast.
 							Sel: ast.NewIdent(respName),
 						},
 					},
+				},
+			},
+			Args: []ast.Expr{
+				&ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   ast.NewIdent("router"),
+						Sel: ast.NewIdent("API"),
+					},
+				},
+				&ast.BasicLit{
+					Kind:  token.STRING,
+					Value: fmt.Sprintf("%q", endpoint),
 				},
 			},
 		},

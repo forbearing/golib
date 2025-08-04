@@ -112,6 +112,7 @@ func TestStmtRouterRegister(t *testing.T) {
 		modelName    string
 		reqName      string
 		respName     string
+		endpoint     string
 		want         string
 	}{
 		{
@@ -120,7 +121,8 @@ func TestStmtRouterRegister(t *testing.T) {
 			modelName:    "Group",
 			reqName:      "Group",
 			respName:     "Group",
-			want:         "router.Register[*model.Group, *model.Group, *model.Group]()",
+			endpoint:     "group",
+			want:         `router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")`,
 		},
 		{
 			name:         "test2",
@@ -128,12 +130,13 @@ func TestStmtRouterRegister(t *testing.T) {
 			modelName:    "Group",
 			reqName:      "GroupRequest",
 			respName:     "GroupResponse",
-			want:         "router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse]()",
+			endpoint:     "group2",
+			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.API(), "group2")`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName)
+			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName, tt.endpoint)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
