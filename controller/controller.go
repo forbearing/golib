@@ -1191,11 +1191,106 @@ func Get[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
 	GetFactory[M, REQ, RSP]()(c)
 }
 
-// GetFactory is a factory function to product gin handler to list resource in backend.
+// GetFactory is a factory function that produces a gin handler for retrieving a single resource.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles resource retrieval from database
+//   - Service hooks (GetBefore/GetAfter) are executed for business logic
+//   - Processing flow: RouteParam -> ServiceBefore -> Database -> ServiceAfter -> Response
+//   - Supports comprehensive query parameters for field expansion, caching, and selection
+//   - Automatic caching support with configurable cache control
+//   - Advanced features: deep recursive expansion, field selection, cache bypass
+//   - Resource ID must be provided via route parameter (e.g., /api/users/123)
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over resource retrieval logic
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.Get -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic and database operations
+//
+// Supported Query Parameters (Mode 1):
+//   - _expand: Comma-separated list of fields to expand (foreign key relationships)
+//     Special value "all" expands all available fields defined in model's Expands() method
+//   - _depth: Expansion depth for recursive relationships (1-99, default: 1)
+//     Controls how many levels deep to expand nested relationships
+//   - _select: Comma-separated list of fields to select from database
+//   - _nocache: Disable caching for this request (true/false, default: true - cache disabled)
+//   - _index: Database index hint for query optimization
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP GET requests
+//
+// HTTP Response (Mode 1):
+//   - Success: 200 OK with resource data or cached byte response
+//   - Not Found: 404 Not Found when resource doesn't exist or has empty ID/CreatedAt
+//   - Error: 400 Bad Request for missing route parameter, 500 Internal Server Error for other failures
+//
+// HTTP Response (Mode 2):
+//   - Success: 200 OK with service-defined response structure
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// Examples:
+//
+// Unified types (automatic retrieval with expansion and caching):
+//
+//	GetFactory[*model.User, *model.User, *model.User]()
+//	// GET /users/123?_expand=department,roles&_depth=2&_nocache=false
+//
+// Custom types (manual mode):
+//
+//	GetFactory[*model.User, *GetUserRequest, *GetUserResponse]()
+//	// Service layer controls all retrieval logic
+//
+// Advanced Query Examples:
+//
+//	// Expand all relationships with depth
+//	GET /departments/123?_expand=all&_depth=3
+//
+//	// Select specific fields only
+//	GET /users/123?_select=id,name,email
+//
+//	// Bypass cache for fresh data
+//	GET /users/123?_nocache=true
+//
+//	// Combine expansion with field selection
+//	GET /users/123?_expand=department&_select=id,name,department&_depth=1
 func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_GET)
+		svc := service.Factory[M, REQ, RSP]().Service()
+		ctx := helper.NewServiceContext(c)
+
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var err error
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
+				log.Error(err)
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+				return
+			}
+			if rsp, err = svc.Get(ctx, req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
+		}
+
 		if len(c.Param(consts.PARAM_ID)) == 0 {
 			log.Error(CodeNotFoundRouteID)
 			ResponseJSON(c, CodeNotFoundRouteID)
@@ -1271,9 +1366,8 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		}
 		log.Infoz("", zap.Object(typ.Name(), m))
 
-		svc := service.Factory[M, REQ, RSP]().Service()
 		// 1.Perform business logic processing before get resource.
-		if err = svc.GetBefore(helper.NewServiceContext(c).WithPhase(consts.PHASE_GET_BEFORE), m); err != nil {
+		if err = svc.GetBefore(ctx.WithPhase(consts.PHASE_GET_BEFORE), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1295,7 +1389,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			cached = true
 		}
 		// 3.Perform business logic processing after get resource.
-		if err := svc.GetAfter(helper.NewServiceContext(c).WithPhase(consts.PHASE_GET_AFTER), m); err != nil {
+		if err := svc.GetAfter(ctx.WithPhase(consts.PHASE_GET_AFTER), m); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
