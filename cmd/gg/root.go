@@ -24,5 +24,5 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVarP(&excludes, "exclude", "e", nil, "exclude files or directories")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debug logging")
 
-	rootCmd.AddCommand(genCmd, applyCmd, initCmd)
+	rootCmd.AddCommand(genCmd, applyCmd, newCmd)
 }
