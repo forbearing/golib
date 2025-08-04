@@ -859,11 +859,117 @@ func List[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) 
 	ListFactory[M, REQ, RSP]()(c)
 }
 
-// ListFactory is a factory function to product gin handler to list resources in backend.
+// ListFactory is a factory function that produces a gin handler for listing multiple resources.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles resource listing from database
+//   - Service hooks (ListBefore/ListAfter) are executed for business logic
+//   - Processing flow: QueryParams -> ServiceBefore -> Database -> ServiceAfter -> Response
+//   - Supports comprehensive query parameters for filtering, pagination, sorting, and expansion
+//   - Automatic caching support with configurable cache control
+//   - Built-in pagination with total count calculation
+//   - Advanced features: cursor-based pagination, fuzzy search, field expansion, time range filtering
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over resource listing logic
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.List -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic, filtering, and database operations
+//
+// Supported Query Parameters (Mode 1):
+//   - Model fields: All fields with "schema" tag can be used as query parameters
+//   - _page: Page number for pagination (starts from 1)
+//   - _size: Number of items per page
+//   - _expand: Comma-separated list of fields to expand (foreign key relationships)
+//   - _depth: Expansion depth for recursive relationships (1-99, default: 1)
+//   - _fuzzy: Enable fuzzy matching for string fields (true/false)
+//   - _or: Use OR logic instead of AND for multiple conditions (true/false)
+//   - _sortby: Field name for sorting (append " desc" for descending order)
+//   - _select: Comma-separated list of fields to select
+//   - _nocache: Disable caching for this request (true/false)
+//   - _nototal: Skip total count calculation for better performance (true/false)
+//   - _cursor_value: Cursor value for cursor-based pagination
+//   - _cursor_fields: Fields to use for cursor-based pagination
+//   - _cursor_next: Direction for cursor pagination (true for next, false for previous)
+//   - _start_time: Start time for time range filtering (format: YYYY-MM-DD HH:mm:ss)
+//   - _end_time: End time for time range filtering (format: YYYY-MM-DD HH:mm:ss)
+//   - _column_name: Column name for time range filtering
+//   - _index: Database index hint for query optimization
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP GET requests
+//
+// HTTP Response (Mode 1):
+//   - Success: 200 OK with {"items": [...], "total": count} or cached byte response
+//   - Without total: 200 OK with {"items": [...]} when _nototal=true
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// HTTP Response (Mode 2):
+//   - Success: 200 OK with service-defined response structure
+//   - Error: 400 Bad Request for invalid parameters, 500 Internal Server Error for other failures
+//
+// Examples:
+//
+// Unified types (automatic listing with rich query features):
+//
+//	ListFactory[*model.User, *model.User, *model.User]()
+//	// GET /users?name=john&_page=1&_size=10&_expand=department&_sortby=created_at desc
+//
+// Custom types (manual mode):
+//
+//	ListFactory[*model.User, *ListUsersRequest, *ListUsersResponse]()
+//	// Service layer controls all listing logic
+//
+// Advanced Query Examples:
+//
+//	// Fuzzy search with pagination
+//	GET /users?name=john&_fuzzy=true&_page=1&_size=20
+//
+//	// Expand relationships with depth
+//	GET /departments?_expand=children,parent&_depth=3
+//
+//	// Cursor-based pagination
+//	GET /users?_cursor_value=123&_cursor_next=true&_size=10
+//
+//	// Time range filtering
+//	GET /logs?_start_time=2024-01-01 00:00:00&_end_time=2024-01-31 23:59:59&_column_name=created_at
 func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_LIST)
+		svc := service.Factory[M, REQ, RSP]().Service()
+		ctx := helper.NewServiceContext(c)
+
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var err error
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
+				log.Error(err)
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+				return
+			}
+			if rsp, err = svc.List(ctx, req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
+		}
+
 		var page, size int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(consts.QUERY_PAGE); ok {
@@ -969,10 +1075,8 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			// fmt.Println("expands: ", expands)
 		}
 
-		svc := service.Factory[M, REQ, RSP]().Service()
-		svcCtx := helper.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
-		if err = svc.ListBefore(svcCtx.WithPhase(consts.PHASE_LIST_BEFORE), &data); err != nil {
+		if err = svc.ListBefore(ctx.WithPhase(consts.PHASE_LIST_BEFORE), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -986,8 +1090,8 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			WithOr(or).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
-			WithQuery(svc.Filter(svcCtx, m), fuzzy).
-			WithQueryRaw(svc.FilterRaw(svcCtx)).
+			WithQuery(svc.Filter(ctx, m), fuzzy).
+			WithQueryRaw(svc.FilterRaw(ctx)).
 			WithCursor(cursorValue, cursorNext, cursorFields).
 			WithExclude(m.Excludes()).
 			WithExpand(expands, sortBy).
@@ -1003,7 +1107,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			cached = true
 		}
 		// 3.Perform business logic processing after list resources.
-		if err := svc.ListAfter(svcCtx.WithPhase(consts.PHASE_LIST_AFTER), &data); err != nil {
+		if err := svc.ListAfter(ctx.WithPhase(consts.PHASE_LIST_AFTER), &data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -1018,8 +1122,8 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
 				WithIndex(index).
-				WithQuery(svc.Filter(svcCtx, m), fuzzy).
-				WithQueryRaw(svc.FilterRaw(svcCtx)).
+				WithQuery(svc.Filter(ctx, m), fuzzy).
+				WithQueryRaw(svc.FilterRaw(ctx)).
 				WithExclude(m.Excludes()).
 				WithTimeRange(columnName, startTime, endTime).
 				WithCache(!nocache).
