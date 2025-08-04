@@ -67,6 +67,8 @@ import (
 	1.记录操作日志也在 controller 层
 */
 
+const ErrRequestBodyEmpty = "request body is empty"
+
 var (
 	pluralizeCli = pluralize.NewClient()
 
@@ -179,7 +181,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				return
 			}
 			if reqErr == io.EOF {
-				log.Warn("empty request body")
+				log.Warn(ErrRequestBodyEmpty)
 			}
 			if rsp, err = svc.Create(ctx.WithPhase(consts.PHASE_CREATE), req); err != nil {
 				log.Error(err)
@@ -198,7 +200,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			return
 		}
 		if reqErr == io.EOF {
-			log.Warn("empty request body")
+			log.Warn(ErrRequestBodyEmpty)
 		} else {
 			req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
 			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
@@ -536,6 +538,9 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				return
 			}
+			if reqErr == io.EOF {
+				log.Warn(ErrRequestBodyEmpty)
+			}
 			if rsp, err = svc.Update(ctx.WithPhase(consts.PHASE_UPDATE), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -723,112 +728,120 @@ func Patch[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context)
 func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		var err error
-		var rsp any
+		var id string
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH)
 		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
 
-		if model.AreTypesEqual[M, REQ, RSP]() {
-			id := c.Param(consts.PARAM_ID)
-			typ := reflect.TypeOf(*new(M)).Elem()
-			req := reflect.New(typ).Interface().(M)
-			if err = c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeInvalidParam.WithErr(err))
-				return
-			}
-			if len(id) == 0 {
-				id = req.GetID()
-			}
-			data := make([]M, 0)
-			// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
-			// 'typ' is the structure type, such as: model.User.
-			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
-			m.SetID(id)
-
-			// Make sure the record must be already exists.
-			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeNotFound.WithErr(err))
-				return
-			}
-			if len(data) != 1 {
-				log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
-				ResponseJSON(c, CodeNotFound)
-				return
-			}
-			// req.SetCreatedAt(data[0].GetCreatedAt())
-			// req.SetCreatedBy(data[0].GetCreatedBy())
-			// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
-			data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
-
-			newVal := reflect.ValueOf(req).Elem()
-			oldVal := reflect.ValueOf(data[0]).Elem()
-			patchValue(log, typ, oldVal, newVal)
-			cur := oldVal.Addr().Interface().(M)
-
-			// 1.Perform business logic processing before partial update resource.
-			if err = svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), cur); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 2.Partial update resource in database.
-			if err = handler(helper.NewDatabaseContext(c)).Update(cur); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			// 3.Perform business logic processing after partial update resource.
-			if err = svc.PatchAfter(ctx.WithPhase(consts.PHASE_PATCH_AFTER), cur); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			rsp = cur
-		} else {
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var err error
+			var reqErr error
+			var rsp RSP
 			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
-			if err = c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+				log.Error(reqErr)
+				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				return
 			}
-			if rsp, err = svc.Patch(ctx, req); err != nil {
+			if reqErr == io.EOF {
+				log.Warn(ErrRequestBodyEmpty)
+			}
+			if rsp, err = svc.Patch(ctx.WithPhase(consts.PHASE_PATCH), req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		// // 4.record operation log to database.
-		// var tableName string
-		// items := strings.Split(typ.Name(), ".")
-		// if len(items) > 0 {
-		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		// }
-		// // NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
-		// record, _ := json.Marshal(req)
-		// reqData, _ := json.Marshal(ctx.GetRequest())
-		// respData, _ := json.Marshal(ctx.GetResponse())
-		// cb.Enqueue(&model_log.OperationLog{
-		// 	Op:        model_log.OperationTypePatch,
-		// 	Model:     typ.Name(),
-		// 	Table:     tableName,
-		// 	RecordId:  req.GetID(),
-		// 	Record:    util.BytesToString(record),
-		// 	Request:   util.BytesToString(reqData),
-		// 	Response:  util.BytesToString(respData),
-		// 	IP:        c.ClientIP(),
-		// 	User:      c.GetString(consts.CTX_USERNAME),
-		// 	RequestId: c.GetString(consts.REQUEST_ID),
-		// 	URI:       c.Request.RequestURI,
-		// 	Method:    c.Request.Method,
-		// 	UserAgent: c.Request.UserAgent(),
-		// })
+		typ := reflect.TypeOf(*new(M)).Elem()
+		req := reflect.New(typ).Interface().(M)
+		id = c.Param(consts.PARAM_ID)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		if len(id) == 0 {
+			id = req.GetID()
+		}
+		data := make([]M, 0)
+		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
+		// 'typ' is the structure type, such as: model.User.
+		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
+		m := reflect.New(typ).Interface().(M)
+		m.SetID(id)
 
-		ResponseJSON(c, CodeSuccess, rsp)
+		// Make sure the record must be already exists.
+		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		if len(data) != 1 {
+			log.Errorz(fmt.Sprintf("the total number of records query from database not equal to 1(%d)", len(data)), zap.String("id", id))
+			ResponseJSON(c, CodeNotFound)
+			return
+		}
+		// req.SetCreatedAt(data[0].GetCreatedAt())
+		// req.SetCreatedBy(data[0].GetCreatedBy())
+		// req.SetUpdatedBy(c.GetString(CTX_USERNAME))
+		data[0].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
+
+		newVal := reflect.ValueOf(req).Elem()
+		oldVal := reflect.ValueOf(data[0]).Elem()
+		patchValue(log, typ, oldVal, newVal)
+		cur := oldVal.Addr().Interface().(M)
+
+		// 1.Perform business logic processing before partial update resource.
+		if err := svc.PatchBefore(ctx.WithPhase(consts.PHASE_PATCH_BEFORE), cur); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 2.Partial update resource in database.
+		if err := handler(helper.NewDatabaseContext(c)).Update(cur); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+		// 3.Perform business logic processing after partial update resource.
+		if err := svc.PatchAfter(ctx.WithPhase(consts.PHASE_PATCH_AFTER), cur); err != nil {
+			log.Error(err)
+			ResponseJSON(c, CodeFailure.WithErr(err))
+			return
+		}
+
+		// 4.record operation log to database.
+		var tableName string
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
+		record, _ := json.Marshal(req)
+		reqData, _ := json.Marshal(ctx.GetRequest())
+		respData, _ := json.Marshal(ctx.GetResponse())
+		cb.Enqueue(&model_log.OperationLog{
+			Op:        model_log.OperationTypePatch,
+			Model:     typ.Name(),
+			Table:     tableName,
+			RecordId:  req.GetID(),
+			Record:    util.BytesToString(record),
+			Request:   util.BytesToString(reqData),
+			Response:  util.BytesToString(respData),
+			IP:        c.ClientIP(),
+			User:      c.GetString(consts.CTX_USERNAME),
+			RequestId: c.GetString(consts.REQUEST_ID),
+			URI:       c.Request.RequestURI,
+			Method:    c.Request.Method,
+			UserAgent: c.Request.UserAgent(),
+		})
+
+		// NOTE: You should response `oldVal` instead of `req`.
+		// The req is `newVal`.
+		ResponseJSON(c, CodeSuccess, cur)
 	}
 }
 
@@ -1626,7 +1639,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				return
 			}
 			if reqErr == io.EOF {
-				log.Warn("empty request body")
+				log.Warn(ErrRequestBodyEmpty)
 			}
 			if rsp, err = svc.CreateMany(ctx.WithPhase(consts.PHASE_CREATE_MANY), req); err != nil {
 				log.Error(err)
@@ -1646,7 +1659,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			return
 		}
 		if reqErr == io.EOF {
-			log.Warn("empty request body")
+			log.Warn(ErrRequestBodyEmpty)
 		}
 
 		if req.Options == nil {
@@ -1799,7 +1812,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				return
 			}
 			if reqErr == io.EOF {
-				log.Warn("empty request body")
+				log.Warn(ErrRequestBodyEmpty)
 			}
 			if rsp, err = svc.DeleteMany(ctx.WithPhase(consts.PHASE_DELETE_MANY), req); err != nil {
 				log.Error(err)
@@ -1817,7 +1830,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			return
 		}
 		if reqErr == io.EOF {
-			log.Warn("empty request body")
+			log.Warn(ErrRequestBodyEmpty)
 		}
 
 		// 1.Perform business logic processing before batch delete resources.
@@ -1949,7 +1962,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				return
 			}
 			if reqErr == io.EOF {
-				log.Warn("empty request body")
+				log.Warn(ErrRequestBodyEmpty)
 			}
 			if rsp, err = svc.UpdateMany(ctx.WithPhase(consts.PHASE_UPDATE_MANY), req); err != nil {
 				log.Error(err)
@@ -1967,7 +1980,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			return
 		}
 		if reqErr == io.EOF {
-			log.Warn("empty request body")
+			log.Warn(ErrRequestBodyEmpty)
 		}
 
 		// 1.Perform business logic processing before batch update resource.
@@ -2093,7 +2106,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 				return
 			}
 			if reqErr == io.EOF {
-				log.Warn("empty request body")
+				log.Warn(ErrRequestBodyEmpty)
 			}
 			if rsp, err = svc.PatchMany(ctx.WithPhase(consts.PHASE_PATCH_MANY), req); err != nil {
 				log.Error(err)
@@ -2113,7 +2126,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			return
 		}
 		if reqErr == io.EOF {
-			log.Warn("empty request body")
+			log.Warn(ErrRequestBodyEmpty)
 		}
 		for _, m := range req.Items {
 			var results []M
