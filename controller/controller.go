@@ -319,8 +319,8 @@ func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		var rsp any
 		var err error
+		var rsp any
 		var reqErr error
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
 		svc := service.Factory[M, REQ, RSP]().Service()
@@ -384,14 +384,14 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			for i := range ml {
 				m := reflect.New(typ).Interface().(M)
 				m.SetID(ml[i].GetID())
-				if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+				if err = handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 					log.Error(err)
 				}
 				copied[i] = m
 			}
 
 			// 2.Delete resources in database.
-			if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
+			if err = handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -399,7 +399,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			// 3.Perform business logic processing after delete resources.
 			// TODO: Should there be one service hook(DeleteAfter), or multiple?
 			for _, m := range ml {
-				if err := svc.DeleteAfter(ctx.WithPhase(consts.PHASE_DELETE_AFTER), m); err != nil {
+				if err = svc.DeleteAfter(ctx.WithPhase(consts.PHASE_DELETE_AFTER), m); err != nil {
 					log.Error(err)
 					ResponseJSON(c, CodeFailure.WithErr(err))
 					return
@@ -461,34 +461,75 @@ func Update[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 	UpdateFactory[M, REQ, RSP]()(c)
 }
 
-// UpdateFactory is a factory function to product gin handler to update one resource.
+// UpdateFactory is a factory function that produces a gin handler for updating one resource.
+// It supports two different processing modes based on the type relationship between M, REQ, and RSP:
+//
+// Mode 1: Unified Types (M == REQ == RSP)
+// When all three generic types are identical, the factory enables automatic resource management:
+//   - Controller layer automatically handles resource update in database
+//   - Service hooks (UpdateBefore/UpdateAfter) are executed for business logic
+//   - Processing flow: Request -> ServiceBefore -> ModelBefore -> Database -> ModelAfter -> ServiceAfter -> Response
+//   - Resource ID can be specified in two ways (route parameter has higher priority):
+//   - Route parameter: PUT /api/users/123
+//   - Request body: PUT /api/users with JSON {"id": "123", "name": "new name"}
+//   - Automatic preservation of original created_at and created_by fields
+//   - Automatic setting of updated_by field to current user
+//   - Validates resource existence before update
+//
+// Mode 2: Custom Types (M != REQ or REQ != RSP)
+// When types differ, the factory delegates full control to the service layer:
+//   - Service layer has complete control over resource update logic
+//   - No automatic database operations or service hooks
+//   - Processing flow: Request -> Service.Update -> Response
+//   - The request body is bound to the REQ type
+//   - Service must handle all business logic, validation, and database operations
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface (must be pointer to struct, e.g., *User)
+//   - REQ: Request type that implements types.Request interface
+//   - RSP: Response type that implements types.Response interface
+//
+// Parameters:
+//   - cfg: Optional controller configuration for customizing database handler
+//
+// Returns:
+//   - gin.HandlerFunc: A gin handler function for HTTP PUT requests
+//
+// HTTP Response:
+//   - Success: 200 OK with the updated resource data
+//   - Error: 400 Bad Request for invalid parameters, 404 Not Found if resource doesn't exist, 500 Internal Server Error for other failures
+//
+// Resource ID Priority:
+//  1. Route parameter (/api/users/123) - highest priority
+//  2. Request body ID field - fallback if route parameter is empty
+//  3. Error if neither is provided
+//
+// Examples:
+//
+// Unified types (automatic mode):
+//
+//	UpdateFactory[*model.User, *model.User, *model.User]()
+//	// Supports: PUT /users/123 or PUT /users with {"id": "123", "name": "John"}
+//
+// Custom types (manual mode):
+//
+//	UpdateFactory[*model.User, *UpdateUserRequest, *UpdateUserResponse]()
+//	// Service layer controls all update logic
 func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
+		var err error
+		var rsp any
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
-		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request.
-			req := model.NewRequest[M]()
-			if err := c.ShouldBindJSON(req); err != nil {
+		if model.AreTypesEqual[M, REQ, RSP]() {
+			typ := reflect.TypeOf(*new(M)).Elem()
+			req := reflect.New(typ).Interface().(M)
+			if err = c.ShouldBindJSON(&req); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
-				return
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
-			if err := c.ShouldBindJSON(&req); err != nil {
-				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				return
 			}
 
@@ -520,7 +561,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(id)
 			// Make sure the record must be already exists.
-			if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -534,66 +575,67 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			req.SetCreatedAt(data[0].GetCreatedAt())           // keep original "created_at"
 			req.SetCreatedBy(data[0].GetCreatedBy())           // keep original "created_by"
 			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
-		}
 
-		svc := service.Factory[M, REQ, RSP]().Service()
-		// 1.Perform business logic processing before update resource.
-		if err := svc.UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
-		// 2.Update resource in database.
-		if !hasCustomReq {
+			// 1.Perform business logic processing before update resource.
+			if err = svc.UpdateBefore(ctx.WithPhase(consts.PHASE_UPDATE_BEFORE), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			// 2.Update resource in database.
 			log.Infoz("update in database", zap.Object(typ.Name(), req))
-			if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
+			if err = handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			// 3.Perform business logic processing after update resource.
+			if err = svc.UpdateAfter(ctx.WithPhase(consts.PHASE_UPDATE_AFTER), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			rsp = req
+		} else {
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
+			if err = c.ShouldBindJSON(&req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeInvalidParam.WithErr(err))
+				return
+			}
+			if rsp, err = svc.Update(ctx, req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
 			}
 		}
-		// 3.Perform business logic processing after update resource.
-		if err := svc.UpdateAfter(ctx.WithPhase(consts.PHASE_UPDATE_AFTER), req); err != nil {
-			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
-			return
-		}
 
-		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(ctx.GetRequest())
-		respData, _ := json.Marshal(ctx.GetResponse())
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		})
+		// // 4.record operation log to database.
+		// var tableName string
+		// items := strings.Split(typ.Name(), ".")
+		// if len(items) > 0 {
+		// 	tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		// }
+		// record, _ := json.Marshal(req)
+		// reqData, _ := json.Marshal(ctx.GetRequest())
+		// respData, _ := json.Marshal(ctx.GetResponse())
+		// cb.Enqueue(&model_log.OperationLog{
+		// 	Op:        model_log.OperationTypeUpdate,
+		// 	Model:     typ.Name(),
+		// 	Table:     tableName,
+		// 	RecordId:  req.GetID(),
+		// 	Record:    util.BytesToString(record),
+		// 	Request:   util.BytesToString(reqData),
+		// 	Response:  util.BytesToString(respData),
+		// 	IP:        c.ClientIP(),
+		// 	User:      c.GetString(consts.CTX_USERNAME),
+		// 	RequestId: c.GetString(consts.REQUEST_ID),
+		// 	URI:       c.Request.RequestURI,
+		// 	Method:    c.Request.Method,
+		// 	UserAgent: c.Request.UserAgent(),
+		// })
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
-		} else {
-			// Does not have custom response. the response type is the same as the resource type.
-			ResponseJSON(c, CodeSuccess, req)
-		}
+		ResponseJSON(c, CodeSuccess, rsp)
 	}
 }
 
