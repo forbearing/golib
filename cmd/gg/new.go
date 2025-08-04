@@ -13,7 +13,7 @@ import (
 const mainContent = `package main
 
 import (
-	_ "%s/router"
+	"%s/router"
 
 	"github.com/forbearing/golib/bootstrap"
 	. "github.com/forbearing/golib/util"
@@ -21,13 +21,17 @@ import (
 
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
-}`
+}
+`
 
 const routerContent = `package router
 
-func init() {
-}`
+func Init() error {
+	return nil
+}
+`
 
 const gitignoreContent = `# Binaries for programs and plugins
 *.exe
