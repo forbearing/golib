@@ -12,7 +12,6 @@ import (
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gorm.io/gorm"
 )
 
 var ErrMobileLength = errors.New("mobile number length must be 11")
@@ -253,7 +252,7 @@ type Base struct {
 	CursorFields string  `json:"-" gorm:"-" schema:"_cursor_fields" url:"_cursor_fields,omitempty"` // Query parameter: eg: "_cursor_fields=field1,field2"
 	CursorNext   bool    `json:"-" gorm:"-" schema:"_cursor_next" url:"_cursor_next,omitempty"`     // Query parameter: eg: "_cursor_next=true"
 
-	gorm.Model `json:"-" schema:"-" url:"-"`
+	// gorm.Model `json:"-" schema:"-" url:"-"`
 }
 
 func (b *Base) GetTableName() string       { return "" }
