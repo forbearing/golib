@@ -75,7 +75,7 @@ func Test_Returns(t *testing.T) {
 	}
 }
 
-func Test_AssignWithServiceContext(t *testing.T) {
+func Test_StmtLogWithServiceContext(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -98,7 +98,7 @@ func Test_AssignWithServiceContext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := AssignWithServiceContext(tt.modelVarName)
+			res := StmtLogWithServiceContext(tt.modelVarName)
 			buf.Reset()
 			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
@@ -106,7 +106,7 @@ func Test_AssignWithServiceContext(t *testing.T) {
 			}
 			got := buf.String()
 			if got != tt.want {
-				t.Errorf("assign_with_service_context() = %v, want %v", got, tt.want)
+				t.Errorf("StmtLogWithServiceContext() = %v, want %v", got, tt.want)
 			}
 		})
 	}
