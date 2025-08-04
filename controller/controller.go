@@ -1886,36 +1886,58 @@ func UpdateMany[M types.Model, REQ types.Request, RSP types.Response](c *gin.Con
 	UpdateManyFactory[M, REQ, RSP]()(c)
 }
 
-// UpdateManyFactory
+// UpdateManyFactory is a generic factory function that creates a Gin handler for batch updating resources.
+// It supports two processing modes based on type relationships:
+//
+// 1. **Unified Types Mode** (M == REQ == RSP):
+//   - All type parameters represent the same underlying type
+//   - Automatic database operations and service hooks are executed
+//   - Request body is parsed as requestData[M] containing Items array
+//   - Automatic field population (UpdatedBy) and operation logging
+//   - Four-phase processing: pre-update hooks → database update → post-update hooks → operation logging
+//
+// 2. **Custom Types Mode** (M != REQ or REQ != RSP):
+//   - Different types for Model, Request, and Response
+//   - Service layer controls all update logic through UpdateMany method
+//   - No automatic database operations - service handles everything
+//   - Custom request/response type handling
+//
+// Type Parameters:
+//   - M: Model type implementing types.Model interface (database entity)
+//   - REQ: Request type implementing types.Request interface (input data structure)
+//   - RSP: Response type implementing types.Response interface (output data structure)
+//
+// Request Format (Unified Types Mode):
+//   - Content-Type: application/json
+//   - Body: {"items": [M, M, ...], "options": {"atomic": bool}}
+//   - Empty body is allowed (treated as no-op)
+//
+// Response Format:
+//   - Success (200): Updated resource data with operation summary
+//   - Error (400): Invalid request parameters
+//   - Error (500): Internal server error
+//
+// Automatic Features (Unified Types Mode):
+//   - Service hooks: UpdateManyBefore/UpdateManyAfter for business logic
+//   - Database batch update operations
+//   - Operation logging with request/response capture
+//   - Error handling and logging throughout all phases
+//   - Request validation and empty body handling
+//
+// The function handles both empty and non-empty request bodies gracefully,
+// with comprehensive error handling and detailed operation logging for audit purposes.
 func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		var req requestData[M]
 		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_MANY)
+		svc := service.Factory[M, REQ, RSP]().Service()
 		ctx := helper.NewServiceContext(c)
-		hasCustomReq := model.HasRequest[M]()
-		hasCustomResp := model.HasResponse[M]()
 
-		if hasCustomReq {
-			// Has custom request
-			req := model.NewRequest[M]()
-			if reqErr = c.ShouldBindJSON(req); reqErr != nil && reqErr != io.EOF {
-				log.Error(reqErr)
-				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				return
-			}
-			if reqErr == io.EOF {
-				log.Warn("empty request body")
-			}
-			ctx.SetRequest(req)
-			if hasCustomResp {
-				// Has custom response
-				ctx.SetResponse(model.NewResponse[M]())
-			}
-		} else {
-			// Does not have custom request, the request type is the same as the resource type.
+		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var rsp RSP
+			req := reflect.New(reflect.TypeOf(*new(REQ))).Interface().(REQ)
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
@@ -1924,9 +1946,25 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn("empty request body")
 			}
+			if rsp, err = svc.UpdateMany(ctx.WithPhase(consts.PHASE_UPDATE_MANY), req); err != nil {
+				log.Error(err)
+				ResponseJSON(c, CodeFailure.WithErr(err))
+				return
+			}
+			ResponseJSON(c, CodeSuccess, rsp)
+			return
 		}
 
-		svc := service.Factory[M, REQ, RSP]().Service()
+		var req requestData[M]
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			log.Error(reqErr)
+			ResponseJSON(c, CodeFailure.WithErr(reqErr))
+			return
+		}
+		if reqErr == io.EOF {
+			log.Warn("empty request body")
+		}
+
 		// 1.Perform business logic processing before batch update resource.
 		if err = svc.UpdateManyBefore(ctx.WithPhase(consts.PHASE_UPDATE_MANY_BEFORE), req.Items...); err != nil {
 			log.Error(err)
@@ -1934,7 +1972,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			return
 		}
 		// 2.Batch update resource in database.
-		if reqErr != io.EOF && !hasCustomReq {
+		if reqErr != io.EOF {
 			if err = handler(helper.NewDatabaseContext(c)).Update(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1973,23 +2011,14 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if hasCustomResp {
-			// Has custom response.
-			ResponseJSON(c, CodeSuccess, ctx.GetResponse())
-		} else if hasCustomReq {
-			// Has custom request but not custom response.
-			ResponseJSON(c, CodeSuccess)
-		} else {
-			// Does not have custom response, the response type is the same as the request type.
-			if reqErr != io.EOF {
-				req.Summary = &summary{
-					Total:     len(req.Items),
-					Succeeded: len(req.Items),
-					Failed:    0,
-				}
+		if reqErr != io.EOF {
+			req.Summary = &summary{
+				Total:     len(req.Items),
+				Succeeded: len(req.Items),
+				Failed:    0,
 			}
-			ResponseJSON(c, CodeSuccess, req)
 		}
+		ResponseJSON(c, CodeSuccess, req)
 	}
 }
 
@@ -2114,7 +2143,6 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			// Has custom request but not custom response.
 			ResponseJSON(c, CodeSuccess)
 		} else {
-			// Does not have custom response, the response type is the same as the request type.
 			if reqErr != io.EOF {
 				req.Summary = &summary{
 					Total:     len(req.Items),
