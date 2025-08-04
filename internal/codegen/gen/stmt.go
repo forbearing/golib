@@ -69,3 +69,38 @@ func StmtLogWithServiceContext(modelVarName string) *ast.AssignStmt {
 		},
 	}
 }
+
+// StmtRouterRegister creates
+// TODO: how to get request and response stuct package name?
+func StmtRouterRegister(modelPkgName, modelName, reqName, respName string) *ast.ExprStmt {
+	return &ast.ExprStmt{
+		X: &ast.CallExpr{
+			Fun: &ast.IndexListExpr{
+				X: &ast.SelectorExpr{
+					X:   ast.NewIdent("router"),
+					Sel: ast.NewIdent("Register"),
+				},
+				Indices: []ast.Expr{
+					&ast.StarExpr{
+						X: &ast.SelectorExpr{
+							X:   ast.NewIdent(modelPkgName),
+							Sel: ast.NewIdent(modelName),
+						},
+					},
+					&ast.StarExpr{
+						X: &ast.SelectorExpr{
+							X:   ast.NewIdent(modelPkgName),
+							Sel: ast.NewIdent(reqName),
+						},
+					},
+					&ast.StarExpr{
+						X: &ast.SelectorExpr{
+							X:   ast.NewIdent(modelPkgName),
+							Sel: ast.NewIdent(respName),
+						},
+					},
+				},
+			},
+		},
+	}
+}
