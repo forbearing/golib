@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 const mainContent = `package main
 
 import (
+	_ "%s/router"
+
 	"github.com/forbearing/golib/bootstrap"
 	. "github.com/forbearing/golib/util"
 )
@@ -19,6 +22,11 @@ import (
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(bootstrap.Run)
+}`
+
+const routerContent = `package router
+
+func init() {
 }`
 
 const gitignoreContent = `# Binaries for programs and plugins
@@ -115,27 +123,30 @@ func newProject(projectName string) {
 		checkErr(err)
 		file.Close()
 	}
-
 	// Step 5: Create main.go file
 	fmt.Println("Creating main.go")
-	checkErr(os.WriteFile("main.go", []byte(mainContent), 0o644))
+	checkErr(os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName), 0o644))
 
-	// Step 6: Create .gitignore file
+	// Step 6: Create router/router.go
+	fmt.Println("Creating router/router.go")
+	checkErr(os.WriteFile("router/router.go", []byte(routerContent), 0o644))
+
+	// Step 7: Create .gitignore file
 	fmt.Println("Creating .gitignore")
 	checkErr(os.WriteFile(".gitignore", []byte(gitignoreContent), 0o644))
 
-	// Step 7: Run go mod tidy
+	// Step 8: Run go mod tidy
 	fmt.Println("Running go mod tidy...")
 	cmd = exec.Command("go", "mod", "tidy")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 	checkErr(cmd.Run())
 
-	// Step 8: Initialize git repository
+	// Step 9: Initialize git repository
 	fmt.Println("Initializing git repository...")
 	cmd = exec.Command("git", "init")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 	checkErr(cmd.Run())
 
 	fmt.Println("Project initialization completed successfully!")
