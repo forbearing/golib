@@ -15,7 +15,7 @@ import (
 // ApplyServiceGeneration applies service code generation with business logic protection
 func ApplyServiceGeneration(config *ApplyConfig) error {
 	// Find all models in the model directory
-	models, err := codegen.FindModelsInDirectory(config.Module, config.ModelDir, config.ServiceDir, config.Excludes)
+	models, err := codegen.FindModelInfos(config.Module, config.ModelDir, config.ServiceDir, config.Excludes)
 	if err != nil {
 		return fmt.Errorf("failed to find models: %w", err)
 	}
