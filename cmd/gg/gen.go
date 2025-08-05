@@ -27,7 +27,7 @@ func genRun() {
 		checkErr(err)
 	}
 
-	allModels, err := codegen.FindModelInfos(module, modelDir, serviceDir, excludes)
+	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
 
 	stmts := make([]ast.Stmt, 0)
