@@ -20,18 +20,20 @@ import (
 // ModelInfo 存储模型信息
 //
 // 例如:
-// {ModulePath:"github.com/forbearing/golib", PackageName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", PackageName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", PackageName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", PackageName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
 
 type ModelInfo struct {
-	ModulePath      string // 从 go.mod 解析的模块路径
-	PackageName     string // model 包名, 例如: model_authz, model_log
-	ModelName       string // model 名, 例如: User, Group
-	ModelVarName    string // 小写的模型变量名, 例如: u, g
-	ModelFileDir    string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
-	ModelFilePath   string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
+	ModulePath string // 从 go.mod 解析的模块路径
+
+	ModelPkgName  string // model 包名, 例如: model_authz, model_log
+	ModelName     string // model 名, 例如: User, Group
+	ModelVarName  string // 小写的模型变量名, 例如: u, g
+	ModelFileDir  string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
+	ModelFilePath string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
+
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 }
 
@@ -70,17 +72,6 @@ func GetModulePath() (string, error) {
 // import model_auth "github.com/forbearing/golib/model", 则为 model_auth
 func FindModelPackageName(file *ast.File) string {
 	return file.Name.Name
-	for _, imp := range file.Imports {
-		path := strings.Trim(imp.Path.Value, `"`)
-		if strings.HasSuffix(path, "github.com/forbearing/golib/model") {
-			// pretty.Println("-----", imp.Name)
-			if imp.Name != nil {
-				return imp.Name.Name // 使用重命名的包名
-			}
-			return "model" // 默认包名
-		}
-	}
-	return ""
 }
 
 // // IsModelBase 检查字段是否是 model.Base
@@ -190,7 +181,7 @@ func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 				continue
 			}
 			models = append(models, &ModelInfo{
-				PackageName:  modelPkgName,
+				ModelPkgName: modelPkgName,
 				ModelName:    modelName,
 				ModelVarName: strings.ToLower(modelName[:1]),
 				ModulePath:   modulePath,
@@ -224,7 +215,7 @@ func ModelPkg2ServicePkg(pkgName string) string {
 func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -236,7 +227,7 @@ func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -249,7 +240,7 @@ func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
-	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.PackageName,
+	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -258,14 +249,14 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 }
 
 func GenerateService(info *ModelInfo) *ast.File {
-	if !IsValidModelPackage(info.PackageName) {
+	if !IsValidModelPackage(info.ModelPkgName) {
 		return nil
 	}
 
 	decls := []ast.Decl{
-		Imports(info.ModulePath, info.ModelFileDir, info.PackageName),
+		Imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName),
 		Inits(info.ModelName),
-		Types(info.ModelName, info.PackageName),
+		Types(info.ModelName, info.ModelPkgName),
 	}
 
 	for _, method := range Methods {
@@ -279,7 +270,7 @@ func GenerateService(info *ModelInfo) *ast.File {
 	}
 
 	return &ast.File{
-		Name:  ast.NewIdent(ModelPkg2ServicePkg(info.PackageName)),
+		Name:  ast.NewIdent(ModelPkg2ServicePkg(info.ModelPkgName)),
 		Decls: decls,
 	}
 }

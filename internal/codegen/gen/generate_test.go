@@ -167,8 +167,8 @@ func Test_FindModels(t *testing.T) {
 			modulePath: modulePath,
 			filename:   filename1,
 			want: []*ModelInfo{
-				{ModulePath: "github.com/forbearing/golib", PackageName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
-				{ModulePath: "github.com/forbearing/golib", PackageName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
+				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
+				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
 			},
 			wantErr: false,
 		},
@@ -177,8 +177,8 @@ func Test_FindModels(t *testing.T) {
 			modulePath: modulePath,
 			filename:   filename2,
 			want: []*ModelInfo{
-				{ModulePath: "github.com/forbearing/golib", PackageName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
-				{ModulePath: "github.com/forbearing/golib", PackageName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
+				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
+				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
 			},
 		},
 	}
@@ -259,7 +259,7 @@ func Test_GenerateServiceMethod1(t *testing.T) {
 			name:       "user",
 			methodName: "CreateBefore",
 			info: &ModelInfo{
-				PackageName:  "model",
+				ModelPkgName: "model",
 				ModelName:    "User",
 				ModelVarName: "u",
 				ModulePath:   "codegen",
@@ -300,7 +300,7 @@ func Test_GenerateServiceMethod2(t *testing.T) {
 			name:       "user",
 			methodName: "ListBefore",
 			info: &ModelInfo{
-				PackageName:  "model",
+				ModelPkgName: "model",
 				ModelName:    "User",
 				ModelVarName: "u",
 				ModulePath:   "codegen",
@@ -339,7 +339,7 @@ func Test_GenerateServiceMethod3(t *testing.T) {
 			name:       "user",
 			methodName: "BatchCreateBefore",
 			info: &ModelInfo{
-				PackageName:  "model",
+				ModelPkgName: "model",
 				ModelName:    "User",
 				ModelVarName: "u",
 				ModulePath:   "codegen",

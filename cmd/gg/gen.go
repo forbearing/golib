@@ -32,7 +32,7 @@ func genRun() {
 
 	stmts := make([]ast.Stmt, 0)
 	for _, m := range allModels {
-		stmts = append(stmts, gen.StmtRouterRegister(m.PackageName, m.ModelName, m.ModelName, m.ModelName, strings.ToLower(m.ModelName)))
+		stmts = append(stmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, strings.ToLower(m.ModelName)))
 	}
 
 	routerCode, err := gen.BuildRouterFile("router", stmts...)
