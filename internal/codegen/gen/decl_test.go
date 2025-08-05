@@ -1,9 +1,14 @@
 package gen
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
+	"go/token"
 	"reflect"
 	"testing"
+
+	"github.com/kr/pretty"
 )
 
 func Test_Imports(t *testing.T) {
@@ -82,29 +87,37 @@ func Test_Types(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		modelName    string
 		modelPkgname string
+		modelName    string
+		reqName      string
+		rspName      string
 		want         string
 	}{
 		// {
-		// 	name:      "user",
-		// 	modelName: "User",
-		// 	want: `// user implements the types.Service[*model.User] interface.
-		// type user struct {
-		// 	service.Base[*model.User]
-		// }`,
+		// 	name:         "user",
+		// 	modelPkgname: "model",
+		// 	modelName:    "User",
+		// 	reqName:      "User",
+		// 	rspName:      "User",
+		// 	want: `// user implements the types.Service[*model.User, *model.User, *model.User] interface.
+		// 		type user struct {
+		// 			service.Base[*model.User, *model.User, *model.User]
+		// 		}
+		// `,
 		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := Types(tt.modelName, tt.modelPkgname)
-			got, err := FormatNode(res)
-			if err != nil {
+			res := Types(tt.modelPkgname, tt.modelName, tt.reqName, tt.rspName)
+			var buf bytes.Buffer
+			fset := token.NewFileSet()
+			if err := format.Node(&buf, fset, res); err != nil {
 				t.Error(err)
 				return
 			}
+			got := buf.String()
 			if got != tt.want {
-				t.Errorf("Types() = %v, want %v", got, tt.want)
+				t.Errorf("Types() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}

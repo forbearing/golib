@@ -86,20 +86,20 @@ func Inits(modelName string) *ast.FuncDecl {
 	}
 }
 
-// Types
+// Types returns a ast node that represents the declaration of below:
 /*
-// user implements the types.Service[*model.User] interface.
+// user implements the types.Service[*model.User, *model.User, *model.User] interface.
 type user struct {
-	service.Base[*model.User]
+	service.Base[*model.User, *model.User, *model.User]
 }
 */
-func Types(modelName, modelPkgName string) *ast.GenDecl {
+func Types(modelPkgName, modelName, reqName, rspName string) *ast.GenDecl {
 	return &ast.GenDecl{
 		Doc: &ast.CommentGroup{
 			List: []*ast.Comment{
 				{
-					Text: fmt.Sprintf("// %s implements the types.Service[*%s.%s] interface.",
-						strings.ToLower(modelName), modelPkgName, modelName),
+					Text: fmt.Sprintf("// %s implements the types.Service[*%s.%s, *%s.%s, *%s.%s] interface.",
+						strings.ToLower(modelName), modelPkgName, modelName, modelPkgName, modelName, modelPkgName, modelName),
 				},
 			},
 		},
@@ -110,16 +110,44 @@ func Types(modelName, modelPkgName string) *ast.GenDecl {
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: []*ast.Field{
+							// {
+							// 	Type: &ast.IndexExpr{
+							// 		X: &ast.SelectorExpr{
+							// 			X:   ast.NewIdent("service"),
+							// 			Sel: ast.NewIdent("Base"),
+							// 		},
+							// 		Index: &ast.StarExpr{
+							// 			X: &ast.SelectorExpr{
+							// 				X:   ast.NewIdent(modelPkgName),
+							// 				Sel: ast.NewIdent(modelName),
+							// 			},
+							// 		},
+							// 	},
+							// },
 							{
-								Type: &ast.IndexExpr{
+								Type: &ast.IndexListExpr{
 									X: &ast.SelectorExpr{
 										X:   ast.NewIdent("service"),
 										Sel: ast.NewIdent("Base"),
 									},
-									Index: &ast.StarExpr{
-										X: &ast.SelectorExpr{
-											X:   ast.NewIdent(modelPkgName),
-											Sel: ast.NewIdent(modelName),
+									Indices: []ast.Expr{
+										&ast.StarExpr{
+											X: &ast.SelectorExpr{
+												X:   ast.NewIdent(modelPkgName),
+												Sel: ast.NewIdent(modelName),
+											},
+										},
+										&ast.StarExpr{
+											X: &ast.SelectorExpr{
+												X:   ast.NewIdent(modelPkgName),
+												Sel: ast.NewIdent(reqName),
+											},
+										},
+										&ast.StarExpr{
+											X: &ast.SelectorExpr{
+												X:   ast.NewIdent(modelPkgName),
+												Sel: ast.NewIdent(rspName),
+											},
 										},
 									},
 								},

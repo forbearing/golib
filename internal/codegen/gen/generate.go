@@ -271,7 +271,7 @@ func GenerateService(info *ModelInfo) *ast.File {
 	decls := []ast.Decl{
 		Imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName),
 		Inits(info.ModelName),
-		Types(info.ModelName, info.ModelPkgName),
+		Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
 	}
 
 	for _, method := range Methods {
