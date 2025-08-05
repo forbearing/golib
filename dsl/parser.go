@@ -1,13 +1,13 @@
 package dsl
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"slices"
 	"strings"
 
 	"github.com/forbearing/golib/types/consts"
-	"github.com/kr/pretty"
 )
 
 func Parse(file *ast.File) map[string]*Design {
@@ -52,7 +52,6 @@ func Parse(file *ast.File) map[string]*Design {
 		m[name] = design
 	}
 
-	pretty.Println(m)
 	return m
 }
 
@@ -66,6 +65,12 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 	}
 
 	models := findAllModelNames(file)
+	// Every model should always has a *ast.FuncDecl,
+	// If model has no "Design" method, then the value is nil.
+	// It's convenient to generate a default design for the model.
+	for _, model := range models {
+		designs[model] = nil
+	}
 
 	for _, decl := range file.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok && fn != nil {
@@ -100,19 +105,18 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 		}
 	}
 
+	fmt.Printf("len(models): %d, len(designs): %d\n", len(models), len(designs))
 	return designs
 }
 
 // parseDesign parse the *ast.FuncDecl that represents "Design" method and returns a *Design object.
 func parseDesign(fn *ast.FuncDecl) *Design {
-	design := &Design{}
+	defaults := &Design{Enabled: true}
+	// model don't have "Design" method, so returns the default design values.
 	if fn == nil || fn.Body == nil || len(fn.Body.List) == 0 {
-		return design
+		return defaults
 	}
 	stmts := fn.Body.List
-
-	// Set default values
-	design.Enabled = true // default enabled.
 
 	for _, stmt := range stmts {
 		callExpr, ok := stmt.(*ast.ExprStmt)
@@ -146,51 +150,51 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		if funcName == "Enabled" && len(call.Args) == 1 {
 			arg, ok := call.Args[0].(*ast.Ident)
 			if ok && arg != nil {
-				design.Enabled = arg.Name == "true"
+				defaults.Enabled = arg.Name == "true"
 			}
 		}
 
 		// Parse "Endpoint" design
 		if funcName == "Endpoint" && len(call.Args) == 1 {
 			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
-				design.Endpoint = trimQuote(arg.Value)
+				defaults.Endpoint = trimQuote(arg.Value)
 			}
 		}
 
 		if payload, result, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
-			design.Create = &Action{Payload: payload, Result: result}
+			defaults.Create = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
-			design.Delete = &Action{Payload: payload, Result: result}
+			defaults.Delete = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
-			design.Update = &Action{Payload: payload, Result: result}
+			defaults.Update = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
-			design.Patch = &Action{Payload: payload, Result: result}
+			defaults.Patch = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
-			design.List = &Action{Payload: payload, Result: result}
+			defaults.List = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
-			design.Get = &Action{Payload: payload, Result: result}
+			defaults.Get = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
-			design.CreateMany = &Action{Payload: payload, Result: result}
+			defaults.CreateMany = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
-			design.DeleteMany = &Action{Payload: payload, Result: result}
+			defaults.DeleteMany = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
-			design.UpdateMany = &Action{Payload: payload, Result: result}
+			defaults.UpdateMany = &Action{Payload: payload, Result: result}
 		}
 		if payload, result, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
-			design.PatchMany = &Action{Payload: payload, Result: result}
+			defaults.PatchMany = &Action{Payload: payload, Result: result}
 		}
 
 	}
 
-	return design
+	return defaults
 }
 
 func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool) {
