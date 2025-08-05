@@ -147,6 +147,9 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		if payload, result, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
 			design.CreateMany = &Action{Payload: payload, Result: result}
 		}
+		if payload, result, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
+			design.DeleteMany = &Action{Payload: payload, Result: result}
+		}
 		if payload, result, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
 			design.UpdateMany = &Action{Payload: payload, Result: result}
 		}
