@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/kr/pretty"
 )
 
 func Test_isModelBase(t *testing.T) {
@@ -197,59 +199,85 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name: "input2",
-		// 	code: input2,
-		// 	want: map[string]*Design{
-		// 		"User2": {
-		// 			Enabled:  false,
-		// 			Endpoint: "user2",
-		// 			Create: &Action{
-		// 				Payload: "User2",
-		// 				Result:  "User3",
-		// 			},
-		// 			Patch: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "input3",
-		// 	code: input3,
-		// 	want: map[string]*Design{
-		// 		"User3": {
-		// 			Enabled:  true,
-		// 			Endpoint: "user",
-		// 			Create: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 			Update: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 		},
-		// 		"User4": {
-		// 			Enabled:  true,
-		// 			Endpoint: "user4",
-		// 			Create: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 			Update: &Action{
-		// 				Payload: "User",
-		// 				Result:  "User",
-		// 			},
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "input4",
-		// 	code: input4,
-		// 	want: map[string]*Design{},
-		// },
+		{
+			name: "input2",
+			code: input2,
+			want: map[string]*Design{
+				"User2": {
+					Enabled:    false,
+					Endpoint:   "user2",
+					Create:     &Action{Payload: "User2", Result: "User3"},
+					Delete:     &Action{Payload: "User2", Result: "User2"},
+					Update:     &Action{Payload: "User2", Result: "User2"},
+					Patch:      &Action{Payload: "User", Result: "User"},
+					List:       &Action{Payload: "User2", Result: "User2"},
+					Get:        &Action{Payload: "User2", Result: "User2"},
+					CreateMany: &Action{Payload: "User2", Result: "User2"},
+					DeleteMany: &Action{Payload: "User2", Result: "User2"},
+					UpdateMany: &Action{Payload: "User2", Result: "User2"},
+					PatchMany:  &Action{Payload: "User2", Result: "User2"},
+				},
+			},
+		},
+		{
+			name: "input3",
+			code: input3,
+			want: map[string]*Design{
+				"User3": {
+					Enabled:    true,
+					Endpoint:   "user",
+					Create:     &Action{Payload: "User", Result: "User"},
+					Delete:     &Action{Payload: "User3", Result: "User3"},
+					Update:     &Action{Payload: "User", Result: "User"},
+					Patch:      &Action{Payload: "User3", Result: "User3"},
+					List:       &Action{Payload: "User3", Result: "User3"},
+					Get:        &Action{Payload: "User3", Result: "User3"},
+					CreateMany: &Action{Payload: "User3", Result: "User3"},
+					DeleteMany: &Action{Payload: "User3", Result: "User3"},
+					UpdateMany: &Action{Payload: "User3", Result: "User3"},
+					PatchMany:  &Action{Payload: "User3", Result: "User3"},
+				},
+				"User4": {
+					Enabled:    true,
+					Endpoint:   "user4",
+					Create:     &Action{Payload: "User", Result: "User"},
+					Delete:     &Action{Payload: "User4", Result: "User4"},
+					Update:     &Action{Payload: "User", Result: "User"},
+					Patch:      &Action{Payload: "User4", Result: "User4"},
+					List:       &Action{Payload: "User4", Result: "User4"},
+					Get:        &Action{Payload: "User4", Result: "User4"},
+					CreateMany: &Action{Payload: "User4", Result: "User4"},
+					DeleteMany: &Action{Payload: "User4", Result: "User4"},
+					UpdateMany: &Action{Payload: "User4", Result: "User4"},
+					PatchMany:  &Action{Payload: "User4", Result: "User4"},
+				},
+			},
+		},
+		{
+			name: "input4",
+			code: input4,
+			want: map[string]*Design{},
+		},
+		{
+			name: "input5",
+			code: input5,
+			want: map[string]*Design{
+				"User5": {
+					Enabled:    true,
+					Endpoint:   "user5",
+					Create:     &Action{Payload: "User5", Result: "User5"},
+					Delete:     &Action{Payload: "User5", Result: "User5"},
+					Update:     &Action{Payload: "User5", Result: "User5"},
+					Patch:      &Action{Payload: "User5", Result: "User5"},
+					List:       &Action{Payload: "User5", Result: "User5"},
+					Get:        &Action{Payload: "User5", Result: "User5"},
+					CreateMany: &Action{Payload: "User5", Result: "User5"},
+					DeleteMany: &Action{Payload: "User5", Result: "User5"},
+					UpdateMany: &Action{Payload: "User5", Result: "User5"},
+					PatchMany:  &Action{Payload: "User5", Result: "User5"},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -261,7 +289,7 @@ func TestParse(t *testing.T) {
 			}
 			got := Parse(f)
 			if len(got) != len(tt.want) {
-				t.Fatalf("Parse() = %v, want %v", got, tt.want)
+				t.Fatalf("Parse() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 			var keys1 []string
 			var keys2 []string
