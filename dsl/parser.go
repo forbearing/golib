@@ -7,23 +7,52 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/types/consts"
+	"github.com/kr/pretty"
 )
 
 func Parse(file *ast.File) map[string]*Design {
 	m := make(map[string]*Design)
 	designs := parse(file)
 	for name, fnDecl := range designs {
-		if fnDecl == nil {
-			continue
-		}
 		design := parseDesign(fnDecl)
+		// Default endpoint is the lower case of the model name.
 		if len(design.Endpoint) == 0 {
-			// Default endpoint is the lower case of the model name.
 			design.Endpoint = strings.ToLower(name)
+		}
+		if design.Create == nil {
+			design.Create = &Action{Payload: name, Result: name}
+		}
+		if design.Delete == nil {
+			design.Delete = &Action{Payload: name, Result: name}
+		}
+		if design.Update == nil {
+			design.Update = &Action{Payload: name, Result: name}
+		}
+		if design.Patch == nil {
+			design.Patch = &Action{Payload: name, Result: name}
+		}
+		if design.List == nil {
+			design.List = &Action{Payload: name, Result: name}
+		}
+		if design.Get == nil {
+			design.Get = &Action{Payload: name, Result: name}
+		}
+		if design.CreateMany == nil {
+			design.CreateMany = &Action{Payload: name, Result: name}
+		}
+		if design.DeleteMany == nil {
+			design.DeleteMany = &Action{Payload: name, Result: name}
+		}
+		if design.UpdateMany == nil {
+			design.UpdateMany = &Action{Payload: name, Result: name}
+		}
+		if design.PatchMany == nil {
+			design.PatchMany = &Action{Payload: name, Result: name}
 		}
 		m[name] = design
 	}
 
+	pretty.Println(m)
 	return m
 }
 
@@ -65,6 +94,8 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 			}
 			if slices.Contains(models, recvName) {
 				designs[recvName] = fn
+			} else {
+				designs[recvName] = nil
 			}
 		}
 	}

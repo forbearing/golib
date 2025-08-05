@@ -148,7 +148,7 @@ func IsModelBase(file *ast.File, field *ast.Field) bool {
 }
 
 // FindModels 查找 model 文件中的所有结构体
-func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
+func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
@@ -193,7 +193,7 @@ func FindModels(modulePath string, filename string) ([]*ModelInfo, error) {
 				ModelPkgName: modelPkgName,
 				ModelName:    modelName,
 				ModelVarName: strings.ToLower(modelName[:1]),
-				ModulePath:   modulePath,
+				ModulePath:   module,
 				ModelFileDir: filepath.Dir(filename),
 			})
 
