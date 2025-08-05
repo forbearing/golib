@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"slices"
@@ -10,6 +9,8 @@ import (
 	"github.com/forbearing/golib/types/consts"
 )
 
+// Parse parses the whole file node to find all models with its "Design".
+// returns the map that key is model name, value is *Design.
 func Parse(file *ast.File) map[string]*Design {
 	m := make(map[string]*Design)
 	designs := parse(file)
@@ -105,7 +106,6 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 		}
 	}
 
-	fmt.Printf("len(models): %d, len(designs): %d\n", len(models), len(designs))
 	return designs
 }
 
@@ -197,6 +197,8 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 	return defaults
 }
 
+// parseAction parse the "Payload" and "Result" type from Action function.
+// The "Action" is represented by function name that already defined in the method list.
 func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool) {
 	var payload string
 	var result string

@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
@@ -32,7 +31,7 @@ func genRun() {
 
 	stmts := make([]ast.Stmt, 0)
 	for _, m := range allModels {
-		stmts = append(stmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, strings.ToLower(m.ModelName)))
+		stmts = append(stmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, m.Design.Endpoint))
 	}
 
 	routerCode, err := gen.BuildRouterFile("router", stmts...)

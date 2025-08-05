@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/forbearing/golib/dsl"
 	"github.com/stoewer/go-strcase"
 	fumpt "mvdan.cc/gofumpt/format"
 )
@@ -40,10 +41,7 @@ type ModelInfo struct {
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 
 	// 自定义请求和相应相关字段
-	ReqPkgName string // 自定义请求结构体所在的包名, 一般和 model 包名相同, 例如: model, model_authz
-	RspPkgName string // 自定义响应结构体所在的包名, 一般和 model 包名相同, 例如: model, model_authz
-	ReqName    string // 自定义请求结构体名, 一般和 model 名相同, 例如: User, Group, UserRequest, GroupRequest
-	RspName    string // 自定义请求结构体名: 一般和 model 名相同, 例如: User, Group, UserResponse, GroupResponse
+	Design *dsl.Design
 }
 
 // GetModulePath 解析 go.mod 获取模块路径
@@ -148,6 +146,7 @@ func IsModelBase(file *ast.File, field *ast.Field) bool {
 }
 
 // FindModels 查找 model 文件中的所有结构体
+// TODO: 支持自定义 Request、Response 不和 model 同一个包位置
 func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
@@ -159,6 +158,11 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	if len(modelPkgName) == 0 {
 		return nil, fmt.Errorf("file %s has no model package", filename)
 	}
+	f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+	designs := dsl.Parse(f)
 
 	var models []*ModelInfo
 	for _, decl := range node.Decls {
@@ -190,11 +194,13 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 				continue
 			}
 			models = append(models, &ModelInfo{
-				ModelPkgName: modelPkgName,
-				ModelName:    modelName,
-				ModelVarName: strings.ToLower(modelName[:1]),
-				ModulePath:   module,
-				ModelFileDir: filepath.Dir(filename),
+				ModelFileDir:  filepath.Dir(filename),
+				ModelFilePath: filename,
+				ModelPkgName:  modelPkgName,
+				ModelName:     modelName,
+				ModelVarName:  strings.ToLower(modelName[:1]),
+				ModulePath:    module,
+				Design:        designs[modelName],
 			})
 
 		}

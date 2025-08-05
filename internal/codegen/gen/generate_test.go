@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -10,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/forbearing/golib/dsl"
+	"github.com/kr/pretty"
 	_ "github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -167,8 +168,50 @@ func Test_FindModels(t *testing.T) {
 			modulePath: modulePath,
 			filename:   filename1,
 			want: []*ModelInfo{
-				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
-				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
+				{
+					ModulePath:    "github.com/forbearing/golib",
+					ModelFileDir:  tmpdir,
+					ModelFilePath: filename1,
+					ModelPkgName:  "model",
+					ModelName:     "User",
+					ModelVarName:  "u",
+					Design: &dsl.Design{
+						Enabled:    true,
+						Endpoint:   "user",
+						Create:     &dsl.Action{Payload: "User", Result: "User"},
+						Delete:     &dsl.Action{Payload: "User", Result: "User"},
+						Update:     &dsl.Action{Payload: "User", Result: "User"},
+						Patch:      &dsl.Action{Payload: "User", Result: "User"},
+						List:       &dsl.Action{Payload: "User", Result: "User"},
+						Get:        &dsl.Action{Payload: "User", Result: "User"},
+						CreateMany: &dsl.Action{Payload: "User", Result: "User"},
+						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
+						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
+						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
+					},
+				},
+				{
+					ModulePath:    "github.com/forbearing/golib",
+					ModelFileDir:  tmpdir,
+					ModelFilePath: filename1,
+					ModelPkgName:  "model",
+					ModelName:     "Group",
+					ModelVarName:  "g",
+					Design: &dsl.Design{
+						Enabled:    true,
+						Endpoint:   "group",
+						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Patch:      &dsl.Action{Payload: "Group", Result: "Group"},
+						List:       &dsl.Action{Payload: "Group", Result: "Group"},
+						Get:        &dsl.Action{Payload: "Group", Result: "Group"},
+						CreateMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
+					},
+				},
 			},
 			wantErr: false,
 		},
@@ -177,8 +220,50 @@ func Test_FindModels(t *testing.T) {
 			modulePath: modulePath,
 			filename:   filename2,
 			want: []*ModelInfo{
-				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "User", ModelVarName: "u", ModelFileDir: "/tmp/model"},
-				{ModulePath: "github.com/forbearing/golib", ModelPkgName: "model", ModelName: "Group", ModelVarName: "g", ModelFileDir: "/tmp/model"},
+				{
+					ModulePath:    "github.com/forbearing/golib",
+					ModelFileDir:  tmpdir,
+					ModelFilePath: filename2,
+					ModelPkgName:  "model",
+					ModelName:     "User",
+					ModelVarName:  "u",
+					Design: &dsl.Design{
+						Enabled:    true,
+						Endpoint:   "user",
+						Create:     &dsl.Action{Payload: "User", Result: "User"},
+						Delete:     &dsl.Action{Payload: "User", Result: "User"},
+						Update:     &dsl.Action{Payload: "User", Result: "User"},
+						Patch:      &dsl.Action{Payload: "User", Result: "User"},
+						List:       &dsl.Action{Payload: "User", Result: "User"},
+						Get:        &dsl.Action{Payload: "User", Result: "User"},
+						CreateMany: &dsl.Action{Payload: "User", Result: "User"},
+						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
+						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
+						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
+					},
+				},
+				{
+					ModulePath:    "github.com/forbearing/golib",
+					ModelFileDir:  tmpdir,
+					ModelFilePath: filename2,
+					ModelPkgName:  "model",
+					ModelName:     "Group",
+					ModelVarName:  "g",
+					Design: &dsl.Design{
+						Enabled:    true,
+						Endpoint:   "group",
+						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Patch:      &dsl.Action{Payload: "Group", Result: "Group"},
+						List:       &dsl.Action{Payload: "Group", Result: "Group"},
+						Get:        &dsl.Action{Payload: "Group", Result: "Group"},
+						CreateMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
+						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
+					},
+				},
 			},
 		},
 	}
@@ -187,12 +272,12 @@ func Test_FindModels(t *testing.T) {
 			got, gotErr := FindModels(tt.modulePath, tt.filename)
 			if gotErr != nil {
 				if !tt.wantErr {
-					t.Errorf("findModels() failed: %v", gotErr)
+					t.Errorf("FindModels() failed: %v", gotErr)
 				}
 				return
 			}
 			if tt.wantErr {
-				t.Fatal("findModels() succeeded unexpectedly")
+				t.Fatal("FindModels() succeeded unexpectedly")
 			}
 			var got2 []ModelInfo
 			var want2 []ModelInfo
@@ -203,7 +288,7 @@ func Test_FindModels(t *testing.T) {
 				want2 = append(want2, *v)
 			}
 			if !reflect.DeepEqual(got2, want2) {
-				t.Errorf("findModels() = %v, want %v", got2, want2)
+				t.Errorf("FindModels() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got2), pretty.Sprintf("% #v", want2))
 			}
 		})
 	}
@@ -241,7 +326,7 @@ func Test_ModelPkg2ServicePkg(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ModelPkg2ServicePkg(tt.pkgName)
 			if got != tt.want {
-				t.Errorf("modelPkg2ServicePkg() = %v, want %v", got, tt.want)
+				t.Errorf("ModelPkg2ServicePkg() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -280,9 +365,7 @@ func Test_GenerateServiceMethod1(t *testing.T) {
 				return
 			}
 			if got != tt.want {
-				// t.Errorf("generateServiceMethod1() = %v, want %v", got, tt.want)
-				fmt.Println(got)
-				fmt.Println(tt.want)
+				t.Errorf("GenerateServiceMethod1() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -321,7 +404,7 @@ func Test_GenerateServiceMethod2(t *testing.T) {
 				return
 			}
 			if got != tt.want {
-				t.Errorf("generateServiceMethod2() = %v, want %v", got, tt.want)
+				t.Errorf("GenerateServiceMethod2() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -360,7 +443,7 @@ func Test_GenerateServiceMethod3(t *testing.T) {
 				return
 			}
 			if got != tt.want {
-				t.Errorf("generateServiceMethod3() = %v, want %v", got, tt.want)
+				t.Errorf("GenerateServiceMethod3() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
