@@ -145,14 +145,14 @@ func generateHookMethod(model *gen.ModelInfo, methodName, structName string) *as
 	// The ModelInfo.PackageName contains the model package name (e.g., "model_cmdb")
 	var modelTypeExpr ast.Expr
 
-	if model.PackageName == "model" {
+	if model.ModelPkgName == "model" {
 		// Simple case: *ModelName
 		modelTypeExpr = &ast.StarExpr{X: ast.NewIdent(model.ModelName)}
 	} else {
 		// Qualified case: *model_package.ModelName
 		modelTypeExpr = &ast.StarExpr{
 			X: &ast.SelectorExpr{
-				X:   ast.NewIdent(model.PackageName),
+				X:   ast.NewIdent(model.ModelPkgName),
 				Sel: ast.NewIdent(model.ModelName),
 			},
 		}

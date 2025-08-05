@@ -54,7 +54,7 @@ func generateCRUDMethod(model *gen.ModelInfo, methodName string, businessLogic [
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
 
-	return gen.ServiceMethod1(modelVarName, model.ModelName, methodName, model.PackageName, body...)
+	return gen.ServiceMethod1(modelVarName, model.ModelName, methodName, model.ModelPkgName, body...)
 }
 
 // generateListMethod generates List methods that work with slices
@@ -73,7 +73,7 @@ func generateListMethod(model *gen.ModelInfo, methodName string, businessLogic [
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
 
-	return gen.ServiceMethod2(modelVarName, model.ModelName, methodName, model.PackageName, body...)
+	return gen.ServiceMethod2(modelVarName, model.ModelName, methodName, model.ModelPkgName, body...)
 }
 
 // generateBatchMethod generates Batch methods that use variadic parameters
@@ -92,7 +92,7 @@ func generateBatchMethod(model *gen.ModelInfo, methodName string, businessLogic 
 	body = append(body, createBusinessLogicSection(businessLogic)...)
 	body = append(body, gen.Returns("nil"))
 
-	return gen.ServiceMethod3(modelVarName, model.ModelName, methodName, model.PackageName, body...)
+	return gen.ServiceMethod3(modelVarName, model.ModelName, methodName, model.ModelPkgName, body...)
 }
 
 // createBusinessLogicSection creates the business logic section with markers
