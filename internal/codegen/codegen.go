@@ -10,8 +10,8 @@ import (
 	"github.com/forbearing/golib/internal/codegen/gen"
 )
 
-// FindModelInfos finds all model infos in a directory
-func FindModelInfos(module, modelDir, serviceDir string, excludes []string) ([]*gen.ModelInfo, error) {
+// FindModels finds all model infos in a directory
+func FindModels(module, modelDir, serviceDir string, excludes []string) ([]*gen.ModelInfo, error) {
 	allModels := make([]*gen.ModelInfo, 0)
 
 	filepath.Walk(modelDir, func(path string, info fs.FileInfo, err error) error {

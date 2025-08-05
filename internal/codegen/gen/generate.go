@@ -26,15 +26,24 @@ import (
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
 
 type ModelInfo struct {
+	// module 相关字段
 	ModulePath string // 从 go.mod 解析的模块路径
 
-	ModelPkgName  string // model 包名, 例如: model_authz, model_log
+	// model 相关字段
+	ModelPkgName  string // model 包名, 例如: model, model_authz, model_log
 	ModelName     string // model 名, 例如: User, Group
 	ModelVarName  string // 小写的模型变量名, 例如: u, g
 	ModelFileDir  string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
 	ModelFilePath string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
 
+	// Service 相关字段
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
+
+	// 自定义请求和相应相关字段
+	ReqPkgName string // 自定义请求结构体所在的包名, 一般和 model 包名相同, 例如: model, model_authz
+	RspPkgName string // 自定义响应结构体所在的包名, 一般和 model 包名相同, 例如: model, model_authz
+	ReqName    string // 自定义请求结构体名, 一般和 model 名相同, 例如: User, Group, UserRequest, GroupRequest
+	RspName    string // 自定义请求结构体名: 一般和 model 名相同, 例如: User, Group, UserResponse, GroupResponse
 }
 
 // GetModulePath 解析 go.mod 获取模块路径
