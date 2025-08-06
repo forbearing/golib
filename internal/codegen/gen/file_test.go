@@ -7,7 +7,7 @@ import (
 	"github.com/forbearing/golib/internal/codegen/gen"
 )
 
-func log_print_helloworld() ast.Stmt {
+func logPrintHelloworld() ast.Stmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{
@@ -33,7 +33,7 @@ func TestBuildRouterFile(t *testing.T) {
 		{
 			name:    "log_println_hello_world",
 			pkgName: "router",
-			stmts:   []ast.Stmt{log_print_helloworld()},
+			stmts:   []ast.Stmt{logPrintHelloworld()},
 			want: `package router
 
 import "log"
