@@ -12,6 +12,7 @@ const mainContent = `package main
 
 import (
 	"%s/router"
+	"%s/service"
 
 	"github.com/forbearing/golib/bootstrap"
 	. "github.com/forbearing/golib/util"
@@ -19,6 +20,7 @@ import (
 
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
@@ -123,7 +125,7 @@ func Run(projectName string) error {
 	}
 	// Step 5: Create main.go file
 	fmt.Println("Creating main.go")
-	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName), 0o644); err != nil {
+	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName), 0o644); err != nil {
 		return err
 	}
 

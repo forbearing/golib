@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/internal/codegen/gen"
+	"github.com/kr/pretty"
 )
 
 func logPrintHelloworld() ast.Stmt {
@@ -59,7 +60,118 @@ func Init() error {
 				t.Fatal("BuildRouterFile() succeeded unexpectedly")
 			}
 			if got != tt.want {
-				t.Errorf("BuildRouterFile() = %v, want %v", got, tt.want)
+				t.Errorf("BuildRouterFile() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}
+
+func TestBuildServiceFile(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		pkgName string
+		stmts   []ast.Stmt
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "user",
+			pkgName: "service",
+			stmts:   []ast.Stmt{gen.StmtServiceRegister("user")},
+			want: `package service
+
+import "github.com/forbearing/golib/service"
+
+func Init() error {
+	service.Register[*user]()
+	return nil
+}
+`,
+			wantErr: false,
+		},
+		{
+			name:    "user_group",
+			pkgName: "service",
+			stmts:   []ast.Stmt{gen.StmtServiceRegister("user"), gen.StmtServiceRegister("group")},
+			want: `package service
+
+import "github.com/forbearing/golib/service"
+
+func Init() error {
+	service.Register[*user]()
+	service.Register[*group]()
+	return nil
+}
+`,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := gen.BuildServiceFile(tt.pkgName, tt.stmts...)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("BuildServiceFile() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("BuildServiceFile() succeeded unexpectedly")
+			}
+			if got != tt.want {
+				t.Errorf("BuildServiceFile() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}
+
+func TestBuildMainFile(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		projectName string
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "test1",
+			projectName: "helloworld",
+			want: `package main
+
+import (
+	"helloworld/router"
+	"helloworld/service"
+
+	"github.com/forbearing/golib/bootstrap"
+	. "github.com/forbearing/golib/util"
+)
+
+func main() {
+	RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(service.Init)
+	RunOrDie(router.Init)
+	RunOrDie(bootstrap.Run)
+}
+`,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := gen.BuildMainFile(tt.projectName)
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("BuildMainFile() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("BuildMainFile() succeeded unexpectedly")
+			}
+			// TODO: update the condition below to compare got with tt.want.
+			if got != tt.want {
+				t.Errorf("BuildMainFile() = \n%v,\n want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}

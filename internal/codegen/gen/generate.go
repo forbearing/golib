@@ -25,7 +25,6 @@ import (
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-
 type ModelInfo struct {
 	// module 相关字段
 	ModulePath string // 从 go.mod 解析的模块路径
@@ -270,7 +269,7 @@ func GenerateService(info *ModelInfo) *ast.File {
 
 	decls := []ast.Decl{
 		Imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName),
-		Inits(info.ModelName),
+		// Inits(info.ModelName),
 		Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
 	}
 
