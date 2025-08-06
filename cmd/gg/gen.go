@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
@@ -29,14 +30,29 @@ func genRun() {
 	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
 
-	stmts := make([]ast.Stmt, 0)
+	routerStmts := make([]ast.Stmt, 0)
+	serviceStmts := make([]ast.Stmt, 0)
 	for _, m := range allModels {
-		stmts = append(stmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, m.Design.Endpoint))
+		routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, m.Design.Endpoint))
+		serviceStmts = append(serviceStmts, gen.StmtServiceRegister(strings.ToLower(m.ModelName)))
 	}
 
-	routerCode, err := gen.BuildRouterFile("router", stmts...)
+	// generate router/router.go
+	routerCode, err := gen.BuildRouterFile("router", routerStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
+
+	// generate service/service.go
+	serviceCode, err := gen.BuildServiceFile("service", serviceStmts...)
+	checkErr(err)
+	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
+
+	// generate main.go
+	module, err := gen.GetModulePath()
+	checkErr(err)
+	mainCode, err := gen.BuildMainFile(module)
+	checkErr(err)
+	checkErr(os.WriteFile("main.go", []byte(mainCode), 0o644))
 
 	for _, m := range allModels {
 		dir := filepath.Dir(m.ServiceFilePath)
