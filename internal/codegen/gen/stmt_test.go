@@ -148,3 +148,36 @@ func TestStmtRouterRegister(t *testing.T) {
 		})
 	}
 }
+
+func TestStmtServiceRegister(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		structName string
+		want       string
+	}{
+		{
+			name:       "test1",
+			structName: "user",
+			want:       `service.Register[*user]()`,
+		},
+		{
+			name:       "test2",
+			structName: "group",
+			want:       `service.Register[*group]()`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := StmtServiceRegister(tt.structName)
+			got, err := FormatNode(res)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("StmtServiceRegister() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
