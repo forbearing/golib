@@ -23,12 +23,14 @@ func (User3) Design() {
 
 	// Custom create action request "Payload" and response "Result".
 	Create(func() {
+		Enabled(false)
 		Payload[User]()
 		Result[*User]()
 	})
 
 	// Custom update action request "Payload" and response "Result".
 	Update(func() {
+		Enabled(true)
 		Payload[*User]()
 		Result[User]()
 	})
@@ -50,12 +52,14 @@ func (User4) Design() {
 
 	// Custom create action request "Payload" and response "Result".
 	dsl.Create(func() {
+		dsl.Enabled(true)
 		dsl.Payload[User]()
 		dsl.Result[*User]()
 	})
 
 	// Custom update action request "Payload" and response "Result".
 	dsl.Update(func() {
+		dsl.Enabled(false)
 		dsl.Payload[*User]()
 		dsl.Result[User]()
 	})

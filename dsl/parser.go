@@ -161,35 +161,35 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			}
 		}
 
-		if payload, result, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
-			defaults.Create = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
+			defaults.Create = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
-			defaults.Delete = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
+			defaults.Delete = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
-			defaults.Update = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
+			defaults.Update = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
-			defaults.Patch = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
+			defaults.Patch = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
-			defaults.List = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
+			defaults.List = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
-			defaults.Get = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
+			defaults.Get = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.CreateMany = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.CreateMany = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.DeleteMany = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.DeleteMany = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.UpdateMany = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.UpdateMany = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
-		if payload, result, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.PatchMany = &Action{Payload: payload, Result: result}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.PatchMany = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
 
 	}
@@ -199,26 +199,54 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 
 // parseAction parse the "Payload" and "Result" type from Action function.
 // The "Action" is represented by function name that already defined in the method list.
-func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool) {
+func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool, bool) {
 	var payload string
 	var result string
+	var enabled bool
 
 	if funcName == name && len(args) == 1 {
 		if flit, ok := args[0].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
-			// Payload or Result.
 			for _, stmt := range flit.Body.List {
 				if expr, ok := stmt.(*ast.ExprStmt); ok && expr != nil {
 					if call, ok := expr.X.(*ast.CallExpr); ok && call != nil && call.Fun != nil {
-						if identExpr, ok := call.Fun.(*ast.IndexExpr); ok && identExpr != nil {
+
+						// Parse Enabled(true)/Enabled(false)
+						var isEnabledCall bool
+						switch fun := call.Fun.(type) {
+						case *ast.Ident:
+							// anonymous import: Enabled(true)
+							if fun != nil && fun.Name == "Enabled" {
+								isEnabledCall = true
+								enabled = true
+							}
+						case *ast.SelectorExpr:
+							// non-anonymous import: dsl.Enabled(true)
+							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Enabled" {
+								isEnabledCall = true
+								enabled = true
+							}
+						}
+
+						if isEnabledCall && enabled && len(call.Args) > 0 && call.Args[0] != nil {
+							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
+								// check the argument of Enabled() is true.
+								enabled = enabled && identExpr.Name == "true"
+							}
+						}
+
+						// Parse Payload[User] or Result[*User].
+						if indexExpr, ok := call.Fun.(*ast.IndexExpr); ok && indexExpr != nil {
 							var isPayload bool
 							var isResult bool
 							var funcName string
-							switch x := identExpr.X.(type) {
+							switch x := indexExpr.X.(type) {
 							case *ast.Ident:
+								// anonymous import: Payload[User]
 								if x != nil {
 									funcName = x.Name
 								}
 							case *ast.SelectorExpr:
+								// non-anonymous import: dsl.Payload[User]
 								if x != nil && x.Sel != nil {
 									funcName = x.Sel.Name
 								}
@@ -230,18 +258,18 @@ func parseAction(name string, funcName string, args []ast.Expr) (string, string,
 								isResult = true
 							}
 							if isPayload {
-								if ident, ok := identExpr.Index.(*ast.Ident); ok && ident != nil { // Payload[User]
+								if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Payload[User]
 									payload = ident.Name
-								} else if starExpr, ok := identExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Payload[*User]
+								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Payload[*User]
 									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
 										payload = ident.Name
 									}
 								}
 							}
 							if isResult {
-								if ident, ok := identExpr.Index.(*ast.Ident); ok && ident != nil { // Result[User]
+								if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Result[User]
 									result = ident.Name
-								} else if starExpr, ok := identExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Result[*User]
+								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Result[*User]
 									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
 										result = ident.Name
 									}
@@ -252,10 +280,10 @@ func parseAction(name string, funcName string, args []ast.Expr) (string, string,
 				}
 			}
 		}
-		return payload, result, true
+		return payload, result, enabled, true
 	}
 
-	return "", "", false
+	return "", "", false, false
 }
 
 // findAllModelNames finds all model names in the ast File Node.

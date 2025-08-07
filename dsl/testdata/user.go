@@ -21,12 +21,14 @@ func (User) Design() {
 
 	// Custom create action request "Payload" and response "Result".
 	Create(func() {
+		Enabled(true)
 		Payload[User]()
 		Result[*User]()
 	})
 
 	// Custom update action request "Payload" and response "Result".
 	Update(func() {
+		Enabled(false)
 		Payload[*User]()
 		Result[User]()
 	})
