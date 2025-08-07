@@ -42,6 +42,7 @@ type Design struct {
 }
 
 type Action struct {
+	Enabled bool
 	Payload string
 	Result  string
 }
