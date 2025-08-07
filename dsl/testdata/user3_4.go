@@ -43,7 +43,7 @@ type User4 struct {
 	pkgmodel.Base
 }
 
-func (User4) Design() {
+func (*User4) Design() {
 	// Default to true.
 	dsl.Enabled(true)
 
