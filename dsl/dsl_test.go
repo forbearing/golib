@@ -1,169 +1,43 @@
 package dsl
 
-const input1 = `
-package model
+import "os"
 
-import (
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
+var (
+	input1 string
+	input2 string
+	input3 string
+	input4 string
+	input5 string
 )
 
-type User struct {
-	Name string
-	Addr string
+func init() {
+	data1, err := os.ReadFile("./testdata/user.go")
+	if err != nil {
+		panic(err)
+	}
+	input1 = string(data1)
 
-	model.Base
+	data2, err := os.ReadFile("./testdata/user2.go")
+	if err != nil {
+		panic(err)
+	}
+	input2 = string(data2)
+
+	data3, err := os.ReadFile("./testdata/user3_4.go")
+	if err != nil {
+		panic(err)
+	}
+	input3 = string(data3)
+
+	data4, err := os.ReadFile("./testdata/user4.go")
+	if err != nil {
+		panic(err)
+	}
+	input4 = string(data4)
+
+	data5, err := os.ReadFile("./testdata/user5.go")
+	if err != nil {
+		panic(err)
+	}
+	input5 = string(data5)
 }
-
-func (User) Design() {
-	// Default to true.
-	//Enabled(true)
-
-	// Default Endpoint is the lower case of the model name.
-	Endpoint("user2")
-
-	// Custom create action request "Payload" and response "Result".
-	Create(func() {
-		Payload[User]()
-		Result[*User]()
-	})
-
-	// Custom update action request "Payload" and response "Result".
-	Update(func() {
-		Payload[*User]()
-		Result[User]()
-	})
-}
-	`
-
-const input2 = `
-package model
-
-import (
-	"github.com/forbearing/golib/dsl"
-	pkgmodel "github.com/forbearing/golib/model"
-)
-
-type User2 struct {
-	Name string
-	Addr string
-
-	pkgmodel.Base
-}
-
-func (User2) Design() {
-	// Default to true.
-	dsl.Enabled(false)
-
-	// Default Endpoint is the lower case of the model name.
-	// dsl.Endpoint("user")
-
-	// Custom create action request "Payload" and response "Result".
-	dsl.Create(func() {
-		dsl.Payload[User2]()
-		dsl.Result[*User3]()
-	})
-
-	// Custom update partial action request "Payload" and response "Result".
-	dsl.Patch(func() {
-		dsl.Payload[*User]()
-		dsl.Result[User]()
-	})
-
-	// Invalid design.
-	dsl.Patch2(func() {
-		dsl.Payload[*User]()
-		dsl.Result[User]()
-	})
-}
-`
-
-const input3 = `
-package model
-
-import (
-	"github.com/forbearing/golib/dsl"
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
-	pkgmodel "github.com/forbearing/golib/model"
-)
-
-type User3 struct {
-	Name string
-	Addr string
-
-	model.Base
-}
-
-func (User3) Design() {
-	// Default to true.
-	Enabled(true)
-
-	// Default Endpoint is the lower case of the model name.
-	Endpoint("user")
-
-	// Custom create action request "Payload" and response "Result".
-	Create(func() {
-		Payload[User]()
-		Result[*User]()
-	})
-
-	// Custom update action request "Payload" and response "Result".
-	Update(func() {
-		Payload[*User]()
-		Result[User]()
-	})
-}
-
-type User4 struct {
-	Name string
-	Addr string
-
-	pkgmodel.Base
-}
-
-func (User4) Design() {
-	// Default to true.
-	dsl.Enabled(true)
-
-	// Default Endpoint is the lower case of the model name.
-	// dsl.Endpoint("user4")
-
-	// Custom create action request "Payload" and response "Result".
-	dsl.Create(func() {
-		dsl.Payload[User]()
-		dsl.Result[*User]()
-	})
-
-	// Custom update action request "Payload" and response "Result".
-	dsl.Update(func() {
-		dsl.Payload[*User]()
-		dsl.Result[User]()
-	})
-}
-
-	`
-
-const input4 = `
-package model
-
-type User4 struct {
-	Name string
-	Addr string
-}`
-
-const input5 = `
-package model
-
-import (
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
-)
-
-type User5 struct {
-	Name string
-	Addr string
-
-	model.Base
-}
-	`
