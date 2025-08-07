@@ -20,10 +20,11 @@ func (User) Design() {
 	Endpoint("user2")
 
 	// Custom create action request "Payload" and response "Result".
+	// Default payload and result is the model name.
 	Create(func() {
 		Enabled(true)
-		Payload[User]()
-		Result[*User]()
+		// Payload[User]()
+		// Result[*User]()
 	})
 
 	// Custom update action request "Payload" and response "Result".

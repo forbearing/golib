@@ -20,6 +20,7 @@ func Parse(file *ast.File) map[string]*Design {
 		if len(design.Endpoint) == 0 {
 			design.Endpoint = strings.ToLower(name)
 		}
+
 		if design.Create == nil {
 			design.Create = &Action{Payload: name, Result: name}
 		}
@@ -50,10 +51,35 @@ func Parse(file *ast.File) map[string]*Design {
 		if design.PatchMany == nil {
 			design.PatchMany = &Action{Payload: name, Result: name}
 		}
+
+		initDefaultAction(name, design.Create)
+		initDefaultAction(name, design.Delete)
+		initDefaultAction(name, design.Update)
+		initDefaultAction(name, design.Patch)
+		initDefaultAction(name, design.List)
+		initDefaultAction(name, design.Get)
+		initDefaultAction(name, design.CreateMany)
+		initDefaultAction(name, design.DeleteMany)
+		initDefaultAction(name, design.UpdateMany)
+		initDefaultAction(name, design.PatchMany)
+
 		m[name] = design
 	}
 
 	return m
+}
+
+// initDefaultAction will init the default payload and result for the action.
+// If the action is enabled, then init the default payload and result to the model name.
+func initDefaultAction(modelName string, action *Action) {
+	if action.Enabled {
+		if len(action.Payload) == 0 {
+			action.Payload = modelName
+		}
+		if len(action.Result) == 0 {
+			action.Result = modelName
+		}
+	}
 }
 
 // parse will parse the whole file node to find all models with its "Design" method node.
