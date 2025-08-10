@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/stoewer/go-strcase"
 	fumpt "mvdan.cc/gofumpt/format"
 )
@@ -233,7 +234,7 @@ func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns("nil"),
+		Returns(ast.NewIdent("nil")),
 	)
 }
 
@@ -245,7 +246,7 @@ func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns("nil"),
+		Returns(ast.NewIdent("nil")),
 	)
 }
 
@@ -258,29 +259,87 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns("nil"),
+		Returns(ast.NewIdent("nil")),
 	)
 }
 
-func GenerateService(info *ModelInfo) *ast.File {
+func GenerateServiceMethod4(info *ModelInfo, methodName, reqName, rspName string) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
+
+	return ServiceMethod4(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName, reqName, rspName,
+		StmtLogWithServiceContext(info.ModelVarName),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns(
+			&ast.UnaryExpr{
+				Op: token.AND,
+				X: &ast.CompositeLit{
+					Type: &ast.SelectorExpr{
+						X:   ast.NewIdent(info.ModelPkgName),
+						Sel: ast.NewIdent(rspName),
+					},
+				},
+			},
+			ast.NewIdent("nil"),
+		),
+	)
+}
+
+func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
 	if !IsValidModelPackage(info.ModelPkgName) {
+		return nil
+	}
+	if !action.Enabled {
 		return nil
 	}
 
 	decls := []ast.Decl{
 		Imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName),
 		// Inits(info.ModelName),
-		Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
+		// Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
 	}
 
-	for _, method := range Methods {
-		if strings.HasPrefix(method, "List") {
-			decls = append(decls, GenerateServiceMethod2(info, method))
-		} else if strings.Contains(method, "Many") {
-			decls = append(decls, GenerateServiceMethod3(info, method))
-		} else {
-			decls = append(decls, GenerateServiceMethod1(info, method))
-		}
+	switch phase {
+	case consts.PHASE_CREATE:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_CREATE_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_CREATE_AFTER.MethodName()))
+	case consts.PHASE_DELETE:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_DELETE_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_DELETE_AFTER.MethodName()))
+	case consts.PHASE_UPDATE:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_UPDATE_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_UPDATE_AFTER.MethodName()))
+	case consts.PHASE_PATCH:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_PATCH_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_PATCH_AFTER.MethodName()))
+	case consts.PHASE_LIST: // List method use GenerateServiceMethod2
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod2(info, consts.PHASE_LIST_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod2(info, consts.PHASE_LIST_AFTER.MethodName()))
+	case consts.PHASE_GET:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_GET_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_GET_AFTER.MethodName()))
+	case consts.PHASE_CREATE_MANY: // XXXMany methods use GenerateServiceMethod3
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_CREATE_MANY_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_CREATE_MANY_AFTER.MethodName()))
+	case consts.PHASE_DELETE_MANY:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_DELETE_MANY_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_DELETE_MANY_AFTER.MethodName()))
+	case consts.PHASE_UPDATE_MANY:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_UPDATE_MANY_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_UPDATE_MANY_AFTER.MethodName()))
+	case consts.PHASE_PATCH_MANY:
+		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_PATCH_MANY_BEFORE.MethodName()))
+		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_PATCH_MANY_AFTER.MethodName()))
 	}
 
 	return &ast.File{

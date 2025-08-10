@@ -448,3 +448,65 @@ func Test_GenerateServiceMethod3(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateServiceMethod4(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info       *ModelInfo
+		methodName string
+		reqName    string
+		rspName    string
+		want       string
+	}{
+		{
+			name:       "user",
+			methodName: "Create",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			reqName: "User",
+			rspName: "User",
+			want: `func (u *user) Create(ctx *types.ServiceContext, req *model.User) (*model.User, error) {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user create")
+	return &model.User{}, nil
+}`,
+		},
+		{
+			name:       "group",
+			methodName: "Update",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "Group",
+				ModelVarName: "g",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			reqName: "GroupRequest",
+			rspName: "GroupResponse",
+			want: `func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (*model.GroupResponse, error) {
+	log := g.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("group update")
+	return &model.GroupResponse{}, nil
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := GenerateServiceMethod4(tt.info, tt.methodName, tt.reqName, tt.rspName)
+			got, err := FormatNode(res)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GenerateServiceMethod4() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}

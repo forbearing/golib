@@ -30,14 +30,7 @@ func EmptyLine() *ast.EmptyStmt {
 	return &ast.EmptyStmt{}
 }
 
-func Returns(strs ...string) *ast.ReturnStmt {
-	exprs := make([]ast.Expr, 0, len(strs))
-	for _, str := range strs {
-		if len(str) == 0 {
-			continue
-		}
-		exprs = append(exprs, ast.NewIdent(str))
-	}
+func Returns(exprs ...ast.Expr) *ast.ReturnStmt {
 	return &ast.ReturnStmt{
 		Results: exprs,
 	}
