@@ -269,7 +269,7 @@ func TestServiceMethod4(t *testing.T) {
 			modelPkgName: "model",
 			reqName:      "User",
 			rspName:      "User",
-			want:         "func (u *user) Create(ctx *types.ServiceContext, req *model.User) (*model.User, error) {\n}",
+			want:         "func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {\n}",
 		},
 		{
 			name:         "Update",
@@ -279,7 +279,7 @@ func TestServiceMethod4(t *testing.T) {
 			modelPkgName: "model",
 			reqName:      "GroupRequest",
 			rspName:      "GroupResponse",
-			want:         "func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (*model.GroupResponse, error) {\n}",
+			want:         "func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {\n}",
 		},
 	}
 	for _, tt := range tests {

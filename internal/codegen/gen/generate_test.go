@@ -471,10 +471,10 @@ func TestGenerateServiceMethod4(t *testing.T) {
 			},
 			reqName: "User",
 			rspName: "User",
-			want: `func (u *user) Create(ctx *types.ServiceContext, req *model.User) (*model.User, error) {
+			want: `func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create")
-	return &model.User{}, nil
+	return rsp, nil
 }`,
 		},
 		{
@@ -489,10 +489,10 @@ func TestGenerateServiceMethod4(t *testing.T) {
 			},
 			reqName: "GroupRequest",
 			rspName: "GroupResponse",
-			want: `func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (*model.GroupResponse, error) {
+			want: `func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group update")
-	return &model.GroupResponse{}, nil
+	return rsp, nil
 }`,
 		},
 	}
