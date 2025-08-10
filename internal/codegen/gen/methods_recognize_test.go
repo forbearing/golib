@@ -47,4 +47,3 @@ func Test_IsServiceMethod4(t *testing.T) {
 		t.Fatalf("expected IsServiceMethod4 to return false for non-matching func (ServiceMethod3)")
 	}
 }
-
