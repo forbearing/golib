@@ -344,7 +344,7 @@ func ServiceMethod3(recvName, modelName, methodName, modelPkgName string, body .
 // ServiceMethod4 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	func (u *user) Create(ctx *types.ServiceContext, user *model.User) (*model.User, error) {\n}
+//	func (u *user) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
 func ServiceMethod4(recvName, modelName, methodName, modelPkgName, reqName, rspName string, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
@@ -384,6 +384,7 @@ func ServiceMethod4(recvName, modelName, methodName, modelPkgName, reqName, rspN
 			Results: &ast.FieldList{
 				List: []*ast.Field{
 					{
+						Names: []*ast.Ident{ast.NewIdent("rsp")},
 						Type: &ast.StarExpr{
 							X: &ast.SelectorExpr{
 								X:   ast.NewIdent(modelPkgName),
@@ -392,7 +393,8 @@ func ServiceMethod4(recvName, modelName, methodName, modelPkgName, reqName, rspN
 						},
 					},
 					{
-						Type: ast.NewIdent("error"),
+						Names: []*ast.Ident{ast.NewIdent("err")},
+						Type:  ast.NewIdent("error"),
 					},
 				},
 			},

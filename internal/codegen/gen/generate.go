@@ -263,6 +263,7 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 	)
 }
 
+// GenerateServiceMethod4 使用 AST 生成 Create,Delete,Update,Patch,List,Get,CreateMany,DeleteMany,UpdateMany,PatchMany 方法.
 func GenerateServiceMethod4(info *ModelInfo, methodName, reqName, rspName string) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
 
@@ -271,15 +272,7 @@ func GenerateServiceMethod4(info *ModelInfo, methodName, reqName, rspName string
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
 		Returns(
-			&ast.UnaryExpr{
-				Op: token.AND,
-				X: &ast.CompositeLit{
-					Type: &ast.SelectorExpr{
-						X:   ast.NewIdent(info.ModelPkgName),
-						Sel: ast.NewIdent(rspName),
-					},
-				},
-			},
+			ast.NewIdent("rsp"),
 			ast.NewIdent("nil"),
 		),
 	)
