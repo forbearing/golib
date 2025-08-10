@@ -3,14 +3,16 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/forbearing/golib/dsl"
 	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/kr/pretty"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +52,6 @@ func genRun() {
 	types := make([]*ast.GenDecl, 0)
 	for _, m := range allModels {
 		if m.Design.Create.Enabled {
-			pretty.Println(m)
 			types = append(types, gen.Types(m.ModelPkgName, m.ModelName, m.Design.Create.Payload, m.Design.Create.Result, false))
 			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
 		}
@@ -69,13 +70,20 @@ func genRun() {
 	// }
 	// return
 
-	createFile := func(filename string, code string) {
+	fset := token.NewFileSet()
+	applyFile := func(filename string, code string, action *dsl.Action) {
 		// If service file already exists, skip generate.
-		if !fileExists(filename) {
-			fmt.Printf("generate %s\n", filename)
+		if fileExists(filename) {
+			f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+			checkErr(err)
+			gen.ApplyServiceFile(f, action)
+			code, err = gen.FormatNodeExtra(f)
+			checkErr(err)
+			fmt.Printf("update %s\n", filename)
 			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		} else {
-			fmt.Printf("skip %s\n", filename)
+			fmt.Printf("generate %s\n", filename)
+			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		}
 	}
 
@@ -88,7 +96,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create.go", code, m.Design.Create)
 		}
 
 		// service delete
@@ -96,7 +104,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete.go", code, m.Design.Delete)
 		}
 
 		// service update
@@ -104,7 +112,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update.go", code, m.Design.Update)
 		}
 
 		// service patch
@@ -112,7 +120,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch.go", code, m.Design.Patch)
 		}
 
 		// service list
@@ -120,7 +128,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_list.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_list.go", code, m.Design.List)
 		}
 
 		// service get
@@ -128,7 +136,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_get.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_get.go", code, m.Design.Get)
 		}
 
 		// service create many
@@ -136,7 +144,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create_many.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create_many.go", code, m.Design.CreateMany)
 		}
 
 		// service delete many
@@ -144,7 +152,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete_many.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete_many.go", code, m.Design.DeleteMany)
 		}
 
 		// service update many
@@ -152,7 +160,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update_many.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update_many.go", code, m.Design.UpdateMany)
 		}
 
 		// service patch many
@@ -160,7 +168,7 @@ func genRun() {
 			code, err := gen.FormatNodeExtra(file)
 			checkErr(err)
 			// code = gen.MethodAddComments(code, m.ModelName)
-			createFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch_many.go", code)
+			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch_many.go", code, m.Design.PatchMany)
 		}
 
 	}
