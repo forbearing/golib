@@ -21,3 +21,13 @@ func Dump(filename string, source any) (f *ast.File, dump string, err error) {
 
 	return f, buf.String(), nil
 }
+
+func DumpNode(node ast.Node) (dump string, err error) {
+	fset := token.NewFileSet()
+	var buf bytes.Buffer
+	ast.Fprint(&buf, fset, node, func(string, reflect.Value) bool {
+		return true
+	})
+
+	return buf.String(), nil
+}
