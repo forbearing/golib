@@ -70,38 +70,67 @@ func TestBuildServiceFile(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		pkgName string
-		stmts   []ast.Stmt
-		want    string
-		wantErr bool
+		pkgName     string
+		modelImport []string
+		types       []*ast.GenDecl
+		stmts       []ast.Stmt
+		want        string
+		wantErr     bool
 	}{
 		{
-			name:    "user",
-			pkgName: "service",
-			stmts:   []ast.Stmt{gen.StmtServiceRegister("user")},
+			name:        "user",
+			pkgName:     "service",
+			modelImport: []string{"helloworld/model"},
+			types:       []*ast.GenDecl{gen.Types("model", "User", "User", "User", false)},
+			stmts:       []ast.Stmt{gen.StmtServiceRegister("user")},
 			want: `package service
 
-import "github.com/forbearing/golib/service"
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/golib/service"
+)
 
 func Init() error {
 	service.Register[*user]()
 	return nil
 }
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
 `,
 			wantErr: false,
 		},
 		{
-			name:    "user_group",
-			pkgName: "service",
-			stmts:   []ast.Stmt{gen.StmtServiceRegister("user"), gen.StmtServiceRegister("group")},
+			name:        "user_group",
+			modelImport: []string{"helloworld/model"},
+			pkgName:     "service",
+			types: []*ast.GenDecl{
+				gen.Types("model", "User", "User", "User", false),
+				gen.Types("model", "Group", "Group", "Group", false),
+			},
+			stmts: []ast.Stmt{gen.StmtServiceRegister("user"), gen.StmtServiceRegister("group")},
 			want: `package service
 
-import "github.com/forbearing/golib/service"
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/golib/service"
+)
 
 func Init() error {
 	service.Register[*user]()
 	service.Register[*group]()
 	return nil
+}
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
+
+type group struct {
+	service.Base[*model.Group, *model.Group, *model.Group]
 }
 `,
 			wantErr: false,
@@ -109,7 +138,7 @@ func Init() error {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := gen.BuildServiceFile(tt.pkgName, tt.stmts...)
+			got, gotErr := gen.BuildServiceFile(tt.pkgName, tt.modelImport, tt.types, tt.stmts...)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("BuildServiceFile() failed: %v", gotErr)

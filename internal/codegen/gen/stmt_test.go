@@ -2,6 +2,7 @@ package gen
 
 import (
 	"bytes"
+	"go/ast"
 	"go/format"
 	"go/token"
 	"testing"
@@ -42,23 +43,39 @@ func Test_Returns(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		str  string
-		want string
+		exprs []ast.Expr
+		want  string
 	}{
 		{
-			name: "return error",
-			str:  `error`,
-			want: `return error`,
+			name:  "return error",
+			exprs: []ast.Expr{ast.NewIdent("error")},
+			want:  `return error`,
 		},
 		{
-			name: "return nil",
-			str:  `nil`,
-			want: `return nil`,
+			name:  "return nil",
+			exprs: []ast.Expr{ast.NewIdent("nil")},
+			want:  `return nil`,
+		},
+		{
+			name: "return &model.User{}, nil",
+			exprs: []ast.Expr{
+				&ast.UnaryExpr{
+					Op: token.AND,
+					X: &ast.CompositeLit{
+						Type: &ast.SelectorExpr{
+							X:   ast.NewIdent("model"),
+							Sel: ast.NewIdent("User"),
+						},
+					},
+				},
+				ast.NewIdent("nil"),
+			},
+			want: "return &model.User{}, nil",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := Returns(tt.str)
+			res := Returns(tt.exprs...)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)

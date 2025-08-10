@@ -82,7 +82,7 @@ func Init() error {
 }
 */
 // FIXME: process imports automatically problem.
-func BuildServiceFile(pkgName string, stmts ...ast.Stmt) (string, error) {
+func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDecl, stmts ...ast.Stmt) (string, error) {
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
 	body = append(body, &ast.ReturnStmt{
@@ -91,36 +91,63 @@ func BuildServiceFile(pkgName string, stmts ...ast.Stmt) (string, error) {
 		},
 	})
 
-	f := &ast.File{
-		Name: ast.NewIdent(pkgName),
-		Decls: []ast.Decl{
-			&ast.GenDecl{
-				Tok: token.IMPORT,
-				Specs: []ast.Spec{
-					&ast.ImportSpec{
-						Path: &ast.BasicLit{
-							Kind:  token.STRING,
-							Value: `"github.com/forbearing/golib/service"`,
-						},
-					},
-				},
-			},
-			&ast.FuncDecl{
-				Name: ast.NewIdent("Init"),
-				Type: &ast.FuncType{
-					TypeParams: nil,
-					Params:     nil,
-					Results: &ast.FieldList{
-						List: []*ast.Field{
-							{Type: ast.NewIdent("error")},
-						},
-					},
-				},
-				Body: &ast.BlockStmt{
-					List: body,
+	initDecl := &ast.FuncDecl{
+		Name: ast.NewIdent("Init"),
+		Type: &ast.FuncType{
+			TypeParams: nil,
+			Params:     nil,
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: ast.NewIdent("error")},
 				},
 			},
 		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+
+	// imports service
+	imports := &ast.GenDecl{
+		Tok: token.IMPORT,
+		Specs: []ast.Spec{
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/service"`,
+				},
+			},
+			// &ast.ImportSpec{
+			// 	Path: &ast.BasicLit{
+			// 		Kind:  token.STRING,
+			// 		Value: fmt.Sprintf("%q", modelImport),
+			// 	},
+			// },
+		},
+	}
+	// imports, such like: "helloworld/model"
+	for _, name := range modelImports {
+		imports.Specs = append(imports.Specs, &ast.ImportSpec{
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: fmt.Sprintf("%q", name),
+			},
+		})
+	}
+
+	f := &ast.File{
+		Name:  ast.NewIdent(pkgName),
+		Decls: []ast.Decl{
+			// NOTE: imports must appear before other declarations
+		},
+	}
+	// imports
+	f.Decls = append(f.Decls, imports)
+	// Init() declarations.
+	f.Decls = append(f.Decls, initDecl)
+	// type declarations.
+	for _, typ := range types {
+		f.Decls = append(f.Decls, typ)
 	}
 
 	return formatAndImports(f)

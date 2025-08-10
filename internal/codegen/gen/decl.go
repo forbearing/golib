@@ -12,7 +12,7 @@ import (
 
 var pluralizeCli = pluralize.NewClient()
 
-// Imports
+// Imports generates an ast node that represents the declaration of below:
 /*
 import (
 	"codegen/model"
@@ -56,52 +56,62 @@ func Imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 	}
 }
 
-// Inits
+// Inits returns an ast node that represents the declaration of below:
 /*
 func init() {
 	service.Register[*user]()
 }
 */
-func Inits(modelName string) *ast.FuncDecl {
-	return &ast.FuncDecl{
-		Name: ast.NewIdent("init"),
-		Type: &ast.FuncType{},
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.ExprStmt{
-					X: &ast.CallExpr{
-						Fun: &ast.IndexExpr{
-							X: &ast.SelectorExpr{
-								X:   ast.NewIdent("service"),
-								Sel: ast.NewIdent("Register"),
-							},
-							Index: &ast.StarExpr{
-								X: ast.NewIdent(strings.ToLower(modelName)),
-							},
+func Inits(modelNames ...string) *ast.FuncDecl {
+	list := make([]ast.Stmt, 0)
+
+	for _, name := range modelNames {
+		list = append(list,
+			&ast.ExprStmt{
+				X: &ast.CallExpr{
+					Fun: &ast.IndexExpr{
+						X: &ast.SelectorExpr{
+							X:   ast.NewIdent("service"),
+							Sel: ast.NewIdent("Register"),
+						},
+						Index: &ast.StarExpr{
+							X: ast.NewIdent(strings.ToLower(name)),
 						},
 					},
 				},
 			},
+		)
+	}
+
+	return &ast.FuncDecl{
+		Name: ast.NewIdent("init"),
+		Type: &ast.FuncType{},
+		Body: &ast.BlockStmt{
+			List: list,
 		},
 	}
 }
 
-// Types returns a ast node that represents the declaration of below:
+// Types returns an ast node that represents the declaration of below:
 /*
 // user implements the types.Service[*model.User, *model.User, *model.User] interface.
 type user struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 */
-func Types(modelPkgName, modelName, reqName, rspName string) *ast.GenDecl {
+func Types(modelPkgName, modelName, reqName, rspName string, withComment bool) *ast.GenDecl {
+	comments := []*ast.Comment{}
+
+	if withComment {
+		comments = append(comments, &ast.Comment{
+			Text: fmt.Sprintf("// %s implements the types.Service[*%s.%s, *%s.%s, *%s.%s] interface.",
+				strings.ToLower(modelName), modelPkgName, modelName, modelPkgName, modelName, modelPkgName, modelName),
+		})
+	}
+
 	return &ast.GenDecl{
 		Doc: &ast.CommentGroup{
-			List: []*ast.Comment{
-				{
-					Text: fmt.Sprintf("// %s implements the types.Service[*%s.%s, *%s.%s, *%s.%s] interface.",
-						strings.ToLower(modelName), modelPkgName, modelName, modelPkgName, modelName, modelPkgName, modelName),
-				},
-			},
+			List: comments,
 		},
 		Tok: token.TYPE,
 		Specs: []ast.Spec{
@@ -160,7 +170,7 @@ func Types(modelPkgName, modelName, reqName, rspName string) *ast.GenDecl {
 	}
 }
 
-// ServiceMethod1 creates a function declaration for a method in a service interface.
+// ServiceMethod1 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *user) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
@@ -215,7 +225,7 @@ func ServiceMethod1(recvName, modelName, methodName, modelPkgName string, body .
 	}
 }
 
-// ServiceMethod2
+// ServiceMethod2 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
@@ -274,7 +284,7 @@ func ServiceMethod2(recvName, modelName, methodName, modelPkgName string, body .
 	}
 }
 
-// ServiceMethod3
+// ServiceMethod3 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *user) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
@@ -319,6 +329,68 @@ func ServiceMethod3(recvName, modelName, methodName, modelPkgName string, body .
 			},
 			Results: &ast.FieldList{
 				List: []*ast.Field{
+					{
+						Type: ast.NewIdent("error"),
+					},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+}
+
+// ServiceMethod4 generates an ast node that represents the declaration of below:
+// For example:
+//
+//	func (u *user) Create(ctx *types.ServiceContext, user *model.User) (*model.User, error) {\n}
+func ServiceMethod4(recvName, modelName, methodName, modelPkgName, reqName, rspName string, body ...ast.Stmt) *ast.FuncDecl {
+	return &ast.FuncDecl{
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{ast.NewIdent(recvName)},
+					Type: &ast.StarExpr{
+						X: ast.NewIdent(strings.ToLower(modelName)),
+					},
+				},
+			},
+		},
+		Name: ast.NewIdent(methodName),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Names: []*ast.Ident{ast.NewIdent("ctx")},
+						Type: &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent("types"),
+								Sel: ast.NewIdent("ServiceContext"),
+							},
+						},
+					},
+					{
+						Names: []*ast.Ident{ast.NewIdent("req")},
+						Type: &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent(modelPkgName),
+								Sel: ast.NewIdent(reqName),
+							},
+						},
+					},
+				},
+			},
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Type: &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent(modelPkgName),
+								Sel: ast.NewIdent(rspName),
+							},
+						},
+					},
 					{
 						Type: ast.NewIdent("error"),
 					},

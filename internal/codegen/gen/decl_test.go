@@ -91,6 +91,7 @@ func Test_Types(t *testing.T) {
 		modelName    string
 		reqName      string
 		rspName      string
+		withComments bool
 		want         string
 	}{
 		// {
@@ -108,7 +109,7 @@ func Test_Types(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := Types(tt.modelPkgname, tt.modelName, tt.reqName, tt.rspName)
+			res := Types(tt.modelPkgname, tt.modelName, tt.reqName, tt.rspName, tt.withComments)
 			var buf bytes.Buffer
 			fset := token.NewFileSet()
 			if err := format.Node(&buf, fset, res); err != nil {
@@ -243,6 +244,55 @@ func Test_ServiceMethod3(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("ServiceMethod3() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestServiceMethod4(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		recvName     string
+		modelName    string
+		methodName   string
+		modelPkgName string
+		reqName      string
+		rspName      string
+		want         string
+	}{
+		{
+			name:         "Create",
+			recvName:     "u",
+			modelName:    "User",
+			methodName:   "Create",
+			modelPkgName: "model",
+			reqName:      "User",
+			rspName:      "User",
+			want:         "func (u *user) Create(ctx *types.ServiceContext, req *model.User) (*model.User, error) {\n}",
+		},
+		{
+			name:         "Update",
+			recvName:     "g",
+			modelName:    "Group",
+			methodName:   "Update",
+			modelPkgName: "model",
+			reqName:      "GroupRequest",
+			rspName:      "GroupResponse",
+			want:         "func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (*model.GroupResponse, error) {\n}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := ServiceMethod4(tt.recvName, tt.modelName, tt.methodName, tt.modelPkgName, tt.reqName, tt.rspName)
+			got, err := FormatNode(res)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("ServiceMethod4() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
