@@ -362,7 +362,7 @@ func TestGenServiceMethod1(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			phase: consts.PHASE_CREATE_BEFORE,
-			want: `func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {
+			want: `func (u *Creator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create before")
 	return nil
@@ -401,7 +401,7 @@ func TestGenServiceMethod2(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			phase: consts.PHASE_LIST_BEFORE,
-			want: `func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
+			want: `func (u *Lister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user list before")
 	return nil
@@ -440,7 +440,7 @@ func TestGenServiceMethod3(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			phase: consts.PHASE_CREATE_MANY_BEFORE,
-			want: `func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {
+			want: `func (u *ManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create many before")
 	return nil
@@ -483,7 +483,7 @@ func TestGenServiceMethod4(t *testing.T) {
 			reqName: "User",
 			rspName: "User",
 			phase:   consts.PHASE_CREATE,
-			want: `func (u *userCreator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
+			want: `func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create")
 	return rsp, nil
@@ -501,7 +501,7 @@ func TestGenServiceMethod4(t *testing.T) {
 			reqName: "GroupRequest",
 			rspName: "GroupResponse",
 			phase:   consts.PHASE_UPDATE,
-			want: `func (g *groupUpdater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
+			want: `func (g *Updater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group update")
 	return rsp, nil

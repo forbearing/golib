@@ -84,7 +84,7 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 	f.Decls = append(f.Decls, importDecl)
 	f.Decls = append(f.Decls, initDecl)
 
-	return formatAndImports(f)
+	return formatAndImports(f, false)
 }
 
 // BuildServiceFile generates a service.go file, the content like below:
@@ -168,7 +168,7 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 		f.Decls = append(f.Decls, typ)
 	}
 
-	return formatAndImports(f)
+	return formatAndImports(f, false)
 }
 
 // BuildMainFile generates a main.go file, the content like below:
@@ -261,5 +261,5 @@ func BuildMainFile(projectName string) (string, error) {
 		},
 	}
 
-	return formatAndImports(f)
+	return formatAndImports(f, false)
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/stoewer/go-strcase"
+	goimports "golang.org/x/tools/imports"
 	fumpt "mvdan.cc/gofumpt/format"
 )
 
@@ -62,16 +63,20 @@ func MethodAddComments(code string, modelName string) string {
 }
 
 // formatAndImports formats code use gofumpt and processes imports.
-func formatAndImports(f *ast.File) (string, error) {
+func formatAndImports(f *ast.File, processImport bool) (string, error) {
 	formatted, err := FormatNodeExtra(f)
 	if err != nil {
 		return "", err
 	}
 
-	// result, err := goimports.Process("", []byte(formatted), nil)
-	// if err != nil {
-	// 	return "", err
-	// }
+	if !processImport {
+		return formatted, nil
+	}
 
-	return string(formatted), nil
+	result, err := goimports.Process("", []byte(formatted), nil)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
 }

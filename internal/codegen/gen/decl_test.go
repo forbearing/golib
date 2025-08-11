@@ -103,7 +103,7 @@ func TestTypes(t *testing.T) {
 			reqName:      "User",
 			rspName:      "User",
 			phase:        consts.PHASE_CREATE,
-			want: `type userCreator struct {
+			want: `type Creator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }`,
 		},
@@ -114,7 +114,7 @@ func TestTypes(t *testing.T) {
 			reqName:      "UserReq",
 			rspName:      "UserRsp",
 			phase:        consts.PHASE_UPDATE,
-			want: `type userUpdater struct {
+			want: `type Updater struct {
 	service.Base[*model.User, *model.UserReq, *model.UserRsp]
 }`,
 		},
@@ -152,7 +152,7 @@ func TestServiceMethod1(t *testing.T) {
 			modelName:    "User",
 			modelPkgName: "model",
 			phase:        consts.PHASE_CREATE_BEFORE,
-			want:         "func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}",
+			want:         "func (u *Creator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}",
 		},
 		{
 			name:         "UpdateAfter",
@@ -160,7 +160,7 @@ func TestServiceMethod1(t *testing.T) {
 			modelName:    "Group",
 			modelPkgName: "model_auth",
 			phase:        consts.PHASE_UPDATE_AFTER,
-			want:         "func (g *groupUpdater) UpdateAfter(ctx *types.ServiceContext, group *model_auth.Group) error {\n}",
+			want:         "func (g *Updater) UpdateAfter(ctx *types.ServiceContext, group *model_auth.Group) error {\n}",
 		},
 	}
 	for _, tt := range tests {
@@ -193,7 +193,7 @@ func TestServiceMethod2(t *testing.T) {
 			modelName:    "User",
 			modelPkgName: "model",
 			phase:        consts.PHASE_LIST_BEFORE,
-			want:         "func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}",
+			want:         "func (u *Lister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}",
 		},
 		{
 			name:         "ListAfter",
@@ -201,7 +201,7 @@ func TestServiceMethod2(t *testing.T) {
 			modelName:    "Group",
 			modelPkgName: "model_auth",
 			phase:        consts.PHASE_LIST_AFTER,
-			want:         "func (g *groupLister) ListAfter(ctx *types.ServiceContext, groups *[]*model_auth.Group) error {\n}",
+			want:         "func (g *Lister) ListAfter(ctx *types.ServiceContext, groups *[]*model_auth.Group) error {\n}",
 		},
 	}
 	for _, tt := range tests {
@@ -235,7 +235,7 @@ func TestServiceMethod3(t *testing.T) {
 			modelName:    "User",
 			modelPkgName: "model",
 			phase:        consts.PHASE_CREATE_MANY_BEFORE,
-			want:         "func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}",
+			want:         "func (u *ManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}",
 		},
 		{
 			name:         "UpdateManyBefore",
@@ -243,7 +243,7 @@ func TestServiceMethod3(t *testing.T) {
 			modelName:    "Group",
 			modelPkgName: "model_auth",
 			phase:        consts.PHASE_UPDATE_MANY_BEFORE,
-			want:         "func (g *groupManyUpdater) UpdateManyBefore(ctx *types.ServiceContext, groups ...*model_auth.Group) error {\n}",
+			want:         "func (g *ManyUpdater) UpdateManyBefore(ctx *types.ServiceContext, groups ...*model_auth.Group) error {\n}",
 		},
 	}
 	for _, tt := range tests {
@@ -281,7 +281,7 @@ func TestServiceMethod4(t *testing.T) {
 			reqName:      "User",
 			rspName:      "User",
 			phase:        consts.PHASE_CREATE,
-			want:         "func (u *userCreator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {\n}",
+			want:         "func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {\n}",
 		},
 		{
 			name:         "Update",
@@ -291,7 +291,7 @@ func TestServiceMethod4(t *testing.T) {
 			reqName:      "GroupRequest",
 			rspName:      "GroupResponse",
 			phase:        consts.PHASE_UPDATE,
-			want:         "func (g *groupUpdater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {\n}",
+			want:         "func (g *Updater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {\n}",
 		},
 	}
 	for _, tt := range tests {
