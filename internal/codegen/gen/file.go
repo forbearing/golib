@@ -25,7 +25,7 @@ func Init() error {
 }
 */
 // FIXME: process imports automatically problem.
-func BuildRouterFile(pkgName string, stmts ...ast.Stmt) (string, error) {
+func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
 	body = append(body, &ast.ReturnStmt{
@@ -34,37 +34,57 @@ func BuildRouterFile(pkgName string, stmts ...ast.Stmt) (string, error) {
 		},
 	})
 
-	f := &ast.File{
-		Name: ast.NewIdent(pkgName),
-		Decls: []ast.Decl{
-			&ast.GenDecl{
-				Tok: token.IMPORT,
-				Specs: []ast.Spec{
-					&ast.ImportSpec{
-						Path: &ast.BasicLit{
-							Kind:  token.STRING,
-							Value: `"github.com/forbearing/golib/router"`,
-						},
-					},
+	initDecl := &ast.FuncDecl{
+		Name: ast.NewIdent("Init"),
+		Type: &ast.FuncType{
+			TypeParams: nil,
+			Params:     nil,
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: ast.NewIdent("error")},
 				},
 			},
-			&ast.FuncDecl{
-				Name: ast.NewIdent("Init"),
-				Type: &ast.FuncType{
-					TypeParams: nil,
-					Params:     nil,
-					Results: &ast.FieldList{
-						List: []*ast.Field{
-							{Type: ast.NewIdent("error")},
-						},
-					},
+		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+
+	importDecl := &ast.GenDecl{
+		Tok: token.IMPORT,
+		Specs: []ast.Spec{
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/router"`,
 				},
-				Body: &ast.BlockStmt{
-					List: body,
+			},
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/types/consts"`,
 				},
 			},
 		},
 	}
+	for _, imp := range modelImports {
+		importDecl.Specs = append(importDecl.Specs, &ast.ImportSpec{
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: fmt.Sprintf("%q", imp),
+			},
+		})
+	}
+
+	f := &ast.File{
+		Name:  ast.NewIdent(pkgName),
+		Decls: []ast.Decl{
+			// NOTE: imports must appear before other declarations
+		},
+	}
+
+	f.Decls = append(f.Decls, importDecl)
+	f.Decls = append(f.Decls, initDecl)
 
 	return formatAndImports(f)
 }
