@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/stoewer/go-strcase"
-	goimports "golang.org/x/tools/imports"
 	fumpt "mvdan.cc/gofumpt/format"
 )
 
@@ -69,10 +68,10 @@ func formatAndImports(f *ast.File) (string, error) {
 		return "", err
 	}
 
-	result, err := goimports.Process("", []byte(formatted), nil)
-	if err != nil {
-		return "", err
-	}
+	// result, err := goimports.Process("", []byte(formatted), nil)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	return string(result), nil
+	return string(formatted), nil
 }
