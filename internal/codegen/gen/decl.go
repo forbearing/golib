@@ -117,7 +117,7 @@ func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 		Specs: []ast.Spec{
 			&ast.TypeSpec{
 				// eg: Creator, Updater, Deleter.
-				Name: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
+				Name: ast.NewIdent(phase.RoleName()),
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: []*ast.Field{
@@ -183,7 +183,7 @@ func serviceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
+						X: ast.NewIdent(phase.RoleName()),
 					},
 				},
 			},
@@ -238,7 +238,7 @@ func serviceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
+						X: ast.NewIdent(phase.RoleName()),
 					},
 				},
 			},
@@ -297,7 +297,7 @@ func serviceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
+						X: ast.NewIdent(phase.RoleName()),
 					},
 				},
 			},
@@ -353,7 +353,7 @@ func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, 
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
+						X: ast.NewIdent(phase.RoleName()),
 					},
 				},
 			},

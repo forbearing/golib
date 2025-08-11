@@ -38,10 +38,10 @@ func FindModels(module, modelDir, serviceDir string, excludes []string) ([]*gen.
 			return nil
 		}
 		for _, m := range models {
-			dir := filepath.Dir(path)
-			svcDir := strings.Replace(dir, modelDir, serviceDir, 1)
-			svcFile := filepath.Join(svcDir, strings.ToLower(m.ModelName)+".go")
-			m.ServiceFilePath = svcFile
+			// dir := filepath.Dir(path)
+			// svcDir := strings.Replace(dir, modelDir, serviceDir, 1)
+			// svcFile := filepath.Join(svcDir, strings.ToLower(m.ModelName)+".go")
+			// m.ServiceFilePath = svcFile
 			m.ModelFilePath = path
 			allModels = append(allModels, m)
 		}

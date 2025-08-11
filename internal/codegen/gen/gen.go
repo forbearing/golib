@@ -35,6 +35,7 @@ type ModelInfo struct {
 	ModelFilePath string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
 
 	// Service 相关字段
+	// Deprecated
 	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 
 	// 自定义请求和相应相关字段
@@ -336,7 +337,7 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 	}
 
 	return &ast.File{
-		Name:  ast.NewIdent(modelPkg2ServicePkg(info.ModelPkgName)),
+		Name:  ast.NewIdent(strings.ToLower(info.ModelName)),
 		Decls: decls,
 	}
 }
