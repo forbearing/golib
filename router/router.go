@@ -263,46 +263,52 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 	}
 
 	if verbMap[consts.CreateMany] {
-		endpoint := gopath.Join(base, path, "/batch")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/batch")
 		router.POST(path+"/batch", controller.CreateManyFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPost)
 		middleware.RouteManager.Add(gopath.Join(base, path, "/batch"))
 		openapigen.Set[M](endpoint, consts.CreateMany)
 	}
 	if verbMap[consts.DeleteMany] {
-		endpoint := gopath.Join(base, path, "/batch")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/batch")
 		router.DELETE(path+"/batch", controller.DeleteManyFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodDelete)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodDelete)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.DeleteMany)
 	}
 	if verbMap[consts.UpdateMany] {
-		endpoint := gopath.Join(base, path, "/batch")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/batch")
 		router.PUT(path+"/batch", controller.UpdateManyFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPut)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPut)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.UpdateMany)
 	}
 	if verbMap[consts.PatchMany] {
-		endpoint := gopath.Join(base, path, "/batch")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/batch")
 		router.PATCH(path+"/batch", controller.PatchManyFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPatch)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.PatchMany)
 	}
 
 	if verbMap[consts.Import] {
-		endpoint := gopath.Join(base, path, "/import")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/import")
 		router.POST(path+"/import", controller.ImportFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPost)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.Import)
 	}
 	if verbMap[consts.Export] {
-		endpoint := gopath.Join(base, path, "/export")
+		endpoint := gopath.Join(base, path)
+		endpoint2 := gopath.Join(base, path, "/export")
 		router.GET(path+"/export", controller.ExportFactory[M, REQ, RSP](cfg...))
-		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
-		middleware.RouteManager.Add(endpoint)
+		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodGet)
+		middleware.RouteManager.Add(endpoint2)
 		openapigen.Set[M](endpoint, consts.Export)
 	}
 }
