@@ -1,4 +1,4 @@
-package gen_test
+package gen
 
 import (
 	"go/parser"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/internal/codegen/gen"
 	"github.com/kr/pretty"
 )
 
@@ -97,8 +96,8 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 				t.Error(err)
 				return
 			}
-			gen.ApplyServiceFile(file, tt.action)
-			got, err := gen.FormatNodeExtra(file)
+			ApplyServiceFile(file, tt.action)
+			got, err := FormatNodeExtra(file)
 			if err != nil {
 				t.Error(err)
 				return

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func Test_StmtLogInfo(t *testing.T) {
+func TestStmtLogInfo(t *testing.T) {
 	fset := token.NewFileSet()
 	var buf bytes.Buffer
 
@@ -39,7 +39,7 @@ func Test_StmtLogInfo(t *testing.T) {
 	}
 }
 
-func Test_Returns(t *testing.T) {
+func TestReturns(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -88,7 +88,7 @@ func Test_Returns(t *testing.T) {
 	}
 }
 
-func Test_StmtLogWithServiceContext(t *testing.T) {
+func TestStmtLogWithServiceContext(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
