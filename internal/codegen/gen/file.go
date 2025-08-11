@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-
-	goimports "golang.org/x/tools/imports"
 )
 
 // BuildRouterFile generates a router.go file, the content like below:
@@ -264,19 +262,4 @@ func BuildMainFile(projectName string) (string, error) {
 	}
 
 	return formatAndImports(f)
-}
-
-// formatAndImports formats code use gofumpt and processes imports.
-func formatAndImports(f *ast.File) (string, error) {
-	formatted, err := FormatNodeExtra(f)
-	if err != nil {
-		return "", err
-	}
-
-	result, err := goimports.Process("", []byte(formatted), nil)
-	if err != nil {
-		return "", err
-	}
-
-	return string(result), nil
 }
