@@ -42,12 +42,13 @@ func genRun() {
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s%s", strings.ToLower(m.ModelName), p.RoleName())))
-			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
+			importPath := fmt.Sprintf("%s/%s", m.ModulePath, m.ModelPkgName)
+			importsMap[importPath] = struct{}{}
 		})
 	}
 
 	// generate router/router.go
-	routerCode, err := gen.BuildRouterFile("router", routerStmts...)
+	routerCode, err := gen.BuildRouterFile("router", lo.Keys(importsMap), routerStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
 

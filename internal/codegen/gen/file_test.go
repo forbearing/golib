@@ -26,15 +26,17 @@ func TestBuildRouterFile(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		pkgName string
-		stmts   []ast.Stmt
-		want    string
-		wantErr bool
+		pkgName      string
+		modelImports []string
+		stmts        []ast.Stmt
+		want         string
+		wantErr      bool
 	}{
 		{
-			name:    "log_println_hello_world",
-			pkgName: "router",
-			stmts:   []ast.Stmt{logPrintHelloworld()},
+			name:         "log_println_hello_world",
+			pkgName:      "router",
+			modelImports: []string{"helloworld/model"},
+			stmts:        []ast.Stmt{logPrintHelloworld()},
 			want: `package router
 
 import "log"
@@ -49,7 +51,7 @@ func Init() error {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := BuildRouterFile(tt.pkgName, tt.stmts...)
+			got, gotErr := BuildRouterFile(tt.pkgName, tt.modelImports, tt.stmts...)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("BuildRouterFile() failed: %v", gotErr)
