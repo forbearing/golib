@@ -37,23 +37,24 @@ func genRun() {
 
 	routerStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
-	importsMap := make(map[string]struct{})
+	importModels := make(map[string]struct{})
+	importServices := make(map[string]struct{})
 	for _, m := range allModels {
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
-			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s%s", strings.ToLower(m.ModelName), p.RoleName())))
-			importPath := fmt.Sprintf("%s/%s", m.ModulePath, m.ModelPkgName)
-			importsMap[importPath] = struct{}{}
+			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName())))
+			importModels[filepath.Join(m.ModulePath, m.ModelPkgName)] = struct{}{}
+			importServices[filepath.Join(m.ModulePath, serviceDir, strings.ToLower(m.ModelName))] = struct{}{}
 		})
 	}
 
 	// generate router/router.go
-	routerCode, err := gen.BuildRouterFile("router", lo.Keys(importsMap), routerStmts...)
+	routerCode, err := gen.BuildRouterFile("router", lo.Keys(importModels), routerStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
 
 	// generate service/service.go
-	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), nil, serviceStmts...)
+	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importServices), nil, serviceStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
 
@@ -72,25 +73,24 @@ func genRun() {
 			code, err = gen.FormatNodeExtra(f)
 			checkErr(err)
 			fmt.Printf("update %s\n", filename)
+			checkErr(ensureParentDir(filename))
 			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		} else {
 			fmt.Printf("generate %s\n", filename)
+			checkErr(ensureParentDir(filename))
 			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		}
 	}
 
 	for _, m := range allModels {
-		dir := filepath.Dir(m.ServiceFilePath)
-		checkErr(os.MkdirAll(dir, 0o755))
-
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			if file := gen.GenerateService(m, a, p); file != nil {
 				code, err := gen.FormatNodeExtra(file)
 				checkErr(err)
 				// code = gen.MethodAddComments(code, m.ModelName)
-				applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_"+strings.ToLower(string(p))+".go", code, a)
+				filename := filepath.Join(serviceDir, strings.ToLower(m.ModelName), strings.ToLower(string(p))+".go")
+				applyFile(filename, code, a)
 			}
 		})
-
 	}
 }
