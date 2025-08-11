@@ -57,3 +57,44 @@ func ApplyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) {
 		}
 	}
 }
+
+// ApplyServiceType updates a service struct type to match DSL Payload/Result generics.
+// It transforms: type user struct { service.Base[*model.User, *model.User, *model.User] }
+// into:         type user struct { service.Base[*model.User, *model.UserReq, *model.UserRsp] }
+func ApplyServiceType(spec *ast.TypeSpec, action *dsl.Action) {
+	if spec == nil || action == nil || action.Payload == "" || action.Result == "" {
+		return
+	}
+	structType, ok := spec.Type.(*ast.StructType)
+	if !ok || structType.Fields == nil {
+		return
+	}
+	for _, field := range structType.Fields.List {
+		if len(field.Names) == 0 { // Embedded field
+			indexListExpr, ok := field.Type.(*ast.IndexListExpr)
+			if !ok {
+				continue
+			}
+			// ensure service.Base
+			if sel, ok := indexListExpr.X.(*ast.SelectorExpr); ok {
+				if pkgIdent, ok := sel.X.(*ast.Ident); ok && pkgIdent.Name == "service" && sel.Sel.Name == "Base" {
+					if len(indexListExpr.Indices) == 3 {
+						// second -> Payload, third -> Result
+						if star2, ok := indexListExpr.Indices[1].(*ast.StarExpr); ok {
+							if sel2, ok := star2.X.(*ast.SelectorExpr); ok {
+								// keep package (sel2.X), replace Sel with action.Payload
+								sel2.Sel = ast.NewIdent(action.Payload)
+							}
+						}
+						if star3, ok := indexListExpr.Indices[2].(*ast.StarExpr); ok {
+							if sel3, ok := star3.X.(*ast.SelectorExpr); ok {
+								// keep package (sel3.X), replace Sel with action.Result
+								sel3.Sel = ast.NewIdent(action.Result)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

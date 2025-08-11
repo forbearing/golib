@@ -3,8 +3,13 @@ package service
 import (
 	"helloworld/model"
 
+	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 )
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
 
 func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())

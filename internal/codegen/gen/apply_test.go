@@ -30,8 +30,13 @@ func TestApplyServiceFile(t *testing.T) {
 import (
 	"helloworld/model"
 
+	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 )
+
+type user struct {
+	service.Base[*model.User, *model.UserReq, *model.UserRsp]
+}
 
 func (u *user) Create(ctx *types.ServiceContext, req *model.UserReq) (rsp *model.UserRsp, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
@@ -65,8 +70,13 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 import (
 	"helloworld/model"
 
+	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 )
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
 
 func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
