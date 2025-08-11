@@ -49,14 +49,15 @@ func genRun() {
 
 	// generate service/service.go
 	importsMap := make(map[string]struct{})
-	types := make([]*ast.GenDecl, 0)
+	// types := make([]*ast.GenDecl, 0)
 	for _, m := range allModels {
 		if m.Design.Create.Enabled {
-			types = append(types, gen.Types(m.ModelPkgName, m.ModelName, m.Design.Create.Payload, m.Design.Create.Result, false))
+			// types = append(types, gen.Types(m.ModelPkgName, m.ModelName, m.Design.Create.Payload, m.Design.Create.Result, false))
 			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
 		}
 	}
-	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), types, serviceStmts...)
+	// serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), types, serviceStmts...)
+	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), nil, serviceStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
 
