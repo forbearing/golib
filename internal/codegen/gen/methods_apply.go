@@ -6,26 +6,26 @@ import (
 	"github.com/forbearing/golib/dsl"
 )
 
-// ApplyServiceMethod1 updates functions that match the ServiceMethod1 shape according to DSL.
+// applyServiceMethod1 updates functions that match the ServiceMethod1 shape according to DSL.
 // Currently ServiceMethod1 does not rely on DSL configuration; keep empty for future extension.
-func ApplyServiceMethod1(fn *ast.FuncDecl, action *dsl.Action) {}
+func applyServiceMethod1(fn *ast.FuncDecl, action *dsl.Action) {}
 
-// ApplyServiceMethod2 updates functions that match the ServiceMethod2 shape according to DSL.
+// applyServiceMethod2 updates functions that match the ServiceMethod2 shape according to DSL.
 // Currently ServiceMethod2 does not rely on DSL configuration; keep empty for future extension.
-func ApplyServiceMethod2(fn *ast.FuncDecl, action *dsl.Action) {}
+func applyServiceMethod2(fn *ast.FuncDecl, action *dsl.Action) {}
 
-// ApplyServiceMethod3 updates functions that match the ServiceMethod3 shape according to DSL.
+// applyServiceMethod3 updates functions that match the ServiceMethod3 shape according to DSL.
 // Currently ServiceMethod3 does not rely on DSL configuration; keep empty for future extension.
-func ApplyServiceMethod3(fn *ast.FuncDecl, action *dsl.Action) {}
+func applyServiceMethod3(fn *ast.FuncDecl, action *dsl.Action) {}
 
-// ApplyServiceMethod4 updates functions that match the ServiceMethod4 shape based on the DSL.
+// applyServiceMethod4 updates functions that match the ServiceMethod4 shape based on the DSL.
 // It only updates the shape of *ast.FuncDecl (param/return types) and never touches the method body logic.
 // Shape: func (r *recv) Method(ctx *types.ServiceContext, req *<pkg>.<Req>) (*<pkg>.<Rsp>, error)
-func ApplyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) {
+func applyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) {
 	if fn == nil || action == nil {
 		return
 	}
-	if !IsServiceMethod4(fn) {
+	if !isServiceMethod4(fn) {
 		return
 	}
 
@@ -58,10 +58,10 @@ func ApplyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) {
 	}
 }
 
-// ApplyServiceType updates a service struct type to match DSL Payload/Result generics.
+// applyServiceType updates a service struct type to match DSL Payload/Result generics.
 // It transforms: type user struct { service.Base[*model.User, *model.User, *model.User] }
 // into:         type user struct { service.Base[*model.User, *model.UserReq, *model.UserRsp] }
-func ApplyServiceType(spec *ast.TypeSpec, action *dsl.Action) {
+func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) {
 	if spec == nil || action == nil || action.Payload == "" || action.Result == "" {
 		return
 	}

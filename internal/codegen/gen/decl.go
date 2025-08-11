@@ -13,7 +13,7 @@ import (
 
 var pluralizeCli = pluralize.NewClient()
 
-// Imports generates an ast node that represents the declaration of below:
+// imports generates an ast node that represents the declaration of below:
 /*
 import (
 	"codegen/model"
@@ -21,7 +21,7 @@ import (
 	"github.com/forbearing/golib/types"
 )
 */
-func Imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
+func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 	importModel := filepath.Join(modulePath, modelFileDir)
 	fields := strings.Split(importModel, "/")
 	if len(fields) > 0 && fields[len(fields)-1] != modelPkgName {
@@ -57,13 +57,13 @@ func Imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 	}
 }
 
-// Inits returns an ast node that represents the declaration of below:
+// inits returns an ast node that represents the declaration of below:
 /*
 func init() {
 	service.Register[*user]()
 }
 */
-func Inits(modelNames ...string) *ast.FuncDecl {
+func inits(modelNames ...string) *ast.FuncDecl {
 	list := make([]ast.Stmt, 0)
 
 	for _, name := range modelNames {
@@ -93,13 +93,13 @@ func Inits(modelNames ...string) *ast.FuncDecl {
 	}
 }
 
-// Types returns an ast node that represents the declaration of below:
+// types returns an ast node that represents the declaration of below:
 /*
 type userCreator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 */
-func Types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase, withComment bool) *ast.GenDecl {
+func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase, withComment bool) *ast.GenDecl {
 	comments := []*ast.Comment{}
 
 	if withComment {
@@ -171,12 +171,12 @@ func Types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 	}
 }
 
-// ServiceMethod1 generates an ast node that represents the declaration of below:
+// serviceMethod1 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
 //	"func (g *groupUpdater) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
-func ServiceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+func serviceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -226,12 +226,12 @@ func ServiceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase
 	}
 }
 
-// ServiceMethod2 generates an ast node that represents the declaration of below:
+// serviceMethod2 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
 //	"func (u *userLister) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
-func ServiceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+func serviceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -285,12 +285,12 @@ func ServiceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase
 	}
 }
 
-// ServiceMethod3 generates an ast node that represents the declaration of below:
+// serviceMethod3 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	"func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
 //	"func (u *userManyCreator) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-func ServiceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+func serviceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -342,11 +342,11 @@ func ServiceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase
 	}
 }
 
-// ServiceMethod4 generates an ast node that represents the declaration of below:
+// serviceMethod4 generates an ast node that represents the declaration of below:
 // For example:
 //
 //	func (u *userCreator) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
-func ServiceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{

@@ -84,7 +84,7 @@ func TestBuildServiceFile(t *testing.T) {
 			name:        "user",
 			pkgName:     "service",
 			modelImport: []string{"helloworld/model"},
-			types:       []*ast.GenDecl{Types("model", "User", "User", "User", consts.PHASE_CREATE, false)},
+			types:       []*ast.GenDecl{types("model", "User", "User", "User", consts.PHASE_CREATE, false)},
 			stmts:       []ast.Stmt{StmtServiceRegister("user")},
 			want: `package service
 
@@ -110,8 +110,8 @@ type userCreator struct {
 			modelImport: []string{"helloworld/model"},
 			pkgName:     "service",
 			types: []*ast.GenDecl{
-				Types("model", "User", "User", "User", consts.PHASE_CREATE, false),
-				Types("model", "Group", "Group", "Group", consts.PHASE_UPDATE, false),
+				types("model", "User", "User", "User", consts.PHASE_CREATE, false),
+				types("model", "Group", "Group", "Group", consts.PHASE_UPDATE, false),
 			},
 			stmts: []ast.Stmt{StmtServiceRegister("user"), StmtServiceRegister("group")},
 			want: `package service

@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"golang.org/x/tools/imports"
+	goimports "golang.org/x/tools/imports"
 )
 
 // BuildRouterFile generates a router.go file, the content like below:
@@ -273,7 +273,7 @@ func formatAndImports(f *ast.File) (string, error) {
 		return "", err
 	}
 
-	result, err := imports.Process("", []byte(formatted), nil)
+	result, err := goimports.Process("", []byte(formatted), nil)
 	if err != nil {
 		return "", err
 	}
