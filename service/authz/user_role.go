@@ -15,7 +15,7 @@ type userRole struct {
 }
 
 func init() {
-	service.Register[*userRole]()
+	service.Register[*userRole](consts.PHASE_DELETE)
 }
 
 // DeleteAfter support filter and delete multiple user_roles by query parameter `user` and `role`.

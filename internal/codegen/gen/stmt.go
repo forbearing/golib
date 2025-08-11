@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 // StmtLogInfo create *ast.ExprStmt represents `log.Info(str)`
@@ -118,8 +120,8 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpo
 
 // StmtServiceRegister creates a *ast.ExprStmt represents golang code like below:
 //
-//	service.Register[*userCreator]()
-func StmtServiceRegister(structName string) *ast.ExprStmt {
+//	service.Register[*user.Creator](consts.PHASE_CREATE)
+func StmtServiceRegister(structName string, phase consts.Phase) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.IndexExpr{
@@ -129,6 +131,12 @@ func StmtServiceRegister(structName string) *ast.ExprStmt {
 				},
 				Index: &ast.StarExpr{
 					X: ast.NewIdent(structName),
+				},
+			},
+			Args: []ast.Expr{
+				&ast.SelectorExpr{
+					X:   ast.NewIdent("consts"),
+					Sel: ast.NewIdent(phase.Name()),
 				},
 			},
 		},

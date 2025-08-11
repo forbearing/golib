@@ -90,17 +90,18 @@ func TestBuildServiceFile(t *testing.T) {
 			pkgName:     "service",
 			modelImport: []string{"helloworld/model"},
 			types:       []*ast.GenDecl{types("model", "User", "User", "User", consts.PHASE_CREATE, false)},
-			stmts:       []ast.Stmt{StmtServiceRegister("user")},
+			stmts:       []ast.Stmt{StmtServiceRegister("user", consts.PHASE_CREATE)},
 			want: `package service
 
 import (
 	"helloworld/model"
 
 	"github.com/forbearing/golib/service"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func Init() error {
-	service.Register[*user]()
+	service.Register[*user](consts.PHASE_CREATE)
 	return nil
 }
 
@@ -118,18 +119,19 @@ type Creator struct {
 				types("model", "User", "User", "User", consts.PHASE_CREATE, false),
 				types("model", "Group", "Group", "Group", consts.PHASE_UPDATE, false),
 			},
-			stmts: []ast.Stmt{StmtServiceRegister("user"), StmtServiceRegister("group")},
+			stmts: []ast.Stmt{StmtServiceRegister("user", consts.PHASE_CREATE), StmtServiceRegister("group", consts.PHASE_UPDATE)},
 			want: `package service
 
 import (
 	"helloworld/model"
 
 	"github.com/forbearing/golib/service"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func Init() error {
-	service.Register[*user]()
-	service.Register[*group]()
+	service.Register[*user](consts.PHASE_CREATE)
+	service.Register[*group](consts.PHASE_UPDATE)
 	return nil
 }
 

@@ -42,7 +42,7 @@ func genRun() {
 	for _, m := range allModels {
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
-			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName())))
+			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
 			importModels[filepath.Join(m.ModulePath, m.ModelPkgName)] = struct{}{}
 			importServices[filepath.Join(m.ModulePath, serviceDir, strings.ToLower(m.ModelName))] = struct{}{}
 		})
