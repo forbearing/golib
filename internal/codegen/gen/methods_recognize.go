@@ -248,3 +248,65 @@ func isIdentName(expr ast.Expr, name string) bool {
 	id, ok := expr.(*ast.Ident)
 	return ok && id.Name == name
 }
+
+// IsServiceType checks if a type declaration is a service struct with embedded service.Base[*Model, *Model, *Model]
+// Shape: type user struct { service.Base[*model.User, *model.User, *model.User] }
+func IsServiceType(spec *ast.TypeSpec) bool {
+	if spec == nil || spec.Type == nil {
+		return false
+	}
+
+	// Must be a struct type
+	structType, ok := spec.Type.(*ast.StructType)
+	if !ok || structType.Fields == nil {
+		return false
+	}
+
+	// Check if this struct embeds service.Base[*T, *T, *T]
+	for _, field := range structType.Fields.List {
+		if len(field.Names) == 0 { // Embedded field
+			if isServiceBaseWithThreeTypeParams(field.Type) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isServiceBaseWithThreeTypeParams checks if the type is service.Base[*T, *T, *T]
+func isServiceBaseWithThreeTypeParams(expr ast.Expr) bool {
+	// Look for service.Base[T1, T2, T3] pattern
+	indexListExpr, ok := expr.(*ast.IndexListExpr)
+	if !ok {
+		return false
+	}
+
+	// Check if X is service.Base
+	selectorExpr, ok := indexListExpr.X.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	ident, ok := selectorExpr.X.(*ast.Ident)
+	if !ok || ident.Name != "service" {
+		return false
+	}
+
+	if selectorExpr.Sel.Name != "Base" {
+		return false
+	}
+
+	// Must have exactly 3 type parameters
+	if len(indexListExpr.Indices) != 3 {
+		return false
+	}
+
+	// All type parameters should be pointer types (*model.Something)
+	for _, index := range indexListExpr.Indices {
+		if _, ok := index.(*ast.StarExpr); !ok {
+			return false
+		}
+	}
+
+	return true
+}
