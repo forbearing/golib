@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
 )
 
@@ -22,27 +24,19 @@ var (
 	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
 )
 
-func serviceKey[M types.Model]() string {
+func serviceKey[M types.Model](phase consts.Phase) string {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	key := typ.PkgPath() + "|" + typ.String()
+	key := fmt.Sprintf("%s|%s|%s", typ.PkgPath(), typ.String(), phase)
 	return key
 }
 
 // Register service instance into serviceMap.
-// pass parameters to replace the default service instance.
-// If the passed parameters is nil, skip replace.
-func Register[S types.Service[M, REQ, RSP], M types.Model, REQ types.Request, RSP types.Response](s ...S) {
+func Register[S types.Service[M, REQ, RSP], M types.Model, REQ types.Request, RSP types.Response](phase consts.Phase) {
 	mu.Lock()
 	defer mu.Unlock()
-	key := serviceKey[M]()
+	key := serviceKey[M](phase)
 	val := reflect.New(reflect.TypeOf(*new(S)).Elem()).Interface()
 	serviceMap[key] = val
-	if len(s) > 0 {
-		// replace the default service instance if the passed service instance isn't nil.
-		if !reflect.ValueOf(s[0]).IsNil() {
-			serviceMap[key] = s[0]
-		}
-	}
 }
 
 func Init() error {
@@ -79,10 +73,10 @@ func Factory[M types.Model, REQ types.Request, RSP types.Response]() *factory[M,
 // service instance are only returns by the `factory`.
 type factory[M types.Model, REQ types.Request, RSP types.Response] struct{}
 
-func (f factory[M, REQ, RSP]) Service() types.Service[M, REQ, RSP] {
-	svc, ok := serviceMap[serviceKey[M]()]
+func (f factory[M, REQ, RSP]) Service(phase consts.Phase) types.Service[M, REQ, RSP] {
+	svc, ok := serviceMap[serviceKey[M](phase)]
 	if !ok {
-		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M]()))
+		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
 		return new(Base[M, REQ, RSP])
 	}
 	return svc.(types.Service[M, REQ, RSP])

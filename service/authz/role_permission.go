@@ -15,7 +15,7 @@ type rolePermission struct {
 }
 
 func init() {
-	service.Register[*rolePermission]()
+	service.Register[*rolePermission](consts.PHASE_DELETE)
 }
 
 // DeleteAfter support delete multiple role_permissions by query parameters `role`, `resource`, `action`

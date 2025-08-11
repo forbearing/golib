@@ -6,6 +6,8 @@ import (
 	"go/format"
 	"go/token"
 	"testing"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 func TestStmtLogInfo(t *testing.T) {
@@ -175,21 +177,24 @@ func TestStmtServiceRegister(t *testing.T) {
 		// Named input parameters for target function.
 		structName string
 		want       string
+		phase      consts.Phase
 	}{
 		{
 			name:       "test1",
 			structName: "user",
-			want:       `service.Register[*user]()`,
+			phase:      consts.PHASE_CREATE,
+			want:       `service.Register[*user](consts.PHASE_CREATE)`,
 		},
 		{
 			name:       "test2",
 			structName: "group",
-			want:       `service.Register[*group]()`,
+			phase:      consts.PHASE_UPDATE,
+			want:       `service.Register[*group](consts.PHASE_UPDATE)`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := StmtServiceRegister(tt.structName)
+			res := StmtServiceRegister(tt.structName, tt.phase)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)

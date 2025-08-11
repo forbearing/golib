@@ -135,12 +135,12 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 					Value: `"github.com/forbearing/golib/service"`,
 				},
 			},
-			// &ast.ImportSpec{
-			// 	Path: &ast.BasicLit{
-			// 		Kind:  token.STRING,
-			// 		Value: fmt.Sprintf("%q", modelImport),
-			// 	},
-			// },
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/types/consts"`,
+				},
+			},
 		},
 	}
 	// imports, such like: "helloworld/model"
