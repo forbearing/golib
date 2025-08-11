@@ -141,3 +141,65 @@ func TestPhase_BeforeAfter(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase_ToHTTPVerb(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase consts.Phase
+		want  consts.HTTPVerb
+	}{
+		// Single CRUD
+		{"create", consts.PHASE_CREATE, consts.Create},
+		{"update", consts.PHASE_UPDATE, consts.Update},
+		{"delete", consts.PHASE_DELETE, consts.Delete},
+		{"patch", consts.PHASE_PATCH, consts.Patch},
+		{"list", consts.PHASE_LIST, consts.List},
+		{"get", consts.PHASE_GET, consts.Get},
+
+		// Many CRUD
+		{"create_many", consts.PHASE_CREATE_MANY, consts.CreateMany},
+		{"update_many", consts.PHASE_UPDATE_MANY, consts.UpdateMany},
+		{"delete_many", consts.PHASE_DELETE_MANY, consts.DeleteMany},
+		{"patch_many", consts.PHASE_PATCH_MANY, consts.PatchMany},
+
+		// before/after - single CRUD
+		{"create_before", consts.PHASE_CREATE_BEFORE, consts.Create},
+		{"create_after", consts.PHASE_CREATE_AFTER, consts.Create},
+		{"update_before", consts.PHASE_UPDATE_BEFORE, consts.Update},
+		{"update_after", consts.PHASE_UPDATE_AFTER, consts.Update},
+		{"delete_before", consts.PHASE_DELETE_BEFORE, consts.Delete},
+		{"delete_after", consts.PHASE_DELETE_AFTER, consts.Delete},
+		{"patch_before", consts.PHASE_PATCH_BEFORE, consts.Patch},
+		{"patch_after", consts.PHASE_PATCH_AFTER, consts.Patch},
+		{"list_before", consts.PHASE_LIST_BEFORE, consts.List},
+		{"list_after", consts.PHASE_LIST_AFTER, consts.List},
+		{"get_before", consts.PHASE_GET_BEFORE, consts.Get},
+		{"get_after", consts.PHASE_GET_AFTER, consts.Get},
+
+		// before/after - Many CRUD
+		{"create_many_before", consts.PHASE_CREATE_MANY_BEFORE, consts.CreateMany},
+		{"create_many_after", consts.PHASE_CREATE_MANY_AFTER, consts.CreateMany},
+		{"update_many_before", consts.PHASE_UPDATE_MANY_BEFORE, consts.UpdateMany},
+		{"update_many_after", consts.PHASE_UPDATE_MANY_AFTER, consts.UpdateMany},
+		{"delete_many_before", consts.PHASE_DELETE_MANY_BEFORE, consts.DeleteMany},
+		{"delete_many_after", consts.PHASE_DELETE_MANY_AFTER, consts.DeleteMany},
+		{"patch_many_before", consts.PHASE_PATCH_MANY_BEFORE, consts.PatchMany},
+		{"patch_many_after", consts.PHASE_PATCH_MANY_AFTER, consts.PatchMany},
+
+		// Other
+		{"export", consts.PHASE_EXPORT, consts.Export},
+		{"import", consts.PHASE_IMPORT, consts.Import},
+
+		// Non CRUD → empty HTTPVerb
+		{"filter", consts.PHASE_FILTER, consts.HTTPVerb("")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.phase.ToHTTPVerb()
+			if got != tt.want {
+				t.Errorf("ToHTTPVerb() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

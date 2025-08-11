@@ -84,43 +84,43 @@ const (
 )
 
 const (
-	PHASE_CREATE Phase = "create"
-	PHASE_DELETE Phase = "delete"
-	PHASE_UPDATE Phase = "update"
-	PHASE_PATCH  Phase = "patch"
-	PHASE_LIST   Phase = "list"
-	PHASE_GET    Phase = "get"
+	PHASE_CREATE Phase = create
+	PHASE_DELETE Phase = delete_
+	PHASE_UPDATE Phase = update
+	PHASE_PATCH  Phase = patch
+	PHASE_LIST   Phase = list
+	PHASE_GET    Phase = get
 
-	PHASE_CREATE_MANY Phase = "create_many"
-	PHASE_DELETE_MANY Phase = "delete_many"
-	PHASE_UPDATE_MANY Phase = "update_many"
-	PHASE_PATCH_MANY  Phase = "patch_many"
+	PHASE_CREATE_MANY Phase = create_many
+	PHASE_DELETE_MANY Phase = delete_many
+	PHASE_UPDATE_MANY Phase = update_many
+	PHASE_PATCH_MANY  Phase = patch_many
 
-	PHASE_CREATE_BEFORE Phase = "create_before"
-	PHASE_CREATE_AFTER  Phase = "create_after"
-	PHASE_DELETE_BEFORE Phase = "delete_before"
-	PHASE_DELETE_AFTER  Phase = "delete_after"
-	PHASE_UPDATE_BEFORE Phase = "update_before"
-	PHASE_UPDATE_AFTER  Phase = "update_after"
-	PHASE_PATCH_BEFORE  Phase = "patch_before"
-	PHASE_PATCH_AFTER   Phase = "patch_after"
-	PHASE_LIST_BEFORE   Phase = "list_before"
-	PHASE_LIST_AFTER    Phase = "list_after"
-	PHASE_GET_BEFORE    Phase = "get_before"
-	PHASE_GET_AFTER     Phase = "get_after"
+	PHASE_CREATE_BEFORE Phase = create_before
+	PHASE_CREATE_AFTER  Phase = create_after
+	PHASE_DELETE_BEFORE Phase = delete_before
+	PHASE_DELETE_AFTER  Phase = delete_after
+	PHASE_UPDATE_BEFORE Phase = update_before
+	PHASE_UPDATE_AFTER  Phase = update_after
+	PHASE_PATCH_BEFORE  Phase = patch_before
+	PHASE_PATCH_AFTER   Phase = patch_after
+	PHASE_LIST_BEFORE   Phase = list_before
+	PHASE_LIST_AFTER    Phase = list_after
+	PHASE_GET_BEFORE    Phase = get_before
+	PHASE_GET_AFTER     Phase = get_after
 
-	PHASE_CREATE_MANY_BEFORE Phase = "create_many_before"
-	PHASE_CREATE_MANY_AFTER  Phase = "create_many_after"
-	PHASE_DELETE_MANY_BEFORE Phase = "delete_many_before"
-	PHASE_DELETE_MANY_AFTER  Phase = "delete_many_after"
-	PHASE_UPDATE_MANY_BEFORE Phase = "update_many_before"
-	PHASE_UPDATE_MANY_AFTER  Phase = "update_many_after"
-	PHASE_PATCH_MANY_BEFORE  Phase = "patch_many_before"
-	PHASE_PATCH_MANY_AFTER   Phase = "patch_many_after"
+	PHASE_CREATE_MANY_BEFORE Phase = create_many_before
+	PHASE_CREATE_MANY_AFTER  Phase = create_many_after
+	PHASE_DELETE_MANY_BEFORE Phase = delete_many_before
+	PHASE_DELETE_MANY_AFTER  Phase = delete_many_after
+	PHASE_UPDATE_MANY_BEFORE Phase = update_many_before
+	PHASE_UPDATE_MANY_AFTER  Phase = update_many_after
+	PHASE_PATCH_MANY_BEFORE  Phase = patch_many_before
+	PHASE_PATCH_MANY_AFTER   Phase = patch_many_after
 
-	PHASE_FILTER Phase = "filter"
-	PHASE_IMPORT Phase = "import"
-	PHASE_EXPORT Phase = "export"
+	PHASE_FILTER Phase = filter
+	PHASE_IMPORT Phase = import_
+	PHASE_EXPORT Phase = export
 )
 
 type Phase string
@@ -128,6 +128,7 @@ type Phase string
 // MethodName returns the Phase string converted to UpperCamelCase format.
 // Example:
 //
+//	PHASE_CREATE         -> "Create"
 //	PHASE_CREATE_BEFORE  -> "CreateBefore"
 //	PHASE_UPDATE_MANY    -> "UpdateMany"
 func (p Phase) MethodName() string {
@@ -161,17 +162,17 @@ func (p Phase) RoleName() string {
 
 	var role string
 	switch parts[0] {
-	case "create":
+	case create:
 		role = "Creator"
-	case "update":
+	case update:
 		role = "Updater"
-	case "delete":
+	case delete_:
 		role = "Deleter"
-	case "patch":
+	case patch:
 		role = "Patcher"
-	case "list":
+	case list:
 		role = "Lister"
-	case "get":
+	case get:
 		role = "Getter"
 	default:
 		return ""
@@ -200,7 +201,7 @@ func (p Phase) Before() Phase {
 	}
 
 	switch parts[0] {
-	case "create", "update", "delete", "patch", "list", "get":
+	case create, update, delete_, patch, list, get:
 		// Keep "_many" before "_before"
 		if strings.Contains(s, "_many") {
 			return Phase(strings.TrimSuffix(s, "_many") + "_many_before")
@@ -228,7 +229,7 @@ func (p Phase) After() Phase {
 	}
 
 	switch parts[0] {
-	case "create", "update", "delete", "patch", "list", "get":
+	case create, update, delete_, patch, list, get:
 		// Keep "_many" before "_after"
 		if strings.Contains(s, "_many") {
 			return Phase(strings.TrimSuffix(s, "_many") + "_many_after")
@@ -239,31 +240,79 @@ func (p Phase) After() Phase {
 	}
 }
 
-// HTTPVerb represents the supported HTTP operations for a resource
-type HTTPVerb string
+// ToHTTPVerb maps the Phase to the corresponding HTTPVerb.
+// Non-CRUD or unsupported phases return an empty string HTTPVerb.
+//
+// Examples:
+//
+//	PHASE_CREATE             -> Create
+//	PHASE_CREATE_BEFORE      -> Create
+//	PHASE_CREATE_MANY_AFTER  -> CreateMany
+//	PHASE_FILTER             -> ""
+func (p Phase) ToHTTPVerb() HTTPVerb {
+	s := string(p)
+
+	// Normalize: remove _before/_after suffix
+	s = strings.TrimSuffix(s, "_before")
+	s = strings.TrimSuffix(s, "_after")
+
+	switch s {
+	case create:
+		return Create
+	case delete_:
+		return Delete
+	case update:
+		return Update
+	case patch:
+		return Patch
+	case list:
+		return List
+	case get:
+		return Get
+
+	case create_many:
+		return CreateMany
+	case delete_many:
+		return DeleteMany
+	case update_many:
+		return UpdateMany
+	case patch_many:
+		return PatchMany
+
+	case export:
+		return Export
+	case import_:
+		return Import
+	default:
+		return HTTPVerb("")
+	}
+}
 
 const (
 	// Basic operations
-	Create HTTPVerb = "create" // POST /resource
-	Delete HTTPVerb = "delete" // DELETE /resource, DELETE /resource/:id
-	Update HTTPVerb = "update" // PUT /resource, PUT /resource/:id
-	Patch  HTTPVerb = "patch"  // PATCH /resource, PATCH /resource/:id
-	List   HTTPVerb = "list"   // GET /resource
-	Get    HTTPVerb = "get"    // GET /resource/:id
+	Create HTTPVerb = create  // POST /resource
+	Delete HTTPVerb = delete_ // DELETE /resource, DELETE /resource/:id
+	Update HTTPVerb = update  // PUT /resource, PUT /resource/:id
+	Patch  HTTPVerb = patch   // PATCH /resource, PATCH /resource/:id
+	List   HTTPVerb = list    // GET /resource
+	Get    HTTPVerb = get     // GET /resource/:id
 
-	CreateMany HTTPVerb = "create_many" // POST /resource/batch
-	DeleteMany HTTPVerb = "delete_many" // DELETE /resource/batch
-	UpdateMany HTTPVerb = "update_many" // PUT /resource/batch
-	PatchMany  HTTPVerb = "patch_many"  // PATCH /resource/batch
+	CreateMany HTTPVerb = create_many // POST /resource/batch
+	DeleteMany HTTPVerb = delete_many // DELETE /resource/batch
+	UpdateMany HTTPVerb = update_many // PUT /resource/batch
+	PatchMany  HTTPVerb = patch_many  // PATCH /resource/batch
 
-	Export HTTPVerb = "export" // GET /resource/export
-	Import HTTPVerb = "import" // POST /resource/import
+	Export HTTPVerb = export  // GET /resource/export
+	Import HTTPVerb = import_ // POST /resource/import
 
 	// Verb groups
 	Most      HTTPVerb = "most"       // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
 	MostBatch HTTPVerb = "most_batch" // Basic batch operations (CreateMany, DeleteMany, UpdateMany, PatchMany)
 	All       HTTPVerb = "all"        // All operations including Most, MostBatch, Import and Export
 )
+
+// HTTPVerb represents the supported HTTP operations for a resource
+type HTTPVerb string
 
 func (v HTTPVerb) String() string {
 	return strings.ReplaceAll(string(v), "_", " ")

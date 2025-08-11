@@ -40,13 +40,8 @@ func genRun() {
 	importsMap := make(map[string]struct{})
 	for _, m := range allModels {
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s%s", strings.ToLower(m.ModelName), p.RoleName())))
-		})
-		if !m.Design.Enabled {
-			continue
-		}
-		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, _ consts.Phase) {
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s))
 			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
 		})
 	}
