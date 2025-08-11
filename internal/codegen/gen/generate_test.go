@@ -66,7 +66,7 @@ type GroupUser struct {
 }
 	`
 
-func Test_GetModulePath(t *testing.T) {
+func TestGetModulePath(t *testing.T) {
 	tests := []struct {
 		name    string // description of this test case
 		want    string
@@ -97,7 +97,7 @@ func Test_GetModulePath(t *testing.T) {
 	}
 }
 
-func Test_FindModelPackageName(t *testing.T) {
+func TestFindModelPackageName(t *testing.T) {
 	fset := token.NewFileSet()
 	file1, err := parser.ParseFile(fset, "user.go", src1, parser.ParseComments)
 	if err != nil {
@@ -135,7 +135,7 @@ func Test_FindModelPackageName(t *testing.T) {
 	}
 }
 
-func Test_FindModels(t *testing.T) {
+func TestFindModels(t *testing.T) {
 	modulePath, err := GetModulePath()
 	if err != nil {
 		t.Fatal(err)
@@ -294,7 +294,7 @@ func Test_FindModels(t *testing.T) {
 	}
 }
 
-func Test_ModelPkg2ServicePkg(t *testing.T) {
+func TestModelPkg2ServicePkg(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -332,7 +332,7 @@ func Test_ModelPkg2ServicePkg(t *testing.T) {
 	}
 }
 
-func Test_GenerateServiceMethod1(t *testing.T) {
+func TestGenerateServiceMethod1(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -371,7 +371,7 @@ func Test_GenerateServiceMethod1(t *testing.T) {
 	}
 }
 
-func Test_GenerateServiceMethod2(t *testing.T) {
+func TestGenerateServiceMethod2(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -410,7 +410,7 @@ func Test_GenerateServiceMethod2(t *testing.T) {
 	}
 }
 
-func Test_GenerateServiceMethod3(t *testing.T) {
+func TestGenerateServiceMethod3(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.

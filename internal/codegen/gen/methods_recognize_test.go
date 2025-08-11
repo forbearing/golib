@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_IsServiceMethod1(t *testing.T) {
+func TestIsServiceMethod1(t *testing.T) {
 	fn1 := ServiceMethod1("u", "User", "CreateBefore", "model")
 	fn2 := ServiceMethod2("u", "User", "ListBefore", "model")
 	if !IsServiceMethod1(fn1) {
@@ -15,7 +15,7 @@ func Test_IsServiceMethod1(t *testing.T) {
 	}
 }
 
-func Test_IsServiceMethod2(t *testing.T) {
+func TestIsServiceMethod2(t *testing.T) {
 	fn := ServiceMethod2("u", "User", "ListBefore", "model")
 	fnNeg := ServiceMethod3("u", "User", "CreateManyBefore", "model")
 	if !IsServiceMethod2(fn) {
@@ -26,7 +26,7 @@ func Test_IsServiceMethod2(t *testing.T) {
 	}
 }
 
-func Test_IsServiceMethod3(t *testing.T) {
+func TestIsServiceMethod3(t *testing.T) {
 	fn := ServiceMethod3("u", "User", "CreateManyBefore", "model")
 	fnNeg := ServiceMethod1("u", "User", "CreateBefore", "model")
 	if !IsServiceMethod3(fn) {
@@ -37,7 +37,7 @@ func Test_IsServiceMethod3(t *testing.T) {
 	}
 }
 
-func Test_IsServiceMethod4(t *testing.T) {
+func TestIsServiceMethod4(t *testing.T) {
 	fn := ServiceMethod4("u", "User", "Create", "model", "UserReq", "UserRsp")
 	fnNeg := ServiceMethod3("u", "User", "CreateManyBefore", "model")
 	if !IsServiceMethod4(fn) {

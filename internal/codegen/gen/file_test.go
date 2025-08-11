@@ -1,10 +1,9 @@
-package gen_test
+package gen
 
 import (
 	"go/ast"
 	"testing"
 
-	"github.com/forbearing/golib/internal/codegen/gen"
 	"github.com/kr/pretty"
 )
 
@@ -49,7 +48,7 @@ func Init() error {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := gen.BuildRouterFile(tt.pkgName, tt.stmts...)
+			got, gotErr := BuildRouterFile(tt.pkgName, tt.stmts...)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("BuildRouterFile() failed: %v", gotErr)
@@ -81,8 +80,8 @@ func TestBuildServiceFile(t *testing.T) {
 			name:        "user",
 			pkgName:     "service",
 			modelImport: []string{"helloworld/model"},
-			types:       []*ast.GenDecl{gen.Types("model", "User", "User", "User", false)},
-			stmts:       []ast.Stmt{gen.StmtServiceRegister("user")},
+			types:       []*ast.GenDecl{Types("model", "User", "User", "User", false)},
+			stmts:       []ast.Stmt{StmtServiceRegister("user")},
 			want: `package service
 
 import (
@@ -107,10 +106,10 @@ type user struct {
 			modelImport: []string{"helloworld/model"},
 			pkgName:     "service",
 			types: []*ast.GenDecl{
-				gen.Types("model", "User", "User", "User", false),
-				gen.Types("model", "Group", "Group", "Group", false),
+				Types("model", "User", "User", "User", false),
+				Types("model", "Group", "Group", "Group", false),
 			},
-			stmts: []ast.Stmt{gen.StmtServiceRegister("user"), gen.StmtServiceRegister("group")},
+			stmts: []ast.Stmt{StmtServiceRegister("user"), StmtServiceRegister("group")},
 			want: `package service
 
 import (
@@ -138,7 +137,7 @@ type group struct {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := gen.BuildServiceFile(tt.pkgName, tt.modelImport, tt.types, tt.stmts...)
+			got, gotErr := BuildServiceFile(tt.pkgName, tt.modelImport, tt.types, tt.stmts...)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("BuildServiceFile() failed: %v", gotErr)
@@ -188,7 +187,7 @@ func main() {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := gen.BuildMainFile(tt.projectName)
+			got, gotErr := BuildMainFile(tt.projectName)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("BuildMainFile() failed: %v", gotErr)

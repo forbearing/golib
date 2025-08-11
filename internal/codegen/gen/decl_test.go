@@ -11,7 +11,7 @@ import (
 	"github.com/kr/pretty"
 )
 
-func Test_Imports(t *testing.T) {
+func TestImports(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -47,7 +47,7 @@ func Test_Imports(t *testing.T) {
 	}
 }
 
-func Test_Inits(t *testing.T) {
+func TestInits(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -83,7 +83,7 @@ func Test_Inits(t *testing.T) {
 	}
 }
 
-func Test_Types(t *testing.T) {
+func TestTypes(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -124,7 +124,7 @@ func Test_Types(t *testing.T) {
 	}
 }
 
-func Test_ServiceMethod1(t *testing.T) {
+func TestServiceMethod1(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -165,7 +165,7 @@ func Test_ServiceMethod1(t *testing.T) {
 	}
 }
 
-func Test_ServiceMethod2(t *testing.T) {
+func TestServiceMethod2(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -207,7 +207,7 @@ func Test_ServiceMethod2(t *testing.T) {
 	}
 }
 
-func Test_ServiceMethod3(t *testing.T) {
+func TestServiceMethod3(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
