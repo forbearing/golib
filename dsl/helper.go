@@ -2,6 +2,25 @@ package dsl
 
 import "github.com/forbearing/golib/types/consts"
 
+// RangeAction walks through all enabled actions in the given Design and invokes
+// the provided callback fn for each, in a fixed order.
+//
+// Behavior:
+//   - If design is nil, fn is nil, or design.Enabled is false, the function returns immediately.
+//   - Only actions with Enabled == true are passed to the callback.
+//   - Invocation order is fixed: Create, Delete, Update, Patch, List, Get,
+//     CreateMany, DeleteMany, UpdateMany, PatchMany.
+//   - For each invocation, the callback receives:
+//     endpoint string     -> design.Endpoint
+//     act *Action         -> the current action
+//     phase consts.Phase  -> the phase corresponding to the current action
+//   - Execution is sequential; the function does not call the callback concurrently.
+//
+// Example:
+//
+//	RangeAction(design, func(ep string, a *Action, p consts.Phase) {
+//	    fmt.Printf("%s %s payload=%s result=%s\n", p.MethodName(), ep, a.Payload, a.Result)
+//	})
 func RangeAction(design *Design, fn func(string, *Action, consts.Phase)) {
 	if design == nil || fn == nil {
 		return

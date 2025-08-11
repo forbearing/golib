@@ -227,10 +227,10 @@ func ModelPkg2ServicePkg(pkgName string) string {
 
 // GenerateServiceMethod1 使用 AST 生成 CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
 // DeleteBefore,DeleteAfter,GetBefore,GetAfter,UpdatePartialBefore,UpdatePartialAfter 方法.
-func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
-	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
+func GenerateServiceMethod1(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
-	return ServiceMethod1(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
+	return ServiceMethod1(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -239,10 +239,10 @@ func GenerateServiceMethod1(info *ModelInfo, methodName string) *ast.FuncDecl {
 }
 
 // GenerateServiceMethod2 使用 AST 生成 ListBefore, ListAfter 方法.
-func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
-	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
+func GenerateServiceMethod2(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
-	return ServiceMethod2(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
+	return ServiceMethod2(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -252,10 +252,10 @@ func GenerateServiceMethod2(info *ModelInfo, methodName string) *ast.FuncDecl {
 
 // GenerateServiceMethod3 使用 AST 生成 CreateManyBefore, CreateManyAfter,
 // DeleteManyBefore, DeleteManyAfter, UpdateManyBefore, UpdateManyAfter, PatchManyBefore, PatchManyAfter.
-func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
-	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
+func GenerateServiceMethod3(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
-	return ServiceMethod3(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName,
+	return ServiceMethod3(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -264,10 +264,10 @@ func GenerateServiceMethod3(info *ModelInfo, methodName string) *ast.FuncDecl {
 }
 
 // GenerateServiceMethod4 使用 AST 生成 Create,Delete,Update,Patch,List,Get,CreateMany,DeleteMany,UpdateMany,PatchMany 方法.
-func GenerateServiceMethod4(info *ModelInfo, methodName, reqName, rspName string) *ast.FuncDecl {
-	str := strings.ReplaceAll(strcase.SnakeCase(methodName), "_", " ")
+func GenerateServiceMethod4(info *ModelInfo, reqName, rspName string, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
-	return ServiceMethod4(info.ModelVarName, info.ModelName, methodName, info.ModelPkgName, reqName, rspName,
+	return ServiceMethod4(info.ModelVarName, info.ModelName, info.ModelPkgName, reqName, rspName, phase,
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
@@ -291,51 +291,51 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 
 	// add types
 	if action.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, action.Payload, action.Result, false))
+		decls = append(decls, Types(info.ModelPkgName, info.ModelName, action.Payload, action.Result, phase, false))
 	}
 
 	// add methods
 	switch phase {
 	case consts.PHASE_CREATE:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_CREATE_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_CREATE_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod1(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod1(info, phase.After()))
 	case consts.PHASE_DELETE:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_DELETE_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_DELETE_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod1(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod1(info, phase.After()))
 	case consts.PHASE_UPDATE:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_UPDATE_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_UPDATE_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod1(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod1(info, phase.After()))
 	case consts.PHASE_PATCH:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_PATCH_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_PATCH_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod1(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod1(info, phase.After()))
 	case consts.PHASE_LIST: // List method use GenerateServiceMethod2
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod2(info, consts.PHASE_LIST_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod2(info, consts.PHASE_LIST_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod2(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod2(info, phase.After()))
 	case consts.PHASE_GET:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_GET_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod1(info, consts.PHASE_GET_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod1(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod1(info, phase.After()))
 	case consts.PHASE_CREATE_MANY: // XXXMany methods use GenerateServiceMethod3
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_CREATE_MANY_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_CREATE_MANY_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod3(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod3(info, phase.After()))
 	case consts.PHASE_DELETE_MANY:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_DELETE_MANY_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_DELETE_MANY_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod3(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod3(info, phase.After()))
 	case consts.PHASE_UPDATE_MANY:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_UPDATE_MANY_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_UPDATE_MANY_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod3(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod3(info, phase.After()))
 	case consts.PHASE_PATCH_MANY:
-		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_PATCH_MANY_BEFORE.MethodName()))
-		decls = append(decls, GenerateServiceMethod3(info, consts.PHASE_PATCH_MANY_AFTER.MethodName()))
+		decls = append(decls, GenerateServiceMethod4(info, action.Payload, action.Result, phase))
+		decls = append(decls, GenerateServiceMethod3(info, phase.Before()))
+		decls = append(decls, GenerateServiceMethod3(info, phase.After()))
 	}
 
 	return &ast.File{

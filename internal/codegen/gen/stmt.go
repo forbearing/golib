@@ -114,7 +114,7 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpo
 
 // StmtServiceRegister creates a *ast.ExprStmt represents golang code like below:
 //
-//	service.Register[*group]()
+//	service.Register[*userCreator]()
 func StmtServiceRegister(structName string) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
