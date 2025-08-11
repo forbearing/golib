@@ -289,37 +289,12 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 		// Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
 	}
 
-	if info.Design.Create.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result, false))
-	}
-	if info.Design.Delete.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.Delete.Payload, info.Design.Delete.Result, false))
-	}
-	if info.Design.Update.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.Update.Payload, info.Design.Update.Result, false))
-	}
-	if info.Design.Patch.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.Patch.Payload, info.Design.Patch.Result, false))
-	}
-	if info.Design.List.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.List.Payload, info.Design.List.Result, false))
-	}
-	if info.Design.Get.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.Get.Payload, info.Design.Get.Result, false))
-	}
-	if info.Design.CreateMany.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.CreateMany.Payload, info.Design.CreateMany.Result, false))
-	}
-	if info.Design.DeleteMany.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.DeleteMany.Payload, info.Design.DeleteMany.Result, false))
-	}
-	if info.Design.UpdateMany.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.UpdateMany.Payload, info.Design.UpdateMany.Result, false))
-	}
-	if info.Design.PatchMany.Enabled {
-		decls = append(decls, Types(info.ModelPkgName, info.ModelName, info.Design.PatchMany.Payload, info.Design.PatchMany.Result, false))
+	// add types
+	if action.Enabled {
+		decls = append(decls, Types(info.ModelPkgName, info.ModelName, action.Payload, action.Result, false))
 	}
 
+	// add methods
 	switch phase {
 	case consts.PHASE_CREATE:
 		decls = append(decls, GenerateServiceMethod4(info, phase.MethodName(), action.Payload, action.Result))
