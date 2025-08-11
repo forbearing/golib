@@ -67,7 +67,7 @@ func StmtLogWithServiceContext(modelVarName string) *ast.AssignStmt {
 // StmtRouterRegister creates a *ast.ExprStmt represents golang code like below:
 //
 //	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpoint string) *ast.ExprStmt {
+func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpoint string, verb string) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.IndexListExpr{
@@ -106,6 +106,10 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpo
 				&ast.BasicLit{
 					Kind:  token.STRING,
 					Value: fmt.Sprintf("%q", endpoint),
+				},
+				&ast.SelectorExpr{
+					X:   ast.NewIdent("consts"),
+					Sel: ast.NewIdent(verb),
 				},
 			},
 		},
