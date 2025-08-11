@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"testing"
 
+	"github.com/forbearing/golib/types/consts"
 	"github.com/kr/pretty"
 )
 
@@ -73,6 +74,7 @@ func TestBuildServiceFile(t *testing.T) {
 		modelImport []string
 		types       []*ast.GenDecl
 		stmts       []ast.Stmt
+		phase       consts.Phase
 		want        string
 		wantErr     bool
 	}{
@@ -80,7 +82,7 @@ func TestBuildServiceFile(t *testing.T) {
 			name:        "user",
 			pkgName:     "service",
 			modelImport: []string{"helloworld/model"},
-			types:       []*ast.GenDecl{Types("model", "User", "User", "User", false)},
+			types:       []*ast.GenDecl{Types("model", "User", "User", "User", consts.PHASE_CREATE, false)},
 			stmts:       []ast.Stmt{StmtServiceRegister("user")},
 			want: `package service
 
@@ -95,7 +97,7 @@ func Init() error {
 	return nil
 }
 
-type user struct {
+type userCreator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 `,
@@ -106,8 +108,8 @@ type user struct {
 			modelImport: []string{"helloworld/model"},
 			pkgName:     "service",
 			types: []*ast.GenDecl{
-				Types("model", "User", "User", "User", false),
-				Types("model", "Group", "Group", "Group", false),
+				Types("model", "User", "User", "User", consts.PHASE_CREATE, false),
+				Types("model", "Group", "Group", "Group", consts.PHASE_UPDATE, false),
 			},
 			stmts: []ast.Stmt{StmtServiceRegister("user"), StmtServiceRegister("group")},
 			want: `package service
@@ -124,11 +126,11 @@ func Init() error {
 	return nil
 }
 
-type user struct {
+type userCreator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 
-type group struct {
+type groupUpdater struct {
 	service.Base[*model.Group, *model.Group, *model.Group]
 }
 `,

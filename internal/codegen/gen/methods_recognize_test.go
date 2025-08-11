@@ -3,6 +3,8 @@ package gen
 import (
 	"go/ast"
 	"testing"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 func TestIsServiceMethod1(t *testing.T) {
@@ -51,7 +53,7 @@ func TestIsServiceMethod4(t *testing.T) {
 
 func TestIsServiceType(t *testing.T) {
 	// Positive case: struct embeds service.Base[*model.User, *model.User, *model.User]
-	gd := Types("model", "User", "User", "User", false)
+	gd := Types("model", "User", "User", "User", consts.PHASE_CREATE, false)
 	if len(gd.Specs) == 0 {
 		t.Fatalf("Types() returned no specs")
 	}

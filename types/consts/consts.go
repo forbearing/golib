@@ -83,12 +83,6 @@ const (
 	TAG_QUERY  = "query"
 )
 
-type Phase string
-
-func (p Phase) MethodName() string {
-	return strcase.UpperCamelCase(string(p))
-}
-
 const (
 	PHASE_CREATE Phase = "create"
 	PHASE_DELETE Phase = "delete"
@@ -128,6 +122,122 @@ const (
 	PHASE_IMPORT Phase = "import"
 	PHASE_EXPORT Phase = "export"
 )
+
+type Phase string
+
+// MethodName returns the Phase string converted to UpperCamelCase format.
+// Example:
+//
+//	PHASE_CREATE_BEFORE  -> "CreateBefore"
+//	PHASE_UPDATE_MANY    -> "UpdateMany"
+func (p Phase) MethodName() string {
+	return strcase.UpperCamelCase(string(p))
+}
+
+// RoleName returns the associated role name for the Phase in human-readable form.
+// It maps CRUD and ManyCRUD phases (including "_before" and "_after") to specific role names.
+// Non-CRUD phases return an empty string.
+//
+// Examples:
+//
+//	PHASE_CREATE             -> "Creator"
+//	PHASE_CREATE_BEFORE      -> "Creator"
+//	PHASE_UPDATE_MANY        -> "ManyUpdater"
+//	PHASE_UPDATE_MANY_AFTER  -> "ManyUpdater"
+//	PHASE_FILTER
+func (p Phase) RoleName() string {
+	s := string(p)
+
+	isMany := strings.Contains(s, "_many")
+	s = strings.TrimSuffix(s, "_many")
+
+	s = strings.TrimSuffix(s, "_before")
+	s = strings.TrimSuffix(s, "_after")
+
+	parts := strings.Split(s, "_")
+	if len(parts) == 0 {
+		return ""
+	}
+
+	var role string
+	switch parts[0] {
+	case "create":
+		role = "Creator"
+	case "update":
+		role = "Updater"
+	case "delete":
+		role = "Deleter"
+	case "patch":
+		role = "Patcher"
+	case "list":
+		role = "Lister"
+	case "get":
+		role = "Getter"
+	default:
+		return ""
+	}
+
+	if isMany {
+		role = "Many" + role
+	}
+	return role
+}
+
+// Before returns the corresponding "_before" Phase for CRUD or ManyCRUD operations.
+// If the current Phase already contains "_before" or "_after", or is not CRUD/MANYCRUD, it returns itself without modification.
+func (p Phase) Before() Phase {
+	s := string(p)
+
+	// Already contains _before or _after → no change
+	if strings.Contains(s, "_before") || strings.Contains(s, "_after") {
+		return p
+	}
+
+	// Only handle standard CRUD actions
+	parts := strings.Split(s, "_")
+	if len(parts) == 0 {
+		return p
+	}
+
+	switch parts[0] {
+	case "create", "update", "delete", "patch", "list", "get":
+		// Keep "_many" before "_before"
+		if strings.Contains(s, "_many") {
+			return Phase(strings.TrimSuffix(s, "_many") + "_many_before")
+		}
+		return Phase(s + "_before")
+	default:
+		return p
+	}
+}
+
+// After returns the corresponding "_after" Phase for CRUD or ManyCRUD operations.
+// If the current Phase already contains "_before" or "_after", or is not CRUD/MANYCRUD, it returns itself without modification.
+func (p Phase) After() Phase {
+	s := string(p)
+
+	// Already contains _before or _after → no change
+	if strings.Contains(s, "_before") || strings.Contains(s, "_after") {
+		return p
+	}
+
+	// Only handle standard CRUD actions
+	parts := strings.Split(s, "_")
+	if len(parts) == 0 {
+		return p
+	}
+
+	switch parts[0] {
+	case "create", "update", "delete", "patch", "list", "get":
+		// Keep "_many" before "_after"
+		if strings.Contains(s, "_many") {
+			return Phase(strings.TrimSuffix(s, "_many") + "_many_after")
+		}
+		return Phase(s + "_after")
+	default:
+		return p
+	}
+}
 
 // HTTPVerb represents the supported HTTP operations for a resource
 type HTTPVerb string

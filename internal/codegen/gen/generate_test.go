@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/golib/types/consts"
 	"github.com/kr/pretty"
 	_ "github.com/sergi/go-diff/diffmatchpatch"
 )
@@ -336,13 +337,12 @@ func TestGenerateServiceMethod1(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		info       *ModelInfo
-		methodName string
-		want       string
+		info  *ModelInfo
+		want  string
+		phase consts.Phase
 	}{
 		{
-			name:       "user",
-			methodName: "CreateBefore",
+			name: "user",
 			info: &ModelInfo{
 				ModelPkgName: "model",
 				ModelName:    "User",
@@ -350,7 +350,8 @@ func TestGenerateServiceMethod1(t *testing.T) {
 				ModulePath:   "codegen",
 				ModelFileDir: "/tmp/model",
 			},
-			want: `func (u *user) CreateBefore(ctx *types.ServiceContext, user *model.User) error {
+			phase: consts.PHASE_CREATE_BEFORE,
+			want: `func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create before")
 	return nil
@@ -359,7 +360,7 @@ func TestGenerateServiceMethod1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(GenerateServiceMethod1(tt.info, tt.methodName))
+			got, err := FormatNode(GenerateServiceMethod1(tt.info, tt.phase))
 			if err != nil {
 				t.Error(err)
 				return
@@ -375,13 +376,12 @@ func TestGenerateServiceMethod2(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		info       *ModelInfo
-		methodName string
-		want       string
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
 	}{
 		{
-			name:       "user",
-			methodName: "ListBefore",
+			name: "user",
 			info: &ModelInfo{
 				ModelPkgName: "model",
 				ModelName:    "User",
@@ -389,7 +389,8 @@ func TestGenerateServiceMethod2(t *testing.T) {
 				ModulePath:   "codegen",
 				ModelFileDir: "/tmp/model",
 			},
-			want: `func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
+			phase: consts.PHASE_LIST_BEFORE,
+			want: `func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user list before")
 	return nil
@@ -398,7 +399,7 @@ func TestGenerateServiceMethod2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(GenerateServiceMethod2(tt.info, tt.methodName))
+			got, err := FormatNode(GenerateServiceMethod2(tt.info, tt.phase))
 			if err != nil {
 				t.Error(err)
 				return
@@ -414,13 +415,12 @@ func TestGenerateServiceMethod3(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		info       *ModelInfo
-		methodName string
-		want       string
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
 	}{
 		{
-			name:       "user",
-			methodName: "BatchCreateBefore",
+			name: "user",
 			info: &ModelInfo{
 				ModelPkgName: "model",
 				ModelName:    "User",
@@ -428,16 +428,17 @@ func TestGenerateServiceMethod3(t *testing.T) {
 				ModulePath:   "codegen",
 				ModelFileDir: "/tmp/model",
 			},
-			want: `func (u *user) BatchCreateBefore(ctx *types.ServiceContext, users ...*model.User) error {
+			phase: consts.PHASE_CREATE_MANY_BEFORE,
+			want: `func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
-	log.Info("user batch create before")
+	log.Info("user create many before")
 	return nil
 }`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(GenerateServiceMethod3(tt.info, tt.methodName))
+			got, err := FormatNode(GenerateServiceMethod3(tt.info, tt.phase))
 			if err != nil {
 				t.Error(err)
 				return
@@ -453,15 +454,14 @@ func TestGenerateServiceMethod4(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		info       *ModelInfo
-		methodName string
-		reqName    string
-		rspName    string
-		want       string
+		info    *ModelInfo
+		reqName string
+		rspName string
+		phase   consts.Phase
+		want    string
 	}{
 		{
-			name:       "user",
-			methodName: "Create",
+			name: "user",
 			info: &ModelInfo{
 				ModelPkgName: "model",
 				ModelName:    "User",
@@ -471,15 +471,15 @@ func TestGenerateServiceMethod4(t *testing.T) {
 			},
 			reqName: "User",
 			rspName: "User",
-			want: `func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
+			phase:   consts.PHASE_CREATE,
+			want: `func (u *userCreator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create")
 	return rsp, nil
 }`,
 		},
 		{
-			name:       "group",
-			methodName: "Update",
+			name: "group",
 			info: &ModelInfo{
 				ModelPkgName: "model",
 				ModelName:    "Group",
@@ -489,7 +489,8 @@ func TestGenerateServiceMethod4(t *testing.T) {
 			},
 			reqName: "GroupRequest",
 			rspName: "GroupResponse",
-			want: `func (g *group) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
+			phase:   consts.PHASE_UPDATE,
+			want: `func (g *groupUpdater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group update")
 	return rsp, nil
@@ -498,7 +499,7 @@ func TestGenerateServiceMethod4(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := GenerateServiceMethod4(tt.info, tt.methodName, tt.reqName, tt.rspName)
+			res := GenerateServiceMethod4(tt.info, tt.reqName, tt.rspName, tt.phase)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)

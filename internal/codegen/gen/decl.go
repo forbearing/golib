@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/forbearing/golib/types/consts"
 	"github.com/gertd/go-pluralize"
 )
 
@@ -94,12 +95,11 @@ func Inits(modelNames ...string) *ast.FuncDecl {
 
 // Types returns an ast node that represents the declaration of below:
 /*
-// user implements the types.Service[*model.User, *model.User, *model.User] interface.
-type user struct {
+type userCreator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 */
-func Types(modelPkgName, modelName, reqName, rspName string, withComment bool) *ast.GenDecl {
+func Types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase, withComment bool) *ast.GenDecl {
 	comments := []*ast.Comment{}
 
 	if withComment {
@@ -116,7 +116,8 @@ func Types(modelPkgName, modelName, reqName, rspName string, withComment bool) *
 		Tok: token.TYPE,
 		Specs: []ast.Spec{
 			&ast.TypeSpec{
-				Name: ast.NewIdent(strings.ToLower(modelName)),
+				// eg: Creator, Updater, Deleter.
+				Name: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: []*ast.Field{
@@ -173,21 +174,21 @@ func Types(modelPkgName, modelName, reqName, rspName string, withComment bool) *
 // ServiceMethod1 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *user) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
-//	"func (g *group) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
-func ServiceMethod1(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+//	"func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
+//	"func (g *groupUpdater) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
+func ServiceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(strings.ToLower(modelName)),
+						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
 					},
 				},
 			},
 		},
-		Name: ast.NewIdent(methodName),
+		Name: ast.NewIdent(phase.MethodName()),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{
@@ -228,21 +229,21 @@ func ServiceMethod1(recvName, modelName, methodName, modelPkgName string, body .
 // ServiceMethod2 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *user) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
-//	"func (u *user) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
-func ServiceMethod2(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+//	"func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
+//	"func (u *userLister) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
+func ServiceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(strings.ToLower(modelName)),
+						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
 					},
 				},
 			},
 		},
-		Name: ast.NewIdent(methodName),
+		Name: ast.NewIdent(phase.MethodName()),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{
@@ -287,21 +288,21 @@ func ServiceMethod2(recvName, modelName, methodName, modelPkgName string, body .
 // ServiceMethod3 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *user) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-//	"func (u *user) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-func ServiceMethod3(recvName, modelName, methodName, modelPkgName string, body ...ast.Stmt) *ast.FuncDecl {
+//	"func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+//	"func (u *userManyCreator) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+func ServiceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(strings.ToLower(modelName)),
+						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
 					},
 				},
 			},
 		},
-		Name: ast.NewIdent(methodName),
+		Name: ast.NewIdent(phase.MethodName()),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{
@@ -344,20 +345,20 @@ func ServiceMethod3(recvName, modelName, methodName, modelPkgName string, body .
 // ServiceMethod4 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	func (u *user) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
-func ServiceMethod4(recvName, modelName, methodName, modelPkgName, reqName, rspName string, body ...ast.Stmt) *ast.FuncDecl {
+//	func (u *userCreator) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
+func ServiceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
 				{
 					Names: []*ast.Ident{ast.NewIdent(recvName)},
 					Type: &ast.StarExpr{
-						X: ast.NewIdent(strings.ToLower(modelName)),
+						X: ast.NewIdent(fmt.Sprintf("%s%s", strings.ToLower(modelName), phase.RoleName())),
 					},
 				},
 			},
 		},
-		Name: ast.NewIdent(methodName),
+		Name: ast.NewIdent(phase.MethodName()),
 		Type: &ast.FuncType{
 			Params: &ast.FieldList{
 				List: []*ast.Field{
