@@ -38,8 +38,19 @@ func genRun() {
 	routerStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
 	for _, m := range allModels {
-		routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, m.ModelName, m.ModelName, m.Design.Endpoint))
 		serviceStmts = append(serviceStmts, gen.StmtServiceRegister(strings.ToLower(m.ModelName)))
+		if !m.Design.Enabled {
+			continue
+		}
+		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, _ consts.Phase) {
+			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s))
+		})
+	}
+	importsMap := make(map[string]struct{})
+	for _, m := range allModels {
+		dsl.RangeAction(m.Design, func(_ string, _ *dsl.Action, _ consts.Phase) {
+			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
+		})
 	}
 
 	// generate router/router.go
@@ -48,15 +59,6 @@ func genRun() {
 	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
 
 	// generate service/service.go
-	importsMap := make(map[string]struct{})
-	// types := make([]*ast.GenDecl, 0)
-	for _, m := range allModels {
-		if m.Design.Create.Enabled {
-			// types = append(types, gen.Types(m.ModelPkgName, m.ModelName, m.Design.Create.Payload, m.Design.Create.Result, false))
-			importsMap[fmt.Sprintf("%s/%s", m.ModelPkgName, m.ModelName)] = struct{}{}
-		}
-	}
-	// serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), types, serviceStmts...)
 	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importsMap), nil, serviceStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
@@ -92,85 +94,94 @@ func genRun() {
 		dir := filepath.Dir(m.ServiceFilePath)
 		checkErr(os.MkdirAll(dir, 0o755))
 
-		// service create
-		if file := gen.GenerateService(m, m.Design.Create, consts.PHASE_CREATE); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create.go", code, m.Design.Create)
-		}
+		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+			if file := gen.GenerateService(m, a, p); file != nil {
+				code, err := gen.FormatNodeExtra(file)
+				checkErr(err)
+				// code = gen.MethodAddComments(code, m.ModelName)
+				applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_"+strings.ToLower(string(p))+".go", code, a)
+			}
+		})
 
-		// service delete
-		if file := gen.GenerateService(m, m.Design.Delete, consts.PHASE_DELETE); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete.go", code, m.Design.Delete)
-		}
-
-		// service update
-		if file := gen.GenerateService(m, m.Design.Update, consts.PHASE_UPDATE); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update.go", code, m.Design.Update)
-		}
-
-		// service patch
-		if file := gen.GenerateService(m, m.Design.Patch, consts.PHASE_PATCH); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch.go", code, m.Design.Patch)
-		}
-
-		// service list
-		if file := gen.GenerateService(m, m.Design.List, consts.PHASE_LIST); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_list.go", code, m.Design.List)
-		}
-
-		// service get
-		if file := gen.GenerateService(m, m.Design.Get, consts.PHASE_GET); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_get.go", code, m.Design.Get)
-		}
-
-		// service create many
-		if file := gen.GenerateService(m, m.Design.CreateMany, consts.PHASE_CREATE_MANY); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create_many.go", code, m.Design.CreateMany)
-		}
-
-		// service delete many
-		if file := gen.GenerateService(m, m.Design.DeleteMany, consts.PHASE_DELETE_MANY); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete_many.go", code, m.Design.DeleteMany)
-		}
-
-		// service update many
-		if file := gen.GenerateService(m, m.Design.UpdateMany, consts.PHASE_UPDATE_MANY); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update_many.go", code, m.Design.UpdateMany)
-		}
-
-		// service patch many
-		if file := gen.GenerateService(m, m.Design.PatchMany, consts.PHASE_PATCH_MANY); file != nil {
-			code, err := gen.FormatNodeExtra(file)
-			checkErr(err)
-			// code = gen.MethodAddComments(code, m.ModelName)
-			applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch_many.go", code, m.Design.PatchMany)
-		}
+		// // service create
+		// if file := gen.GenerateService(m, m.Design.Create, consts.PHASE_CREATE); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create.go", code, m.Design.Create)
+		// }
+		//
+		// // service delete
+		// if file := gen.GenerateService(m, m.Design.Delete, consts.PHASE_DELETE); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete.go", code, m.Design.Delete)
+		// }
+		//
+		// // service update
+		// if file := gen.GenerateService(m, m.Design.Update, consts.PHASE_UPDATE); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update.go", code, m.Design.Update)
+		// }
+		//
+		// // service patch
+		// if file := gen.GenerateService(m, m.Design.Patch, consts.PHASE_PATCH); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch.go", code, m.Design.Patch)
+		// }
+		//
+		// // service list
+		// if file := gen.GenerateService(m, m.Design.List, consts.PHASE_LIST); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_list.go", code, m.Design.List)
+		// }
+		//
+		// // service get
+		// if file := gen.GenerateService(m, m.Design.Get, consts.PHASE_GET); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_get.go", code, m.Design.Get)
+		// }
+		//
+		// // service create many
+		// if file := gen.GenerateService(m, m.Design.CreateMany, consts.PHASE_CREATE_MANY); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_create_many.go", code, m.Design.CreateMany)
+		// }
+		//
+		// // service delete many
+		// if file := gen.GenerateService(m, m.Design.DeleteMany, consts.PHASE_DELETE_MANY); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_delete_many.go", code, m.Design.DeleteMany)
+		// }
+		//
+		// // service update many
+		// if file := gen.GenerateService(m, m.Design.UpdateMany, consts.PHASE_UPDATE_MANY); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_update_many.go", code, m.Design.UpdateMany)
+		// }
+		//
+		// // service patch many
+		// if file := gen.GenerateService(m, m.Design.PatchMany, consts.PHASE_PATCH_MANY); file != nil {
+		// 	code, err := gen.FormatNodeExtra(file)
+		// 	checkErr(err)
+		// 	// code = gen.MethodAddComments(code, m.ModelName)
+		// 	applyFile(strings.TrimRight(m.ServiceFilePath, ".go")+"_patch_many.go", code, m.Design.PatchMany)
+		// }
 
 	}
 }
