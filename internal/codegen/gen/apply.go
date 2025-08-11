@@ -17,24 +17,24 @@ func ApplyServiceFile(file *ast.File, action *dsl.Action) {
 		if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {
 			for _, spec := range genDecl.Specs {
 				if typeSpec, ok := spec.(*ast.TypeSpec); ok {
-					if IsServiceType(typeSpec) {
-						ApplyServiceType(typeSpec, action)
+					if isServiceType(typeSpec) {
+						applyServiceType(typeSpec, action)
 					}
 				}
 			}
 		}
 		if funcDecl, ok := decl.(*ast.FuncDecl); ok && funcDecl != nil {
-			if IsServiceMethod1(funcDecl) {
-				ApplyServiceMethod1(funcDecl, action)
+			if isServiceMethod1(funcDecl) {
+				applyServiceMethod1(funcDecl, action)
 			}
-			if IsServiceMethod2(funcDecl) {
-				ApplyServiceMethod2(funcDecl, action)
+			if isServiceMethod2(funcDecl) {
+				applyServiceMethod2(funcDecl, action)
 			}
-			if IsServiceMethod3(funcDecl) {
-				ApplyServiceMethod3(funcDecl, action)
+			if isServiceMethod3(funcDecl) {
+				applyServiceMethod3(funcDecl, action)
 			}
-			if IsServiceMethod4(funcDecl) {
-				ApplyServiceMethod4(funcDecl, action)
+			if isServiceMethod4(funcDecl) {
+				applyServiceMethod4(funcDecl, action)
 			}
 		}
 	}

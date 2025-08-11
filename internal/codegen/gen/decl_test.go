@@ -35,14 +35,14 @@ func TestImports(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(Imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
+			got, err := FormatNode(imports(tt.modulePath, tt.modelFileDir, tt.modelPkgName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			fmt.Println(got)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Imports() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("imports() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -72,13 +72,13 @@ func TestInits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(Inits(tt.modelName))
+			got, err := FormatNode(inits(tt.modelName))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Inits() = \n%v\n, want \n%v\n", fmt.Sprintf("% #v", got), fmt.Sprintf("% #v", tt.want))
+				t.Errorf("inits() = \n%v\n, want \n%v\n", fmt.Sprintf("% #v", got), fmt.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -121,7 +121,7 @@ func TestTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := Types(tt.modelPkgname, tt.modelName, tt.reqName, tt.rspName, tt.phase, tt.withComments)
+			res := types(tt.modelPkgname, tt.modelName, tt.reqName, tt.rspName, tt.phase, tt.withComments)
 			var buf bytes.Buffer
 			fset := token.NewFileSet()
 			if err := format.Node(&buf, fset, res); err != nil {
@@ -130,7 +130,7 @@ func TestTypes(t *testing.T) {
 			}
 			got := buf.String()
 			if got != tt.want {
-				t.Errorf("Types() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("types() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -165,13 +165,13 @@ func TestServiceMethod1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatNode(ServiceMethod1(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase))
+			got, err := FormatNode(serviceMethod1(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase))
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ServiceMethod1() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("serviceMethod1() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -206,14 +206,14 @@ func TestServiceMethod2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := ServiceMethod2(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
+			res := serviceMethod2(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ServiceMethod2() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("serviceMethod2() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -248,14 +248,14 @@ func TestServiceMethod3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := ServiceMethod3(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
+			res := serviceMethod3(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ServiceMethod3() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("serviceMethod3() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
@@ -296,7 +296,7 @@ func TestServiceMethod4(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := ServiceMethod4(tt.recvName, tt.modelName, tt.modelPkgName, tt.reqName, tt.rspName, tt.phase)
+			res := serviceMethod4(tt.recvName, tt.modelName, tt.modelPkgName, tt.reqName, tt.rspName, tt.phase)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)
@@ -304,7 +304,7 @@ func TestServiceMethod4(t *testing.T) {
 			}
 
 			if got != tt.want {
-				t.Errorf("ServiceMethod4() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+				t.Errorf("serviceMethod4() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}
 		})
 	}
