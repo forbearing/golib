@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/tunnel"
+	"github.com/forbearing/golib/pkg/tunnel"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/stretchr/testify/assert"
 )
