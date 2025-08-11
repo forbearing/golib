@@ -39,7 +39,12 @@ func TestBuildRouterFile(t *testing.T) {
 			stmts:        []ast.Stmt{logPrintHelloworld()},
 			want: `package router
 
-import "log"
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/golib/router"
+	"github.com/forbearing/golib/types/consts"
+)
 
 func Init() error {
 	log.Println("hello world")
@@ -99,7 +104,7 @@ func Init() error {
 	return nil
 }
 
-type userCreator struct {
+type Creator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 `,
@@ -128,11 +133,11 @@ func Init() error {
 	return nil
 }
 
-type userCreator struct {
+type Creator struct {
 	service.Base[*model.User, *model.User, *model.User]
 }
 
-type groupUpdater struct {
+type Updater struct {
 	service.Base[*model.Group, *model.Group, *model.Group]
 }
 `,
