@@ -19,10 +19,10 @@ import (
 // ModelInfo 存储模型信息
 //
 // 例如:
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model", ServiceFilePath:""},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model", ServiceFilePath:""},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
 type ModelInfo struct {
 	// module 相关字段
 	ModulePath string // 从 go.mod 解析的模块路径
@@ -33,10 +33,6 @@ type ModelInfo struct {
 	ModelVarName  string // 小写的模型变量名, 例如: u, g
 	ModelFileDir  string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
 	ModelFilePath string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
-
-	// Service 相关字段
-	// Deprecated
-	ServiceFilePath string // service 文件的相对路径, 例如: github.com/forbearing/golib/service
 
 	// 自定义请求和相应相关字段
 	Design *dsl.Design
