@@ -522,3 +522,81 @@ func TestGenServiceMethod4(t *testing.T) {
 		})
 	}
 }
+
+func TestGenServiceMethod5(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
+	}{
+		{
+			name: "user",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			phase: consts.PHASE_IMPORT,
+			want: `func (u *Importer) Import(ctx *types.ServiceContext, reader io.Reader) ([]*model.User, error) {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user import")
+	return nil
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FormatNode(genServiceMethod5(tt.info, tt.phase))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("genServiceMethod5() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}
+
+func TestGenServiceMethod6(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
+	}{
+		{
+			name: "user",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			phase: consts.PHASE_EXPORT,
+			want: `func (u *Exporter) Export(ctx *types.ServiceContext, data ...*model.User) ([]byte, error) {
+	log := u.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("user export")
+	return nil
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FormatNode(genServiceMethod6(tt.info, tt.phase))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("genServiceMethod5() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}

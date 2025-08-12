@@ -277,6 +277,30 @@ func genServiceMethod4(info *ModelInfo, reqName, rspName string, phase consts.Ph
 	)
 }
 
+// genServiceMethod5 使用 AST 生成 Import 方法.
+func genServiceMethod5(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
+
+	return serviceMethod5(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
+		StmtLogWithServiceContext(info.ModelVarName),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns(ast.NewIdent("nil")),
+	)
+}
+
+// genServiceMethod5 使用 AST 生成 Export 方法.
+func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
+
+	return serviceMethod6(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
+		StmtLogWithServiceContext(info.ModelVarName),
+		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
+		EmptyLine(),
+		Returns(ast.NewIdent("nil")),
+	)
+}
+
 func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
 	if !action.Enabled {
 		return nil
@@ -335,6 +359,10 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		decls = append(decls, genServiceMethod3(info, phase.Before()))
 		decls = append(decls, genServiceMethod3(info, phase.After()))
+	case consts.PHASE_IMPORT:
+		decls = append(decls, genServiceMethod5(info, phase))
+	case consts.PHASE_EXPORT:
+		decls = append(decls, genServiceMethod6(info, phase))
 	}
 
 	return &ast.File{
