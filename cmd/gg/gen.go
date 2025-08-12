@@ -35,28 +35,40 @@ func genRun() {
 	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
 
-	routerStmts := make([]ast.Stmt, 0)
+	modelStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
-	importModels := make(map[string]struct{})
-	importServices := make(map[string]struct{})
+	routerStmts := make([]ast.Stmt, 0)
+	modelImports := make(map[string]struct{})
+	routerImports := make(map[string]struct{})
+	sersviceImports := make(map[string]struct{})
 	for _, m := range allModels {
+		if m.Design.Enabled {
+			modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
+		}
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
-			importModels[filepath.Join(m.ModulePath, m.ModelPkgName)] = struct{}{}
-			importServices[filepath.Join(m.ModulePath, serviceDir, strings.ToLower(m.ModelName))] = struct{}{}
+			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
+			modelImport := filepath.Join(m.ModulePath, m.ModelPkgName)
+			if !strings.HasSuffix(modelImport, "/model") {
+				modelImports[modelImport] = struct{}{}
+			}
+			routerImports[filepath.Join(m.ModulePath, m.ModelPkgName)] = struct{}{}
+			sersviceImports[filepath.Join(m.ModulePath, serviceDir, strings.ToLower(m.ModelName))] = struct{}{}
 		})
 	}
-
-	// generate router/router.go
-	routerCode, err := gen.BuildRouterFile("router", lo.Keys(importModels), routerStmts...)
+	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImports), modelStmts...)
 	checkErr(err)
-	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
+	checkErr(os.WriteFile(filepath.Join(modelDir, "model.go"), []byte(modelCode), 0o644))
 
 	// generate service/service.go
-	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(importServices), nil, serviceStmts...)
+	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(sersviceImports), nil, serviceStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
+
+	// generate router/router.go
+	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImports), routerStmts...)
+	checkErr(err)
+	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
 
 	// generate main.go
 	mainCode, err := gen.BuildMainFile(module)
