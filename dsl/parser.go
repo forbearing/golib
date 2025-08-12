@@ -53,6 +53,12 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 		if design.PatchMany == nil {
 			design.PatchMany = &Action{Payload: name, Result: name}
 		}
+		if design.Import == nil {
+			design.Import = &Action{Payload: name, Result: name}
+		}
+		if design.Export == nil {
+			design.Export = &Action{Payload: name, Result: name}
+		}
 
 		initDefaultAction(name, design.Create)
 		initDefaultAction(name, design.Delete)
@@ -64,6 +70,8 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 		initDefaultAction(name, design.DeleteMany)
 		initDefaultAction(name, design.UpdateMany)
 		initDefaultAction(name, design.PatchMany)
+		initDefaultAction(name, design.Import)
+		initDefaultAction(name, design.Export)
 
 		if len(endpoint) > 0 && design.Enabled {
 			design.Endpoint = endpoint
@@ -222,6 +230,12 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		}
 		if payload, result, enabled, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
 			defaults.PatchMany = &Action{Payload: payload, Result: result, Enabled: enabled}
+		}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_IMPORT.MethodName(), funcName, call.Args); exists {
+			defaults.Import = &Action{Payload: payload, Result: result, Enabled: enabled}
+		}
+		if payload, result, enabled, exists := parseAction(consts.PHASE_EXPORT.MethodName(), funcName, call.Args); exists {
+			defaults.Export = &Action{Payload: payload, Result: result, Enabled: enabled}
 		}
 
 	}

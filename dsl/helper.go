@@ -60,4 +60,10 @@ func RangeAction(design *Design, fn func(string, *Action, consts.Phase)) {
 	if design.PatchMany.Enabled {
 		fn(design.Endpoint, design.PatchMany, consts.PHASE_PATCH_MANY)
 	}
+	if design.Import.Enabled {
+		fn(design.Endpoint, design.Import, consts.PHASE_IMPORT)
+	}
+	if design.Export.Enabled {
+		fn(design.Endpoint, design.Export, consts.PHASE_EXPORT)
+	}
 }
