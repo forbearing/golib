@@ -461,6 +461,7 @@ func serviceMethod5(recvName, modelName, modelPkgName string, phase consts.Phase
 			Results: &ast.FieldList{
 				List: []*ast.Field{
 					{
+						Names: []*ast.Ident{ast.NewIdent(pluralizeCli.Plural(strings.ToLower(modelName)))},
 						Type: &ast.ArrayType{
 							Elt: &ast.StarExpr{
 								X: &ast.SelectorExpr{
@@ -471,7 +472,8 @@ func serviceMethod5(recvName, modelName, modelPkgName string, phase consts.Phase
 						},
 					},
 					{
-						Type: ast.NewIdent("error"),
+						Names: []*ast.Ident{ast.NewIdent("err")},
+						Type:  ast.NewIdent("error"),
 					},
 				},
 			},
@@ -527,12 +529,14 @@ func serviceMethod6(recvName, modelName, modelPkgName string, phase consts.Phase
 			Results: &ast.FieldList{
 				List: []*ast.Field{
 					{
+						Names: []*ast.Ident{ast.NewIdent("data")},
 						Type: &ast.ArrayType{
 							Elt: ast.NewIdent("byte"),
 						},
 					},
 					{
-						Type: ast.NewIdent("error"),
+						Names: []*ast.Ident{ast.NewIdent("err")},
+						Type:  ast.NewIdent("error"),
 					},
 				},
 			},

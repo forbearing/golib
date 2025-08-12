@@ -285,7 +285,7 @@ func genServiceMethod5(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns(ast.NewIdent("nil"), ast.NewIdent("nil")),
+		Returns(ast.NewIdent(pluralizeCli.Plural(strings.ToLower(info.ModelName))), ast.NewIdent("err")),
 	)
 }
 
@@ -297,7 +297,7 @@ func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns(ast.NewIdent("nil"), ast.NewIdent("nil")),
+		Returns(ast.NewIdent("data"), ast.NewIdent("err")),
 	)
 }
 

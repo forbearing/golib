@@ -200,6 +200,8 @@ func TestFindModels(t *testing.T) {
 						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
 						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
 						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
+						Import:     &dsl.Action{Payload: "User", Result: "User"},
+						Export:     &dsl.Action{Payload: "User", Result: "User"},
 					},
 				},
 				{
@@ -222,6 +224,8 @@ func TestFindModels(t *testing.T) {
 						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
 						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
 						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
+						Import:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Export:     &dsl.Action{Payload: "Group", Result: "Group"},
 					},
 				},
 			},
@@ -252,6 +256,8 @@ func TestFindModels(t *testing.T) {
 						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
 						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
 						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
+						Import:     &dsl.Action{Payload: "User", Result: "User"},
+						Export:     &dsl.Action{Payload: "User", Result: "User"},
 					},
 				},
 				{
@@ -274,6 +280,8 @@ func TestFindModels(t *testing.T) {
 						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
 						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
 						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
+						Import:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Export:     &dsl.Action{Payload: "Group", Result: "Group"},
 					},
 				},
 			},
@@ -541,10 +549,10 @@ func TestGenServiceMethod5(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			phase: consts.PHASE_IMPORT,
-			want: `func (u *Importer) Import(ctx *types.ServiceContext, reader io.Reader) ([]*model.User, error) {
+			want: `func (u *Importer) Import(ctx *types.ServiceContext, reader io.Reader) (users []*model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user import")
-	return nil
+	return users, err
 }`,
 		},
 	}
@@ -580,10 +588,10 @@ func TestGenServiceMethod6(t *testing.T) {
 				ModelFileDir: "/tmp/model",
 			},
 			phase: consts.PHASE_EXPORT,
-			want: `func (u *Exporter) Export(ctx *types.ServiceContext, data ...*model.User) ([]byte, error) {
+			want: `func (u *Exporter) Export(ctx *types.ServiceContext, data ...*model.User) (data []byte, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user export")
-	return nil
+	return data, err
 }`,
 		},
 	}
