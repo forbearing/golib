@@ -4,14 +4,15 @@ import (
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func init() {
-	service.Register[*user]()
+	service.Register[*user](consts.PHASE_CREATE)
 }
 
 type user struct {
-	service.Base[*pkgmodel.User]
+	service.Base[*pkgmodel.User, *pkgmodel.User, *pkgmodel.User]
 }
 
 func (u *user) CreateBefore(ctx *types.ServiceContext, user *pkgmodel.User) error {

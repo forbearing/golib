@@ -116,45 +116,45 @@ type ServiceContext struct {
 	response any // custom http response.
 }
 
-// SetRequest is called in the controller layer when the model has custom request type.
-// The custom request only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
-// CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
-func (sc *ServiceContext) SetRequest(m any) { sc.request = m }
-
-// SetResponse is called in the controller layer if the model has custom response type.
-// The custom response only take effect for Create(POST), Update(PUT), Patch(PATCH)
-// CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
-func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
-
-// GetRequest is called in the service layer when the model has a custom request type.
+// // SetRequest is called in the controller layer when the model has custom request type.
+// // The custom request only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
+// // CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
+// func (sc *ServiceContext) SetRequest(m any) { sc.request = m }
 //
-// It returns the custom request object unmarshaled from the HTTP request body.
-// This method is only supported in the following service hooks:
+// // SetResponse is called in the controller layer if the model has custom response type.
+// // The custom response only take effect for Create(POST), Update(PUT), Patch(PATCH)
+// // CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
+// func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
 //
-//	CREATE_BEFORE (POST), CREATE_AFTER (POST)
-//	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-//	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
-//	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
-//	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
-//	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
+// // GetRequest is called in the service layer when the model has a custom request type.
+// //
+// // It returns the custom request object unmarshaled from the HTTP request body.
+// // This method is only supported in the following service hooks:
+// //
+// //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
+// //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
+// //	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
+// //	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
+// //	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
+// //	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
+// //
+// // For all other service hooks, GetRequest always returns nil, including:
+// //
+// //	DELETE_BEFORE (DELETE), DELETE_AFTER (DELETE)
+// //	LIST_BEFORE (GET), LIST_AFTER (GET)
+// //	GET_BEFORE (GET), GET_AFTER (GET)
+// func (sc *ServiceContext) GetRequest() any { return sc.request }
 //
-// For all other service hooks, GetRequest always returns nil, including:
-//
-//	DELETE_BEFORE (DELETE), DELETE_AFTER (DELETE)
-//	LIST_BEFORE (GET), LIST_AFTER (GET)
-//	GET_BEFORE (GET), GET_AFTER (GET)
-func (sc *ServiceContext) GetRequest() any { return sc.request }
-
-// GetResponse is typically called in the controller layer to return a custom response object to the client.
-// The response object is set in the following service hooks:
-//
-//	CREATE_BEFORE (POST), CREATE_AFTER (POST)
-//	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-//	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
-//	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
-//	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
-//	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
-func (sc *ServiceContext) GetResponse() any { return sc.response }
+// // GetResponse is typically called in the controller layer to return a custom response object to the client.
+// // The response object is set in the following service hooks:
+// //
+// //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
+// //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
+// //	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
+// //	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
+// //	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
+// //	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
+// func (sc *ServiceContext) GetResponse() any { return sc.response }
 
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
 func (sc *ServiceContext) GetPhase() consts.Phase      { return sc.phase }
