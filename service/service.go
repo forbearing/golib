@@ -30,33 +30,49 @@ func serviceKey[M types.Model](phase consts.Phase) string {
 	return key
 }
 
-// Register service instance into serviceMap.
+// Register service instance.
+//
+// If Register called in "init" function, logger.Service is nil
+// the service.Logger will be set in "Init".
+//
+// If Register called is not "init" function, such as "Init", logger.Service is not nil,
+// set the service.Logger directly.
 func Register[S types.Service[M, REQ, RSP], M types.Model, REQ types.Request, RSP types.Response](phase consts.Phase) {
 	mu.Lock()
 	defer mu.Unlock()
 	key := serviceKey[M](phase)
 	val := reflect.New(reflect.TypeOf(*new(S)).Elem()).Interface()
+	setLogger(val)
 	serviceMap[key] = val
+}
+
+func setLogger(s any) {
+	// Check logger.Service is nil to avoid panic "panic: reflect: call of reflect.Value.Set on zero Value"
+	// in statement "fieldLogger.Set(reflect.ValueOf(logger.Service))".
+	if logger.Service == nil {
+		return
+	}
+	typ := reflect.TypeOf(s).Elem()
+	val := reflect.ValueOf(s).Elem()
+	for i := range typ.NumField() {
+		switch strings.ToLower(typ.Field(i).Name) {
+		case "logger": // service object has itself types.Logger
+			if val.Field(i).IsZero() {
+				val.Field(i).Set(reflect.ValueOf(logger.Service))
+			}
+		case "base": // service object's types.Logger extends from 'base' struct.
+			fieldLogger := val.Field(i).FieldByName("Logger")
+			if fieldLogger.IsZero() {
+				fieldLogger.Set(reflect.ValueOf(logger.Service))
+			}
+		}
+	}
 }
 
 func Init() error {
 	// Init all service types.Logger
 	for _, s := range serviceMap {
-		typ := reflect.TypeOf(s).Elem()
-		val := reflect.ValueOf(s).Elem()
-		for i := range typ.NumField() {
-			switch strings.ToLower(typ.Field(i).Name) {
-			case "logger": // service object has itself types.Logger
-				if val.Field(i).IsZero() {
-					val.Field(i).Set(reflect.ValueOf(logger.Service))
-				}
-			case "base": // service object's types.Logger extends from 'base' struct.
-				fieldLogger := val.Field(i).FieldByName("Logger")
-				if fieldLogger.IsZero() {
-					fieldLogger.Set(reflect.ValueOf(logger.Service))
-				}
-			}
-		}
+		setLogger(s)
 	}
 
 	return nil
