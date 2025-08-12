@@ -309,3 +309,71 @@ func TestServiceMethod4(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceMethod5(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		recvName     string
+		modelName    string
+		modelPkgName string
+		phase        consts.Phase
+		want         string
+	}{
+		{
+			name:         "dns",
+			recvName:     "a",
+			modelName:    "Asset",
+			modelPkgName: "model",
+			phase:        consts.PHASE_IMPORT,
+			want:         "func (a *Importer) Import(ctx *types.ServiceContext, reader io.Reader) ([]*model.Asset, error) {\n}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := serviceMethod5(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
+			got, err := FormatNode(res)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if got != tt.want {
+				t.Errorf("serviceMethod5() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}
+
+func TestServiceMethod6(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		recvName     string
+		modelName    string
+		modelPkgName string
+		phase        consts.Phase
+		want         string
+	}{
+		{
+			recvName:     "a",
+			modelName:    "Asset",
+			modelPkgName: "model",
+			phase:        consts.PHASE_EXPORT,
+			want:         "func (a *Exporter) Export(ctx *types.ServiceContext, data ...*model.Asset) ([]byte, error) {\n}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := serviceMethod6(tt.recvName, tt.modelName, tt.modelPkgName, tt.phase)
+			got, err := FormatNode(res)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("serviceMethod6() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
+			}
+		})
+	}
+}

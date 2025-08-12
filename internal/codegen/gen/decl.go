@@ -174,8 +174,8 @@ func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 // serviceMethod1 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *userCreator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
-//	"func (g *groupUpdater) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
+//	"func (u *Creator) CreateBefore(ctx *types.ServiceContext, user *model.User) error {\n}"
+//	"func (g *Updater) UpdateAfter(ctx *types.ServiceContext, group *model.Group) error {\n}",
 func serviceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
@@ -229,8 +229,8 @@ func serviceMethod1(recvName, modelName, modelPkgName string, phase consts.Phase
 // serviceMethod2 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *userLister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
-//	"func (u *userLister) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
+//	"func (u *Lister) ListBefore(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
+//	"func (u *Lister) ListAfter(ctx *types.ServiceContext, users *[]*model.User) error {\n}"
 func serviceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
@@ -288,8 +288,8 @@ func serviceMethod2(recvName, modelName, modelPkgName string, phase consts.Phase
 // serviceMethod3 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	"func (u *userManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
-//	"func (u *userManyCreator) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+//	"func (u *ManyCreator) CreateManyBefore(ctx *types.ServiceContext, users ...*model.User) error {\n}"
+//	"func (u *ManyCreator) CreateManyAfter(ctx *types.ServiceContext, users ...*model.User) error {\n}"
 func serviceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
@@ -345,7 +345,7 @@ func serviceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase
 // serviceMethod4 generates an ast node that represents the declaration of below:
 // For example:
 //
-//	func (u *userCreator) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
+//	func (u *Creator) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
 func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
@@ -396,6 +396,129 @@ func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, 
 					{
 						Names: []*ast.Ident{ast.NewIdent("err")},
 						Type:  ast.NewIdent("error"),
+					},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+}
+
+// serviceMethod5 generates an ast node that represents the declaration of below:
+// For example:
+//
+//	func (a *Importer) Import(ctx *types.ServiceContext, reader io.Reader) ([]*model.Asset, error) {\n}
+func serviceMethod5(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+	return &ast.FuncDecl{
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{ast.NewIdent(recvName)},
+					Type: &ast.StarExpr{
+						X: ast.NewIdent(phase.RoleName()),
+					},
+				},
+			},
+		},
+		Name: ast.NewIdent("Import"),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Names: []*ast.Ident{ast.NewIdent("ctx")},
+						Type: &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent("types"),
+								Sel: ast.NewIdent("ServiceContext"),
+							},
+						},
+					},
+					{
+						Names: []*ast.Ident{ast.NewIdent("reader")},
+						Type: &ast.SelectorExpr{
+							X:   ast.NewIdent("io"),
+							Sel: ast.NewIdent("Reader"),
+						},
+					},
+				},
+			},
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Type: &ast.ArrayType{
+							Elt: &ast.StarExpr{
+								X: &ast.SelectorExpr{
+									X:   ast.NewIdent(modelPkgName),
+									Sel: ast.NewIdent(modelName),
+								},
+							},
+						},
+					},
+					{
+						Type: ast.NewIdent("error"),
+					},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+}
+
+// serviceMethod6 generates an ast node that represents the declaration of below:
+// For example:
+//
+//	func (a *Exporter) Export(ctx *types.ServiceContext, data ...*model.Asset) ([]byte, error) {\n}
+func serviceMethod6(recvName, modelName, modelPkgName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+	return &ast.FuncDecl{
+		Recv: &ast.FieldList{
+			List: []*ast.Field{
+				{
+					Names: []*ast.Ident{ast.NewIdent(recvName)},
+					Type: &ast.StarExpr{
+						X: ast.NewIdent(phase.RoleName()),
+					},
+				},
+			},
+		},
+		Name: ast.NewIdent("Export"),
+		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Names: []*ast.Ident{ast.NewIdent("ctx")},
+						Type: &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   ast.NewIdent("types"),
+								Sel: ast.NewIdent("ServiceContext"),
+							},
+						},
+					},
+					{
+						Names: []*ast.Ident{ast.NewIdent("data")},
+						Type: &ast.Ellipsis{
+							Elt: &ast.StarExpr{
+								X: &ast.SelectorExpr{
+									X:   ast.NewIdent(modelPkgName),
+									Sel: ast.NewIdent(modelName),
+								},
+							},
+						},
+					},
+				},
+			},
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{
+						Type: &ast.ArrayType{
+							Elt: ast.NewIdent("byte"),
+						},
+					},
+					{
+						Type: ast.NewIdent("error"),
 					},
 				},
 			},
