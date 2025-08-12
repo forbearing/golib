@@ -4,10 +4,11 @@ import (
 	"github.com/forbearing/golib/examples/myproject/internal/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func init() {
-	service.Register[*group]()
+	service.Register[*group](consts.PHASE_CREATE)
 }
 
 type group struct {

@@ -4,10 +4,11 @@ import (
 	pkgmodel "github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func init() {
-	service.Register[*user]()
+	service.Register[*user](consts.PHASE_CREATE)
 }
 
 type user struct {
