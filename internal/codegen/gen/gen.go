@@ -285,7 +285,7 @@ func genServiceMethod5(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns(ast.NewIdent("nil")),
+		Returns(ast.NewIdent("nil"), ast.NewIdent("nil")),
 	)
 }
 
@@ -297,7 +297,7 @@ func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 		StmtLogWithServiceContext(info.ModelVarName),
 		StmtLogInfo(fmt.Sprintf(`"%s %s"`, strings.ToLower(info.ModelName), str)),
 		EmptyLine(),
-		Returns(ast.NewIdent("nil")),
+		Returns(ast.NewIdent("nil"), ast.NewIdent("nil")),
 	)
 }
 
@@ -306,8 +306,13 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 		return nil
 	}
 
+	otherPkgs := []string{}
+	if phase == consts.PHASE_IMPORT {
+		otherPkgs = append(otherPkgs, "io")
+	}
+
 	decls := []ast.Decl{
-		imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName),
+		imports(info.ModulePath, info.ModelFileDir, info.ModelPkgName, otherPkgs...),
 		// Inits(info.ModelName),
 		// Types(info.ModelPkgName, info.ModelName, info.Design.Create.Payload, info.Design.Create.Result),
 	}

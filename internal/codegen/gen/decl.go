@@ -21,7 +21,7 @@ import (
 	"github.com/forbearing/golib/types"
 )
 */
-func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
+func imports(modulePath, modelFileDir, modelPkgName string, otherPkg ...string) *ast.GenDecl {
 	importModel := filepath.Join(modulePath, modelFileDir)
 	fields := strings.Split(importModel, "/")
 	if len(fields) > 0 && fields[len(fields)-1] != modelPkgName {
@@ -32,7 +32,7 @@ func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 		importModel = fmt.Sprintf("%q", importModel)
 	}
 
-	return &ast.GenDecl{
+	genDecl := &ast.GenDecl{
 		Tok: token.IMPORT,
 		Specs: []ast.Spec{
 			&ast.ImportSpec{
@@ -55,6 +55,20 @@ func imports(modulePath, modelFileDir, modelPkgName string) *ast.GenDecl {
 			},
 		},
 	}
+
+	for _, pkg := range otherPkg {
+		if len(pkg) == 0 {
+			continue
+		}
+		genDecl.Specs = append(genDecl.Specs, &ast.ImportSpec{
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: fmt.Sprintf("%q", pkg),
+			},
+		})
+	}
+
+	return genDecl
 }
 
 // inits returns an ast node that represents the declaration of below:
