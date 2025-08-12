@@ -34,9 +34,8 @@ func ensureParentDir(filename string) error {
 }
 
 var (
-	green  = color.New(color.FgGreen).SprintFunc()
-	yellow = color.New(color.FgYellow).SprintFunc()
-	cyan   = color.New(color.FgCyan).SprintFunc()
+	green  = color.New(color.FgHiGreen).SprintFunc()
+	yellow = color.New(color.FgHiYellow).SprintFunc()
 	gray   = color.New(color.FgHiBlack).SprintFunc()
 )
 
@@ -50,4 +49,21 @@ func logUpdate(filename string) {
 
 func logSkip(filename string) {
 	fmt.Printf("%s %s\n", gray("[SKIP]"), filename)
+}
+
+func writeFileWithLog(filename string, content string) {
+	if fileExists(filename) {
+		oldData, err := os.ReadFile(filename)
+		checkErr(err)
+		if string(oldData) == content {
+			logSkip(filename)
+		} else {
+			logUpdate(filename)
+			checkErr(os.WriteFile(filename, []byte(content), 0o644))
+		}
+	} else {
+		logCreate(filename)
+		checkErr(ensureParentDir(filename))
+		checkErr(os.WriteFile(filename, []byte(content), 0o644))
+	}
 }
