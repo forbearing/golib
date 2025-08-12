@@ -46,16 +46,24 @@ func genRun() {
 			modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
 		}
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+			var path string
+
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
-			modelImport := filepath.Join(m.ModulePath, m.ModelPkgName)
-			if !strings.HasSuffix(modelImport, "/model") {
-				modelImports[modelImport] = struct{}{}
+
+			path = filepath.Join(m.ModulePath, m.ModelFileDir)
+			if !strings.HasSuffix(path, "/model") {
+				modelImports[path] = struct{}{}
 			}
-			routerImports[filepath.Join(m.ModulePath, m.ModelPkgName)] = struct{}{}
-			sersviceImports[filepath.Join(m.ModulePath, serviceDir, strings.ToLower(m.ModelName))] = struct{}{}
+
+			routerImports[filepath.Join(m.ModulePath, m.ModelFileDir)] = struct{}{}
+
+			path = strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
+			path = strings.TrimRight(path, ".go")
+			sersviceImports[path] = struct{}{}
 		})
 	}
+
 	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImports), modelStmts...)
 	checkErr(err)
 	checkErr(os.WriteFile(filepath.Join(modelDir, "model.go"), []byte(modelCode), 0o644))
