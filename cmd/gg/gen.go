@@ -82,22 +82,22 @@ func genRun() {
 
 	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImports), modelStmts...)
 	checkErr(err)
-	checkErr(os.WriteFile(filepath.Join(modelDir, "model.go"), []byte(modelCode), 0o644))
+	writeFileWithLog(filepath.Join(modelDir, "model.go"), modelCode)
 
 	// generate service/service.go
 	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(sersviceImports), nil, serviceStmts...)
 	checkErr(err)
-	checkErr(os.WriteFile(filepath.Join(serviceDir, "service.go"), []byte(serviceCode), 0o644))
+	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 
 	// generate router/router.go
 	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImports), routerStmts...)
 	checkErr(err)
-	checkErr(os.WriteFile(filepath.Join(routerDir, "router.go"), []byte(routerCode), 0o644))
+	writeFileWithLog(filepath.Join(routerDir, "router.go"), routerCode)
 
 	// generate main.go
 	mainCode, err := gen.BuildMainFile(module)
 	checkErr(err)
-	checkErr(os.WriteFile("main.go", []byte(mainCode), 0o644))
+	writeFileWithLog("main.go", mainCode)
 
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
