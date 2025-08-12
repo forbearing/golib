@@ -326,7 +326,7 @@ func TestServiceMethod5(t *testing.T) {
 			modelName:    "Asset",
 			modelPkgName: "model",
 			phase:        consts.PHASE_IMPORT,
-			want:         "func (a *Importer) Import(ctx *types.ServiceContext, reader io.Reader) ([]*model.Asset, error) {\n}",
+			want:         "func (a *Importer) Import(ctx *types.ServiceContext, reader io.Reader) (assets []*model.Asset, err error) {\n}",
 		},
 	}
 	for _, tt := range tests {
@@ -360,7 +360,7 @@ func TestServiceMethod6(t *testing.T) {
 			modelName:    "Asset",
 			modelPkgName: "model",
 			phase:        consts.PHASE_EXPORT,
-			want:         "func (a *Exporter) Export(ctx *types.ServiceContext, data ...*model.Asset) ([]byte, error) {\n}",
+			want:         "func (a *Exporter) Export(ctx *types.ServiceContext, data ...*model.Asset) (data []byte, err error) {\n}",
 		},
 	}
 	for _, tt := range tests {
