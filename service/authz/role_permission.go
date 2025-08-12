@@ -11,11 +11,11 @@ import (
 )
 
 type rolePermission struct {
-	service.Base[*model_authz.RolePermission]
+	service.Base[*model_authz.RolePermission, *model_authz.RolePermission, *model_authz.RolePermission]
 }
 
 func init() {
-	service.Register[*rolePermission]()
+	service.Register[*rolePermission](consts.PHASE_DELETE)
 }
 
 // DeleteAfter support delete multiple role_permissions by query parameters `role`, `resource`, `action`

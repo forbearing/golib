@@ -4,14 +4,15 @@ import (
 	"github.com/forbearing/golib/examples/myproject/internal/model"
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func init() {
-	service.Register[*star]()
+	service.Register[*star](consts.PHASE_CREATE)
 }
 
 type star struct {
-	service.Base[*model.Star]
+	service.Base[*model.Star, *model.Star, *model.Star]
 }
 
 func (s *star) CreateBefore(ctx *types.ServiceContext, star *model.Star) error {

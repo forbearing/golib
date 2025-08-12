@@ -11,11 +11,11 @@ import (
 )
 
 type userRole struct {
-	service.Base[*model_authz.UserRole]
+	service.Base[*model_authz.UserRole, *model_authz.UserRole, *model_authz.UserRole]
 }
 
 func init() {
-	service.Register[*userRole]()
+	service.Register[*userRole](consts.PHASE_DELETE)
 }
 
 // DeleteAfter support filter and delete multiple user_roles by query parameter `user` and `role`.

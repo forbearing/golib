@@ -56,3 +56,10 @@ func (g *GormScanner) Value() (driver.Value, error) {
 func GetTableName[M types.Model]() string {
 	return strcase.SnakeCase(pluralizeCli.Plural(reflect.TypeOf(*new(M)).Elem().Name()))
 }
+
+func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool {
+	typ1 := reflect.TypeOf(*new(M))
+	typ2 := reflect.TypeOf(*new(REQ))
+	typ3 := reflect.TypeOf(*new(RSP))
+	return typ1 == typ2 && typ2 == typ3
+}

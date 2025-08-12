@@ -351,15 +351,15 @@ func main() {
 		middleware.Authz(),
 	)
 
-	router.Register[*internal_model.Group](router.API(), "/group", consts.Most, consts.MostBatch)
-	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.List)
-	router.Register[*internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.Get)
-	router.Register[*model.User](router.API(), "/user")
-	router.Register[*model_authz.Role](router.API(), "role")
-	router.Register[*model_authz.UserRole](router.API(), "user_role")
-	router.Register[*model_authz.Permission](router.API(), "permission", consts.List)
-	router.Register[*model_authz.RolePermission](router.API(), "role_permission")
-	router.Register[*internal_model.Department](router.API(), "department", consts.Create)
+	router.Register[*internal_model.Group, *internal_model.Group, *internal_model.Group](router.API(), "/group", consts.Most, consts.MostBatch)
+	router.Register[*internal_model.Star, *internal_model.Star, *internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.List)
+	router.Register[*internal_model.Star, *internal_model.Star, *internal_model.Star](router.API(), "/org/:org_id/gists/:gist_id/stars", consts.Get)
+	router.Register[*model.User, *model.User, *model.User](router.API(), "/user")
+	router.Register[*model_authz.Role, *model_authz.Role, *model_authz.Role](router.API(), "role")
+	router.Register[*model_authz.UserRole, *model_authz.UserRole, *model_authz.UserRole](router.API(), "user_role")
+	router.Register[*model_authz.Permission, *model_authz.Permission, *model_authz.Permission](router.API(), "permission", consts.List)
+	router.Register[*model_authz.RolePermission, *model_authz.RolePermission, *model_authz.RolePermission](router.API(), "role_permission")
+	router.Register[*internal_model.Department, *internal_model.Department, *internal_model.Department](router.API(), "department", consts.Create)
 
 	cfg := config.MySQL{}
 	cfg.Host = "127.0.0.1"

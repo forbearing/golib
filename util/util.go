@@ -415,3 +415,58 @@ func FormatDurationSmart(d time.Duration, precisions ...int) string {
 		return fmt.Sprintf(format, float64(ns)/(60*1e9), "min")
 	}
 }
+
+// Keys creates an array of the map keys.
+// Play: https://go.dev/play/p/Uu11fHASqrU
+func Keys[K comparable, V any](in ...map[K]V) []K {
+	size := 0
+	for i := range in {
+		size += len(in[i])
+	}
+	result := make([]K, 0, size)
+
+	for i := range in {
+		for k := range in[i] {
+			result = append(result, k)
+		}
+	}
+
+	return result
+}
+
+// Values creates an array of the map values.
+// Play: https://go.dev/play/p/nnRTQkzQfF6
+func Values[K comparable, V any](in ...map[K]V) []V {
+	size := 0
+	for i := range in {
+		size += len(in[i])
+	}
+	result := make([]V, 0, size)
+
+	for i := range in {
+		for k := range in[i] {
+			result = append(result, in[i][k])
+		}
+	}
+
+	return result
+}
+
+// Uniq returns a duplicate-free version of an array, in which only the first occurrence of each element is kept.
+// The order of result values is determined by the order they occur in the array.
+// Play: https://go.dev/play/p/DTzbeXZ6iEN
+func Uniq[T comparable, Slice ~[]T](collection Slice) Slice {
+	result := make(Slice, 0, len(collection))
+	seen := make(map[T]struct{}, len(collection))
+
+	for i := range collection {
+		if _, ok := seen[collection[i]]; ok {
+			continue
+		}
+
+		seen[collection[i]] = struct{}{}
+		result = append(result, collection[i])
+	}
+
+	return result
+}

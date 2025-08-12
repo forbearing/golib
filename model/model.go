@@ -1,9 +1,6 @@
 package model
 
 import (
-	"bytes"
-	"database/sql/driver"
-	"encoding/json"
 	"reflect"
 	"strings"
 	"sync"
@@ -226,37 +223,38 @@ var _ types.Model = (*Base)(nil)
 // gorm:"foreignKey:ParentID"
 // gorm:"foreignKey:ParentID,references:ID"
 type Base struct {
-	ID string `json:"id" gorm:"primaryKey" schema:"id" url:"-"`
+	ID string `json:"id" gorm:"primaryKey" schema:"id" url:"-"` // Unique identifier for the record
 
-	CreatedBy string     `json:"created_by,omitempty" gorm:"index" schema:"created_by" url:"-"`
-	UpdatedBy string     `json:"updated_by,omitempty" gorm:"index" schema:"updated_by" url:"-"`
-	CreatedAt *time.Time `json:"created_at,omitempty" gorm:"index" schema:"-" url:"-"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty" gorm:"index" schema:"-" url:"-"`
-	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"` // 如果需要支持 PATCH 更新,则必须是指针类型
-	Order     *uint      `json:"order,omitempty" schema:"-" url:"-"`
+	CreatedBy string         `json:"created_by,omitempty" gorm:"index" schema:"created_by" url:"-"` // User ID who created the record
+	UpdatedBy string         `json:"updated_by,omitempty" gorm:"index" schema:"updated_by" url:"-"` // User ID who last updated the record
+	CreatedAt *time.Time     `json:"created_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was created
+	UpdatedAt *time.Time     `json:"updated_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was last updated
+	DeleteAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was deleted
+	Remark    *string        `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"`         // Optional remark or note for the record (pointer type for PATCH support)
+	Order     *uint          `json:"order,omitempty" schema:"-" url:"-"`                            // Optional ordering value for sorting records
 
 	// Query parameter
-	Page       uint    `json:"-" gorm:"-" schema:"page" url:"page,omitempty"`                 // Query parameter, eg: "page=2"
-	Size       uint    `json:"-" gorm:"-" schema:"size" url:"size,omitempty"`                 // Query parameter, eg: "size=10"
-	Expand     *string `json:"-" gorm:"-" schema:"_expand" url:"_expand,omitempty"`           // Query parameter, eg: "_expand=children,parent".
-	Depth      *uint   `json:"-" gorm:"-" schema:"_depth" url:"_depth,omitempty"`             // Query parameter, eg: "_depth=3".
-	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy" url:"_fuzzy,omitempty"`             // Query parameter, eg: "_fuzzy=true"
-	SortBy     string  `json:"-" gorm:"-" schema:"_sortby" url:"_sortby,omitempty"`           // Query parameter, eg: "_sortby=name"
-	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache" url:"_nocache,omitempty"`         // Query parameter: eg: "_nocache=false"
-	ColumnName string  `json:"-" gorm:"-" schema:"_column_name" url:"_column_name,omitempty"` // Query parameter: eg: "_column_name=created_at"
-	StartTime  string  `json:"-" gorm:"-" schema:"_start_time" url:"_start_time,omitempty"`   // Query parameter: eg: "_start_time=2024-04-29+23:59:59"
-	EndTime    string  `json:"-" gorm:"-" schema:"_end_time" url:"_end_time,omitempty"`       // Query parameter: eg: "_end_time=2024-04-29+23:59:59"
-	Or         *bool   `json:"-" gorm:"-" schema:"_or" url:"_or,omitempty"`                   // query parameter: eg: "_or=true"
-	Index      string  `json:"-" gorm:"-" schema:"_index" url:"_index,omitempty"`             // Query parameter: eg: "_index=name"
-	Select     string  `json:"-" gorm:"-" schema:"_select" url:"_select,omitempty"`           // Query parameter: eg: "_select=field1,field2"
-	Nototal    bool    `json:"-" gorm:"-" schema:"_nototal" url:"_nototal,omitempty"`         // Query parameter: eg: "_nototal=true"
+	Page       uint    `json:"-" gorm:"-" schema:"page" url:"page,omitempty"`                 // Pagination: page number (e.g., page=2)
+	Size       uint    `json:"-" gorm:"-" schema:"size" url:"size,omitempty"`                 // Pagination: page size (e.g., size=10)
+	Expand     *string `json:"-" gorm:"-" schema:"_expand" url:"_expand,omitempty"`           // Query parameter: fields to expand (e.g., _expand=children,parent)
+	Depth      *uint   `json:"-" gorm:"-" schema:"_depth" url:"_depth,omitempty"`             // Query parameter: expansion depth (e.g., _depth=3)
+	Fuzzy      *bool   `json:"-" gorm:"-" schema:"_fuzzy" url:"_fuzzy,omitempty"`             // Query parameter: enable fuzzy search (e.g., _fuzzy=true)
+	SortBy     string  `json:"-" gorm:"-" schema:"_sortby" url:"_sortby,omitempty"`           // Query parameter: field to sort by (e.g., _sortby=name)
+	NoCache    bool    `json:"-" gorm:"-" schema:"_nocache" url:"_nocache,omitempty"`         // Query parameter: disable cache (e.g., _nocache=false)
+	ColumnName string  `json:"-" gorm:"-" schema:"_column_name" url:"_column_name,omitempty"` // Query parameter: column name for time range filtering (e.g., _column_name=created_at)
+	StartTime  string  `json:"-" gorm:"-" schema:"_start_time" url:"_start_time,omitempty"`   // Query parameter: start time for range filtering (e.g., _start_time=2024-04-29+23:59:59)
+	EndTime    string  `json:"-" gorm:"-" schema:"_end_time" url:"_end_time,omitempty"`       // Query parameter: end time for range filtering (e.g., _end_time=2024-04-29+23:59:59)
+	Or         *bool   `json:"-" gorm:"-" schema:"_or" url:"_or,omitempty"`                   // Query parameter: use OR logic for conditions (e.g., _or=true)
+	Index      string  `json:"-" gorm:"-" schema:"_index" url:"_index,omitempty"`             // Query parameter: index name for search (e.g., _index=name)
+	Select     string  `json:"-" gorm:"-" schema:"_select" url:"_select,omitempty"`           // Query parameter: specific fields to select (e.g., _select=field1,field2)
+	Nototal    bool    `json:"-" gorm:"-" schema:"_nototal" url:"_nototal,omitempty"`         // Query parameter: skip total count calculation (e.g., _nototal=true)
 
 	// cursor pagination
-	CursorValue  *string `json:"-" gorm:"-" schema:"_cursor_value" url:"_cursor_value,omitempty"`   // Query parameter: eg: "_cursor_value=0196a0b3-c9d1-713c-870e-adc76af9f857"
-	CursorFields string  `json:"-" gorm:"-" schema:"_cursor_fields" url:"_cursor_fields,omitempty"` // Query parameter: eg: "_cursor_fields=field1,field2"
-	CursorNext   bool    `json:"-" gorm:"-" schema:"_cursor_next" url:"_cursor_next,omitempty"`     // Query parameter: eg: "_cursor_next=true"
+	CursorValue  *string `json:"-" gorm:"-" schema:"_cursor_value" url:"_cursor_value,omitempty"`   // Query parameter: cursor value for pagination (e.g., _cursor_value=0196a0b3-c9d1-713c-870e-adc76af9f857)
+	CursorFields string  `json:"-" gorm:"-" schema:"_cursor_fields" url:"_cursor_fields,omitempty"` // Query parameter: fields used for cursor pagination (e.g., _cursor_fields=field1,field2)
+	CursorNext   bool    `json:"-" gorm:"-" schema:"_cursor_next" url:"_cursor_next,omitempty"`     // Query parameter: direction for cursor pagination (e.g., _cursor_next=true)
 
-	gorm.Model `json:"-" schema:"-" url:"-"`
+	// gorm.Model `json:"-" schema:"-" url:"-"`
 }
 
 func (b *Base) GetTableName() string       { return "" }
@@ -281,8 +279,6 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// These methods implement types.Hooker interface.
-// model should create custom hook to overwrite default hooks.
 func (*Base) CreateBefore() error { return nil }
 func (*Base) CreateAfter() error  { return nil }
 func (*Base) DeleteBefore() error { return nil }
@@ -315,80 +311,3 @@ func setID(m types.Model, id ...string) {
 
 // Empty model always invalid and will never generate a database table automatically.
 type Empty struct{ Base }
-
-type GormTime time.Time
-
-func (t *GormTime) Scan(value any) error {
-	localTime, err := time.Parse(consts.DATE_TIME_LAYOUT, string(value.([]byte)))
-	if err != nil {
-		return err
-	}
-	*t = GormTime(localTime)
-	return nil
-}
-
-func (t GormTime) Value() (driver.Value, error) {
-	return time.Time(t).Format(consts.DATE_TIME_LAYOUT), nil
-}
-
-func (t *GormTime) UnmarshalJSON(b []byte) error {
-	// Trim quotes from the stringified JSON value
-	s := strings.Trim(string(b), "\"")
-	// Parse the time using the custom format
-	parsedTime, err := time.Parse(consts.DATE_TIME_LAYOUT, s)
-	if err != nil {
-		return err
-	}
-
-	*t = GormTime(parsedTime)
-	return nil
-}
-
-func (ct GormTime) MarshalJSON() ([]byte, error) {
-	// Convert the time to the custom format and stringify it
-	return []byte("\"" + time.Time(ct).Format(consts.DATE_TIME_LAYOUT) + "\""), nil
-}
-
-func (gs *GormStrings) UnmarshalJSON(data []byte) error {
-	// format: ["a", "b", "c"]
-	var arr []string
-	if err := json.Unmarshal(data, &arr); err == nil {
-		*gs = arr
-		return nil
-	}
-	// format: "a,b,c"
-	var s string
-	if err := json.Unmarshal(data, &s); err == nil {
-		s = strings.TrimSpace(s)
-		s = strings.Trim(s, ",")
-		if s == "" {
-			*gs = []string{}
-		} else {
-			*gs = strings.Split(s, ",")
-		}
-		return nil
-	}
-	return errors.New("GormStrings: invalid JSON type")
-}
-
-type GormStrings []string
-
-func (gs *GormStrings) Scan(value any) error {
-	if value == nil {
-		*gs = nil
-		return nil
-	}
-	switch v := value.(type) {
-	case []byte:
-		_v := bytes.TrimSpace(v)
-		_v = bytes.Trim(_v, ",")
-		*gs = strings.Split(string(_v), ",")
-	case string:
-		_v := strings.TrimSpace(v)
-		_v = strings.Trim(_v, ",")
-		*gs = strings.Split(_v, ",")
-	default:
-		return errors.New("GormStrings: unsupported type, expected []byte or string")
-	}
-	return nil
-}
