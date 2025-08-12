@@ -56,17 +56,21 @@ func genRun() {
 				pkgName := strings.Split(m.ModelFileDir, "/")[1]
 				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", pkgName, m.ModelName)))
 			}
+
+			// If a struct anonymous inherits from model.Base, than the model will be imported in model/model.go using
+			// statement such like: "model.Register[*User]()".
+			// Imported the model is not determinated by m.Design.Eanbled value.
+			path := filepath.Join(m.ModulePath, m.ModelFileDir)
+			if !strings.HasSuffix(path, "/model") {
+				modelImports[path] = struct{}{}
+			}
 		}
+
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			var path string
 
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
-
-			path = filepath.Join(m.ModulePath, m.ModelFileDir)
-			if !strings.HasSuffix(path, "/model") {
-				modelImports[path] = struct{}{}
-			}
 
 			routerImports[filepath.Join(m.ModulePath, m.ModelFileDir)] = struct{}{}
 
