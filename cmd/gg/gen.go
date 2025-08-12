@@ -120,7 +120,9 @@ func genRun() {
 				code, err := gen.FormatNodeExtra(file)
 				checkErr(err)
 				// code = gen.MethodAddComments(code, m.ModelName)
-				filename := filepath.Join(serviceDir, strings.ToLower(m.ModelName), strings.ToLower(string(p))+".go")
+				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
+				dir = strings.TrimRight(dir, ".go")
+				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
 				applyFile(filename, code, a)
 			}
 		})
