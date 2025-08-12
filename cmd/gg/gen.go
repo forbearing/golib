@@ -43,7 +43,19 @@ func genRun() {
 	sersviceImports := make(map[string]struct{})
 	for _, m := range allModels {
 		if m.Design.Enabled {
-			modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
+			// If the ModelFileDir is "model" or "model/", the model package name is the same as the model name,
+			// and the statement in model/model.go will be "Register[*Project]()".
+			// otherwise, the model package name is the last segment of the model file dir.
+			//
+			// For example:
+			// If the ModelFileDir is "model/setting", the model package name is "setting",
+			// then the statement in model/model.go should be "Register[*setting.Project]()"
+			if m.ModelPkgName == strings.TrimRight(m.ModelFileDir, "/") {
+				modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
+			} else {
+				pkgName := strings.Split(m.ModelFileDir, "/")[1]
+				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", pkgName, m.ModelName)))
+			}
 		}
 		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
 			var path string
