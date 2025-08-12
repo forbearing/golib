@@ -101,18 +101,21 @@ func genRun() {
 
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
-		// If service file already exists, skip generate.
 		if fileExists(filename) {
 			f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 			checkErr(err)
-			gen.ApplyServiceFile(f, action)
+			changed := gen.ApplyServiceFile(f, action)
 			code, err = gen.FormatNodeExtra(f)
 			checkErr(err)
-			fmt.Printf("update %s\n", filename)
+			if changed {
+				logUpdate(filename)
+			} else {
+				logSkip(filename)
+			}
 			checkErr(ensureParentDir(filename))
 			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		} else {
-			fmt.Printf("generate %s\n", filename)
+			logCreate(filename)
 			checkErr(ensureParentDir(filename))
 			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		}
