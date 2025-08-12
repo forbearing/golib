@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gorm.io/gorm"
 )
 
 var ErrMobileLength = errors.New("mobile number length must be 11")
@@ -224,12 +225,13 @@ var _ types.Model = (*Base)(nil)
 type Base struct {
 	ID string `json:"id" gorm:"primaryKey" schema:"id" url:"-"` // Unique identifier for the record
 
-	CreatedBy string     `json:"created_by,omitempty" gorm:"index" schema:"created_by" url:"-"` // User ID who created the record
-	UpdatedBy string     `json:"updated_by,omitempty" gorm:"index" schema:"updated_by" url:"-"` // User ID who last updated the record
-	CreatedAt *time.Time `json:"created_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was created
-	UpdatedAt *time.Time `json:"updated_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was last updated
-	Remark    *string    `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"`         // Optional remark or note for the record (pointer type for PATCH support)
-	Order     *uint      `json:"order,omitempty" schema:"-" url:"-"`                            // Optional ordering value for sorting records
+	CreatedBy string         `json:"created_by,omitempty" gorm:"index" schema:"created_by" url:"-"` // User ID who created the record
+	UpdatedBy string         `json:"updated_by,omitempty" gorm:"index" schema:"updated_by" url:"-"` // User ID who last updated the record
+	CreatedAt *time.Time     `json:"created_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was created
+	UpdatedAt *time.Time     `json:"updated_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was last updated
+	DeleteAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" schema:"-" url:"-"`          // Timestamp when the record was deleted
+	Remark    *string        `json:"remark,omitempty" gorm:"size:10240" schema:"-" url:"-"`         // Optional remark or note for the record (pointer type for PATCH support)
+	Order     *uint          `json:"order,omitempty" schema:"-" url:"-"`                            // Optional ordering value for sorting records
 
 	// Query parameter
 	Page       uint    `json:"-" gorm:"-" schema:"page" url:"page,omitempty"`                 // Pagination: page number (e.g., page=2)
