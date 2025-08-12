@@ -11,7 +11,9 @@ import (
 
 // Parse parses the whole file node to find all models with its "Design".
 // returns the map that key is model name, value is *Design.
-func Parse(file *ast.File) map[string]*Design {
+//
+// Pass the "Endpoint" to overwrite the default endpoint.
+func Parse(file *ast.File, endpoint string) map[string]*Design {
 	m := make(map[string]*Design)
 	designs := parse(file)
 	for name, fnDecl := range designs {
@@ -62,6 +64,10 @@ func Parse(file *ast.File) map[string]*Design {
 		initDefaultAction(name, design.DeleteMany)
 		initDefaultAction(name, design.UpdateMany)
 		initDefaultAction(name, design.PatchMany)
+
+		if len(endpoint) > 0 && design.Enabled {
+			design.Endpoint = endpoint
+		}
 
 		m[name] = design
 	}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/fatih/color"
 )
 
 func checkErr(err error) {
@@ -29,4 +31,23 @@ func ensureParentDir(filename string) error {
 	} else {
 		return err
 	}
+}
+
+var (
+	green  = color.New(color.FgGreen).SprintFunc()
+	yellow = color.New(color.FgYellow).SprintFunc()
+	cyan   = color.New(color.FgCyan).SprintFunc()
+	gray   = color.New(color.FgHiBlack).SprintFunc()
+)
+
+func logCreate(filename string) {
+	fmt.Printf("%s %s\n", green("[CREATE]"), filename)
+}
+
+func logUpdate(filename string) {
+	fmt.Printf("%s %s\n", yellow("[UPDATE]"), filename)
+}
+
+func logSkip(filename string) {
+	fmt.Printf("%s %s\n", gray("[SKIP]"), filename)
 }

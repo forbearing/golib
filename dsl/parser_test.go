@@ -176,12 +176,14 @@ func TestParse(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		code string
-		want map[string]*Design
+		code     string
+		endpoint string
+		want     map[string]*Design
 	}{
 		{
-			name: "input1",
-			code: input1,
+			name:     "input1",
+			code:     input1,
+			endpoint: "",
 			want: map[string]*Design{
 				"User": {
 					Enabled:    true,
@@ -200,8 +202,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "input2",
-			code: input2,
+			name:     "input2",
+			code:     input2,
+			endpoint: "",
 			want: map[string]*Design{
 				"User2": {
 					Enabled:    false,
@@ -220,8 +223,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "input3",
-			code: input3,
+			name:     "input3",
+			code:     input3,
+			endpoint: "",
 			want: map[string]*Design{
 				"User3": {
 					Enabled:    true,
@@ -254,13 +258,15 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "input4",
-			code: input4,
-			want: map[string]*Design{},
+			name:     "input4",
+			code:     input4,
+			endpoint: "",
+			want:     map[string]*Design{},
 		},
 		{
-			name: "input5",
-			code: input5,
+			name:     "input5",
+			code:     input5,
+			endpoint: "",
 			want: map[string]*Design{
 				"User5": {
 					Enabled:    true,
@@ -287,7 +293,7 @@ func TestParse(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got := Parse(f)
+			got := Parse(f, tt.endpoint)
 			if len(got) != len(tt.want) {
 				t.Fatalf("Parse() = \n%v\n, want \n%v\n", pretty.Sprintf("% #v", got), pretty.Sprintf("% #v", tt.want))
 			}

@@ -189,7 +189,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "u",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "user",
+						Endpoint:   "model/user",
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
 						Update:     &dsl.Action{Payload: "User", Result: "User"},
@@ -211,7 +211,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "g",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "group",
+						Endpoint:   "model/user",
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
@@ -241,7 +241,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "u",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "user",
+						Endpoint:   "model/user2",
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
 						Update:     &dsl.Action{Payload: "User", Result: "User"},
@@ -263,7 +263,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "g",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "group",
+						Endpoint:   "model/user2",
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Update:     &dsl.Action{Payload: "Group", Result: "Group"},

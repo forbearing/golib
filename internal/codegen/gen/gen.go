@@ -156,7 +156,16 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	designs := dsl.Parse(f)
+
+	var endpoint string
+	// remove the first segment
+	// strings.TrimPrefix(filename, "/") will remove the first "/"
+	items := strings.Split(strings.TrimPrefix(filename, "/"), `/`)
+	if len(items) > 0 {
+		endpoint = strings.Join(items[1:], "/")
+	}
+	endpoint = strings.TrimRight(endpoint, ".go")
+	designs := dsl.Parse(f, endpoint)
 
 	var models []*ModelInfo
 	for _, decl := range node.Decls {
