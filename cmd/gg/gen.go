@@ -32,8 +32,16 @@ func genRun() {
 		checkErr(err)
 	}
 
+	if !fileExists(modelDir) {
+		fmt.Fprintf(os.Stderr, "Error: model dir not found: %s\n", modelDir)
+		os.Exit(1)
+	}
+
 	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
+	if len(allModels) == 0 {
+		return
+	}
 
 	modelStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
