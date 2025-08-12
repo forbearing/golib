@@ -14,7 +14,7 @@ import (
 )
 
 // FormatNode use go standard lib "go/format" to format ast.Node into code.
-func FormatNode(node ast.Node) (string, error) {
+func FormatNode(node ast.Node, processImport ...bool) (string, error) {
 	var buf bytes.Buffer
 	fset := token.NewFileSet()
 
@@ -26,11 +26,20 @@ func FormatNode(node ast.Node) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if len(processImport) > 0 && processImport[0] {
+		result, err := goimports.Process("", formated, nil)
+		if err != nil {
+			return "", err
+		}
+		return string(result), nil
+	}
+
 	return string(formated), nil
 }
 
 // FormatNodeExtra use "https://github.com/mvdan/gofumpt" to format ast.Node into code.
-func FormatNodeExtra(node ast.Node) (string, error) {
+func FormatNodeExtra(node ast.Node, processImport ...bool) (string, error) {
 	var buf bytes.Buffer
 	fset := token.NewFileSet()
 
@@ -42,6 +51,15 @@ func FormatNodeExtra(node ast.Node) (string, error) {
 		LangVersion: "",
 		ExtraRules:  true,
 	})
+
+	if len(processImport) > 0 && processImport[0] {
+		var result []byte
+		if result, err = goimports.Process("", formatted, nil); err != nil {
+			return "", err
+		}
+		return string(result), nil
+	}
+
 	return string(formatted), err
 }
 
@@ -60,23 +78,4 @@ func MethodAddComments(code string, modelName string) string {
 	}
 
 	return code
-}
-
-// formatAndImports formats code use gofumpt and processes imports.
-func formatAndImports(f *ast.File, processImport bool) (string, error) {
-	formatted, err := FormatNodeExtra(f)
-	if err != nil {
-		return "", err
-	}
-
-	if !processImport {
-		return formatted, nil
-	}
-
-	result, err := goimports.Process("", []byte(formatted), nil)
-	if err != nil {
-		return "", err
-	}
-
-	return string(result), nil
 }
