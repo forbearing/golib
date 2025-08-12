@@ -6,24 +6,21 @@ import (
 	"go/token"
 )
 
-// BuildRouterFile generates a router.go file, the content like below:
+// BuildModelFile generates a model.go file, the content like below:
 /*
-package router
+package model
 
-import (
-	"helloworld/model"
-
-	"github.com/forbearing/golib/router"
-)
+import "github.com/forbearing/golib/model"
 
 func Init() error {
-	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-	router.Register[*model.User, *model.User, *model.User](router.API(), "user")
+	model.Register[*Group]()
+	model.Register[*User]()
+
 	return nil
 }
 */
-// FIXME: process imports automatically problem.
-func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
+func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
+	// Create init function body
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
 	body = append(body, &ast.ReturnStmt{
@@ -32,6 +29,7 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 		},
 	})
 
+	// Create Init function declaration
 	initDecl := &ast.FuncDecl{
 		Name: ast.NewIdent("Init"),
 		Type: &ast.FuncType{
@@ -48,32 +46,28 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 		},
 	}
 
+	// Create import declaration
 	importDecl := &ast.GenDecl{
 		Tok: token.IMPORT,
 		Specs: []ast.Spec{
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/router"`,
-				},
-			},
-			&ast.ImportSpec{
-				Path: &ast.BasicLit{
-					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/types/consts"`,
+					Value: `"github.com/forbearing/golib/model"`,
 				},
 			},
 		},
 	}
-	for _, imp := range modelImports {
+	for _, modelImport := range modelImports {
 		importDecl.Specs = append(importDecl.Specs, &ast.ImportSpec{
 			Path: &ast.BasicLit{
 				Kind:  token.STRING,
-				Value: fmt.Sprintf("%q", imp),
+				Value: fmt.Sprintf(`"%s"`, modelImport),
 			},
 		})
 	}
 
+	// Create file AST
 	f := &ast.File{
 		Name:  ast.NewIdent(pkgName),
 		Decls: []ast.Decl{
@@ -81,7 +75,9 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 		},
 	}
 
+	// Add imports
 	f.Decls = append(f.Decls, importDecl)
+	// Add init function
 	f.Decls = append(f.Decls, initDecl)
 
 	return formatAndImports(f, false)
@@ -167,6 +163,87 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 	for _, typ := range types {
 		f.Decls = append(f.Decls, typ)
 	}
+
+	return formatAndImports(f, false)
+}
+
+// BuildRouterFile generates a router.go file, the content like below:
+/*
+package router
+
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/golib/router"
+)
+
+func Init() error {
+	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
+	router.Register[*model.User, *model.User, *model.User](router.API(), "user")
+	return nil
+}
+*/
+// FIXME: process imports automatically problem.
+func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
+	body := make([]ast.Stmt, 0)
+	body = append(body, stmts...)
+	body = append(body, &ast.ReturnStmt{
+		Results: []ast.Expr{
+			ast.NewIdent("nil"),
+		},
+	})
+
+	initDecl := &ast.FuncDecl{
+		Name: ast.NewIdent("Init"),
+		Type: &ast.FuncType{
+			TypeParams: nil,
+			Params:     nil,
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: ast.NewIdent("error")},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: body,
+		},
+	}
+
+	importDecl := &ast.GenDecl{
+		Tok: token.IMPORT,
+		Specs: []ast.Spec{
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/router"`,
+				},
+			},
+			&ast.ImportSpec{
+				Path: &ast.BasicLit{
+					Kind:  token.STRING,
+					Value: `"github.com/forbearing/golib/types/consts"`,
+				},
+			},
+		},
+	}
+	for _, imp := range modelImports {
+		importDecl.Specs = append(importDecl.Specs, &ast.ImportSpec{
+			Path: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: fmt.Sprintf("%q", imp),
+			},
+		})
+	}
+
+	f := &ast.File{
+		Name:  ast.NewIdent(pkgName),
+		Decls: []ast.Decl{
+			// NOTE: imports must appear before other declarations
+		},
+	}
+
+	f.Decls = append(f.Decls, importDecl)
+	f.Decls = append(f.Decls, initDecl)
 
 	return formatAndImports(f, false)
 }

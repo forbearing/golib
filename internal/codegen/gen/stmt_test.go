@@ -41,6 +41,40 @@ func TestStmtLogInfo(t *testing.T) {
 	}
 }
 
+func TestStmtModelRegister(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		structName string
+		want       string
+	}{
+		{
+			name:       "User",
+			structName: "User",
+			want:       `model.Register[*User]()`,
+		},
+		{
+			name:       "Group",
+			structName: "Group",
+			want:       `model.Register[*Group]()`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := StmtModelRegister(tt.structName)
+			var buf bytes.Buffer
+			fset := token.NewFileSet()
+			if err := format.Node(&buf, fset, got); err != nil {
+				t.Error(err)
+				return
+			}
+			if buf.String() != tt.want {
+				t.Errorf("StmtModelRegister() = %v, want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestReturns(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
