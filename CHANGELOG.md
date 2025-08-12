@@ -1,6 +1,91 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- update examples
+- remove comment
+- **codegen:** remove ununsed testcode
+- **codegen:** add testcode
+- **example:** update to support custom REQ and RSP in generic type parameters
+
+### Cmd
+- **gg:** remove subcommand apply
+- **gg:** add option --router
+
+### Codegen
+- ModeInfo add field: ModelFilePath
+
+### Docs
+- update README.md about service interface
+- **codegen:** format service method shape examples in GoDoc style
+- **docs:** fix client package link in READMD.md
+- **docs:** update CHANGELOG.md
+- **model:** add descriptive comments to Base struct fields
+
+### Feat
+- add Enabled flag to DSL Action for fine-grained API control
+- add AreTypesEqual utility for generic type comparsion
+- integrate DSL design parsing into code generation pipeline
+- **codegen:** add ApplyServiceFile and ApplyServiceMethod* for updating generated service methods
+- **codegen:** add ServiceMethod4 and support CRUD phase-based service generation
+- **codegen:** include model imports and HTTP verb in generated router file
+- **codegen:** add apply package for codegen
+- **codegen:** enhance ApplyServiceFile to update service.Base generics
+- **codegen:** add type declarations for all enabled DSL actions in GenerateService
+- **codegen:** name return values in ServiceMethod4 and adjust generator/tests
+- **codegen:** support generate Import,Export
+- **codegen:** add service method shape recognition helpers and tests
+- **codegen:** add function BuildRouterFile to generate router/router.go
+- **codegen:** generate model/model.go
+- **dsl:** add Import,Export action
+- **dsl:** dsl parser
+- **dsl:** add Endpoint, Enabled
+- **dsl:** prepare support dsl
+- **model:** add soft delete support to Base struct
+- **router:** pass HTTP verb from Phase to StmtRouterRegister
+- **service:** add phase-aware service registration and retrieval
+
+### Fix
+- if action enabled, the Payload and Result default to the model name
+- **codegen:** update Import and Export return statements
+- **codegen:** Import should add import "io"
+- **controller:** correct reflect.New usage for non-pointer REQ types
+- **controller:** correct error variable usage in UpdateManyFactory and PatchManyFactory
+- **router:** correct route map keys for batch/import/export endpoints
+- **service:** set logger during Register when available
+- **types:** MethodName for Import,Export
+
+### Refactor
+- implement dual-mode processing for PatchFactory with comprehensive docs
+- **codegen:** seperate the code about generate code into package "internal/codegen/gen"
+- **codegen:** make some function to public
+- **codegen:** fix ModelPkg2ServicePkg; remove Main; public MethodAddComments,FormatNode
+- **codegen:** update service method generation for Many naming convention
+- **controller:** implement dual-mode processing for UpdateManyFactory with comprehensive docs
+- **controller:** update client test and enhance CreateFactory documentation
+- **controller:** implement dual-mode processing for CreateManyFactory with comprehensive docs
+- **controller:** implement dual-mode processing for GetFactory with comprehensive docs
+- **controller:** implement dual-mode processing for ListFactory with comprehensive docs
+- **controller:** implement dual-mode processing for PatchFactory
+- **controller:** implement dual-mode processing for UpdateFactory with comprehensive docs
+- **controller:** implement dual-mode processing for UpdateFactory
+- **controller:** implement dual-mode processing for DeleteFactory with comprehensive docs
+- **controller:** implement dual-mode processing for UpdateManyFactory with comprehensive docs
+- **controller:** implement dual-mode processing for DeleteFactory
+- **controller:** implement dual-mode processing for CreateFactory
+- **controller:** implement dual-mode processing for PatchManyFactory with comprehensive docs
+- **dsl:** Payload(any) -> Payload[T any](); Result(any) -> Result[T any]()
+- **model:** extrace GormTime and GormStrings to separate datatype file
+- **model:** remove gorm.Model embedding from Base struct
+- **service:** update authz services to support custom request and response in type parameters
+
+### Test
+- **codegen:** convert tests to use internal package and unexport helpers directly
+- **codegen:** enhance ApplyServiceFile tests to assert formatted output
+
+### Util
+- add Uniq, Keys, Values
+
 
 <a name="v0.6.2"></a>
 ## [v0.6.2] - 2025-07-28
@@ -836,17 +921,17 @@
 ## [v0.1.0] - 2024-12-26
 ### Chore
 - update examples/demo
-- update README.md
+- update examples/demo
 - update READMD.md
 - update READMD.md
 - update examples/demo
 - add READMD.md for controller
 - update READMD.md
 - update READMD.md
+- update example/demo
+- update READMD.md
 - update examples/demo
 - update READMD.md
-- update READMD.md
-- update examples/demo
 - update READMD.md
 - update example/demo
 - update examples/demo
@@ -855,7 +940,7 @@
 - update README.md
 - update examples/simple
 - update README.md
-- update example/demo
+- update README.md
 - bump go pkg version to latest
 - **model:** add doc for `Register` and `Register`, deprecated `RegisterRoutes`
 
