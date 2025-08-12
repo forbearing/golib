@@ -24,6 +24,9 @@ func DeleteMany(func()) {}
 func UpdateMany(func()) {}
 func PatchMany(func())  {}
 
+func Import(func()) {}
+func Export(func()) {}
+
 type Design struct {
 	Enabled  bool
 	Endpoint string
@@ -39,6 +42,9 @@ type Design struct {
 	DeleteMany *Action
 	UpdateMany *Action
 	PatchMany  *Action
+
+	Import *Action
+	Export *Action
 }
 
 type Action struct {
@@ -64,6 +70,9 @@ var methodList = []string{
 	consts.PHASE_DELETE_MANY.MethodName(),
 	consts.PHASE_UPDATE_MANY.MethodName(),
 	consts.PHASE_PATCH_MANY.MethodName(),
+
+	consts.PHASE_IMPORT.MethodName(),
+	consts.PHASE_EXPORT.MethodName(),
 }
 
 func is(name string) bool {
