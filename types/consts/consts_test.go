@@ -84,8 +84,8 @@ func TestPhase_RoleName(t *testing.T) {
 
 		// 非 CRUD 操作
 		{"filter", consts.PHASE_FILTER, ""},
-		{"import", consts.PHASE_IMPORT, ""},
-		{"export", consts.PHASE_EXPORT, ""},
+		{"import", consts.PHASE_IMPORT, "Importer"},
+		{"export", consts.PHASE_EXPORT, "Exporter"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

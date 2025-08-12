@@ -174,6 +174,10 @@ func (p Phase) RoleName() string {
 		role = "Lister"
 	case get:
 		role = "Getter"
+	case import_:
+		role = "Importer"
+	case export:
+		role = "Exporter"
 	default:
 		return ""
 	}
