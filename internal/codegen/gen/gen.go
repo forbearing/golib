@@ -207,10 +207,6 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	return models, nil
 }
 
-func isValidModelPackage(packageName string) bool {
-	return strings.HasPrefix(packageName, "model")
-}
-
 // modelPkg2ServicePkg 根据 model name 转换成 service name.
 func modelPkg2ServicePkg(pkgName string) string {
 	if pkgName == "model" {
@@ -277,7 +273,7 @@ func genServiceMethod4(info *ModelInfo, reqName, rspName string, phase consts.Ph
 }
 
 func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
-	if !isValidModelPackage(info.ModelPkgName) || !action.Enabled {
+	if !action.Enabled {
 		return nil
 	}
 
