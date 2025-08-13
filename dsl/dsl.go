@@ -9,7 +9,7 @@ import (
 
 func Enabled(bool)    {}
 func Endpoint(string) {}
-func Migrate(string)  {}
+func Migrate(bool)    {}
 func Payload[T any]() {}
 func Result[T any]()  {}
 
