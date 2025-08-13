@@ -188,6 +188,7 @@ func TestParse(t *testing.T) {
 				"User": {
 					Enabled:    true,
 					Endpoint:   "user2",
+					Migrate:    false,
 					Create:     &Action{Enabled: true, Payload: "User", Result: "User"},
 					Delete:     &Action{Enabled: false, Payload: "User", Result: "User"},
 					Update:     &Action{Enabled: false, Payload: "User", Result: "User"},
@@ -211,6 +212,7 @@ func TestParse(t *testing.T) {
 				"User2": {
 					Enabled:    false,
 					Endpoint:   "user2",
+					Migrate:    true,
 					Create:     &Action{Enabled: false, Payload: "User2", Result: "User3"},
 					Delete:     &Action{Enabled: false, Payload: "User2", Result: "User2"},
 					Update:     &Action{Enabled: false, Payload: "User2", Result: "User2"},
@@ -234,6 +236,7 @@ func TestParse(t *testing.T) {
 				"User3": {
 					Enabled:    true,
 					Endpoint:   "user",
+					Migrate:    true,
 					Create:     &Action{Enabled: false, Payload: "User", Result: "User"},
 					Delete:     &Action{Enabled: false, Payload: "User3", Result: "User3"},
 					Update:     &Action{Enabled: true, Payload: "User", Result: "User"},
@@ -250,6 +253,7 @@ func TestParse(t *testing.T) {
 				"User4": {
 					Enabled:    true,
 					Endpoint:   "user4",
+					Migrate:    true,
 					Create:     &Action{Enabled: true, Payload: "User", Result: "User"},
 					Delete:     &Action{Enabled: false, Payload: "User4", Result: "User4"},
 					Update:     &Action{Enabled: false, Payload: "User", Result: "User"},
@@ -279,6 +283,7 @@ func TestParse(t *testing.T) {
 				"User5": {
 					Enabled:    true,
 					Endpoint:   "user5",
+					Migrate:    true,
 					Create:     &Action{Enabled: false, Payload: "User5", Result: "User5"},
 					Delete:     &Action{Enabled: false, Payload: "User5", Result: "User5"},
 					Update:     &Action{Enabled: false, Payload: "User5", Result: "User5"},
