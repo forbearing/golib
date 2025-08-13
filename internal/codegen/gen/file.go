@@ -274,6 +274,8 @@ func BuildMainFile(projectName string) (string, error) {
 			&ast.GenDecl{
 				Tok: token.IMPORT,
 				Specs: []ast.Spec{
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/golib/bootstrap")}},
@@ -295,6 +297,28 @@ func BuildMainFile(projectName string) (string, error) {
 									&ast.SelectorExpr{
 										X:   ast.NewIdent("bootstrap"),
 										Sel: ast.NewIdent("Bootstrap"),
+									},
+								},
+							},
+						},
+						&ast.ExprStmt{
+							X: &ast.CallExpr{
+								Fun: ast.NewIdent("RunOrDie"),
+								Args: []ast.Expr{
+									&ast.SelectorExpr{
+										X:   ast.NewIdent("configx"),
+										Sel: ast.NewIdent("Init"),
+									},
+								},
+							},
+						},
+						&ast.ExprStmt{
+							X: &ast.CallExpr{
+								Fun: ast.NewIdent("RunOrDie"),
+								Args: []ast.Expr{
+									&ast.SelectorExpr{
+										X:   ast.NewIdent("cronjobx"),
+										Sel: ast.NewIdent("Init"),
 									},
 								},
 							},
