@@ -50,7 +50,7 @@ func genRun() {
 	routerImports := make(map[string]struct{})
 	sersviceImports := make(map[string]struct{})
 	for _, m := range allModels {
-		if m.Design.Enabled {
+		if m.Design.Enabled && m.Design.Migrate {
 			// If the ModelFileDir is "model" or "model/", the model package name is the same as the model name,
 			// and the statement in model/model.go will be "Register[*Project]()".
 			// otherwise, the model package name is the last segment of the model file dir.
