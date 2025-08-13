@@ -151,7 +151,7 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 
 // parseDesign parse the *ast.FuncDecl that represents "Design" method and returns a *Design object.
 func parseDesign(fn *ast.FuncDecl) *Design {
-	defaults := &Design{Enabled: true}
+	defaults := &Design{Enabled: true, Migrate: true}
 	// model don't have "Design" method, so returns the default design values.
 	if fn == nil || fn.Body == nil || len(fn.Body.List) == 0 {
 		return defaults
@@ -186,7 +186,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			continue
 		}
 
-		// Parse "Enabled" design.
+		// Parse "Enabled()".
 		if funcName == "Enabled" && len(call.Args) == 1 {
 			arg, ok := call.Args[0].(*ast.Ident)
 			if ok && arg != nil {
@@ -194,10 +194,17 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			}
 		}
 
-		// Parse "Endpoint" design
+		// Parse "Endpoint()".
 		if funcName == "Endpoint" && len(call.Args) == 1 {
 			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
 				defaults.Endpoint = trimQuote(arg.Value)
+			}
+		}
+
+		// Parse "Migrate()".
+		if funcName == "Migrate" && len(call.Args) == 1 {
+			if arg, ok := call.Args[0].(*ast.Ident); ok && arg != nil {
+				defaults.Migrate = arg.Name == "true"
 			}
 		}
 

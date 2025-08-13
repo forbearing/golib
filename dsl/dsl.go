@@ -9,6 +9,7 @@ import (
 
 func Enabled(bool)    {}
 func Endpoint(string) {}
+func Migrate(string)  {}
 func Payload[T any]() {}
 func Result[T any]()  {}
 
@@ -28,9 +29,11 @@ func Import(func()) {}
 func Export(func()) {}
 
 type Design struct {
-	Enabled  bool
-	Endpoint string
+	Enabled  bool   // default enabled
+	Endpoint string // Endpoint defaults to the lower case of the model name, its used by router.
+	Migrate  bool   // Migrate to database or not, default to true.
 
+	// default payload and result is the model name
 	Create *Action
 	Delete *Action
 	Update *Action
@@ -48,14 +51,15 @@ type Design struct {
 }
 
 type Action struct {
-	Enabled bool
-	Payload string
-	Result  string
+	Enabled bool   // defaults to false.
+	Payload string // current Action Payload
+	Result  string // current Action Result
 }
 
 var methodList = []string{
 	"Enabled",
 	"Endpoint",
+	"Migrate",
 	"Payload",
 	"Result",
 
