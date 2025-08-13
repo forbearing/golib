@@ -45,6 +45,7 @@ var (
 )
 
 type Config struct {
+	AppInfo       `json:"app" mapstructure:"app" ini:"app" yaml:"app"`
 	Server        `json:"server" mapstructure:"server" ini:"server" yaml:"server"`
 	Grpc          `json:"grpc" mapstructure:"grpc" ini:"grpc" yaml:"grpc"`
 	Auth          `json:"auth" mapstructure:"auth" ini:"auth" yaml:"auth"`
@@ -77,36 +78,37 @@ type Config struct {
 }
 
 // setDefault will set config default value
-func (*Config) setDefault() {
-	new(Server).setDefault()
-	new(Grpc).setDefault()
-	new(Auth).setDefault()
-	new(Logger).setDefault()
-	new(Database).setDefault()
-	new(Cache).setDefault()
-	new(Sqlite).setDefault()
-	new(Postgres).setDefault()
-	new(MySQL).setDefault()
-	new(Clickhouse).setDefault()
-	new(SQLServer).setDefault()
-	new(Redis).setDefault()
-	new(Elasticsearch).setDefault()
-	new(Mongo).setDefault()
-	new(Kafka).setDefault()
-	new(Ldap).setDefault()
-	new(Influxdb).setDefault()
-	new(Minio).setDefault()
-	new(S3).setDefault()
-	new(Mqtt).setDefault()
-	new(Nats).setDefault()
-	new(Etcd).setDefault()
-	new(Cassandra).setDefault()
-	new(Scylla).setDefault()
-	new(Memcached).setDefault()
-	new(RethinkDB).setDefault()
-	new(RocketMQ).setDefault()
-	new(Feishu).setDefault()
-	new(Debug).setDefault()
+func (c *Config) setDefault() {
+	c.AppInfo.setDefault()
+	c.Server.setDefault()
+	c.Grpc.setDefault()
+	c.Auth.setDefault()
+	c.Logger.setDefault()
+	c.Database.setDefault()
+	c.Cache.setDefault()
+	c.Sqlite.setDefault()
+	c.Postgres.setDefault()
+	c.MySQL.setDefault()
+	c.Clickhouse.setDefault()
+	c.SQLServer.setDefault()
+	c.Redis.setDefault()
+	c.Elasticsearch.setDefault()
+	c.Mongo.setDefault()
+	c.Kafka.setDefault()
+	c.Ldap.setDefault()
+	c.Influxdb.setDefault()
+	c.Minio.setDefault()
+	c.S3.setDefault()
+	c.Mqtt.setDefault()
+	c.Nats.setDefault()
+	c.Etcd.setDefault()
+	c.Cassandra.setDefault()
+	c.Scylla.setDefault()
+	c.Memcached.setDefault()
+	c.RethinkDB.setDefault()
+	c.RocketMQ.setDefault()
+	c.Feishu.setDefault()
+	c.Debug.setDefault()
 }
 
 // Init initializes the application configuration
@@ -134,7 +136,9 @@ func Init() (err error) {
 	cv.AllowEmptyEnv(true)
 	cv.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	new(Config).setDefault()
+	// Set default values before unmarshaling
+	App = new(Config)
+	App.setDefault()
 
 	if len(configFile) > 0 {
 		cv.SetConfigFile(configFile)
