@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/forbearing/golib/types/consts"
+	"github.com/gin-gonic/gin"
 )
 
 type sortByCreatedTime[M Model] []M
@@ -110,10 +111,8 @@ type ServiceContext struct {
 	SpanId    string
 	Seq       int
 
-	phase consts.Phase
-
-	request  any // custom http request.
-	response any // custom http response.
+	GinContext *gin.Context
+	phase      consts.Phase
 }
 
 // // SetRequest is called in the controller layer when the model has custom request type.
