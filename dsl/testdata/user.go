@@ -20,7 +20,7 @@ func (User) Design() {
 	Endpoint("user2")
 
 	// Default to true,
-	Migrate(false)
+	Migrate(true)
 
 	// Custom create action request "Payload" and response "Result".
 	// Default payload and result is the model name.

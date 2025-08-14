@@ -151,7 +151,7 @@ func parse(file *ast.File) map[string]*ast.FuncDecl {
 
 // parseDesign parse the *ast.FuncDecl that represents "Design" method and returns a *Design object.
 func parseDesign(fn *ast.FuncDecl) *Design {
-	defaults := &Design{Enabled: true, Migrate: true}
+	defaults := &Design{Enabled: true, Migrate: false}
 	// model don't have "Design" method, so returns the default design values.
 	if fn == nil || fn.Body == nil || len(fn.Body.List) == 0 {
 		return defaults
