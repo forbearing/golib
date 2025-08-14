@@ -75,8 +75,12 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 		},
 	}
 
-	// Add imports
-	f.Decls = append(f.Decls, importDecl)
+	// If the the caller not pass stmts or stats is empty, then the Init function body is empty,
+	// So we should not imports any external package.
+	if len(stmts) != 0 {
+		// Add imports
+		f.Decls = append(f.Decls, importDecl)
+	}
 	// Add init function
 	f.Decls = append(f.Decls, initDecl)
 
