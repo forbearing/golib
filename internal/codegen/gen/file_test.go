@@ -251,6 +251,7 @@ func TestBuildMainFile(t *testing.T) {
 import (
 	"helloworld/configx"
 	"helloworld/cronjobx"
+	"helloworld/model"
 	"helloworld/router"
 	"helloworld/service"
 
@@ -262,6 +263,7 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
+	RunOrDie(model.Init)
 	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
