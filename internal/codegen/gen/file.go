@@ -155,8 +155,13 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 			// NOTE: imports must appear before other declarations
 		},
 	}
-	// imports
-	f.Decls = append(f.Decls, imports)
+
+	// If the the caller not pass stmts or stats is empty, then the Init function body is empty,
+	// So we should not imports any external package.
+	if len(stmts) != 0 {
+		// imports
+		f.Decls = append(f.Decls, imports)
+	}
 	// Init() declarations.
 	f.Decls = append(f.Decls, initDecl)
 	// type declarations.
@@ -242,7 +247,13 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 		},
 	}
 
-	f.Decls = append(f.Decls, importDecl)
+	// If the the caller not pass stmts or stats is empty, then the Init function body is empty,
+	// So we should not imports any external package.
+	if len(stmts) != 0 {
+		// imports
+		f.Decls = append(f.Decls, importDecl)
+	}
+	// Init() declarations.
 	f.Decls = append(f.Decls, initDecl)
 
 	return FormatNodeExtra(f, false)
