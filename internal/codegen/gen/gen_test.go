@@ -190,7 +190,7 @@ func TestFindModels(t *testing.T) {
 					Design: &dsl.Design{
 						Enabled:    true,
 						Endpoint:   "model/user",
-						Migrate:    true,
+						Migrate:    false,
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
 						Update:     &dsl.Action{Payload: "User", Result: "User"},
@@ -215,7 +215,7 @@ func TestFindModels(t *testing.T) {
 					Design: &dsl.Design{
 						Enabled:    true,
 						Endpoint:   "model/user",
-						Migrate:    true,
+						Migrate:    false,
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
@@ -248,7 +248,7 @@ func TestFindModels(t *testing.T) {
 					Design: &dsl.Design{
 						Enabled:    true,
 						Endpoint:   "model/user2",
-						Migrate:    true,
+						Migrate:    false,
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
 						Update:     &dsl.Action{Payload: "User", Result: "User"},
@@ -273,7 +273,7 @@ func TestFindModels(t *testing.T) {
 					Design: &dsl.Design{
 						Enabled:    true,
 						Endpoint:   "model/user2",
-						Migrate:    true,
+						Migrate:    false,
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
