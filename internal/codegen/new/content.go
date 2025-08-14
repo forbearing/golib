@@ -5,7 +5,7 @@ const mainContent = `package main
 import (
 	"%s/configx"
 	"%s/cronjobx"
-	"%s/model"
+	_ "%s/model"
 	"%s/router"
 	"%s/service"
 
@@ -17,7 +17,6 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(model.Init)
 	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
@@ -40,8 +39,7 @@ func Init() error {
 
 const modelContent = `package model
 
-func Init() error {
-	return nil
+func init() {
 }
 `
 

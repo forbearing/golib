@@ -41,9 +41,8 @@ func TestBuildModelFile(t *testing.T) {
 
 import "github.com/forbearing/golib/model"
 
-func Init() error {
+func init() {
 	model.Register[*User]()
-	return nil
 }
 `,
 			wantErr: false,
@@ -64,10 +63,9 @@ import (
 	"github.com/forbearing/golib/model"
 )
 
-func Init() error {
+func init() {
 	model.Register[*User]()
 	model.Register[*Group]()
-	return nil
 }
 `,
 			wantErr: false,
@@ -251,7 +249,7 @@ func TestBuildMainFile(t *testing.T) {
 import (
 	"helloworld/configx"
 	"helloworld/cronjobx"
-	"helloworld/model"
+	_ "helloworld/model"
 	"helloworld/router"
 	"helloworld/service"
 
@@ -263,7 +261,6 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(model.Init)
 	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
