@@ -35,7 +35,7 @@ func Run(projectName string) error {
 	}
 
 	// Create directories with .gitkeep files
-	dirs := []string{"model", "service", "router", "configx", "cronjobx"}
+	dirs := []string{"configx", "cronjobx", "model", "service", "router"}
 	for _, dir := range dirs {
 		fmt.Printf("Creating directory: %s\n", dir)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -65,6 +65,11 @@ func Run(projectName string) error {
 		return err
 	}
 
+	fmt.Println("Creating model/model.go")
+	if err := os.WriteFile("model/model.go", []byte(modelContent), 0o644); err != nil {
+		return err
+	}
+
 	// Create service/service.go
 	fmt.Println("Creating service/service.go")
 	if err := os.WriteFile("service/service.go", []byte(serviceContent), 0o644); err != nil {
@@ -79,7 +84,7 @@ func Run(projectName string) error {
 
 	// Create main.go file
 	fmt.Println("Creating main.go")
-	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName, projectName, projectName), 0o644); err != nil {
+	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName, projectName, projectName, projectName), 0o644); err != nil {
 		return err
 	}
 
