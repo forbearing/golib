@@ -12,34 +12,32 @@ package model
 
 import "github.com/forbearing/golib/model"
 
-func Init() error {
+func init() {
 	model.Register[*Group]()
 	model.Register[*User]()
-
-	return nil
 }
 */
 func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
 	// Create init function body
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
-	body = append(body, &ast.ReturnStmt{
-		Results: []ast.Expr{
-			ast.NewIdent("nil"),
-		},
-	})
+	// body = append(body, &ast.ReturnStmt{
+	// 	Results: []ast.Expr{
+	// 		ast.NewIdent("nil"),
+	// 	},
+	// })
 
 	// Create Init function declaration
 	initDecl := &ast.FuncDecl{
-		Name: ast.NewIdent("Init"),
+		Name: ast.NewIdent("init"),
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
-			Results: &ast.FieldList{
-				List: []*ast.Field{
-					{Type: ast.NewIdent("error")},
-				},
-			},
+			// Results: &ast.FieldList{
+			// 	List: []*ast.Field{
+			// 		{Type: ast.NewIdent("error")},
+			// 	},
+			// },
 		},
 		Body: &ast.BlockStmt{
 			List: body,
@@ -270,7 +268,7 @@ package main
 import (
 	"helloworld/configx"
 	"helloworld/cronjobx"
-	"helloworld/model"
+	_ "helloworld/model"
 	"helloworld/router"
 	"helloworld/service"
 
@@ -282,7 +280,6 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(model.Init)
 	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
@@ -297,7 +294,7 @@ func BuildMainFile(projectName string) (string, error) {
 				Specs: []ast.Spec{
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/golib/bootstrap")}},
@@ -340,17 +337,6 @@ func BuildMainFile(projectName string) (string, error) {
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
 										X:   ast.NewIdent("cronjobx"),
-										Sel: ast.NewIdent("Init"),
-									},
-								},
-							},
-						},
-						&ast.ExprStmt{
-							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
-								Args: []ast.Expr{
-									&ast.SelectorExpr{
-										X:   ast.NewIdent("model"),
 										Sel: ast.NewIdent("Init"),
 									},
 								},
