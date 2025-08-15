@@ -6,6 +6,8 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
+const FrameworkName = "golib"
+
 type AppSide string
 
 const (
