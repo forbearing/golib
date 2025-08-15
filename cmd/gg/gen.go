@@ -110,18 +110,26 @@ func genRun() {
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
 		if fileExists(filename) {
-			f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+			// Read original file content to preserve comments and formatting
+			src, err := os.ReadFile(filename)
 			checkErr(err)
+			f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+			checkErr(err)
+
+			// Apply changes
 			changed := gen.ApplyServiceFile(f, action)
-			code, err = gen.FormatNodeExtra(f)
-			checkErr(err)
+
 			if changed {
+				// Only reformat and write file when there are changes
+				// Use original FileSet to preserve comment positions
+				code, err = gen.FormatNodeExtraWithFileSet(f, fset)
+				checkErr(err)
 				logUpdate(filename)
+				checkErr(ensureParentDir(filename))
+				checkErr(os.WriteFile(filename, []byte(code), 0o644))
 			} else {
 				logSkip(filename)
 			}
-			checkErr(ensureParentDir(filename))
-			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		} else {
 			logCreate(filename)
 			checkErr(ensureParentDir(filename))

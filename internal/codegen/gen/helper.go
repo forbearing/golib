@@ -40,8 +40,16 @@ func FormatNode(node ast.Node, processImport ...bool) (string, error) {
 
 // FormatNodeExtra use "https://github.com/mvdan/gofumpt" to format ast.Node into code.
 func FormatNodeExtra(node ast.Node, processImport ...bool) (string, error) {
+	return FormatNodeExtraWithFileSet(node, nil, processImport...)
+}
+
+// FormatNodeExtraWithFileSet 使用指定的 FileSet 格式化节点，保持注释位置
+func FormatNodeExtraWithFileSet(node ast.Node, fset *token.FileSet, processImport ...bool) (string, error) {
 	var buf bytes.Buffer
-	fset := token.NewFileSet()
+	// 如果没有提供 FileSet，创建新的
+	if fset == nil {
+		fset = token.NewFileSet()
+	}
 
 	if err := format.Node(&buf, fset, node); err != nil {
 		return "", err
@@ -66,7 +74,7 @@ func FormatNodeExtra(node ast.Node, processImport ...bool) (string, error) {
 func MethodAddComments(code string, modelName string) string {
 	for _, method := range Methods {
 		str := strings.ReplaceAll(strcase.SnakeCase(method), "_", " ")
-		// 在 log.Info 之后添加注释
+		// Add comment after log.Info
 		searchStr := fmt.Sprintf(`log.Info("%s %s")`, strings.ToLower(modelName), str)
 		replaceStr := fmt.Sprintf(`log.Info("%s %s")
 	// =============================
