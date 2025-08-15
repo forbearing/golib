@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"path"
-	"strings"
 
 	"github.com/forbearing/golib/types/consts"
 )
@@ -25,11 +23,6 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 	// Create init function body
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
-	// body = append(body, &ast.ReturnStmt{
-	// 	Results: []ast.Expr{
-	// 		ast.NewIdent("nil"),
-	// 	},
-	// })
 
 	// Create Init function declaration
 	initDecl := &ast.FuncDecl{
@@ -37,11 +30,6 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
-			// Results: &ast.FieldList{
-			// 	List: []*ast.Field{
-			// 		{Type: ast.NewIdent("error")},
-			// 	},
-			// },
 		},
 		Body: &ast.BlockStmt{
 			List: body,
@@ -102,48 +90,6 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 	return FormatNodeExtra(f, false)
 }
 
-// ResolveImportConflicts detects import conflicts and generates unique aliases
-// Returns a map where key is the import path and value is the alias (empty string means no alias needed)
-func ResolveImportConflicts(imports []string) map[string]string {
-	aliases := make(map[string]string)
-	baseNames := make(map[string][]string) // baseName -> []importPath
-
-	// Group imports by their base package name
-	for _, imp := range imports {
-		baseName := path.Base(imp)
-		baseNames[baseName] = append(baseNames[baseName], imp)
-	}
-
-	// Generate aliases for conflicting imports
-	for _, paths := range baseNames {
-		if len(paths) == 1 {
-			// No conflict, no alias needed
-			aliases[paths[0]] = ""
-		} else {
-			// Conflict detected, generate unique aliases
-			for _, importPath := range paths {
-				alias := generateAlias(importPath)
-				aliases[importPath] = alias
-			}
-		}
-	}
-
-	return aliases
-}
-
-// generateAlias creates a unique alias for an import path
-// For example: "nebula/service/cmdb/machine" -> "cmdb_machine"
-func generateAlias(importPath string) string {
-	parts := strings.Split(importPath, "/")
-	if len(parts) < 2 {
-		return path.Base(importPath)
-	}
-
-	// Use the last two parts joined with underscore
-	// e.g., "nebula/service/cmdb/machine" -> "cmdb_machine"
-	return parts[len(parts)-2] + "_" + parts[len(parts)-1]
-}
-
 // BuildServiceFile generates a service.go file, the content like below:
 /*
 package service
@@ -157,7 +103,7 @@ func Init() error {
 }
 */
 // FIXME: process imports automatically problem.
-func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDecl, stmts ...ast.Stmt) (string, error) {
+func BuildServiceFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
 	// Handle import conflicts when modelImports contain packages with same base name
 	// For example: ["nebula/service/pkg1/user", "nebula/service/pkg2/user"]
 	// Should be renamed to:
@@ -169,22 +115,12 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 
 	body := make([]ast.Stmt, 0)
 	body = append(body, stmts...)
-	body = append(body, &ast.ReturnStmt{
-		Results: []ast.Expr{
-			ast.NewIdent("nil"),
-		},
-	})
 
 	initDecl := &ast.FuncDecl{
-		Name: ast.NewIdent("Init"),
+		Name: ast.NewIdent("init"),
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
-			Results: &ast.FieldList{
-				List: []*ast.Field{
-					{Type: ast.NewIdent("error")},
-				},
-			},
 		},
 		Body: &ast.BlockStmt{
 			List: body,
@@ -254,10 +190,6 @@ func BuildServiceFile(pkgName string, modelImports []string, types []*ast.GenDec
 	}
 	// Init() declarations.
 	f.Decls = append(f.Decls, initDecl)
-	// type declarations.
-	for _, typ := range types {
-		f.Decls = append(f.Decls, typ)
-	}
 
 	return FormatNodeExtra(f, false)
 }
@@ -396,7 +328,7 @@ func BuildMainFile(projectName string) (string, error) {
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/golib/bootstrap")}},
 					&ast.ImportSpec{
@@ -438,17 +370,6 @@ func BuildMainFile(projectName string) (string, error) {
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
 										X:   ast.NewIdent("cronjobx"),
-										Sel: ast.NewIdent("Init"),
-									},
-								},
-							},
-						},
-						&ast.ExprStmt{
-							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
-								Args: []ast.Expr{
-									&ast.SelectorExpr{
-										X:   ast.NewIdent("service"),
 										Sel: ast.NewIdent("Init"),
 									},
 								},

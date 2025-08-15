@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"path"
 	"strings"
 
 	"github.com/stoewer/go-strcase"
@@ -137,4 +138,46 @@ func MethodAddComments(code string, modelName string) string {
 	}
 
 	return code
+}
+
+// ResolveImportConflicts detects import conflicts and generates unique aliases
+// Returns a map where key is the import path and value is the alias (empty string means no alias needed)
+func ResolveImportConflicts(imports []string) map[string]string {
+	aliases := make(map[string]string)
+	baseNames := make(map[string][]string) // baseName -> []importPath
+
+	// Group imports by their base package name
+	for _, imp := range imports {
+		baseName := path.Base(imp)
+		baseNames[baseName] = append(baseNames[baseName], imp)
+	}
+
+	// Generate aliases for conflicting imports
+	for _, paths := range baseNames {
+		if len(paths) == 1 {
+			// No conflict, no alias needed
+			aliases[paths[0]] = ""
+		} else {
+			// Conflict detected, generate unique aliases
+			for _, importPath := range paths {
+				alias := generateAlias(importPath)
+				aliases[importPath] = alias
+			}
+		}
+	}
+
+	return aliases
+}
+
+// generateAlias creates a unique alias for an import path
+// For example: "nebula/service/cmdb/machine" -> "cmdb_machine"
+func generateAlias(importPath string) string {
+	parts := strings.Split(importPath, "/")
+	if len(parts) < 2 {
+		return path.Base(importPath)
+	}
+
+	// Use the last two parts joined with underscore
+	// e.g., "nebula/service/cmdb/machine" -> "cmdb_machine"
+	return parts[len(parts)-2] + "_" + parts[len(parts)-1]
 }
