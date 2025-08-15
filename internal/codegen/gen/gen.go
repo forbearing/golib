@@ -61,18 +61,18 @@ func (m *ModelInfo) ModelImportPath() (string, bool) {
 
 // GetModulePath parses go.mod to get module path
 func GetModulePath() (string, error) {
+	file, err := os.Open("go.mod")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
 	// If go command exists, get module path directly through go list -m command
 	cmd := exec.Command("go", "list", "-m")
 	output, err := cmd.Output()
 	if err == nil {
 		return strings.TrimSpace(string(output)), nil
 	}
-
-	file, err := os.Open("go.mod")
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
 
 	var moduleName string
 	scanner := bufio.NewScanner(file)
