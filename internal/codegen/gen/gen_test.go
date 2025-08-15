@@ -171,6 +171,7 @@ func TestFindModels(t *testing.T) {
 		name string // description of this test case
 		// Named input parameters for target function.
 		modulePath string
+		modelPath  string
 		filename   string
 		want       []*ModelInfo
 		wantErr    bool
@@ -178,6 +179,7 @@ func TestFindModels(t *testing.T) {
 		{
 			name:       "default",
 			modulePath: modulePath,
+			modelPath:  tmpdir,
 			filename:   filename1,
 			want: []*ModelInfo{
 				{
@@ -189,7 +191,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "u",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "model/user",
+						Endpoint:   "user",
 						Migrate:    false,
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
@@ -214,7 +216,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "g",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "model/user",
+						Endpoint:   "group",
 						Migrate:    false,
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
@@ -236,6 +238,7 @@ func TestFindModels(t *testing.T) {
 		{
 			name:       "named",
 			modulePath: modulePath,
+			modelPath:  tmpdir,
 			filename:   filename2,
 			want: []*ModelInfo{
 				{
@@ -247,7 +250,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "u",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "model/user2",
+						Endpoint:   "user",
 						Migrate:    false,
 						Create:     &dsl.Action{Payload: "User", Result: "User"},
 						Delete:     &dsl.Action{Payload: "User", Result: "User"},
@@ -272,7 +275,7 @@ func TestFindModels(t *testing.T) {
 					ModelVarName:  "g",
 					Design: &dsl.Design{
 						Enabled:    true,
-						Endpoint:   "model/user2",
+						Endpoint:   "group",
 						Migrate:    false,
 						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
 						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
@@ -293,7 +296,7 @@ func TestFindModels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := FindModels(tt.modulePath, tt.filename)
+			got, gotErr := FindModels(tt.modulePath, tt.modelPath, tt.filename)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("FindModels() failed: %v", gotErr)

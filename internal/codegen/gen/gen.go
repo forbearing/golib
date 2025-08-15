@@ -140,8 +140,7 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 }
 
 // FindModels 查找 model 文件中的所有结构体
-// TODO: 支持自定义 Request、Response 不和 model 同一个包位置
-func FindModels(module string, filename string) ([]*ModelInfo, error) {
+func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
@@ -157,15 +156,16 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 		return nil, err
 	}
 
-	var endpoint string
-	// remove the first segment
-	// strings.TrimPrefix(filename, "/") will remove the first "/"
-	items := strings.Split(strings.TrimPrefix(filename, "/"), `/`)
-	if len(items) > 0 {
-		endpoint = strings.Join(items[1:], "/")
+	designs := dsl.Parse(f, "")
+	for _, design := range designs {
+		// The new endpoint value is the model file dir + the endpoint value
+		// For example: old endpoint is "order", the model dir is "model/user",
+		// then the new endpoint is "user/order"
+		newFilename := strings.TrimPrefix(filename, modelDir) // "/user/order.go"
+		newFilename = strings.TrimPrefix(newFilename, "/")    // "user/order.go"
+		dir := filepath.Dir(newFilename)                      // "user"
+		design.Endpoint = filepath.Join(dir, design.Endpoint) // "user/order"
 	}
-	endpoint = strings.TrimRight(endpoint, ".go")
-	designs := dsl.Parse(f, endpoint)
 
 	var models []*ModelInfo
 	for _, decl := range node.Decls {
