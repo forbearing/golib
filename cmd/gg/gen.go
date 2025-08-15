@@ -25,6 +25,18 @@ var genCmd = &cobra.Command{
 	},
 }
 
+var tsCmd = &cobra.Command{
+	Use:   "ts",
+	Short: "generate typescript interface code",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("not implemented")
+	},
+}
+
+func init() {
+	genCmd.AddCommand(tsCmd)
+}
+
 func genRun() {
 	if len(module) == 0 {
 		var err error
@@ -46,11 +58,11 @@ func genRun() {
 	modelStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
 	routerStmts := make([]ast.Stmt, 0)
-	modelImports := make(map[string]struct{})
-	routerImports := make(map[string]struct{})
-	sersviceImports := make(map[string]struct{})
+	modelImportMap := make(map[string]struct{})
+	routerImportMap := make(map[string]struct{})
+	serviceImportMap := make(map[string]struct{})
 	for _, m := range allModels {
-		if m.Design.Enabled {
+		if m.Design.Enabled && m.Design.Migrate {
 			// If the ModelFileDir is "model" or "model/", the model package name is the same as the model name,
 			// and the statement in model/model.go will be "Register[*Project]()".
 			// otherwise, the model package name is the last segment of the model file dir.
@@ -65,40 +77,48 @@ func genRun() {
 				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", pkgName, m.ModelName)))
 			}
 
-			// If a struct anonymous inherits from model.Base, than the model will be imported in model/model.go using
-			// statement such like: "model.Register[*User]()".
-			// Imported the model is not determinated by m.Design.Eanbled value.
-			path := filepath.Join(m.ModulePath, m.ModelFileDir)
-			if !strings.HasSuffix(path, "/model") {
-				modelImports[path] = struct{}{}
+			if path, shouldImport := m.ModelImportPath(); shouldImport {
+				modelImportMap[path] = struct{}{}
 			}
+
 		}
 
-		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
-			var path string
-
-			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
-
-			routerImports[filepath.Join(m.ModulePath, m.ModelFileDir)] = struct{}{}
-
-			path = strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
-			path = strings.TrimRight(path, ".go")
-			sersviceImports[path] = struct{}{}
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
+			if a.Service {
+				serviceImportMap[m.ServiceImportPath(modelDir, serviceDir)] = struct{}{}
+			}
+			routerImportMap[m.RouterImportPath()] = struct{}{}
 		})
 	}
 
-	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImports), modelStmts...)
+	serviceAliasMap := gen.ResolveImportConflicts(lo.Keys(serviceImportMap))
+	for _, m := range allModels {
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
+			if a.Service {
+				if alias := serviceAliasMap[m.ServiceImportPath(modelDir, serviceDir)]; len(alias) > 0 {
+					// alias import pacakge, eg:
+					// pkg1_user "service/pkg1/user"
+					// pkg2_user "service/pkg2/user"
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, p.RoleName()), p))
+				} else {
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
+				}
+			}
+			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
+		})
+	}
+
+	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImportMap), modelStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(modelDir, "model.go"), modelCode)
 
 	// generate service/service.go
-	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(sersviceImports), nil, serviceStmts...)
+	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(serviceImportMap), serviceStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 
 	// generate router/router.go
-	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImports), routerStmts...)
+	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImportMap), routerStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(routerDir, "router.go"), routerCode)
 
@@ -110,18 +130,26 @@ func genRun() {
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
 		if fileExists(filename) {
-			f, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+			// Read original file content to preserve comments and formatting
+			src, err := os.ReadFile(filename)
 			checkErr(err)
+			f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+			checkErr(err)
+
+			// Apply changes
 			changed := gen.ApplyServiceFile(f, action)
-			code, err = gen.FormatNodeExtra(f)
-			checkErr(err)
+
 			if changed {
+				// Only reformat and write file when there are changes
+				// Use original FileSet to preserve comment positions
+				code, err = gen.FormatNodeExtraWithFileSet(f, fset)
+				checkErr(err)
 				logUpdate(filename)
+				checkErr(ensureParentDir(filename))
+				checkErr(os.WriteFile(filename, []byte(code), 0o644))
 			} else {
 				logSkip(filename)
 			}
-			checkErr(ensureParentDir(filename))
-			checkErr(os.WriteFile(filename, []byte(code), 0o644))
 		} else {
 			logCreate(filename)
 			checkErr(ensureParentDir(filename))
@@ -130,7 +158,7 @@ func genRun() {
 	}
 
 	for _, m := range allModels {
-		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			if file := gen.GenerateService(m, a, p); file != nil {
 				code, err := gen.FormatNodeExtra(file)
 				checkErr(err)

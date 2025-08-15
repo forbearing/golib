@@ -93,7 +93,10 @@ func applyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) bool {
 				if _, ok := sel.X.(*ast.Ident); ok {
 					if action.Payload != "" && sel.Sel.Name != action.Payload {
 						changed = true
-						sel.Sel = ast.NewIdent(action.Payload)
+						// Preserve original position information to avoid comment displacement
+						newIdent := ast.NewIdent(action.Payload)
+						newIdent.NamePos = sel.Sel.NamePos
+						sel.Sel = newIdent
 					}
 				}
 			}
@@ -108,7 +111,10 @@ func applyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) bool {
 				if _, ok := sel.X.(*ast.Ident); ok {
 					if action.Result != "" && sel.Sel.Name != action.Result {
 						changed = true
-						sel.Sel = ast.NewIdent(action.Result)
+						// Preserve original position information to avoid comment displacement
+						newIdent := ast.NewIdent(action.Result)
+						newIdent.NamePos = sel.Sel.NamePos
+						sel.Sel = newIdent
 					}
 				}
 			}
@@ -148,7 +154,10 @@ func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) bool {
 								// keep package (sel2.X), replace Sel with action.Payload
 								if sel2.Sel.Name != action.Payload {
 									changed = true
-									sel2.Sel = ast.NewIdent(action.Payload)
+									// Preserve original position information to avoid comment displacement
+									newIdent := ast.NewIdent(action.Payload)
+									newIdent.NamePos = sel2.Sel.NamePos
+									sel2.Sel = newIdent
 								}
 							}
 						}
@@ -157,7 +166,10 @@ func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) bool {
 								// keep package (sel3.X), replace Sel with action.Result
 								if sel3.Sel.Name != action.Result {
 									changed = true
-									sel3.Sel = ast.NewIdent(action.Result)
+									// Preserve original position information to avoid comment displacement
+									newIdent := ast.NewIdent(action.Result)
+									newIdent.NamePos = sel3.Sel.NamePos
+									sel3.Sel = newIdent
 								}
 							}
 						}

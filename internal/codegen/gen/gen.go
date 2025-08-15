@@ -16,42 +16,63 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
-// ModelInfo 存储模型信息
+// ModelInfo stores model information
 //
-// 例如:
+// Examples:
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
 // {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
 type ModelInfo struct {
-	// module 相关字段
-	ModulePath string // 从 go.mod 解析的模块路径
+	// module related fields
+	ModulePath string // module path parsed from go.mod
 
-	// model 相关字段
-	ModelPkgName  string // model 包名, 例如: model, model_authz, model_log
-	ModelName     string // model 名, 例如: User, Group
-	ModelVarName  string // 小写的模型变量名, 例如: u, g
-	ModelFileDir  string // model 文件所在目录的的相对路径, 例如: github.com/forbearing/golib/model
-	ModelFilePath string // model 文件的相对路径, 例如: github.com/forbearing/golib/model/user.go
+	// model related fields
+	ModelPkgName  string // model package name, e.g.: model, model_authz, model_log
+	ModelName     string // model name, e.g.: User, Group
+	ModelVarName  string // lowercase model variable name, e.g.: u, g
+	ModelFileDir  string // relative path of model file directory, e.g.: github.com/forbearing/golib/model
+	ModelFilePath string // relative path of model file, e.g.: github.com/forbearing/golib/model/user.go
 
-	// 自定义请求和相应相关字段
+	// custom request and response related fields
 	Design *dsl.Design
 }
 
-// GetModulePath 解析 go.mod 获取模块路径
-func GetModulePath() (string, error) {
-	// 如果存在 go 命令直接通过 go list -m 命令获取模块路径
-	cmd := exec.Command("go", "list", "-m")
-	output, err := cmd.Output()
-	if err == nil {
-		return strings.TrimSpace(string(output)), nil
-	}
+func (m *ModelInfo) ServiceImportPath(modelDir, serviceDir string) string {
+	path := strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
+	path = strings.TrimRight(path, ".go")
+	return path
+}
 
+func (m *ModelInfo) RouterImportPath() string {
+	return filepath.Join(m.ModulePath, m.ModelFileDir)
+}
+
+func (m *ModelInfo) ModelImportPath() (string, bool) {
+	// If a struct anonymous inherits from model.Base, than the model will be imported in model/model.go using
+	// statement such like: "model.Register[*User]()".
+	// Imported the model is not determinated by m.Design.Eanbled value.
+	path := filepath.Join(m.ModulePath, m.ModelFileDir)
+	if !strings.HasSuffix(path, "/model") {
+		return path, true
+	}
+	return "", false
+}
+
+// GetModulePath parses go.mod to get module path
+func GetModulePath() (string, error) {
 	file, err := os.Open("go.mod")
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
+
+	// If go command exists, get module path directly through go list -m command
+	cmd := exec.Command("go", "list", "-m")
+	output, err := cmd.Output()
+	if err == nil {
+		return strings.TrimSpace(string(output)), nil
+	}
 
 	var moduleName string
 	scanner := bufio.NewScanner(file)
@@ -68,9 +89,9 @@ func GetModulePath() (string, error) {
 	return moduleName, scanner.Err()
 }
 
-// findModelPackageName 查找包中导入的 model 包的实际名称
-// import "github.com/forbearing/golib/model" 则为 "model"
-// import model_auth "github.com/forbearing/golib/model", 则为 model_auth
+// findModelPackageName finds the actual name of the imported model package
+// import "github.com/forbearing/golib/model" returns "model"
+// import model_auth "github.com/forbearing/golib/model" returns model_auth
 func findModelPackageName(file *ast.File) string {
 	return file.Name.Name
 }
@@ -139,9 +160,8 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 	return false
 }
 
-// FindModels 查找 model 文件中的所有结构体
-// TODO: 支持自定义 Request、Response 不和 model 同一个包位置
-func FindModels(module string, filename string) ([]*ModelInfo, error) {
+// FindModels finds all structs in model files
+func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
@@ -157,15 +177,16 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 		return nil, err
 	}
 
-	var endpoint string
-	// remove the first segment
-	// strings.TrimPrefix(filename, "/") will remove the first "/"
-	items := strings.Split(strings.TrimPrefix(filename, "/"), `/`)
-	if len(items) > 0 {
-		endpoint = strings.Join(items[1:], "/")
+	designs := dsl.Parse(f, "")
+	for _, design := range designs {
+		// The new endpoint value is the model file dir + the endpoint value
+		// For example: old endpoint is "order", the model dir is "model/user",
+		// then the new endpoint is "user/order"
+		newFilename := strings.TrimPrefix(filename, modelDir) // "/user/order.go"
+		newFilename = strings.TrimPrefix(newFilename, "/")    // "user/order.go"
+		dir := filepath.Dir(newFilename)                      // "user"
+		design.Endpoint = filepath.Join(dir, design.Endpoint) // "user/order"
 	}
-	endpoint = strings.TrimRight(endpoint, ".go")
-	designs := dsl.Parse(f, endpoint)
 
 	var models []*ModelInfo
 	for _, decl := range node.Decls {
@@ -212,20 +233,20 @@ func FindModels(module string, filename string) ([]*ModelInfo, error) {
 	return models, nil
 }
 
-// modelPkg2ServicePkg 根据 model name 转换成 service name.
+// modelPkg2ServicePkg converts model name to service name.
 func modelPkg2ServicePkg(pkgName string) string {
 	if pkgName == "model" {
 		return "service"
 	}
-	// 对于 model_xxx 格式，替换为 service_xxx
+	// For model_xxx format, replace with service_xxx
 	if strings.HasPrefix(pkgName, "model_") {
 		return strings.Replace(pkgName, "model_", "service_", 1)
 	}
 	return strings.Replace(pkgName, "model", "service", 1)
 }
 
-// genServiceMethod1 使用 AST 生成 CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
-// DeleteBefore,DeleteAfter,GetBefore,GetAfter,UpdatePartialBefore,UpdatePartialAfter 方法.
+// genServiceMethod1 uses AST to generate CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
+// DeleteBefore,DeleteAfter,GetBefore,GetAfter,UpdatePartialBefore,UpdatePartialAfter methods.
 func genServiceMethod1(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
@@ -237,7 +258,7 @@ func genServiceMethod1(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	)
 }
 
-// genServiceMethod2 使用 AST 生成 ListBefore, ListAfter 方法.
+// genServiceMethod2 uses AST to generate ListBefore, ListAfter methods.
 func genServiceMethod2(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
@@ -249,7 +270,7 @@ func genServiceMethod2(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	)
 }
 
-// genServiceMethod3 使用 AST 生成 CreateManyBefore, CreateManyAfter,
+// genServiceMethod3 uses AST to generate CreateManyBefore, CreateManyAfter,
 // DeleteManyBefore, DeleteManyAfter, UpdateManyBefore, UpdateManyAfter, PatchManyBefore, PatchManyAfter.
 func genServiceMethod3(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
@@ -262,7 +283,7 @@ func genServiceMethod3(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	)
 }
 
-// genServiceMethod4 使用 AST 生成 Create,Delete,Update,Patch,List,Get,CreateMany,DeleteMany,UpdateMany,PatchMany 方法.
+// genServiceMethod4 uses AST to generate Create,Delete,Update,Patch,List,Get,CreateMany,DeleteMany,UpdateMany,PatchMany methods.
 func genServiceMethod4(info *ModelInfo, reqName, rspName string, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
@@ -277,7 +298,7 @@ func genServiceMethod4(info *ModelInfo, reqName, rspName string, phase consts.Ph
 	)
 }
 
-// genServiceMethod5 使用 AST 生成 Import 方法.
+// genServiceMethod5 uses AST to generate Import method.
 func genServiceMethod5(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
@@ -289,7 +310,7 @@ func genServiceMethod5(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	)
 }
 
-// genServiceMethod5 使用 AST 生成 Export 方法.
+// genServiceMethod6 uses AST to generate Export method.
 func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
@@ -302,7 +323,7 @@ func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 }
 
 func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
-	if !action.Enabled {
+	if !action.Enabled || !action.Service {
 		return nil
 	}
 

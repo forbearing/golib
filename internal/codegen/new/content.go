@@ -1,0 +1,102 @@
+package new
+
+const mainContent = `package main
+
+import (
+	"%s/configx"
+	"%s/cronjobx"
+	_ "%s/model"
+	"%s/router"
+	_ "%s/service"
+
+	"github.com/forbearing/golib/bootstrap"
+	. "github.com/forbearing/golib/util"
+)
+
+func main() {
+	RunOrDie(bootstrap.Bootstrap)
+	RunOrDie(configx.Init)
+	RunOrDie(cronjobx.Init)
+	RunOrDie(router.Init)
+	RunOrDie(bootstrap.Run)
+}
+`
+
+const configxContent = `package configx
+
+func Init() error {
+	return nil
+}
+`
+
+const cronjobxContent = `package cronjobx
+
+func Init() error {
+	return nil
+}
+`
+
+const modelContent = `package model
+
+func init() {
+}
+`
+
+const serviceContent = `package service
+
+func init() {
+}
+`
+
+const routerContent = `package router
+
+func Init() error {
+	return nil
+}
+`
+
+const gitignoreContent = `# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with 'go test -c'
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Build output
+dist/
+build/`

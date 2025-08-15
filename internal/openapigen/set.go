@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/forbearing/golib/model"
@@ -1272,7 +1273,12 @@ func description(op consts.HTTPVerb, typ reflect.Type) string {
 }
 
 func tags(path string, op consts.HTTPVerb, typ reflect.Type) []string {
-	return []string{typ.Elem().Name()}
+	// return []string{typ.Elem().Name()}
+	tag := strings.TrimPrefix(path, `/api/`)
+	tag = strings.TrimSuffix(tag, `/batch`)
+	tag = strings.TrimSuffix(tag, `/{id}`)
+	tag = strings.ReplaceAll(tag, "/", "_")
+	return []string{tag}
 }
 
 func exampleValue(code response.Code) map[string]any {

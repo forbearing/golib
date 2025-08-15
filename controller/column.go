@@ -35,6 +35,10 @@ func (cs *column) Get(c *gin.Context) {
 	}
 }
 
+func (cs *column) QueryColumns(c *gin.Context, tableName string, columns []string, db ...*gorm.DB) (map[string][]string, error) {
+	return queryColumnsWithQuery(tableName, columns, c.Request.URL.Query(), db...)
+}
+
 func (cs *column) GetColumns(c *gin.Context, tableName string, columns []string, db ...*gorm.DB) {
 	columnRes, err := queryColumnsWithQuery(tableName, columns, c.Request.URL.Query(), db...)
 	if err != nil {
