@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -15,12 +16,7 @@ import (
 
 var doc = &openapi3.T{
 	OpenAPI: "3.0.0",
-	Info: &openapi3.Info{
-		Title:       "golib api",
-		Description: "golib Restful api docs",
-		Version:     "1.0.0",
-	},
-	Paths: openapi3.NewPaths(),
+	Paths:   openapi3.NewPaths(),
 	Components: &openapi3.Components{
 		Schemas: openapi3.Schemas{},
 	},
@@ -174,11 +170,20 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 
 // DocumentHandler returns an http.Handler that serves the OpenAPI document
 func DocumentHandler() http.Handler {
+	setDocInfo(doc)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		data, _ := json.MarshalIndent(doc, "", "  ")
 		w.Write(data)
 	})
+}
+
+func setDocInfo(doc *openapi3.T) {
+	doc.Info = &openapi3.Info{
+		Title:       config.App.AppInfo.Name,
+		Description: fmt.Sprintf("%s Restful api docs", config.App.AppInfo.Name),
+		Version:     config.App.AppInfo.Version,
+	}
 }
 
 func getFieldTag(field reflect.StructField, tagName string) string {

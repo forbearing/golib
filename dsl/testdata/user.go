@@ -19,10 +19,14 @@ func (User) Design() {
 	// Default Endpoint is the lower case of the model name.
 	Endpoint("user2")
 
+	// Default to true,
+	Migrate(true)
+
 	// Custom create action request "Payload" and response "Result".
 	// Default payload and result is the model name.
 	Create(func() {
 		Enabled(true)
+		Service(false)
 		// Payload[User]()
 		// Result[*User]()
 	})

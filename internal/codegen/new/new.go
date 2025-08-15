@@ -8,84 +8,6 @@ import (
 	"path/filepath"
 )
 
-const mainContent = `package main
-
-import (
-	"%s/router"
-	"%s/service"
-
-	"github.com/forbearing/golib/bootstrap"
-	. "github.com/forbearing/golib/util"
-)
-
-func main() {
-	RunOrDie(bootstrap.Bootstrap)
-	RunOrDie(service.Init)
-	RunOrDie(router.Init)
-	RunOrDie(bootstrap.Run)
-}
-`
-
-const serviceContent = `package service
-
-func Init() error {
-	return nil
-}
-`
-
-const routerContent = `package router
-
-func Init() error {
-	return nil
-}
-`
-
-const gitignoreContent = `# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with 'go test -c'
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Log files
-*.log
-
-# Temporary files
-tmp/
-temp/
-
-# Build output
-dist/
-build/`
-
 // Run initializes a new Go project with the specified project name.
 func Run(projectName string) error {
 	// Extract project name from module path (e.g., "github.com/user/project" -> "project")
@@ -113,7 +35,7 @@ func Run(projectName string) error {
 	}
 
 	// Create directories with .gitkeep files
-	dirs := []string{"model", "service", "router"}
+	dirs := []string{"configx", "cronjobx", "model", "service", "router"}
 	for _, dir := range dirs {
 		fmt.Printf("Creating directory: %s\n", dir)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -131,6 +53,23 @@ func Run(projectName string) error {
 		file.Close()
 	}
 
+	// Create configx/configx.go
+	fmt.Println("Creating configx/configx.go")
+	if err := os.WriteFile("configx/configx.go", []byte(configxContent), 0o644); err != nil {
+		return err
+	}
+
+	// Create cronjobx/cronjobx.go
+	fmt.Println("Creating cronjobx/cronjobx.go")
+	if err := os.WriteFile("cronjobx/cronjobx.go", []byte(cronjobxContent), 0o644); err != nil {
+		return err
+	}
+
+	fmt.Println("Creating model/model.go")
+	if err := os.WriteFile("model/model.go", []byte(modelContent), 0o644); err != nil {
+		return err
+	}
+
 	// Create service/service.go
 	fmt.Println("Creating service/service.go")
 	if err := os.WriteFile("service/service.go", []byte(serviceContent), 0o644); err != nil {
@@ -145,7 +84,7 @@ func Run(projectName string) error {
 
 	// Create main.go file
 	fmt.Println("Creating main.go")
-	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName), 0o644); err != nil {
+	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName, projectName, projectName, projectName), 0o644); err != nil {
 		return err
 	}
 

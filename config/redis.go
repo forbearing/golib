@@ -3,6 +3,8 @@ package config
 import (
 	"runtime"
 	"time"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 const (
@@ -65,7 +67,7 @@ func (*Redis) setDefault() {
 	cv.SetDefault("redis.db", 0)
 	cv.SetDefault("redis.password", "")
 	cv.SetDefault("redis.pool_size", runtime.NumCPU())
-	cv.SetDefault("redis.namespace", APP_NAME)
+	cv.SetDefault("redis.namespace", consts.FrameworkName)
 	cv.SetDefault("redis.expiration", 0)
 	cv.SetDefault("redis.cluster_mode", false)
 

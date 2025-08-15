@@ -2,7 +2,7 @@ package dsl
 
 import "github.com/forbearing/golib/types/consts"
 
-// RangeAction walks through all enabled actions in the given Design and invokes
+// rangeAction walks through all enabled actions in the given Design and invokes
 // the provided callback fn for each, in a fixed order.
 //
 // Behavior:
@@ -21,12 +21,8 @@ import "github.com/forbearing/golib/types/consts"
 //	RangeAction(design, func(ep string, a *Action, p consts.Phase) {
 //	    fmt.Printf("%s %s payload=%s result=%s\n", p.MethodName(), ep, a.Payload, a.Result)
 //	})
-func RangeAction(design *Design, fn func(string, *Action, consts.Phase)) {
-	if design == nil || fn == nil {
-		return
-	}
-
-	if !design.Enabled {
+func rangeAction(design *Design, fn func(string, *Action, consts.Phase)) {
+	if design == nil || fn == nil || !design.Enabled {
 		return
 	}
 

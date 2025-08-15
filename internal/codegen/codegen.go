@@ -33,7 +33,7 @@ func FindModels(module, modelDir, serviceDir string, excludes []string) ([]*gen.
 			return nil
 		}
 
-		models, err := gen.FindModels(module, path)
+		models, err := gen.FindModels(module, modelDir, path)
 		if err != nil {
 			return nil
 		}

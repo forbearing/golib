@@ -83,6 +83,8 @@ func NewServiceContext(c *gin.Context) *types.ServiceContext {
 
 		RequestId: c.GetString(consts.REQUEST_ID),
 		TraceId:   c.GetString(consts.TRACE_ID),
+
+		GinContext: c,
 	}
 }
 
