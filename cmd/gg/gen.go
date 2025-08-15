@@ -77,8 +77,10 @@ func genRun() {
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			var path string
 
-			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
+			if a.Service {
+				serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
+			}
 
 			routerImports[filepath.Join(m.ModulePath, m.ModelFileDir)] = struct{}{}
 
