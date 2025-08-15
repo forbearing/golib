@@ -10,6 +10,7 @@ import (
 func Enabled(bool)    {}
 func Endpoint(string) {}
 func Migrate(bool)    {}
+func Service(bool)    {}
 func Payload[T any]() {}
 func Result[T any]()  {}
 
@@ -56,6 +57,7 @@ func (d *Design) Range(fn func(string, *Action, consts.Phase)) {
 
 type Action struct {
 	Enabled bool   // defaults to false.
+	Service bool   // generate service code or not, default to true.
 	Payload string // current Action Payload
 	Result  string // current Action Result
 }
