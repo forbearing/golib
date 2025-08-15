@@ -38,6 +38,27 @@ type ModelInfo struct {
 	Design *dsl.Design
 }
 
+func (m *ModelInfo) ServiceImportPath(modelDir, serviceDir string) string {
+	path := strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
+	path = strings.TrimRight(path, ".go")
+	return path
+}
+
+func (m *ModelInfo) RouterImportPath() string {
+	return filepath.Join(m.ModulePath, m.ModelFileDir)
+}
+
+func (m *ModelInfo) ModelImportPath() (string, bool) {
+	// If a struct anonymous inherits from model.Base, than the model will be imported in model/model.go using
+	// statement such like: "model.Register[*User]()".
+	// Imported the model is not determinated by m.Design.Eanbled value.
+	path := filepath.Join(m.ModulePath, m.ModelFileDir)
+	if !strings.HasSuffix(path, "/model") {
+		return path, true
+	}
+	return "", false
+}
+
 // GetModulePath parses go.mod to get module path
 func GetModulePath() (string, error) {
 	// If go command exists, get module path directly through go list -m command
