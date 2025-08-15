@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	APP_NAME         = "golib"
 	noneExpireToken  = `fake_token`
 	noneExpireUser   = "admin"
 	noneExpirePass   = "admin"

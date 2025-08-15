@@ -4,21 +4,23 @@ import (
 	"runtime"
 	"runtime/debug"
 	"time"
+
+	"github.com/forbearing/golib/types/consts"
 )
 
 const (
 	// App related environment variables
-	APP_NAME_ENV        = "APP_NAME"
-	APP_VERSION_ENV     = "APP_VERSION"
-	APP_DESCRIPTION_ENV = "APP_DESCRIPTION"
-	APP_AUTHOR_ENV      = "APP_AUTHOR"
-	APP_EMAIL_ENV       = "APP_EMAIL"
-	APP_HOMEPAGE_ENV    = "APP_HOMEPAGE"
-	APP_LICENSE_ENV     = "APP_LICENSE"
-	APP_BUILD_TIME_ENV  = "APP_BUILD_TIME"
-	APP_GIT_COMMIT_ENV  = "APP_GIT_COMMIT"
-	APP_GIT_BRANCH_ENV  = "APP_GIT_BRANCH"
-	APP_GO_VERSION_ENV  = "APP_GO_VERSION"
+	APP_NAME        = "APP_NAME"
+	APP_VERSION     = "APP_VERSION"
+	APP_DESCRIPTION = "APP_DESCRIPTION"
+	APP_AUTHOR      = "APP_AUTHOR"
+	APP_EMAIL       = "APP_EMAIL"
+	APP_HOMEPAGE    = "APP_HOMEPAGE"
+	APP_LICENSE     = "APP_LICENSE"
+	APP_BUILD_TIME  = "APP_BUILD_TIME"
+	APP_GIT_COMMIT  = "APP_GIT_COMMIT"
+	APP_GIT_BRANCH  = "APP_GIT_BRANCH"
+	APP_GO_VERSION  = "APP_GO_VERSION"
 )
 
 // AppInfo represents application metadata and build information
@@ -46,7 +48,7 @@ type AppInfo struct {
 // setDefault sets default values for AppInfo configuration
 func (a *AppInfo) setDefault() {
 	if a.Name == "" {
-		a.Name = APP_NAME
+		a.Name = consts.FrameworkName
 	}
 	if a.Version == "" {
 		a.Version = "dev"
