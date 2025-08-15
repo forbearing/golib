@@ -101,7 +101,7 @@ func genRun() {
 	writeFileWithLog(filepath.Join(modelDir, "model.go"), modelCode)
 
 	// generate service/service.go
-	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(serviceImportMap), nil, serviceStmts...)
+	serviceCode, err := gen.BuildServiceFile("service", lo.Keys(serviceImportMap), serviceStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 

@@ -7,7 +7,7 @@ import (
 	"%s/cronjobx"
 	_ "%s/model"
 	"%s/router"
-	"%s/service"
+	_ "%s/service"
 
 	"github.com/forbearing/golib/bootstrap"
 	. "github.com/forbearing/golib/util"
@@ -17,7 +17,6 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
@@ -45,8 +44,7 @@ func init() {
 
 const serviceContent = `package service
 
-func Init() error {
-	return nil
+func init() {
 }
 `
 
