@@ -88,7 +88,7 @@ func StmtModelRegister(modelName string) *ast.ExprStmt {
 // StmtServiceRegister creates a *ast.ExprStmt represents golang code like below:
 //
 //	service.Register[*user.Creator](consts.PHASE_CREATE)
-func StmtServiceRegister(structName string, phase consts.Phase) *ast.ExprStmt {
+func StmtServiceRegister(serviceImport string, phase consts.Phase) *ast.ExprStmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.IndexExpr{
@@ -97,7 +97,7 @@ func StmtServiceRegister(structName string, phase consts.Phase) *ast.ExprStmt {
 					Sel: ast.NewIdent("Register"),
 				},
 				Index: &ast.StarExpr{
-					X: ast.NewIdent(structName),
+					X: ast.NewIdent(serviceImport),
 				},
 			},
 			Args: []ast.Expr{
