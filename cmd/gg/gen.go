@@ -74,7 +74,7 @@ func genRun() {
 			}
 		}
 
-		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			var path string
 
 			serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
@@ -130,7 +130,7 @@ func genRun() {
 	}
 
 	for _, m := range allModels {
-		dsl.RangeAction(m.Design, func(s string, a *dsl.Action, p consts.Phase) {
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			if file := gen.GenerateService(m, a, p); file != nil {
 				code, err := gen.FormatNodeExtra(file)
 				checkErr(err)
