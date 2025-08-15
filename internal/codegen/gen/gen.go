@@ -69,8 +69,8 @@ func GetModulePath() (string, error) {
 }
 
 // findModelPackageName finds the actual name of the imported model package
-	// import "github.com/forbearing/golib/model" returns "model"
-	// import model_auth "github.com/forbearing/golib/model" returns model_auth
+// import "github.com/forbearing/golib/model" returns "model"
+// import model_auth "github.com/forbearing/golib/model" returns model_auth
 func findModelPackageName(file *ast.File) string {
 	return file.Name.Name
 }
