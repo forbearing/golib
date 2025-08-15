@@ -22,11 +22,7 @@ import "github.com/forbearing/golib/types/consts"
 //	    fmt.Printf("%s %s payload=%s result=%s\n", p.MethodName(), ep, a.Payload, a.Result)
 //	})
 func rangeAction(design *Design, fn func(string, *Action, consts.Phase)) {
-	if design == nil || fn == nil {
-		return
-	}
-
-	if !design.Enabled {
+	if design == nil || fn == nil || !design.Enabled {
 		return
 	}
 

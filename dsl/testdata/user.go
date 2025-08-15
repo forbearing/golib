@@ -26,6 +26,7 @@ func (User) Design() {
 	// Default payload and result is the model name.
 	Create(func() {
 		Enabled(true)
+		Service(false)
 		// Payload[User]()
 		// Result[*User]()
 	})

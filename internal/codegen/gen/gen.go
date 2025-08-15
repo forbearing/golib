@@ -302,7 +302,7 @@ func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 }
 
 func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
-	if !action.Enabled {
+	if !action.Enabled || !action.Service {
 		return nil
 	}
 
