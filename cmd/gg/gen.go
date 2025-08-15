@@ -25,6 +25,18 @@ var genCmd = &cobra.Command{
 	},
 }
 
+var tsCmd = &cobra.Command{
+	Use:   "ts",
+	Short: "generate typescript interface code",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("not implemented")
+	},
+}
+
+func init() {
+	genCmd.AddCommand(tsCmd)
+}
+
 func genRun() {
 	if len(module) == 0 {
 		var err error
