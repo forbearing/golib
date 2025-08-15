@@ -50,6 +50,10 @@ type Design struct {
 	Export *Action
 }
 
+func (d *Design) Range(fn func(string, *Action, consts.Phase)) {
+	rangeAction(d, fn)
+}
+
 type Action struct {
 	Enabled bool   // defaults to false.
 	Payload string // current Action Payload
