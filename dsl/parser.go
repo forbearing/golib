@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"slices"
@@ -24,40 +25,40 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 		}
 
 		if design.Create == nil {
-			design.Create = &Action{Payload: name, Result: name}
+			design.Create = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Delete == nil {
-			design.Delete = &Action{Payload: name, Result: name}
+			design.Delete = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Update == nil {
-			design.Update = &Action{Payload: name, Result: name}
+			design.Update = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Patch == nil {
-			design.Patch = &Action{Payload: name, Result: name}
+			design.Patch = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.List == nil {
-			design.List = &Action{Payload: name, Result: name}
+			design.List = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Get == nil {
-			design.Get = &Action{Payload: name, Result: name}
+			design.Get = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.CreateMany == nil {
-			design.CreateMany = &Action{Payload: name, Result: name}
+			design.CreateMany = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.DeleteMany == nil {
-			design.DeleteMany = &Action{Payload: name, Result: name}
+			design.DeleteMany = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.UpdateMany == nil {
-			design.UpdateMany = &Action{Payload: name, Result: name}
+			design.UpdateMany = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.PatchMany == nil {
-			design.PatchMany = &Action{Payload: name, Result: name}
+			design.PatchMany = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Import == nil {
-			design.Import = &Action{Payload: name, Result: name}
+			design.Import = &Action{Payload: starName(name), Result: starName(name)}
 		}
 		if design.Export == nil {
-			design.Export = &Action{Payload: name, Result: name}
+			design.Export = &Action{Payload: starName(name), Result: starName(name)}
 		}
 
 		initDefaultAction(name, design.Create)
@@ -208,41 +209,101 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			}
 		}
 
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
-			defaults.Create = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
+			defaults.Create = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
-			defaults.Delete = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
+			defaults.Delete = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
-			defaults.Update = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
+			defaults.Update = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
-			defaults.Patch = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
+			defaults.Patch = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
-			defaults.List = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
+			defaults.List = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
-			defaults.Get = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
+			defaults.Get = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.CreateMany = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.CreateMany = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.DeleteMany = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.DeleteMany = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.UpdateMany = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.UpdateMany = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.PatchMany = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
+			defaults.PatchMany = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_IMPORT.MethodName(), funcName, call.Args); exists {
-			defaults.Import = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_IMPORT.MethodName(), funcName, call.Args); exists {
+			defaults.Import = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
-		if payload, result, enabled, service, exists := parseAction(consts.PHASE_EXPORT.MethodName(), funcName, call.Args); exists {
-			defaults.Export = &Action{Payload: payload, Result: result, Enabled: enabled, Service: service}
+		if res, exists := parseAction(consts.PHASE_EXPORT.MethodName(), funcName, call.Args); exists {
+			defaults.Export = &Action{
+				Payload: res.payload,
+				Result:  res.result,
+				Enabled: res.enabled,
+				Service: res.service,
+			}
 		}
 
 	}
@@ -252,7 +313,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 
 // parseAction parse the "Payload" and "Result" type from Action function.
 // The "Action" is represented by function name that already defined in the method list.
-func parseAction(name string, funcName string, args []ast.Expr) (string, string, bool, bool, bool) {
+func parseAction(name string, funcName string, args []ast.Expr) (actionResult, bool) {
 	var payload string
 	var result string
 	var enabled bool        // default to false,
@@ -338,7 +399,7 @@ func parseAction(name string, funcName string, args []ast.Expr) (string, string,
 									payload = ident.Name
 								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Payload[*User]
 									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
-										payload = ident.Name
+										payload = "*" + ident.Name
 									}
 								}
 							}
@@ -347,7 +408,7 @@ func parseAction(name string, funcName string, args []ast.Expr) (string, string,
 									result = ident.Name
 								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Result[*User]
 									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
-										result = ident.Name
+										result = "*" + ident.Name
 									}
 								}
 							}
@@ -356,10 +417,25 @@ func parseAction(name string, funcName string, args []ast.Expr) (string, string,
 				}
 			}
 		}
-		return payload, result, enabled, service, true
+		return actionResult{
+			payload: payload,
+			result:  result,
+			enabled: enabled,
+			service: service,
+		}, true
 	}
 
-	return "", "", false, false, false
+	return actionResult{}, false
+}
+
+type actionResult struct {
+	payload string
+	result  string
+	enabled bool
+	service bool
+
+	payloadHasStar bool
+	resultHasStar  bool
 }
 
 // findAllModelNames finds all model names in the ast File Node.
@@ -432,4 +508,12 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 	}
 
 	return false
+}
+
+func starName(name string) string {
+	if len(name) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("*%s", strings.TrimPrefix(name, `*`))
 }
