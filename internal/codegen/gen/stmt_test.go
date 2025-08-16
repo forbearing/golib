@@ -187,6 +187,16 @@ func TestStmtRouterRegister(t *testing.T) {
 			respName:     "GroupResponse",
 			endpoint:     "group2",
 			verb:         "Update",
+			want:         `router.Register[*pkgmodel.Group, pkgmodel.GroupRequest, pkgmodel.GroupResponse](router.API(), "group2", consts.Update)`,
+		},
+		{
+			name:         "test3",
+			modelPkgName: "pkgmodel",
+			modelName:    "Group",
+			reqName:      "*GroupRequest",
+			respName:     "*GroupResponse",
+			endpoint:     "group2",
+			verb:         "Update",
 			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.API(), "group2", consts.Update)`,
 		},
 	}

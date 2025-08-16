@@ -123,6 +123,40 @@ func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 		})
 	}
 
+	// if reqName is equal to modelName or reqName starts with *, then the reqExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var reqExpr ast.Expr
+	if strings.HasPrefix(reqName, "*") || modelName == reqName {
+		reqExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(reqName, "*")),
+			},
+		}
+	} else {
+		reqExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(reqName),
+		}
+	}
+
+	// if rspName is equal to modelName or rspName starts with *, then the rspExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var rspExpr ast.Expr
+	if strings.HasPrefix(rspName, "*") || modelName == rspName {
+		rspExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(rspName, "*")),
+			},
+		}
+	} else {
+		rspExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(rspName),
+		}
+	}
+
 	return &ast.GenDecl{
 		Doc: &ast.CommentGroup{
 			List: comments,
@@ -135,20 +169,6 @@ func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 				Type: &ast.StructType{
 					Fields: &ast.FieldList{
 						List: []*ast.Field{
-							// {
-							// 	Type: &ast.IndexExpr{
-							// 		X: &ast.SelectorExpr{
-							// 			X:   ast.NewIdent("service"),
-							// 			Sel: ast.NewIdent("Base"),
-							// 		},
-							// 		Index: &ast.StarExpr{
-							// 			X: &ast.SelectorExpr{
-							// 				X:   ast.NewIdent(modelPkgName),
-							// 				Sel: ast.NewIdent(modelName),
-							// 			},
-							// 		},
-							// 	},
-							// },
 							{
 								Type: &ast.IndexListExpr{
 									X: &ast.SelectorExpr{
@@ -162,18 +182,8 @@ func types(modelPkgName, modelName, reqName, rspName string, phase consts.Phase,
 												Sel: ast.NewIdent(modelName),
 											},
 										},
-										&ast.StarExpr{
-											X: &ast.SelectorExpr{
-												X:   ast.NewIdent(modelPkgName),
-												Sel: ast.NewIdent(reqName),
-											},
-										},
-										&ast.StarExpr{
-											X: &ast.SelectorExpr{
-												X:   ast.NewIdent(modelPkgName),
-												Sel: ast.NewIdent(rspName),
-											},
-										},
+										reqExpr,
+										rspExpr,
 									},
 								},
 							},
@@ -361,6 +371,40 @@ func serviceMethod3(recvName, modelName, modelPkgName string, phase consts.Phase
 //
 //	func (u *Creator) Create(ctx *types.ServiceContext, user *model.User) (rsp *model.User, err error) {\n}
 func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, phase consts.Phase, body ...ast.Stmt) *ast.FuncDecl {
+	// if reqName is equal to modelName or reqName starts with *, then the reqExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var reqExpr ast.Expr
+	if strings.HasPrefix(reqName, "*") || modelName == reqName {
+		reqExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(reqName, "*")),
+			},
+		}
+	} else {
+		reqExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(reqName),
+		}
+	}
+
+	// if rspName is equal to modelName or rspName starts with *, then the rspExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var rspExpr ast.Expr
+	if strings.HasPrefix(rspName, "*") || modelName == rspName {
+		rspExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(rspName, "*")),
+			},
+		}
+	} else {
+		rspExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(rspName),
+		}
+	}
+
 	return &ast.FuncDecl{
 		Recv: &ast.FieldList{
 			List: []*ast.Field{
@@ -387,12 +431,7 @@ func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, 
 					},
 					{
 						Names: []*ast.Ident{ast.NewIdent("req")},
-						Type: &ast.StarExpr{
-							X: &ast.SelectorExpr{
-								X:   ast.NewIdent(modelPkgName),
-								Sel: ast.NewIdent(reqName),
-							},
-						},
+						Type:  reqExpr,
 					},
 				},
 			},
@@ -400,12 +439,7 @@ func serviceMethod4(recvName, modelName, modelPkgName, reqName, rspName string, 
 				List: []*ast.Field{
 					{
 						Names: []*ast.Ident{ast.NewIdent("rsp")},
-						Type: &ast.StarExpr{
-							X: &ast.SelectorExpr{
-								X:   ast.NewIdent(modelPkgName),
-								Sel: ast.NewIdent(rspName),
-							},
-						},
+						Type:  rspExpr,
 					},
 					{
 						Names: []*ast.Ident{ast.NewIdent("err")},
