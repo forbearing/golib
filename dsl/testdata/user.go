@@ -37,4 +37,8 @@ func (User) Design() {
 		Payload[*User]()
 		Result[User]()
 	})
+
+	Delete(func() {
+		Enabled(true)
+	})
 }
