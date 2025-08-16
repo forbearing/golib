@@ -27,8 +27,8 @@ func (User) Design() {
 	Create(func() {
 		Enabled(true)
 		Service(false)
-		// Payload[User]()
-		// Result[*User]()
+		Payload[User]()
+		Result[*User]()
 	})
 
 	// Custom update action request "Payload" and response "Result".
