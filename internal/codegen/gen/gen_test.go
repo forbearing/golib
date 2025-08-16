@@ -529,6 +529,24 @@ func TestGenServiceMethod4(t *testing.T) {
 			reqName: "GroupRequest",
 			rspName: "GroupResponse",
 			phase:   consts.PHASE_UPDATE,
+			want: `func (g *Updater) Update(ctx *types.ServiceContext, req model.GroupRequest) (rsp model.GroupResponse, err error) {
+	log := g.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("group update")
+	return rsp, nil
+}`,
+		},
+		{
+			name: "group2",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "Group",
+				ModelVarName: "g",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			reqName: "*GroupRequest",
+			rspName: "*GroupResponse",
+			phase:   consts.PHASE_UPDATE,
 			want: `func (g *Updater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("group update")

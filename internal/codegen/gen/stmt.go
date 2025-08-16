@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 
 	"github.com/forbearing/golib/types/consts"
 )
@@ -113,7 +114,41 @@ func StmtServiceRegister(serviceImport string, phase consts.Phase) *ast.ExprStmt
 // StmtRouterRegister creates a *ast.ExprStmt represents golang code like below:
 //
 //	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpoint string, verb string) *ast.ExprStmt {
+func StmtRouterRegister(modelPkgName, modelName, reqName, rspName string, endpoint string, verb string) *ast.ExprStmt {
+	// If reqName is equal to modelName or reqName starts with *, then the reqExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var reqExpr ast.Expr
+	if strings.HasPrefix(reqName, "*") || modelName == reqName {
+		reqExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(reqName, "*")),
+			},
+		}
+	} else {
+		reqExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(reqName),
+		}
+	}
+
+	// If rspName is equal to modelName or rspName starts with *, then the rspExpr use StarExpr,
+	// otherwise use SelectorExpr
+	var rspExpr ast.Expr
+	if strings.HasPrefix(rspName, "*") || modelName == rspName {
+		rspExpr = &ast.StarExpr{
+			X: &ast.SelectorExpr{
+				X:   ast.NewIdent(modelPkgName),
+				Sel: ast.NewIdent(strings.TrimPrefix(rspName, "*")),
+			},
+		}
+	} else {
+		rspExpr = &ast.SelectorExpr{
+			X:   ast.NewIdent(modelPkgName),
+			Sel: ast.NewIdent(rspName),
+		}
+	}
+
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.IndexListExpr{
@@ -128,18 +163,8 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, respName string, endpo
 							Sel: ast.NewIdent(modelName),
 						},
 					},
-					&ast.StarExpr{
-						X: &ast.SelectorExpr{
-							X:   ast.NewIdent(modelPkgName),
-							Sel: ast.NewIdent(reqName),
-						},
-					},
-					&ast.StarExpr{
-						X: &ast.SelectorExpr{
-							X:   ast.NewIdent(modelPkgName),
-							Sel: ast.NewIdent(respName),
-						},
-					},
+					reqExpr,
+					rspExpr,
 				},
 			},
 			Args: []ast.Expr{

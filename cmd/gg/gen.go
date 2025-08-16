@@ -160,7 +160,9 @@ func genRun() {
 	for _, m := range allModels {
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			if file := gen.GenerateService(m, a, p); file != nil {
-				code, err := gen.FormatNodeExtra(file)
+				fset := token.NewFileSet()
+				code, err := gen.FormatNodeExtraWithFileSet(file, fset)
+				// pretty.Println(file)
 				checkErr(err)
 				// code = gen.MethodAddComments(code, m.ModelName)
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
