@@ -190,7 +190,7 @@ func TestParse(t *testing.T) {
 					Endpoint:   "user2",
 					Migrate:    true,
 					Create:     &Action{Enabled: true, Service: false, Payload: "User", Result: "*User"},
-					Delete:     &Action{Enabled: false, Service: false, Payload: "*User", Result: "*User"},
+					Delete:     &Action{Enabled: true, Service: true, Payload: "*User", Result: "*User"},
 					Update:     &Action{Enabled: false, Service: true, Payload: "*User", Result: "User"},
 					Patch:      &Action{Enabled: false, Service: false, Payload: "*User", Result: "*User"},
 					List:       &Action{Enabled: false, Service: false, Payload: "*User", Result: "*User"},

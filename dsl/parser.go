@@ -85,14 +85,14 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 }
 
 // initDefaultAction will init the default payload and result for the action.
-// If the action is enabled, then init the default payload and result to the model name.
+// If the action is enabled, then init the default payload and result to the star name of the model name.
 func initDefaultAction(modelName string, action *Action) {
 	if action.Enabled {
 		if len(action.Payload) == 0 {
-			action.Payload = modelName
+			action.Payload = starName(modelName)
 		}
 		if len(action.Result) == 0 {
-			action.Result = modelName
+			action.Result = starName(modelName)
 		}
 	}
 }
