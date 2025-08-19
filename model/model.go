@@ -212,7 +212,10 @@ func RegisterRoutes[M types.Model](path string, verbs ...consts.HTTPVerb) {
 	// }
 }
 
-var _ types.Model = (*Base)(nil)
+var (
+	_ types.Model = (*Base)(nil)
+	_ types.Model = (*Empty)(nil)
+)
 
 // Base implement types.Model interface.
 // Each model must be expands the Base structure.
