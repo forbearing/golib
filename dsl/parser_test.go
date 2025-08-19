@@ -38,7 +38,22 @@ func Test_isModelBase(t *testing.T) {
 		{
 			name: "input4",
 			code: input4,
-			want: []bool{},
+			want: []bool{false},
+		},
+		{
+			name: "input5",
+			code: input5,
+			want: []bool{true},
+		},
+		{
+			name: "input6",
+			code: input6,
+			want: []bool{false, false},
+		},
+		{
+			name: "input7",
+			code: input7,
+			want: []bool{false, false},
 		},
 	}
 	for _, tt := range tests {
@@ -48,7 +63,7 @@ func Test_isModelBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			hasModelBases := []bool{}
+			modelBases := []bool{}
 			for _, decl := range f.Decls {
 				genDecl, ok := decl.(*ast.GenDecl)
 				if !ok || genDecl == nil || genDecl.Tok != token.TYPE {
@@ -63,17 +78,111 @@ func Test_isModelBase(t *testing.T) {
 					if !ok || structType == nil || structType.Fields == nil {
 						continue
 					}
+					var hasModelBase bool
 					for _, field := range structType.Fields.List {
 						if isModelBase(f, field) {
-							hasModelBases = append(hasModelBases, true)
-							continue
+							hasModelBase = true
+							break
 						}
+					}
+					if hasModelBase {
+						modelBases = append(modelBases, true)
+					} else {
+						modelBases = append(modelBases, false)
 					}
 				}
 
 			}
-			if !reflect.DeepEqual(hasModelBases, tt.want) {
-				t.Errorf("isModelBase() = %v, want %v", hasModelBases, tt.want)
+			if !reflect.DeepEqual(modelBases, tt.want) {
+				t.Errorf("isModelBase() = %v, want %v", modelBases, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isModelEmpty(t *testing.T) {
+	fset := token.NewFileSet()
+
+	tests := []struct {
+		name string // description of this test case
+		code string
+		want []bool
+	}{
+		{
+			name: "input1",
+			code: input1,
+			want: []bool{false},
+		},
+		{
+			name: "input2",
+			code: input2,
+			want: []bool{false},
+		},
+		{
+			name: "input3",
+			code: input3,
+			want: []bool{false, false},
+		},
+		{
+			name: "input4",
+			code: input4,
+			want: []bool{false},
+		},
+		{
+			name: "input5",
+			code: input5,
+			want: []bool{false},
+		},
+		{
+			name: "input6",
+			code: input6,
+			want: []bool{true, false},
+		},
+		{
+			name: "input7",
+			code: input7,
+			want: []bool{false, true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := parser.ParseFile(fset, "", tt.code, parser.ParseComments)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			modelEmptys := []bool{}
+			for _, decl := range f.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok || genDecl == nil || genDecl.Tok != token.TYPE {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok || typeSpec == nil {
+						continue
+					}
+					structType, ok := typeSpec.Type.(*ast.StructType)
+					if !ok || structType == nil || structType.Fields == nil {
+						continue
+					}
+					var hasModelEmpty bool
+					for _, field := range structType.Fields.List {
+						if isModelEmpty(f, field) {
+							hasModelEmpty = true
+							break
+						}
+					}
+					if hasModelEmpty {
+						modelEmptys = append(modelEmptys, true)
+					} else {
+						modelEmptys = append(modelEmptys, false)
+					}
+				}
+
+			}
+			if !reflect.DeepEqual(modelEmptys, tt.want) {
+				t.Errorf("isModelBase() = %v, want %v", modelEmptys, tt.want)
 			}
 		})
 	}
@@ -83,28 +192,51 @@ func Test_parse(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		code string
-		want map[string]struct{}
+		code  string
+		want1 map[string]struct{}
+		want2 map[string]struct{}
 	}{
 		{
-			name: "input1",
-			code: input1,
-			want: map[string]struct{}{"User": {}},
+			name:  "input1",
+			code:  input1,
+			want1: map[string]struct{}{"User": {}},
+			want2: map[string]struct{}{},
 		},
 		{
-			name: "input2",
-			code: input2,
-			want: map[string]struct{}{"User2": {}},
+			name:  "input2",
+			code:  input2,
+			want1: map[string]struct{}{"User2": {}},
+			want2: map[string]struct{}{},
 		},
 		{
-			name: "input3",
-			code: input3,
-			want: map[string]struct{}{"User3": {}, "User4": {}},
+			name:  "input3",
+			code:  input3,
+			want1: map[string]struct{}{"User3": {}, "User4": {}},
+			want2: map[string]struct{}{},
 		},
 		{
-			name: "input4",
-			code: input4,
-			want: map[string]struct{}{},
+			name:  "input4",
+			code:  input4,
+			want1: map[string]struct{}{},
+			want2: map[string]struct{}{},
+		},
+		{
+			name:  "input5",
+			code:  input5,
+			want1: map[string]struct{}{"User5": {}},
+			want2: map[string]struct{}{},
+		},
+		{
+			name:  "input6",
+			code:  input6,
+			want1: map[string]struct{}{},
+			want2: map[string]struct{}{"User6": {}},
+		},
+		{
+			name:  "input7",
+			code:  input7,
+			want1: map[string]struct{}{},
+			want2: map[string]struct{}{"User8": {}},
 		},
 	}
 	for _, tt := range tests {
@@ -115,19 +247,26 @@ func Test_parse(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			res := parse(f)
-			got := make(map[string]struct{})
-			for k := range res {
-				got[k] = struct{}{}
+			res1, res2 := parse(f)
+			got1 := make(map[string]struct{})
+			for k := range res1 {
+				got1[k] = struct{}{}
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parse() = %v, want %v", got, tt.want)
+			got2 := make(map[string]struct{})
+			for k := range res2 {
+				got2[k] = struct{}{}
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("parse() return 1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("parse() return 2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}
 }
 
-func Test_findAllModelNames(t *testing.T) {
+func Test_findAllModelBase(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -154,6 +293,21 @@ func Test_findAllModelNames(t *testing.T) {
 			code: input4,
 			want: []string{},
 		},
+		{
+			name: "input5",
+			code: input5,
+			want: []string{"User5"},
+		},
+		{
+			name: "input6",
+			code: input6,
+			want: []string{},
+		},
+		{
+			name: "input7",
+			code: input7,
+			want: []string{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -163,10 +317,68 @@ func Test_findAllModelNames(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got := findAllModelNames(f)
-			// TODO: update the condition below to compare got with tt.want.
+			got := findAllModelBase(f)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findAllModelNames() = %v, want %v", got, tt.want)
+				t.Errorf("findAllModelBase() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_findAllModelEmpty(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		code string
+		want []string
+	}{
+		{
+			name: "input1",
+			code: input1,
+			want: []string{},
+		},
+		{
+			name: "input2",
+			code: input2,
+			want: []string{},
+		},
+		{
+			name: "input3",
+			code: input3,
+			want: []string{},
+		},
+		{
+			name: "input4",
+			code: input4,
+			want: []string{},
+		},
+		{
+			name: "input5",
+			code: input5,
+			want: []string{},
+		},
+		{
+			name: "input6",
+			code: input6,
+			want: []string{"User6"},
+		},
+		{
+			name: "input7",
+			code: input7,
+			want: []string{"User8"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			f, err := parser.ParseFile(fset, "", tt.code, parser.ParseComments)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			got := findAllModelEmpty(f)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("findAllModelEmpty() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -296,6 +508,54 @@ func TestParse(t *testing.T) {
 					PatchMany:  &Action{Enabled: false, Service: false, Payload: "*User5", Result: "*User5"},
 					Import:     &Action{Enabled: false, Service: false, Payload: "*User5", Result: "*User5"},
 					Export:     &Action{Enabled: false, Service: false, Payload: "*User5", Result: "*User5"},
+				},
+			},
+		},
+		{
+			name:     "input6",
+			code:     input6,
+			endpoint: "",
+			want: map[string]*Design{
+				"User6": {
+					Enabled:    true,
+					Endpoint:   "user6",
+					Migrate:    false,
+					Create:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Delete:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Update:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Patch:      &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					List:       &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Get:        &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					CreateMany: &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					DeleteMany: &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					UpdateMany: &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					PatchMany:  &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Import:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+					Export:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
+				},
+			},
+		},
+		{
+			name:     "input7",
+			code:     input7,
+			endpoint: "",
+			want: map[string]*Design{
+				"User8": {
+					Enabled:    true,
+					Endpoint:   "user8",
+					Migrate:    false,
+					Create:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Delete:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Update:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Patch:      &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					List:       &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Get:        &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					CreateMany: &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					DeleteMany: &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					UpdateMany: &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					PatchMany:  &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Import:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
+					Export:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
 				},
 			},
 		},
