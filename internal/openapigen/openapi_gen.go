@@ -30,7 +30,7 @@ func Write(filename string) error {
 	return os.WriteFile(filename, data, 0o644)
 }
 
-func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
+func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb ...consts.HTTPVerb) {
 	getOrCreate := func(p string) *openapi3.PathItem {
 		if v := doc.Paths.Value(p); v != nil {
 			return v
@@ -54,29 +54,29 @@ func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
 	for _, verb := range buildVerbs(verb...) {
 		switch verb {
 		case consts.Create:
-			setCreate[M](path, pathItem)
+			setCreate[M, REQ, RSP](path, pathItem)
 		case consts.Delete:
-			setDelete[M](pathid, pathidItem)
+			setDelete[M, REQ, RSP](pathid, pathidItem)
 		case consts.Update:
-			setUpdate[M](pathid, pathidItem)
+			setUpdate[M, REQ, RSP](pathid, pathidItem)
 		case consts.Patch:
-			setUpdatePartial[M](pathid, pathidItem)
+			setUpdatePartial[M, REQ, RSP](pathid, pathidItem)
 		case consts.List:
-			setList[M](path, pathItem)
+			setList[M, REQ, RSP](path, pathItem)
 		case consts.Get:
-			setGet[M](pathid, pathidItem)
+			setGet[M, REQ, RSP](pathid, pathidItem)
 		case consts.Import:
-			setImport[M](pathipt, pathiptItem)
+			setImport[M, REQ, RSP](pathipt, pathiptItem)
 		case consts.Export:
-			setExport[M](pathexpt, pathexptItem)
+			setExport[M, REQ, RSP](pathexpt, pathexptItem)
 		case consts.CreateMany:
-			setCreateMany[M](pathbatch, pathbatchItem)
+			setCreateMany[M, REQ, RSP](pathbatch, pathbatchItem)
 		case consts.DeleteMany:
-			setDeleteMany[M](pathbatch, pathbatchItem)
+			setDeleteMany[M, REQ, RSP](pathbatch, pathbatchItem)
 		case consts.UpdateMany:
-			setUpdateMany[M](pathbatch, pathbatchItem)
+			setUpdateMany[M, REQ, RSP](pathbatch, pathbatchItem)
 		case consts.PatchMany:
-			setPatchMany[M](pathbatch, pathbatchItem)
+			setPatchMany[M, REQ, RSP](pathbatch, pathbatchItem)
 		}
 	}
 

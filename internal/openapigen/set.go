@@ -51,18 +51,14 @@ var idParameters []*openapi3.ParameterRef = []*openapi3.ParameterRef{
 	},
 }
 
-func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	gen := openapi3gen.NewGenerator()
 	name := typ.Elem().Name()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -91,13 +87,7 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef400 *openapi3.SchemaRef
 			var err error
 
-			if model.HasResponse[M]() {
-				// data := model.NewResponse[M]()
-				// dataSchemaRef, err := openapi3gen.NewSchemaRefForValue(data, nil)
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -154,7 +144,7 @@ func setCreate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Post)
 }
 
-func setDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
@@ -214,18 +204,14 @@ func setDelete[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Delete)
 }
 
-func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -252,11 +238,7 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef404 *openapi3.SchemaRef
 			var err error
 
-			if model.HasResponse[M]() {
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -306,18 +288,14 @@ func setUpdate[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Put)
 }
 
-func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(M), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -343,11 +321,7 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef400 *openapi3.SchemaRef
 			var schemaRef404 *openapi3.SchemaRef
 
-			if model.HasResponse[M]() {
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -396,7 +370,7 @@ func setUpdatePartial[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Patch)
 }
 
-func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setList[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -504,7 +478,7 @@ func setList[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Get)
 }
 
-func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -578,13 +552,7 @@ func setGet[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Get)
 }
 
-func setImport[M types.Model](path string, pathItem *openapi3.PathItem) {
-}
-
-func setExport[M types.Model](path string, pathItem *openapi3.PathItem) {
-}
-
-func setCreateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
@@ -616,11 +584,7 @@ func setCreateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -654,11 +618,7 @@ func setCreateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef404 *openapi3.SchemaRef
 			var err error
 
-			if model.HasResponse[M]() {
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -712,7 +672,7 @@ func setCreateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Post)
 }
 
-func setDeleteMany[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
@@ -798,18 +758,14 @@ func setDeleteMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Delete)
 }
 
-func setUpdateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -839,11 +795,7 @@ func setUpdateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef400 *openapi3.SchemaRef
 			var schemaRef404 *openapi3.SchemaRef
 
-			if model.HasResponse[M]() {
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -897,18 +849,14 @@ func setUpdateMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 	addHeaderParameters(pathItem.Put)
 }
 
-func setPatchMany[M types.Model](path string, pathItem *openapi3.PathItem) {
+func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if model.HasRequest[M]() {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(model.NewRequest[M](), nil)
-	} else {
-		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[M]), nil)
-	}
+	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
 	if err != nil {
 		zap.S().Error(err)
 		reqSchemaRef = new(openapi3.SchemaRef)
@@ -939,11 +887,7 @@ func setPatchMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 			var schemaRef404 *openapi3.SchemaRef
 			var err error
 
-			if model.HasResponse[M]() {
-				schemaRef200 = newApiResponseRefWithData(model.NewResponse[M]())
-			} else {
-				schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[M]), nil)
-			}
+			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
 			if err != nil {
 				zap.S().Error(err)
 				schemaRef200 = new(openapi3.SchemaRef)
@@ -995,6 +939,12 @@ func setPatchMany[M types.Model](path string, pathItem *openapi3.PathItem) {
 		}(),
 	}
 	addHeaderParameters(pathItem.Patch)
+}
+
+func setImport[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
+}
+
+func setExport[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
 }
 
 func addHeaderParameters(op *openapi3.Operation) {
