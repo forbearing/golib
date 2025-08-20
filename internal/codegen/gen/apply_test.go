@@ -35,10 +35,10 @@ import (
 )
 
 type user struct {
-	service.Base[*model.User, *model.UserReq, *model.UserRsp]
+	service.Base[*model.User, model.UserReq, model.UserRsp]
 }
 
-func (u *user) Create(ctx *types.ServiceContext, req *model.UserReq) (rsp *model.UserRsp, err error) {
+func (u *user) Create(ctx *types.ServiceContext, req model.UserReq) (rsp model.UserRsp, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create")
 	return rsp, nil
@@ -75,10 +75,10 @@ import (
 )
 
 type user struct {
-	service.Base[*model.User, *model.User, *model.User]
+	service.Base[*model.User, model.User, model.User]
 }
 
-func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
+func (u *user) Create(ctx *types.ServiceContext, req model.User) (rsp model.User, err error) {
 	log := u.WithServiceContext(ctx, ctx.GetPhase())
 	log.Info("user create")
 	return rsp, nil

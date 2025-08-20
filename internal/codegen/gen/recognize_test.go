@@ -65,6 +65,26 @@ func TestIsServiceType(t *testing.T) {
 		t.Fatalf("expected isServiceType to return true for valid service.Base with three pointer type params")
 	}
 
+	// Positive case 2: struct embeds service.Base with mixed pointer and non-pointer types
+	pos2 := &ast.TypeSpec{
+		Name: ast.NewIdent("userx"),
+		Type: &ast.StructType{
+			Fields: &ast.FieldList{List: []*ast.Field{
+				{Type: &ast.IndexListExpr{
+					X: &ast.SelectorExpr{X: ast.NewIdent("service"), Sel: ast.NewIdent("Base")},
+					Indices: []ast.Expr{
+						&ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("User")},                      // non-pointer
+						&ast.StarExpr{X: &ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("UserReq")}}, // pointer
+						&ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("UserRsp")},                   // non-pointer
+					},
+				}},
+			}},
+		},
+	}
+	if !isServiceType(pos2) {
+		t.Fatalf("expected isServiceType to return true for valid service.Base with mixed pointer and non-pointer types")
+	}
+
 	// Negative case 1: wrong selector name (service.Other)
 	neg1 := &ast.TypeSpec{
 		Name: ast.NewIdent("userx"),
@@ -85,7 +105,7 @@ func TestIsServiceType(t *testing.T) {
 		t.Fatalf("expected IsServiceType to return false for non-Base selector")
 	}
 
-	// Negative case 2: one of the type params is not a pointer
+	// Negative case 2: one of the type params is an invalid type (not pointer or selector)
 	neg2 := &ast.TypeSpec{
 		Name: ast.NewIdent("userx"),
 		Type: &ast.StructType{
@@ -93,7 +113,7 @@ func TestIsServiceType(t *testing.T) {
 				{Type: &ast.IndexListExpr{
 					X: &ast.SelectorExpr{X: ast.NewIdent("service"), Sel: ast.NewIdent("Base")},
 					Indices: []ast.Expr{
-						&ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("User")}, // not a *T
+						&ast.BasicLit{Kind: 1, Value: "string"}, // invalid type - basic literal
 						&ast.StarExpr{X: &ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("User")}},
 						&ast.StarExpr{X: &ast.SelectorExpr{X: ast.NewIdent("model"), Sel: ast.NewIdent("User")}},
 					},
@@ -102,7 +122,7 @@ func TestIsServiceType(t *testing.T) {
 		},
 	}
 	if isServiceType(neg2) {
-		t.Fatalf("expected isServiceType to return false when a type param is not a pointer")
+		t.Fatalf("expected isServiceType to return false when a type param is invalid")
 	}
 
 	// Negative case 3: incorrect number of type params (2 instead of 3)

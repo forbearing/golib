@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"runtime"
 	"runtime/debug"
 	"time"
@@ -47,21 +48,11 @@ type AppInfo struct {
 
 // setDefault sets default values for AppInfo configuration
 func (a *AppInfo) setDefault() {
-	if a.Name == "" {
-		a.Name = consts.FrameworkName
-	}
-	if a.Version == "" {
-		a.Version = "dev"
-	}
-	if a.Description == "" {
-		a.Description = "A Go application built with golib framework"
-	}
-	if a.License == "" {
-		a.License = "MIT"
-	}
-	if a.GoVersion == "" {
-		a.GoVersion = runtime.Version()
-	}
+	cv.SetDefault("app.name", consts.FrameworkName)
+	cv.SetDefault("app.version", "")
+	cv.SetDefault("app.description", fmt.Sprintf("A Go application built with %s framework", consts.FrameworkName))
+	cv.SetDefault("app.license", "MIT")
+	cv.SetDefault("app.go_version", runtime.Version())
 
 	// Try to get build info from runtime
 	a.setBuildInfo()
@@ -96,44 +87,5 @@ func (a *AppInfo) setBuildInfo() {
 	if a.Version == "dev" && buildInfo.Main.Version != "(devel)" && buildInfo.Main.Version != "" {
 		a.Version = buildInfo.Main.Version
 		a.GitTag = buildInfo.Main.Version
-	}
-}
-
-// GetShortCommit returns the short version of git commit hash
-func (a *AppInfo) GetShortCommit() string {
-	if len(a.GitCommit) > 7 {
-		return a.GitCommit[:7]
-	}
-	return a.GitCommit
-}
-
-// GetVersionInfo returns formatted version information
-func (a *AppInfo) GetVersionInfo() string {
-	version := a.Version
-	if a.GitCommit != "" {
-		version += "+" + a.GetShortCommit()
-	}
-	if a.DirtyBuild {
-		version += "-dirty"
-	}
-	return version
-}
-
-// GetBuildInfo returns comprehensive build information as a map
-func (a *AppInfo) GetBuildInfo() map[string]interface{} {
-	return map[string]interface{}{
-		"name":        a.Name,
-		"version":     a.Version,
-		"description": a.Description,
-		"author":      a.Author,
-		"email":       a.Email,
-		"homepage":    a.Homepage,
-		"license":     a.License,
-		"build_time":  a.BuildTime,
-		"git_commit":  a.GitCommit,
-		"git_branch":  a.GitBranch,
-		"git_tag":     a.GitTag,
-		"go_version":  a.GoVersion,
-		"dirty_build": a.DirtyBuild,
 	}
 }

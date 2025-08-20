@@ -10,7 +10,6 @@ import (
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 )
@@ -212,7 +211,10 @@ func RegisterRoutes[M types.Model](path string, verbs ...consts.HTTPVerb) {
 	// }
 }
 
-var _ types.Model = (*Base)(nil)
+var (
+	_ types.Model = (*Base)(nil)
+	_ types.Model = (*Empty)(nil)
+)
 
 // Base implement types.Model interface.
 // Each model must be expands the Base structure.
@@ -301,7 +303,7 @@ func setID(m types.Model, id ...string) {
 		return
 	}
 
-	zap.S().Debug("setting id: " + id[0])
+	// zap.S().Debug("setting id: " + id[0])
 	if len(id[0]) == 0 {
 		idField.SetString(util.UUID())
 	} else {
@@ -309,5 +311,31 @@ func setID(m types.Model, id ...string) {
 	}
 }
 
-// Empty model always invalid and will never generate a database table automatically.
-type Empty struct{ Base }
+type Empty struct{}
+
+func (*Empty) GetTableName() string       { return "" }
+func (*Empty) GetCreatedBy() string       { return "" }
+func (*Empty) GetUpdatedBy() string       { return "" }
+func (*Empty) GetCreatedAt() time.Time    { return time.Time{} }
+func (*Empty) GetUpdatedAt() time.Time    { return time.Time{} }
+func (*Empty) SetCreatedBy(s string)      {}
+func (*Empty) SetUpdatedBy(s string)      {}
+func (*Empty) SetCreatedAt(t time.Time)   {}
+func (*Empty) SetUpdatedAt(t time.Time)   {}
+func (*Empty) GetID() string              { return "" }
+func (*Empty) SetID(id ...string)         {}
+func (*Empty) Expands() []string          { return nil }
+func (*Empty) Excludes() map[string][]any { return nil }
+func (*Empty) CreateBefore() error        { return nil }
+func (*Empty) CreateAfter() error         { return nil }
+func (*Empty) DeleteBefore() error        { return nil }
+func (*Empty) DeleteAfter() error         { return nil }
+func (*Empty) UpdateBefore() error        { return nil }
+func (*Empty) UpdateAfter() error         { return nil }
+func (*Empty) ListBefore() error          { return nil }
+func (*Empty) ListAfter() error           { return nil }
+func (*Empty) GetBefore() error           { return nil }
+func (*Empty) GetAfter() error            { return nil }
+func (*Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	return nil
+}

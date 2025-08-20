@@ -1,6 +1,33 @@
 package new
 
-const mainContent = `package main
+import (
+	"github.com/forbearing/golib/types/consts"
+)
+
+var modelContent = consts.CodeGeneratedComment() + `
+package model
+
+func init() {
+}
+`
+
+var serviceContent = consts.CodeGeneratedComment() + `
+package service
+
+func init() {
+}
+`
+
+var routerContent = consts.CodeGeneratedComment() + `
+package router
+
+func Init() error {
+	return nil
+}
+`
+
+var mainContent = consts.CodeGeneratedComment() + `
+package main
 
 import (
 	"%s/configx"
@@ -30,25 +57,6 @@ func Init() error {
 `
 
 const cronjobxContent = `package cronjobx
-
-func Init() error {
-	return nil
-}
-`
-
-const modelContent = `package model
-
-func init() {
-}
-`
-
-const serviceContent = `package service
-
-func init() {
-}
-`
-
-const routerContent = `package router
 
 func Init() error {
 	return nil

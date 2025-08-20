@@ -8,6 +8,8 @@ var (
 	input3 string
 	input4 string
 	input5 string
+	input6 string
+	input7 string
 )
 
 func init() {
@@ -40,4 +42,16 @@ func init() {
 		panic(err)
 	}
 	input5 = string(data5)
+
+	data6, err := os.ReadFile("./testdata/user6_7.go")
+	if err != nil {
+		panic(err)
+	}
+	input6 = string(data6)
+
+	data7, err := os.ReadFile("./testdata/user8_9.go")
+	if err != nil {
+		panic(err)
+	}
+	input7 = string(data7)
 }

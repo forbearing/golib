@@ -160,6 +160,37 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 	return false
 }
 
+func isModelEmpty(file *ast.File, field *ast.Field) bool {
+	// Not anonymouse field.
+	if len(field.Names) != 0 {
+		return false
+	}
+
+	aliasName := "model"
+	for _, imp := range file.Imports {
+		if imp.Path == nil {
+			continue
+		}
+		if imp.Path.Value == `"github.com/forbearing/golib/model"` {
+			if imp.Name != nil {
+				aliasName = imp.Name.Name
+			}
+			break
+		}
+	}
+
+	switch t := field.Type.(type) {
+	case *ast.SelectorExpr:
+		if ident, ok := t.X.(*ast.Ident); ok {
+			return ident.Name == aliasName && t.Sel.Name == "Empty"
+		}
+	case *ast.Ident:
+		return t.Name == "Empty"
+	}
+
+	return false
+}
+
 // FindModels finds all structs in model files
 func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, error) {
 	fset := token.NewFileSet()
@@ -203,14 +234,14 @@ func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, 
 			if !ok || structType == nil || structType.Fields == nil {
 				continue
 			}
-			hasModelBase := false
+			hasModel := false
 			for _, field := range structType.Fields.List {
-				if isModelBase(node, field) {
-					hasModelBase = true
+				if isModelBase(node, field) || isModelEmpty(node, field) {
+					hasModel = true
 					break
 				}
 			}
-			if !hasModelBase || typeSpec.Name == nil {
+			if !hasModel || typeSpec.Name == nil {
 				continue
 			}
 			modelName := typeSpec.Name.Name

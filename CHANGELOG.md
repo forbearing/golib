@@ -2,6 +2,68 @@
 ## [Unreleased]
 
 ### Chore
+- **model:** remove zap debug logging from `setID`
+- **model:** assert `Empty` implements `types.Model`
+
+### Codegen
+- update testcase
+
+### Feat
+- **bootstrap:** add execution time logging for init functions
+- **codegen:** support `model.Empty` in model directory
+- **codegen:** support pointer and non-pointer payload/result types in service generation
+- **dsl:**  add support for `model.Empty` marker structs
+
+### Fix
+- **dsl:** ensure default payload/result use pointer type & update tests
+
+### Model
+- remove test about HasRequest, HasResponse
+
+### Refactor
+- **codegen:** centralize "Code generated" comment in consts, add the "Code generated" comment in the generated file by subcommand "new"
+- **dsl:** improve action parsing with pointer support and unify defaults
+- **model:** redefine `Empty` as non-persistent model with inert methods
+- **router:** disable automatic DB migrations during router registration
+
+
+<a name="v0.7.0-beta.2"></a>
+## [v0.7.0-beta.2] - 2025-08-15
+### Controller
+- add column.QueryColumns function
+
+### Feat
+- **config:** add config AppInfo
+- **dsl:** add Service flag to control service code generation per action
+- **dsl:** add Migrate() to determinate if migrate to database
+
+### Fix
+- preserve comment positions during code generation
+- **codegen:** If the Init() function body is empty, it will not import any packages, affect router.go, service.go
+- **dsl:** Migrate parameter type is bool
+- **model:** correct Base struct soft delete field name
+
+### Openapi3gen
+- change the openapi3 api tags
+
+### Openapigen
+- read project info from config
+
+### Refactor
+- **config:** unify framework name usage via consts.FrameworkName
+- **dsl:** change Migrate default to false
+
+### Types
+- remove field: request,response, add feield: GinContext
+
+### Pull Requests
+- Merge pull request [#4](https://github.com/forbearing/golib/issues/4) from forbearing/cmd/gg
+
+
+<a name="v0.7.0-beta.1"></a>
+## [v0.7.0-beta.1] - 2025-08-12
+### Chore
+- update CHANGELOG.md
 - update examples
 - remove comment
 - **codegen:** remove ununsed testcode
@@ -85,6 +147,70 @@
 
 ### Util
 - add Uniq, Keys, Values
+
+### Pull Requests
+- Merge pull request [#3](https://github.com/forbearing/golib/issues/3) from forbearing/cmd/gg
+
+### BREAKING CHANGE
+
+CreateManyFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+batch database creation with service hooks. When types differ, it delegates
+full control to the service layer for custom batch creation logic.
+
+GetFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+resource retrieval with rich query features. When types differ, it delegates
+full control to the service layer for custom retrieval logic.
+
+ListFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+database listing with rich query features. When types differ, it delegates
+full control to the service layer for custom listing logic.
+
+PatchFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+partial database updates with field-level merging. When types differ, it
+delegates full control to the service layer for custom patch logic.
+
+UpdateFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+database operations and service hooks. When types differ, it delegates
+full control to the service layer for custom update logic.
+
+DeleteFactory behavior now depends on type parameter equality
+
+When all three generic types are identical, the factory provides automatic
+database operations and service hooks. When types differ, it delegates
+full control to the service layer for custom deletion logic.
+
+Service interface now requires REQ and RSP type parameters
+
+- Add Request and Response interface types to support custom request/response handling
+- Update Service interface to use generic types: Service[M Model, REQ Request, RSP Response]
+- Add primary service methods (Create, Delete, Update, Patch, List, Get, CreateMany, etc.) that return (RSP, error)
+- Update Base service implementation to support new generic signature
+- Modify Register and Factory functions to accept REQ/RSP type parameters
+- Maintain existing hook methods (*Before/*After) alongside new primary methods
+
+This change enables type-safe custom request/response handling while preserving
+backward compatibility through hook methods. Services can now define their own
+request/response types instead of relying on the default model types.
+
+Migration: Update service implementations to specify REQ and RSP types:
+- Old: Service[MyModel]
+- New: Service[MyModel, MyRequest, MyResponse]
+
+- Rename UpdatePartial/update_partial to Patch/patch across client, controller, and service layers
+- Rename Batch* methods to *Many (BatchCreate -> CreateMany, BatchDelete -> DeleteMany, etc.)
+- Update operation log types and phase constants to match new naming
+- Update OpenAPI generation to use new method names
+- Modify service interface method signatures for consistency
 
 
 <a name="v0.6.2"></a>
@@ -921,17 +1047,17 @@
 ## [v0.1.0] - 2024-12-26
 ### Chore
 - update examples/demo
-- update examples/demo
+- update README.md
 - update READMD.md
 - update READMD.md
 - update examples/demo
 - add READMD.md for controller
 - update READMD.md
 - update READMD.md
-- update example/demo
-- update READMD.md
 - update examples/demo
 - update READMD.md
+- update READMD.md
+- update examples/demo
 - update READMD.md
 - update example/demo
 - update examples/demo
@@ -940,7 +1066,7 @@
 - update README.md
 - update examples/simple
 - update README.md
-- update README.md
+- update example/demo
 - bump go pkg version to latest
 - **model:** add doc for `Register` and `Register`, deprecated `RegisterRoutes`
 
@@ -1464,7 +1590,9 @@
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.0-beta.2...HEAD
+[v0.7.0-beta.2]: https://github.com/forbearing/golib/compare/v0.7.0-beta.1...v0.7.0-beta.2
+[v0.7.0-beta.1]: https://github.com/forbearing/golib/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/golib/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://github.com/forbearing/golib/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/forbearing/golib/compare/v0.5.2...v0.6.0

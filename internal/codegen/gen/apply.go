@@ -75,46 +75,135 @@ func applyServiceMethod3(fn *ast.FuncDecl, action *dsl.Action) bool { return fal
 // applyServiceMethod4 updates functions that match the ServiceMethod4 shape based on the DSL.
 // It only updates the shape of *ast.FuncDecl (param/return types) and never touches the method body logic.
 // Shape: func (r *recv) Method(ctx *types.ServiceContext, req *<pkg>.<Req>) (*<pkg>.<Rsp>, error)
+//
+//	func (r *recv) Method(ctx *types.ServiceContext, req <pkg>.<Req>) (<pkg>.<Rsp>, error)
 func applyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) bool {
 	if fn == nil || action == nil {
 		return false
 	}
+
 	if !isServiceMethod4(fn) {
 		return false
 	}
 
 	var changed bool
 
-	// Update the second parameter type to *pkg.<Payload>
+	// Update the second parameter type based on action.Payload
 	if fn.Type != nil && fn.Type.Params != nil && len(fn.Type.Params.List) >= 2 {
 		param := fn.Type.Params.List[1]
-		if star, ok := param.Type.(*ast.StarExpr); ok {
-			if sel, ok := star.X.(*ast.SelectorExpr); ok {
-				if _, ok := sel.X.(*ast.Ident); ok {
-					if action.Payload != "" && sel.Sel.Name != action.Payload {
+		if action.Payload != "" {
+			// Determine if action.Payload should be a pointer type
+			payloadIsPointer := len(action.Payload) > 0 && action.Payload[0] == '*'
+			payloadName := action.Payload
+			if payloadIsPointer {
+				payloadName = action.Payload[1:] // Remove the '*' prefix
+			}
+
+			// Handle current *pkg.Type case
+			if star, ok := param.Type.(*ast.StarExpr); ok {
+				if sel, ok := star.X.(*ast.SelectorExpr); ok {
+					if pkgIdent, ok := sel.X.(*ast.Ident); ok {
+						if payloadIsPointer {
+							// Keep as pointer type, just update the name
+							if sel.Sel.Name != payloadName {
+								changed = true
+								newIdent := ast.NewIdent(payloadName)
+								newIdent.NamePos = sel.Sel.NamePos
+								sel.Sel = newIdent
+							}
+						} else {
+							// Convert from pointer to non-pointer type
+							changed = true
+							newSel := &ast.SelectorExpr{
+								X:   pkgIdent,
+								Sel: ast.NewIdent(payloadName),
+							}
+							param.Type = newSel
+						}
+					}
+				}
+				// Handle current pkg.Type case
+			} else if sel, ok := param.Type.(*ast.SelectorExpr); ok {
+				if pkgIdent, ok := sel.X.(*ast.Ident); ok {
+					if payloadIsPointer {
+						// Convert from non-pointer to pointer type
 						changed = true
-						// Preserve original position information to avoid comment displacement
-						newIdent := ast.NewIdent(action.Payload)
-						newIdent.NamePos = sel.Sel.NamePos
-						sel.Sel = newIdent
+						newStar := &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   pkgIdent,
+								Sel: ast.NewIdent(payloadName),
+							},
+						}
+						param.Type = newStar
+					} else {
+						// Keep as non-pointer type, just update the name
+						if sel.Sel.Name != payloadName {
+							changed = true
+							newIdent := ast.NewIdent(payloadName)
+							newIdent.NamePos = sel.Sel.NamePos
+							sel.Sel = newIdent
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// Update the first result type to *pkg.<Result>
+	// Update the first result type based on action.Result
 	if fn.Type != nil && fn.Type.Results != nil && len(fn.Type.Results.List) >= 1 {
 		res := fn.Type.Results.List[0]
-		if star, ok := res.Type.(*ast.StarExpr); ok {
-			if sel, ok := star.X.(*ast.SelectorExpr); ok {
-				if _, ok := sel.X.(*ast.Ident); ok {
-					if action.Result != "" && sel.Sel.Name != action.Result {
+		if action.Result != "" {
+			// Determine if action.Result should be a pointer type
+			resultIsPointer := len(action.Result) > 0 && action.Result[0] == '*'
+			resultName := action.Result
+			if resultIsPointer {
+				resultName = action.Result[1:] // Remove the '*' prefix
+			}
+
+			// Handle current *pkg.Type case
+			if star, ok := res.Type.(*ast.StarExpr); ok {
+				if sel, ok := star.X.(*ast.SelectorExpr); ok {
+					if pkgIdent, ok := sel.X.(*ast.Ident); ok {
+						if resultIsPointer {
+							// Keep as pointer type, just update the name
+							if sel.Sel.Name != resultName {
+								changed = true
+								newIdent := ast.NewIdent(resultName)
+								newIdent.NamePos = sel.Sel.NamePos
+								sel.Sel = newIdent
+							}
+						} else {
+							// Convert from pointer to non-pointer type
+							changed = true
+							newSel := &ast.SelectorExpr{
+								X:   pkgIdent,
+								Sel: ast.NewIdent(resultName),
+							}
+							res.Type = newSel
+						}
+					}
+				}
+				// Handle current pkg.Type case
+			} else if sel, ok := res.Type.(*ast.SelectorExpr); ok {
+				if pkgIdent, ok := sel.X.(*ast.Ident); ok {
+					if resultIsPointer {
+						// Convert from non-pointer to pointer type
 						changed = true
-						// Preserve original position information to avoid comment displacement
-						newIdent := ast.NewIdent(action.Result)
-						newIdent.NamePos = sel.Sel.NamePos
-						sel.Sel = newIdent
+						newStar := &ast.StarExpr{
+							X: &ast.SelectorExpr{
+								X:   pkgIdent,
+								Sel: ast.NewIdent(resultName),
+							},
+						}
+						res.Type = newStar
+					} else {
+						// Keep as non-pointer type, just update the name
+						if sel.Sel.Name != resultName {
+							changed = true
+							newIdent := ast.NewIdent(resultName)
+							newIdent.NamePos = sel.Sel.NamePos
+							sel.Sel = newIdent
+						}
 					}
 				}
 			}
@@ -127,6 +216,8 @@ func applyServiceMethod4(fn *ast.FuncDecl, action *dsl.Action) bool {
 // applyServiceType updates a service struct type to match DSL Payload/Result generics.
 // It transforms: type user struct { service.Base[*model.User, *model.User, *model.User] }
 // into:         type user struct { service.Base[*model.User, *model.UserReq, *model.UserRsp] }
+// or:           type user struct { service.Base[*model.User, model.UserReq, model.UserRsp] }
+// depending on whether action.Payload/Result starts with '*'
 func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) bool {
 	if spec == nil || action == nil || action.Payload == "" || action.Result == "" {
 		return false
@@ -148,30 +239,13 @@ func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) bool {
 			if sel, ok := indexListExpr.X.(*ast.SelectorExpr); ok {
 				if pkgIdent, ok := sel.X.(*ast.Ident); ok && pkgIdent.Name == "service" && sel.Sel.Name == "Base" {
 					if len(indexListExpr.Indices) == 3 {
-						// second -> Payload, third -> Result
-						if star2, ok := indexListExpr.Indices[1].(*ast.StarExpr); ok {
-							if sel2, ok := star2.X.(*ast.SelectorExpr); ok {
-								// keep package (sel2.X), replace Sel with action.Payload
-								if sel2.Sel.Name != action.Payload {
-									changed = true
-									// Preserve original position information to avoid comment displacement
-									newIdent := ast.NewIdent(action.Payload)
-									newIdent.NamePos = sel2.Sel.NamePos
-									sel2.Sel = newIdent
-								}
-							}
+						// Handle second parameter (Payload)
+						if changed2 := applyServiceTypeParam(indexListExpr, 1, action.Payload); changed2 {
+							changed = true
 						}
-						if star3, ok := indexListExpr.Indices[2].(*ast.StarExpr); ok {
-							if sel3, ok := star3.X.(*ast.SelectorExpr); ok {
-								// keep package (sel3.X), replace Sel with action.Result
-								if sel3.Sel.Name != action.Result {
-									changed = true
-									// Preserve original position information to avoid comment displacement
-									newIdent := ast.NewIdent(action.Result)
-									newIdent.NamePos = sel3.Sel.NamePos
-									sel3.Sel = newIdent
-								}
-							}
+						// Handle third parameter (Result)
+						if changed3 := applyServiceTypeParam(indexListExpr, 2, action.Result); changed3 {
+							changed = true
 						}
 					}
 				}
@@ -180,4 +254,75 @@ func applyServiceType(spec *ast.TypeSpec, action *dsl.Action) bool {
 	}
 
 	return changed
+}
+
+// applyServiceTypeParam updates a specific type parameter in service.Base[T1, T2, T3]
+// based on whether the actionType starts with '*' (pointer) or not (non-pointer)
+func applyServiceTypeParam(indexListExpr *ast.IndexListExpr, paramIndex int, actionType string) bool {
+	if paramIndex >= len(indexListExpr.Indices) {
+		return false
+	}
+
+	// Determine if actionType should be a pointer type
+	actionIsPointer := len(actionType) > 0 && actionType[0] == '*'
+	actionName := actionType
+	if actionIsPointer {
+		actionName = actionType[1:] // Remove the '*' prefix
+	}
+
+	currentParam := indexListExpr.Indices[paramIndex]
+
+	// Handle current *pkg.Type case
+	if star, ok := currentParam.(*ast.StarExpr); ok {
+		if sel, ok := star.X.(*ast.SelectorExpr); ok {
+			if actionIsPointer {
+				// Keep as pointer type, just update the name
+				if sel.Sel.Name != actionName {
+					newIdent := ast.NewIdent(actionName)
+					newIdent.NamePos = sel.Sel.NamePos
+					sel.Sel = newIdent
+					return true
+				}
+			} else {
+				// Convert from pointer to non-pointer type
+				newIdent := ast.NewIdent(actionName)
+				newIdent.NamePos = sel.Sel.NamePos
+				sel.Sel = newIdent
+				// Replace the StarExpr with SelectorExpr
+				indexListExpr.Indices[paramIndex] = sel
+				return true
+			}
+		}
+	}
+
+	// Handle current pkg.Type case (non-pointer)
+	if sel, ok := currentParam.(*ast.SelectorExpr); ok {
+		if actionIsPointer {
+			// Convert from non-pointer to pointer type
+			newIdent := ast.NewIdent(actionName)
+			newIdent.NamePos = sel.Sel.NamePos
+			// Create a new SelectorExpr with updated name
+			newSel := &ast.SelectorExpr{
+				X:   sel.X, // Keep the same package identifier
+				Sel: newIdent,
+			}
+			// Wrap new SelectorExpr with StarExpr
+			starExpr := &ast.StarExpr{
+				Star: sel.Pos() - 1, // Position the * just before the selector
+				X:    newSel,
+			}
+			indexListExpr.Indices[paramIndex] = starExpr
+			return true
+		} else {
+			// Keep as non-pointer type, just update the name
+			if sel.Sel.Name != actionName {
+				newIdent := ast.NewIdent(actionName)
+				newIdent.NamePos = sel.Sel.NamePos
+				sel.Sel = newIdent
+				return true
+			}
+		}
+	}
+
+	return false
 }

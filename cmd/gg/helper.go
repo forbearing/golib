@@ -12,8 +12,7 @@ func checkErr(err error) {
 	if err == nil {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-	os.Exit(1)
+	panic(err)
 }
 
 func fileExists(filename string) bool {

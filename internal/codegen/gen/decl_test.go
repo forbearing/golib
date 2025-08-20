@@ -115,6 +115,17 @@ func TestTypes(t *testing.T) {
 			rspName:      "UserRsp",
 			phase:        consts.PHASE_UPDATE,
 			want: `type Updater struct {
+	service.Base[*model.User, model.UserReq, model.UserRsp]
+}`,
+		},
+		{
+			name:         "user2",
+			modelPkgname: "model",
+			modelName:    "User",
+			reqName:      "*UserReq",
+			rspName:      "*UserRsp",
+			phase:        consts.PHASE_UPDATE,
+			want: `type Updater struct {
 	service.Base[*model.User, *model.UserReq, *model.UserRsp]
 }`,
 		},
@@ -276,8 +287,8 @@ func TestServiceMethod4(t *testing.T) {
 		{
 			name:         "Create",
 			recvName:     "u",
-			modelName:    "User",
 			modelPkgName: "model",
+			modelName:    "User",
 			reqName:      "User",
 			rspName:      "User",
 			phase:        consts.PHASE_CREATE,
@@ -290,6 +301,16 @@ func TestServiceMethod4(t *testing.T) {
 			modelPkgName: "model",
 			reqName:      "GroupRequest",
 			rspName:      "GroupResponse",
+			phase:        consts.PHASE_UPDATE,
+			want:         "func (g *Updater) Update(ctx *types.ServiceContext, req model.GroupRequest) (rsp model.GroupResponse, err error) {\n}",
+		},
+		{
+			name:         "Update2",
+			recvName:     "g",
+			modelPkgName: "model",
+			modelName:    "Group",
+			reqName:      "*GroupRequest",
+			rspName:      "*GroupResponse",
 			phase:        consts.PHASE_UPDATE,
 			want:         "func (g *Updater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {\n}",
 		},
