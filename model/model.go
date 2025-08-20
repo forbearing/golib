@@ -48,96 +48,6 @@ type Record struct {
 	DBName  string
 }
 
-// IsValid check the model is valid.
-// If the model has `Request` or `Response` suffix, it will be returns false.
-// If the model only has `Base` field, it will be returns false.
-//
-// eg:
-//
-//	IsValid[*UserRequest]() returns false
-//	IsValid[*UserResponse]() returns false
-//	IsValid[*User]() returns true
-//	IsValid[*Empty]() returns false
-func IsValid[M types.Model]() bool {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	if strings.HasSuffix(typ.Name(), "Request") || strings.HasSuffix(typ.Name(), "Response") {
-		return false
-	}
-	_, ok := typ.FieldByName("Base")
-	if typ.NumField() == 1 && ok {
-		return false
-	}
-	return true
-}
-
-func HasRequest[M types.Model]() bool {
-	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
-	typ := reflect.TypeOf(*new(M))
-	method, ok := typ.MethodByName("Request")
-	if !ok { // Model donn't has method `Request`
-		return false
-	}
-	// Method `Request` must have one parameter, first is `request`, second is `response`.
-	if method.Type.NumIn() < 2 {
-		return false
-	}
-	paramType := method.Type.In(1)
-	for paramType.Kind() == reflect.Ptr {
-		paramType = paramType.Elem()
-	}
-	// Method `Request` parameter must be struct or pointer of struct.
-	return paramType.Kind() == reflect.Struct
-}
-
-func HasResponse[M types.Model]() bool {
-	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
-	typ := reflect.TypeOf(*new(M))
-	method, ok := typ.MethodByName("Request")
-	if !ok { // Model donn't has method `Request`
-		return false
-	}
-	// Method `Request` must have two parameter, first is `request`, second is `response`.
-	if method.Type.NumIn() < 3 {
-		return false
-	}
-	paramType := method.Type.In(2)
-	for paramType.Kind() == reflect.Ptr {
-		paramType = paramType.Elem()
-	}
-	// Method `Request` parameter must be struct or pointer of struct.
-	return paramType.Kind() == reflect.Struct
-}
-
-// NewRequest always creates a pointer of struct value that used by controller to parse request.
-// The returns value type is the same as the method `Request` first parameter type.
-func NewRequest[M types.Model]() any {
-	if !HasRequest[M]() {
-		return nil
-	}
-	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
-	typ := reflect.TypeOf(*new(M))
-	method, _ := typ.MethodByName("Request")
-	paramType := method.Type.In(1)
-	for paramType.Kind() == reflect.Ptr {
-		paramType = paramType.Elem()
-	}
-	return reflect.New(paramType).Interface()
-}
-
-func NewResponse[M types.Model]() any {
-	if !HasResponse[M]() {
-		return nil
-	}
-	// NOTE: typ must be pointer to struct, not: reflect.TypeOf(*new(M)).Elem()
-	typ := reflect.TypeOf(*new(M))
-	method, _ := typ.MethodByName("Request")
-	paramType := method.Type.In(2)
-	for paramType.Kind() == reflect.Ptr {
-		paramType = paramType.Elem()
-	}
-	return reflect.New(paramType).Interface()
-}
-
 // Register associates the model with database table and will created automatically.
 // If records provided, they will be inserted when application bootstrapping.
 //
@@ -165,10 +75,6 @@ func NewResponse[M types.Model]() any {
 func Register[M types.Model](records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
-	// table := *new(M)
-	if !IsValid[M]() {
-		return
-	}
 	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
 	Tables = append(Tables, table)
 	// NOTE: it's necessary to set id before insert.
