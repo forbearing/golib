@@ -209,7 +209,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.POST(path, controller.CreateFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodPost)
 		middleware.RouteManager.Add(endpoint)
-		openapigen.Set[M](endpoint, consts.Create)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Create)
 	}
 	if verbMap[consts.Delete] {
 		endpoint := gopath.Join(base, path)
@@ -220,7 +220,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodDelete)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Delete)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Delete)
 
 	}
 	if verbMap[consts.Update] {
@@ -232,7 +232,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPut)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Update)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Update)
 
 	}
 	if verbMap[consts.Patch] {
@@ -244,14 +244,14 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Patch)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Patch)
 	}
 	if verbMap[consts.List] {
 		endpoint := gopath.Join(base, path)
 		router.GET(path, controller.ListFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint] = append(model.Routes[endpoint], http.MethodGet)
 		middleware.RouteManager.Add(endpoint)
-		openapigen.Set[M](endpoint, consts.List)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.List)
 	}
 	if verbMap[consts.Get] {
 		endpoint := gopath.Join(base, path)
@@ -259,7 +259,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.GET(path+"/:id", controller.GetFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodGet)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Get)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Get)
 	}
 
 	if verbMap[consts.CreateMany] {
@@ -268,7 +268,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.POST(path+"/batch", controller.CreateManyFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPost)
 		middleware.RouteManager.Add(gopath.Join(base, path, "/batch"))
-		openapigen.Set[M](endpoint, consts.CreateMany)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.CreateMany)
 	}
 	if verbMap[consts.DeleteMany] {
 		endpoint := gopath.Join(base, path)
@@ -276,7 +276,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.DELETE(path+"/batch", controller.DeleteManyFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodDelete)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.DeleteMany)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.DeleteMany)
 	}
 	if verbMap[consts.UpdateMany] {
 		endpoint := gopath.Join(base, path)
@@ -284,7 +284,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.PUT(path+"/batch", controller.UpdateManyFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPut)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.UpdateMany)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.UpdateMany)
 	}
 	if verbMap[consts.PatchMany] {
 		endpoint := gopath.Join(base, path)
@@ -292,7 +292,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.PATCH(path+"/batch", controller.PatchManyFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPatch)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.PatchMany)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.PatchMany)
 	}
 
 	if verbMap[consts.Import] {
@@ -301,7 +301,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.POST(path+"/import", controller.ImportFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodPost)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Import)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Import)
 	}
 	if verbMap[consts.Export] {
 		endpoint := gopath.Join(base, path)
@@ -309,7 +309,7 @@ func register[M types.Model, REQ types.Request, RSP types.Response](router gin.I
 		router.GET(path+"/export", controller.ExportFactory[M, REQ, RSP](cfg...))
 		model.Routes[endpoint2] = append(model.Routes[endpoint2], http.MethodGet)
 		middleware.RouteManager.Add(endpoint2)
-		openapigen.Set[M](endpoint, consts.Export)
+		openapigen.Set[M, REQ, RSP](endpoint, consts.Export)
 	}
 }
 
