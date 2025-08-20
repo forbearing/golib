@@ -10,7 +10,6 @@ import (
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 )
@@ -304,7 +303,7 @@ func setID(m types.Model, id ...string) {
 		return
 	}
 
-	zap.S().Debug("setting id: " + id[0])
+	// zap.S().Debug("setting id: " + id[0])
 	if len(id[0]) == 0 {
 		idField.SetString(util.UUID())
 	} else {
