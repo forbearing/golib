@@ -79,6 +79,12 @@ func init() {
 }
 
 func TestGetModulePath(t *testing.T) {
+	content := []byte("module github.com/forbearing/golib")
+	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("go.mod")
+
 	tests := []struct {
 		name    string // description of this test case
 		want    string
@@ -90,6 +96,7 @@ func TestGetModulePath(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := GetModulePath()
@@ -148,6 +155,12 @@ func TestFindModelPackageName(t *testing.T) {
 }
 
 func TestFindModels(t *testing.T) {
+	content := []byte("module github.com/forbearing/golib")
+	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("go.mod")
+
 	modulePath, err := GetModulePath()
 	if err != nil {
 		t.Fatal(err)
@@ -193,18 +206,18 @@ func TestFindModels(t *testing.T) {
 						Enabled:    true,
 						Endpoint:   "user",
 						Migrate:    false,
-						Create:     &dsl.Action{Payload: "User", Result: "User"},
-						Delete:     &dsl.Action{Payload: "User", Result: "User"},
-						Update:     &dsl.Action{Payload: "User", Result: "User"},
-						Patch:      &dsl.Action{Payload: "User", Result: "User"},
-						List:       &dsl.Action{Payload: "User", Result: "User"},
-						Get:        &dsl.Action{Payload: "User", Result: "User"},
-						CreateMany: &dsl.Action{Payload: "User", Result: "User"},
-						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
-						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
-						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
-						Import:     &dsl.Action{Payload: "User", Result: "User"},
-						Export:     &dsl.Action{Payload: "User", Result: "User"},
+						Create:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Delete:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Update:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Patch:      &dsl.Action{Payload: "*User", Result: "*User"},
+						List:       &dsl.Action{Payload: "*User", Result: "*User"},
+						Get:        &dsl.Action{Payload: "*User", Result: "*User"},
+						CreateMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						DeleteMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						UpdateMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						PatchMany:  &dsl.Action{Payload: "*User", Result: "*User"},
+						Import:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Export:     &dsl.Action{Payload: "*User", Result: "*User"},
 					},
 				},
 				{
@@ -218,18 +231,18 @@ func TestFindModels(t *testing.T) {
 						Enabled:    true,
 						Endpoint:   "group",
 						Migrate:    false,
-						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Patch:      &dsl.Action{Payload: "Group", Result: "Group"},
-						List:       &dsl.Action{Payload: "Group", Result: "Group"},
-						Get:        &dsl.Action{Payload: "Group", Result: "Group"},
-						CreateMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
-						Import:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Export:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Create:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Delete:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Update:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Patch:      &dsl.Action{Payload: "*Group", Result: "*Group"},
+						List:       &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Get:        &dsl.Action{Payload: "*Group", Result: "*Group"},
+						CreateMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						DeleteMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						UpdateMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						PatchMany:  &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Import:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Export:     &dsl.Action{Payload: "*Group", Result: "*Group"},
 					},
 				},
 			},
@@ -252,18 +265,18 @@ func TestFindModels(t *testing.T) {
 						Enabled:    true,
 						Endpoint:   "user",
 						Migrate:    false,
-						Create:     &dsl.Action{Payload: "User", Result: "User"},
-						Delete:     &dsl.Action{Payload: "User", Result: "User"},
-						Update:     &dsl.Action{Payload: "User", Result: "User"},
-						Patch:      &dsl.Action{Payload: "User", Result: "User"},
-						List:       &dsl.Action{Payload: "User", Result: "User"},
-						Get:        &dsl.Action{Payload: "User", Result: "User"},
-						CreateMany: &dsl.Action{Payload: "User", Result: "User"},
-						DeleteMany: &dsl.Action{Payload: "User", Result: "User"},
-						UpdateMany: &dsl.Action{Payload: "User", Result: "User"},
-						PatchMany:  &dsl.Action{Payload: "User", Result: "User"},
-						Import:     &dsl.Action{Payload: "User", Result: "User"},
-						Export:     &dsl.Action{Payload: "User", Result: "User"},
+						Create:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Delete:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Update:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Patch:      &dsl.Action{Payload: "*User", Result: "*User"},
+						List:       &dsl.Action{Payload: "*User", Result: "*User"},
+						Get:        &dsl.Action{Payload: "*User", Result: "*User"},
+						CreateMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						DeleteMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						UpdateMany: &dsl.Action{Payload: "*User", Result: "*User"},
+						PatchMany:  &dsl.Action{Payload: "*User", Result: "*User"},
+						Import:     &dsl.Action{Payload: "*User", Result: "*User"},
+						Export:     &dsl.Action{Payload: "*User", Result: "*User"},
 					},
 				},
 				{
@@ -277,18 +290,18 @@ func TestFindModels(t *testing.T) {
 						Enabled:    true,
 						Endpoint:   "group",
 						Migrate:    false,
-						Create:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Delete:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Update:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Patch:      &dsl.Action{Payload: "Group", Result: "Group"},
-						List:       &dsl.Action{Payload: "Group", Result: "Group"},
-						Get:        &dsl.Action{Payload: "Group", Result: "Group"},
-						CreateMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						DeleteMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						UpdateMany: &dsl.Action{Payload: "Group", Result: "Group"},
-						PatchMany:  &dsl.Action{Payload: "Group", Result: "Group"},
-						Import:     &dsl.Action{Payload: "Group", Result: "Group"},
-						Export:     &dsl.Action{Payload: "Group", Result: "Group"},
+						Create:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Delete:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Update:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Patch:      &dsl.Action{Payload: "*Group", Result: "*Group"},
+						List:       &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Get:        &dsl.Action{Payload: "*Group", Result: "*Group"},
+						CreateMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						DeleteMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						UpdateMany: &dsl.Action{Payload: "*Group", Result: "*Group"},
+						PatchMany:  &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Import:     &dsl.Action{Payload: "*Group", Result: "*Group"},
+						Export:     &dsl.Action{Payload: "*Group", Result: "*Group"},
 					},
 				},
 			},
@@ -515,6 +528,24 @@ func TestGenServiceMethod4(t *testing.T) {
 			},
 			reqName: "GroupRequest",
 			rspName: "GroupResponse",
+			phase:   consts.PHASE_UPDATE,
+			want: `func (g *Updater) Update(ctx *types.ServiceContext, req model.GroupRequest) (rsp model.GroupResponse, err error) {
+	log := g.WithServiceContext(ctx, ctx.GetPhase())
+	log.Info("group update")
+	return rsp, nil
+}`,
+		},
+		{
+			name: "group2",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "Group",
+				ModelVarName: "g",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			reqName: "*GroupRequest",
+			rspName: "*GroupResponse",
 			phase:   consts.PHASE_UPDATE,
 			want: `func (g *Updater) Update(ctx *types.ServiceContext, req *model.GroupRequest) (rsp *model.GroupResponse, err error) {
 	log := g.WithServiceContext(ctx, ctx.GetPhase())
