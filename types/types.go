@@ -104,7 +104,7 @@ type ServiceContext struct {
 	UserAgent    string        // user agent
 
 	Context context.Context
-	// Writer  http.ResponseWriter
+	Writer  http.ResponseWriter
 	// Body    []byte
 
 	// route parameters,
@@ -166,15 +166,8 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 
 		ginCtx:  c,
 		Context: c.Request.Context(),
+		Writer:  c.Writer,
 	}
-}
-
-func (sc *ServiceContext) JSON(code int, obj any) {
-	sc.ginCtx.JSON(code, obj)
-}
-
-func (sc *ServiceContext) String(code int, format string, values ...any) {
-	sc.ginCtx.String(code, format, values)
 }
 
 func (sc *ServiceContext) Data(code int, contentType string, data []byte) {
@@ -187,6 +180,10 @@ func (sc *ServiceContext) HTML(code int, name string, obj any) {
 
 func (sc *ServiceContext) Redirect(code int, location string) {
 	sc.ginCtx.Redirect(code, location)
+}
+
+func (sc *ServiceContext) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
+	sc.ginCtx.SetCookie(name, value, maxAge, path, domain, secure, httpOnly)
 }
 
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
