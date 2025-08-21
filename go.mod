@@ -64,7 +64,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.51.0
-	github.com/scylladb/gocqlx/v3 v3.0.3
+	github.com/scylladb/gocqlx/v3 v3.0.1
 	github.com/segmentio/fasthash v1.0.3
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sergi/go-diff v1.4.0
