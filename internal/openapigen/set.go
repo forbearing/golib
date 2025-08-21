@@ -58,7 +58,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if !hasModelEmpty[REQ]() {
+	if !model.IsModelEmpty[REQ]() {
 		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 		if err != nil {
 			zap.S().Error(err)
@@ -76,7 +76,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Create %s", name),
-				Required:    !hasModelEmpty[REQ](),
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},
@@ -210,7 +210,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if !hasModelEmpty[REQ]() {
+	if !model.IsModelEmpty[REQ]() {
 		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 		if err != nil {
 			zap.S().Error(err)
@@ -229,7 +229,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("The %s data to update", name),
-				Required:    !hasModelEmpty[REQ](),
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},
@@ -296,7 +296,7 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	if !hasModelEmpty[REQ]() {
+	if !model.IsModelEmpty[REQ]() {
 		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
 		if err != nil {
 			zap.S().Error(err)
@@ -315,7 +315,7 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Partial fields of %s to update", name),
-				Required:    !hasModelEmpty[REQ](),
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},
@@ -1475,31 +1475,6 @@ type batchData[T any] struct {
 	Items   []T            `json:"items"`
 	Options map[string]any `json:"options"`
 	Summary listSummary    `json:"summary"`
-}
-
-// hasModelEmpty check the REQ is struct and only has anonymous field model.Empty, eg:
-//
-//	type Login struct {
-//		model.Empty
-//	}
-func hasModelEmpty[REQ types.Request]() bool {
-	typ := reflect.TypeOf((*REQ)(nil)).Elem()
-
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	if typ.Kind() != reflect.Struct {
-		return false
-	}
-	if typ.NumField() != 1 {
-		return false
-	}
-	field := typ.Field(0)
-
-	target := reflect.TypeOf(model.Empty{})
-
-	return field.Anonymous && field.Type == target
 }
 
 // parameters:
