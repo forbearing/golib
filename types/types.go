@@ -11,15 +11,15 @@ import (
 
 type ControllerContext struct {
 	Username string // currrent login user.
-	UserId   string // currrent login user id
+	UserID   string // currrent login user id
 	Route    string
 	Params   map[string]string
 	Query    map[string][]string
 
-	RequestId string
-	TraceId   string
-	PSpanId   string
-	SpanId    string
+	RequestID string
+	TraceID   string
+	PSpanID   string
+	SpanID    string
 	Seq       int
 }
 
@@ -37,9 +37,9 @@ func NewControllerContext(c *gin.Context) *ControllerContext {
 	return &ControllerContext{
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
-		UserId:    c.GetString(consts.CTX_USER_ID),
-		RequestId: c.GetString(consts.REQUEST_ID),
-		TraceId:   c.GetString(consts.TRACE_ID),
+		UserID:    c.GetString(consts.CTX_USER_ID),
+		RequestID: c.GetString(consts.REQUEST_ID),
+		TraceID:   c.GetString(consts.TRACE_ID),
 		Params:    params,
 		Query:     c.Request.URL.Query(),
 	}
@@ -47,15 +47,15 @@ func NewControllerContext(c *gin.Context) *ControllerContext {
 
 type DatabaseContext struct {
 	Username string // currrent login user.
-	UserId   string // currrent login user id
+	UserID   string // currrent login user id
 	Route    string
 	Params   map[string]string
 	Query    map[string][]string
 
-	RequestId string
-	TraceId   string
-	PSpanId   string
-	SpanId    string
+	RequestID string
+	TraceID   string
+	PSpanID   string
+	SpanID    string
 	Seq       int
 }
 
@@ -73,9 +73,9 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 	return &DatabaseContext{
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
-		UserId:    c.GetString(consts.CTX_USER_ID),
-		RequestId: c.GetString(consts.REQUEST_ID),
-		TraceId:   c.GetString(consts.TRACE_ID),
+		UserID:    c.GetString(consts.CTX_USER_ID),
+		RequestID: c.GetString(consts.REQUEST_ID),
+		TraceID:   c.GetString(consts.TRACE_ID),
 		Params:    params,
 		Query:     c.Request.URL.Query(),
 	}
@@ -88,9 +88,9 @@ func NewGormContext(ctx *DatabaseContext) context.Context {
 		return c
 	}
 	c = context.WithValue(c, consts.CTX_USERNAME, ctx.Username)
-	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserId)
-	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestId)
-	c = context.WithValue(c, consts.TRACE_ID, ctx.TraceId)
+	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserID)
+	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestID)
+	c = context.WithValue(c, consts.TRACE_ID, ctx.TraceID)
 	return c
 }
 
@@ -103,6 +103,10 @@ type ServiceContext struct {
 	ClientIP     string        // client ip
 	UserAgent    string        // user agent
 
+	Context context.Context
+	// Writer  http.ResponseWriter
+	// Body    []byte
+
 	// route parameters,
 	//
 	// eg: PUT /api/gists/:id/star
@@ -113,15 +117,15 @@ type ServiceContext struct {
 	Params map[string]string
 	Query  map[string][]string
 
-	SessionId string // session id
+	SessionID string // session id
 	Username  string // currrent login user.
-	UserId    string // currrent login user id
+	UserID    string // currrent login user id
 	Route     string
 
-	RequestId string
-	TraceId   string
-	PSpanId   string
-	SpanId    string
+	RequestID string
+	TraceID   string
+	PSpanID   string
+	SpanID    string
 	Seq       int
 
 	ginCtx *gin.Context
@@ -154,22 +158,35 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
-		UserId:    c.GetString(consts.CTX_USER_ID),
-		SessionId: c.GetString(consts.CTX_SESSION_ID),
+		UserID:    c.GetString(consts.CTX_USER_ID),
+		SessionID: c.GetString(consts.CTX_SESSION_ID),
 
-		RequestId: c.GetString(consts.REQUEST_ID),
-		TraceId:   c.GetString(consts.TRACE_ID),
+		RequestID: c.GetString(consts.REQUEST_ID),
+		TraceID:   c.GetString(consts.TRACE_ID),
 
-		ginCtx: c,
+		ginCtx:  c,
+		Context: c.Request.Context(),
 	}
 }
 
-func (sc *ServiceContext) Redirect(code int, location string) {
-	sc.ginCtx.Redirect(code, location)
+func (sc *ServiceContext) JSON(code int, obj any) {
+	sc.ginCtx.JSON(code, obj)
+}
+
+func (sc *ServiceContext) String(code int, format string, values ...any) {
+	sc.ginCtx.String(code, format, values)
 }
 
 func (sc *ServiceContext) Data(code int, contentType string, data []byte) {
 	sc.ginCtx.Data(code, contentType, data)
+}
+
+func (sc *ServiceContext) HTML(code int, name string, obj any) {
+	sc.ginCtx.HTML(code, name, obj)
+}
+
+func (sc *ServiceContext) Redirect(code int, location string) {
+	sc.ginCtx.Redirect(code, location)
 }
 
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
