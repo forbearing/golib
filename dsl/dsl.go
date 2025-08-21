@@ -33,6 +33,7 @@ type Design struct {
 	Enabled  bool   // default enabled
 	Endpoint string // Endpoint defaults to the lower case of the model name, its used by router.
 	Migrate  bool   // Migrate to database or not, default to false.
+	IsEmpty  bool   // IsEmpty check if the struct has field model.Empty
 
 	// default payload and result is the model name
 	Create *Action

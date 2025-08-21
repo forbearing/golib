@@ -141,7 +141,7 @@ func Test_isModelEmpty(t *testing.T) {
 		{
 			name: "input7",
 			code: input7,
-			want: []bool{false, true},
+			want: []bool{true, false},
 		},
 	}
 	for _, tt := range tests {
@@ -520,6 +520,7 @@ func TestParse(t *testing.T) {
 					Enabled:    true,
 					Endpoint:   "user6",
 					Migrate:    false,
+					IsEmpty:    true,
 					Create:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
 					Delete:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
 					Update:     &Action{Enabled: false, Service: false, Payload: "*User6", Result: "*User6"},
@@ -544,6 +545,7 @@ func TestParse(t *testing.T) {
 					Enabled:    true,
 					Endpoint:   "user8",
 					Migrate:    false,
+					IsEmpty:    true,
 					Create:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
 					Delete:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
 					Update:     &Action{Enabled: false, Service: false, Payload: "*User8", Result: "*User8"},
