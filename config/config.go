@@ -175,6 +175,10 @@ func Init() (err error) {
 	return nil
 }
 
+func Wokao() map[string]any {
+	return registeredConfigs
+}
+
 func Clean() {
 	if err := os.RemoveAll(tempdir); err != nil {
 		zap.S().Errorw("failed to remove temp dir", "error", err, "dir", tempdir)
@@ -187,8 +191,9 @@ func Tempdir() string {
 	return tempdir
 }
 
-// Register registers a configuration type with the given name.
+// Register registers a custom configuration into config system.
 // The type parameter T can be either struct type or pointer to struct type.
+// If T is not a struct or pointer to struct, the registration will be skipped silently.
 // The registered type will be used to create and initialize the configuration
 // instance when loading configuration from file or environment variables.
 //
@@ -220,29 +225,38 @@ func Tempdir() string {
 //	}
 //
 //	// Register with struct type
-//	config.Register[WechatConfig]("wechat")
+//	config.Register[WechatConfig]()
 //
-//	// Register with pointer type (equivalent to above)
-//	config.Register[*NatsConfig]("nats")
+//	// Register with pointer type
+//	config.Register[*NatsConfig]()
 //
 // After registration, you can access the config using Get:
 //
-//	natsCfg := config.Get[NatsConfig]("nats")
+//	natsCfg := config.Get[NatsConfig]()
 //	// or with pointer
-//	natsPtr := config.Get[*NatsConfig]("nats")
-func Register[T any](name string) {
+//	natsPtr := config.Get[*NatsConfig]()
+func Register[T any]() {
 	mu.Lock()
 	defer mu.Unlock()
 
 	var t T
 	typ := reflect.TypeOf(t)
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
+
+	// Skip if not a struct type
+	if typ.Kind() != reflect.Struct {
+		return
+	}
+
+	// Determine the configuration name
+	cfgName := strings.ToLower(typ.Name())
+
 	if inited {
-		registerType(name, typ)
+		registerType(cfgName, typ)
 	} else {
-		registeredTypes[name] = typ
+		registeredTypes[cfgName] = typ
 	}
 }
 
@@ -348,7 +362,7 @@ func setDefaultDurationFields(typ reflect.Type, val reflect.Value) {
 		}
 
 		// Handle pointer to struct
-		if fieldTyp.Type.Kind() == reflect.Ptr && fieldTyp.Type.Elem().Kind() == reflect.Struct {
+		if fieldTyp.Type.Kind() == reflect.Pointer && fieldTyp.Type.Elem().Kind() == reflect.Struct {
 			// If the pointer is nil, initialize it
 			if fieldVal.IsNil() {
 				fieldVal.Set(reflect.New(fieldTyp.Type.Elem()))
@@ -381,38 +395,46 @@ func isZeroValue(v reflect.Value) bool {
 		return v.String() == ""
 	case reflect.Slice, reflect.Map:
 		return v.Len() == 0
-	case reflect.Interface, reflect.Ptr:
+	case reflect.Interface, reflect.Pointer:
 		return v.IsNil()
 	}
 	return false
 }
 
-// Get returns the registered configuration by name.
+// Get returns the registered custom configuration.
 // The type parameter T must match the registered type or be a pointer to it,
-// othherwise a zero value or nil pointer will be returned.
+// otherwise a zero value or nil pointer will be returned.
 //
 // Example usage:
 //
-//	config.Register[WechatConfig]("wechat")
-//
-//	// Get by value type - returns value
-//	cfg1 := config.Get[WechatConfig]("wechat")
+//	config.Register[WechatConfig]()
 //
 //	// Get by pointer type - returns pointer
-//	cfg2 := config.Get[*WechatConfig]("wechat")
+//	cfg3 := config.Get[*WechatConfig]()
 //
 //	// Type mismatch - returns zero value
-//	cfg3 := config.Get[OtherConfig]("wechat")
+//	cfg4 := config.Get[OtherConfig]()
 //
 //	// Type mismatch - returns nil
-//	cfg4 := config.Get[*OtherConfig]("wechat")
-func Get[T any](name string) (t T) {
+//	cfg5 := config.Get[*OtherConfig]()
+func Get[T any]() (t T) {
 	mu.RLock()
 	defer mu.RUnlock()
 
-	config, exists := registeredConfigs[name]
+	// Determine the configuration name
+	var temp T
+	typ := reflect.TypeOf(temp)
+	if typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		return t
+	}
+	cfgName := strings.ToLower(typ.Name())
+
+	config, exists := registeredConfigs[cfgName]
 	if !exists {
-		zap.S().Warnw("config not found", "name", name)
+		zap.S().Warnw("config not found", "name", cfgName)
 		return
 	}
 
@@ -423,13 +445,13 @@ func Get[T any](name string) (t T) {
 	if storedTyp == destTyp {
 		return storedVal.Elem().Interface().(T)
 	}
-	if destTyp.Kind() == reflect.Ptr {
+	if destTyp.Kind() == reflect.Pointer {
 		if storedTyp == destTyp.Elem() {
 			return storedVal.Interface().(T)
 		}
 	}
 
-	zap.S().Warnw("config type mismatch", "name", name, "stored", storedTyp.Name(), "dest", destTyp.Name())
+	zap.S().Warnw("config type mismatch", "name", cfgName, "stored", storedTyp.Name(), "dest", destTyp.Name())
 	return t
 }
 
