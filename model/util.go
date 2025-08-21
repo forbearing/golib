@@ -57,9 +57,39 @@ func GetTableName[M types.Model]() string {
 	return strcase.SnakeCase(pluralizeCli.Plural(reflect.TypeOf(*new(M)).Elem().Name()))
 }
 
+// AreTypesEqual checks if the types of M, REQ and RSP are equal
+// If the M is a struct only has field model.Empty, always return true.
 func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool {
-	typ1 := reflect.TypeOf(*new(M))
-	typ2 := reflect.TypeOf(*new(REQ))
-	typ3 := reflect.TypeOf(*new(RSP))
+	if IsModelEmpty[M]() {
+		return true
+	}
+	typ1 := reflect.TypeOf((*M)(nil)).Elem()
+	typ2 := reflect.TypeOf((*REQ)(nil)).Elem()
+	typ3 := reflect.TypeOf((*RSP)(nil)).Elem()
 	return typ1 == typ2 && typ2 == typ3
+}
+
+// IsModelEmpty check the REQ is struct and only has anonymous field model.Empty, eg:
+//
+//	type Login struct {
+//		model.Empty
+//	}
+func IsModelEmpty[REQ types.Request]() bool {
+	typ := reflect.TypeOf((*REQ)(nil)).Elem()
+
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return false
+	}
+	if typ.NumField() != 1 {
+		return false
+	}
+	field := typ.Field(0)
+
+	target := reflect.TypeOf(Empty{})
+
+	return field.Anonymous && field.Type == target
 }
