@@ -58,10 +58,10 @@ func GetTableName[M types.Model]() string {
 }
 
 // AreTypesEqual checks if the types of M, REQ and RSP are equal
-// If the M is a struct only has field model.Empty, always return true.
+// If the M is a struct only has field model.Empty, always return false.
 func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool {
 	if IsModelEmpty[M]() {
-		return true
+		return false
 	}
 	typ1 := reflect.TypeOf((*M)(nil)).Elem()
 	typ2 := reflect.TypeOf((*REQ)(nil)).Elem()
@@ -74,8 +74,8 @@ func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool 
 //	type Login struct {
 //		model.Empty
 //	}
-func IsModelEmpty[REQ types.Request]() bool {
-	typ := reflect.TypeOf((*REQ)(nil)).Elem()
+func IsModelEmpty[T any]() bool {
+	typ := reflect.TypeOf((*T)(nil)).Elem()
 
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
