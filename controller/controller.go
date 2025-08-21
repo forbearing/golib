@@ -23,7 +23,6 @@ import (
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/gin-gonic/gin"
@@ -168,9 +167,9 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_CREATE)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_CREATE)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -219,7 +218,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// NOTE: WithExpand(req.Expands()...) is not a good choices.
 		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
 		if reqErr != io.EOF {
-			if err = handler(helper.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -327,9 +326,9 @@ func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_DELETE)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_DELETE)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
@@ -406,14 +405,14 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		for i := range ml {
 			m := reflect.New(typ).Interface().(M)
 			m.SetID(ml[i].GetID())
-			if err := handler(helper.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
+			if err := handler(types.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 				log.Error(err)
 			}
 			copied[i] = m
 		}
 
 		// 2.Delete resources in database.
-		if err := handler(helper.NewDatabaseContext(c)).Delete(ml...); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).Delete(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -526,9 +525,9 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_UPDATE)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_UPDATE)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -586,7 +585,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		m := reflect.New(typ).Interface().(M)
 		m.SetID(id)
 		// Make sure the record must be already exists.
-		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -609,7 +608,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		// 2.Update resource in database.
 		log.Infoz("update in database", zap.Object(typ.Name(), req))
-		if err := handler(helper.NewDatabaseContext(c)).Update(req); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).Update(req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -729,9 +728,9 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var id string
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_PATCH)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_PATCH)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
@@ -774,7 +773,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		m.SetID(id)
 
 		// Make sure the record must be already exists.
-		if err := handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -801,7 +800,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			return
 		}
 		// 2.Partial update resource in database.
-		if err := handler(helper.NewDatabaseContext(c)).Update(cur); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).Update(cur); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return
@@ -967,9 +966,9 @@ func List[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) 
 func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_LIST)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_LIST)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_LIST)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
@@ -1104,7 +1103,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// 2.List resources from database.
 		cache := make([]byte, 0)
 		cached := false
-		if err = handler(helper.NewDatabaseContext(c)).
+		if err = handler(types.NewDatabaseContext(c)).
 			WithScope(page, size).
 			WithOr(or).
 			WithIndex(index).
@@ -1136,7 +1135,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		nototal, _ = strconv.ParseBool(nototalStr)
 		// NOTE: Total count is not provided when using cursor-based pagination.
 		if !nototal && len(cursorValue) == 0 {
-			if err := handler(helper.NewDatabaseContext(c)).
+			if err := handler(types.NewDatabaseContext(c)).
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
@@ -1288,9 +1287,9 @@ func Get[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
 func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_GET)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_GET)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_GET)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
@@ -1394,7 +1393,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		// 2.Get resource from database.
 		cache := make([]byte, 0)
 		cached := false
-		if err = handler(helper.NewDatabaseContext(c)).
+		if err = handler(types.NewDatabaseContext(c)).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
 			WithExpand(expands).
@@ -1626,9 +1625,9 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_CREATE_MANY)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_CREATE_MANY)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_CREATE_MANY)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -1680,7 +1679,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		// 2.Batch create resource in database.
 		if reqErr != io.EOF {
-			if err = handler(helper.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -1799,9 +1798,9 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_DELETE_MANY)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_DELETE_MANY)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_DELETE_MANY)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -1851,7 +1850,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 		// 2.Batch delete resources in database.
 		if reqErr != io.EOF {
-			if err = handler(helper.NewDatabaseContext(c)).WithPurge(req.Options.Purge).Delete(req.Items...); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).WithPurge(req.Options.Purge).Delete(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -1949,9 +1948,9 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_UPDATE_MANY)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_UPDATE_MANY)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_UPDATE_MANY)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -1991,7 +1990,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 		// 2.Batch update resource in database.
 		if reqErr != io.EOF {
-			if err = handler(helper.NewDatabaseContext(c)).Update(req.Items...); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).Update(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -2093,9 +2092,9 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_PATCH_MANY)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_PATCH_MANY)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_PATCH_MANY)
-		ctx := helper.NewServiceContext(c)
+		ctx := types.NewServiceContext(c)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
@@ -2132,7 +2131,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			var results []M
 			v := reflect.New(typ).Interface().(M)
 			v.SetID(m.GetID())
-			if err = handler(helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
 				log.Error(err)
 				continue
 			}
@@ -2157,7 +2156,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 		// 2.Batch partial update resource in database.
 		if reqErr != io.EOF {
-			if err = handler(helper.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
+			if err = handler(types.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
 				return
@@ -2243,7 +2242,7 @@ func Export[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_EXPORT)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_EXPORT)
 		var page, size, limit int
 		var startTime, endTime time.Time
 		if pageStr, ok := c.GetQuery(consts.QUERY_PAGE); ok {
@@ -2338,7 +2337,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_EXPORT)
-		svcCtx := helper.NewServiceContext(c)
+		svcCtx := types.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
 		if err = svc.ListBefore(svcCtx.WithPhase(consts.PHASE_EXPORT), &data); err != nil {
 			log.Error(err)
@@ -2348,7 +2347,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		sortBy, _ := c.GetQuery(consts.QUERY_SORTBY)
 		_, _ = page, size
 		// 2.List resources from database.
-		if err = handler(helper.NewDatabaseContext(c)).
+		if err = handler(types.NewDatabaseContext(c)).
 			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
 			WithLimit(limit).
 			WithOr(or).
@@ -2415,7 +2414,7 @@ func Import[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.PHASE_IMPORT)
+		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_IMPORT)
 		// NOTE:字段为 file 必须和前端协商好.
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -2449,7 +2448,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		// check filetype
 
-		ml, err := service.Factory[M, REQ, RSP]().Service(consts.PHASE_IMPORT).Import(helper.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), buf)
+		ml, err := service.Factory[M, REQ, RSP]().Service(consts.PHASE_IMPORT).Import(types.NewServiceContext(c).WithPhase(consts.PHASE_IMPORT), buf)
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
@@ -2461,7 +2460,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			ml[i].SetCreatedBy(c.GetString(consts.CTX_USERNAME))
 			ml[i].SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 		}
-		if err := handler(helper.NewDatabaseContext(c)).Update(ml...); err != nil {
+		if err := handler(types.NewDatabaseContext(c)).Update(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return

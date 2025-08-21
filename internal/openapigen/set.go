@@ -58,16 +58,15 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
-	if err != nil {
-		zap.S().Error(err)
-		reqSchemaRef = new(openapi3.SchemaRef)
+	if !model.IsModelEmpty[REQ]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
+		if err != nil {
+			zap.S().Error(err)
+			reqSchemaRef = new(openapi3.SchemaRef)
+		}
 	}
-
-	// Add field descriptions to request schema
-	addSchemaTitleDesc[M](reqSchemaRef)
-
 	setupExample(reqSchemaRef)
+	addSchemaTitleDesc[M](reqSchemaRef)
 
 	pathItem.Post = &openapi3.Operation{
 		OperationID: operationID(consts.Create, typ),
@@ -77,7 +76,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Create %s", name),
-				Required:    true,
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},
@@ -211,10 +210,12 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
-	if err != nil {
-		zap.S().Error(err)
-		reqSchemaRef = new(openapi3.SchemaRef)
+	if !model.IsModelEmpty[REQ]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
+		if err != nil {
+			zap.S().Error(err)
+			reqSchemaRef = new(openapi3.SchemaRef)
+		}
 	}
 	setupExample(reqSchemaRef)
 	addSchemaTitleDesc[M](reqSchemaRef)
@@ -228,7 +229,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("The %s data to update", name),
-				Required:    true,
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},
@@ -295,10 +296,12 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
-	reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
-	if err != nil {
-		zap.S().Error(err)
-		reqSchemaRef = new(openapi3.SchemaRef)
+	if !model.IsModelEmpty[REQ]() {
+		reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil)
+		if err != nil {
+			zap.S().Error(err)
+			reqSchemaRef = new(openapi3.SchemaRef)
+		}
 	}
 	setupExample(reqSchemaRef)
 	addSchemaTitleDesc[M](reqSchemaRef)
@@ -312,7 +315,7 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 		RequestBody: &openapi3.RequestBodyRef{
 			Value: &openapi3.RequestBody{
 				Description: fmt.Sprintf("Partial fields of %s to update", name),
-				Required:    true,
+				Required:    !model.IsModelEmpty[REQ](),
 				Content:     openapi3.NewContentWithJSONSchemaRef(reqSchemaRef),
 			},
 		},

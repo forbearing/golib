@@ -109,8 +109,8 @@ func (l *Logger) WithControllerContext(ctx *types.ControllerContext, phase const
 		consts.PHASE, string(phase),
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
-		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId).
+		consts.CTX_USER_ID, ctx.UserID,
+		consts.TRACE_ID, ctx.TraceID).
 		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
 		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
@@ -126,8 +126,8 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 		consts.PHASE, string(phase),
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
-		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId).
+		consts.CTX_USER_ID, ctx.UserID,
+		consts.TRACE_ID, ctx.TraceID).
 		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
 		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
@@ -143,8 +143,8 @@ func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Ph
 		consts.PHASE, string(phase),
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
-		consts.CTX_USER_ID, ctx.UserId,
-		consts.TRACE_ID, ctx.TraceId).
+		consts.CTX_USER_ID, ctx.UserID,
+		consts.TRACE_ID, ctx.TraceID).
 		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
 		WithObject(consts.QUERY, queryObject(ctx.Query))
 }

@@ -217,31 +217,48 @@ func setID(m types.Model, id ...string) {
 	}
 }
 
+// Empty is a special model implementation that provides a no-op implementation of the types.Model interface.
+// It serves as a marker type for structs that should be excluded from database operations and service hooks.
+//
+// Key characteristics:
+//   - Structs with an anonymous model.Empty field are never migrated to the database
+//   - All interface methods return zero values or no-op implementations
+//   - IsModelEmpty() function returns true for structs containing only model.Empty
+//   - Service hooks are bypassed when AreTypesEqual() returns false for Empty types
+//   - Commonly used for request/response DTOs that don't require persistence
+//
+// Usage example:
+//
+//	type LoginRequest struct {
+//	    model.Empty
+//	    Username string `json:"username"`
+//	    Password string `json:"password"`
+//	}
 type Empty struct{}
 
-func (*Empty) GetTableName() string       { return "" }
-func (*Empty) GetCreatedBy() string       { return "" }
-func (*Empty) GetUpdatedBy() string       { return "" }
-func (*Empty) GetCreatedAt() time.Time    { return time.Time{} }
-func (*Empty) GetUpdatedAt() time.Time    { return time.Time{} }
-func (*Empty) SetCreatedBy(s string)      {}
-func (*Empty) SetUpdatedBy(s string)      {}
-func (*Empty) SetCreatedAt(t time.Time)   {}
-func (*Empty) SetUpdatedAt(t time.Time)   {}
-func (*Empty) GetID() string              { return "" }
-func (*Empty) SetID(id ...string)         {}
-func (*Empty) Expands() []string          { return nil }
-func (*Empty) Excludes() map[string][]any { return nil }
-func (*Empty) CreateBefore() error        { return nil }
-func (*Empty) CreateAfter() error         { return nil }
-func (*Empty) DeleteBefore() error        { return nil }
-func (*Empty) DeleteAfter() error         { return nil }
-func (*Empty) UpdateBefore() error        { return nil }
-func (*Empty) UpdateAfter() error         { return nil }
-func (*Empty) ListBefore() error          { return nil }
-func (*Empty) ListAfter() error           { return nil }
-func (*Empty) GetBefore() error           { return nil }
-func (*Empty) GetAfter() error            { return nil }
-func (*Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+func (Empty) GetTableName() string       { return "" }
+func (Empty) GetCreatedBy() string       { return "" }
+func (Empty) GetUpdatedBy() string       { return "" }
+func (Empty) GetCreatedAt() time.Time    { return time.Time{} }
+func (Empty) GetUpdatedAt() time.Time    { return time.Time{} }
+func (Empty) SetCreatedBy(s string)      {}
+func (Empty) SetUpdatedBy(s string)      {}
+func (Empty) SetCreatedAt(t time.Time)   {}
+func (Empty) SetUpdatedAt(t time.Time)   {}
+func (Empty) GetID() string              { return "" }
+func (Empty) SetID(id ...string)         {}
+func (Empty) Expands() []string          { return nil }
+func (Empty) Excludes() map[string][]any { return nil }
+func (Empty) CreateBefore() error        { return nil }
+func (Empty) CreateAfter() error         { return nil }
+func (Empty) DeleteBefore() error        { return nil }
+func (Empty) DeleteAfter() error         { return nil }
+func (Empty) UpdateBefore() error        { return nil }
+func (Empty) UpdateAfter() error         { return nil }
+func (Empty) ListBefore() error          { return nil }
+func (Empty) ListAfter() error           { return nil }
+func (Empty) GetBefore() error           { return nil }
+func (Empty) GetAfter() error            { return nil }
+func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
