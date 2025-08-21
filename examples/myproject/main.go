@@ -160,7 +160,7 @@ func main() {
 	// config.SetConfigType("ini")
 
 	// Register config before bootstrap.
-	config.Register[WechatConfig]("wechat")
+	config.Register[Wechat]()
 
 	// Register task and cronjob before bootstrap.
 	task.Register(SayHello, 1*time.Second, "say hello")
@@ -176,7 +176,7 @@ func main() {
 
 	// Register config after bootstrap.
 	// config.Register[*NatsConfig]("nats")
-	zap.S().Infof("%+v", config.Get[*WechatConfig]("wechat"))
+	zap.S().Infof("%+v", config.Get[*Wechat]())
 	// zap.S().Infof("%+v", config.Get[*NatsConfig]("nats"))
 
 	// Register task and cronjob after bootstrap.
@@ -385,7 +385,7 @@ func main() {
 	RunOrDie(bootstrap.Run)
 }
 
-type WechatConfig struct {
+type Wechat struct {
 	AppID     string `json:"app_id" mapstructure:"app_id" default:"myappid"`
 	AppSecret string `json:"app_secret" mapstructure:"app_secret" default:"myappsecret"`
 	Enable    bool   `json:"enable" mapstructure:"enable"`
