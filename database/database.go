@@ -17,7 +17,6 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	"github.com/stoewer/go-strcase"
 	"go.uber.org/zap"
@@ -2340,7 +2339,7 @@ func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 	if len(ctx) > 0 {
 		if ctx[0] != nil {
 			dbctx = ctx[0]
-			gctx = helper.NewGormContext(dbctx)
+			gctx = types.NewGormContext(dbctx)
 		}
 	}
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
