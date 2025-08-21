@@ -217,6 +217,23 @@ func setID(m types.Model, id ...string) {
 	}
 }
 
+// Empty is a special model implementation that provides a no-op implementation of the types.Model interface.
+// It serves as a marker type for structs that should be excluded from database operations and service hooks.
+//
+// Key characteristics:
+//   - Structs with an anonymous model.Empty field are never migrated to the database
+//   - All interface methods return zero values or no-op implementations
+//   - IsModelEmpty() function returns true for structs containing only model.Empty
+//   - Service hooks are bypassed when AreTypesEqual() returns false for Empty types
+//   - Commonly used for request/response DTOs that don't require persistence
+//
+// Usage example:
+//
+//	type LoginRequest struct {
+//	    model.Empty
+//	    Username string `json:"username"`
+//	    Password string `json:"password"`
+//	}
 type Empty struct{}
 
 func (Empty) GetTableName() string       { return "" }
