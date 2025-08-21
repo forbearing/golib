@@ -30,8 +30,10 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 	}
 	for name, fnDecl := range designEmpty {
 		design := parseDesign(fnDecl)
-		// the struct has field model.Empty always should be not migrated.
+		// the struct has field model.Empty always should be not migrated,
+		// and mark `IsEmpty` field to true
 		design.Migrate = false
+		design.IsEmpty = true
 		m[name] = design
 	}
 
