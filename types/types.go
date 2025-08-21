@@ -1,57 +1,13 @@
 package types
 
 import (
+	"context"
 	"net/http"
 	"net/url"
-	"sort"
 
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
 )
-
-type sortByCreatedTime[M Model] []M
-
-func (s sortByCreatedTime[M]) Len() int      { return len(s) }
-func (s sortByCreatedTime[M]) Swap(x, y int) { s[x], s[y] = s[y], s[x] }
-func (s sortByCreatedTime[M]) Less(x, y int) bool {
-	return s[x].GetCreatedAt().After(s[y].GetCreatedAt())
-}
-
-type sortByUpdatedTime[M Model] []M
-
-func (s sortByUpdatedTime[M]) Len() int      { return len(s) }
-func (s sortByUpdatedTime[M]) Swap(x, y int) { s[x], s[y] = s[y], s[x] }
-func (s sortByUpdatedTime[M]) Less(x, y int) bool {
-	return s[x].GetUpdatedAt().After(s[y].GetUpdatedAt())
-}
-
-type Order int
-
-const (
-	UpdatedTime Order = iota
-	CreatedTime
-)
-
-func Sort[M Model](order Order, data []M, reverse ...bool) {
-	var _reverse bool
-	if len(reverse) > 0 {
-		_reverse = reverse[0]
-	}
-	_sort := func(data sort.Interface) {
-		if _reverse {
-			sort.Sort(sort.Reverse(data))
-		} else {
-			sort.Sort(data)
-		}
-	}
-
-	switch order {
-	case CreatedTime:
-		_sort(sortByCreatedTime[M](data))
-	case UpdatedTime:
-		_sort(sortByUpdatedTime[M](data))
-	}
-}
 
 type ControllerContext struct {
 	Username string // currrent login user.
@@ -67,6 +23,28 @@ type ControllerContext struct {
 	Seq       int
 }
 
+// NewControllerContext creates a ControllerContext from gin.Context
+func NewControllerContext(c *gin.Context) *ControllerContext {
+	if c == nil {
+		return new(ControllerContext)
+	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
+	return &ControllerContext{
+		Route:     c.GetString(consts.CTX_ROUTE),
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACE_ID),
+		Params:    params,
+		Query:     c.Request.URL.Query(),
+	}
+}
+
 type DatabaseContext struct {
 	Username string // currrent login user.
 	UserId   string // currrent login user id
@@ -79,6 +57,41 @@ type DatabaseContext struct {
 	PSpanId   string
 	SpanId    string
 	Seq       int
+}
+
+// NewDatabaseContext creates a DatabaseContext from gin.Context
+func NewDatabaseContext(c *gin.Context) *DatabaseContext {
+	if c == nil {
+		return new(DatabaseContext)
+	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
+	return &DatabaseContext{
+		Route:     c.GetString(consts.CTX_ROUTE),
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACE_ID),
+		Params:    params,
+		Query:     c.Request.URL.Query(),
+	}
+}
+
+// NewGormContext converts *types.DatabaseContext to context.Context for use with gorm custom logger.
+func NewGormContext(ctx *DatabaseContext) context.Context {
+	c := context.Background()
+	if ctx == nil {
+		return c
+	}
+	c = context.WithValue(c, consts.CTX_USERNAME, ctx.Username)
+	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserId)
+	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestId)
+	c = context.WithValue(c, consts.TRACE_ID, ctx.TraceId)
+	return c
 }
 
 type ServiceContext struct {
@@ -111,49 +124,53 @@ type ServiceContext struct {
 	SpanId    string
 	Seq       int
 
-	GinContext *gin.Context
-	phase      consts.Phase
+	ginCtx *gin.Context
+	phase  consts.Phase
 }
 
-// // SetRequest is called in the controller layer when the model has custom request type.
-// // The custom request only take effect for CREATE(POST), UPDATE(PUT), UPDATE_PARTIAL(PATCH)
-// // CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
-// func (sc *ServiceContext) SetRequest(m any) { sc.request = m }
-//
-// // SetResponse is called in the controller layer if the model has custom response type.
-// // The custom response only take effect for Create(POST), Update(PUT), Patch(PATCH)
-// // CreateMany(POST), UpdateMany(PUT) and PatchMany(PATCH) operations.
-// func (sc *ServiceContext) SetResponse(m any) { sc.response = m }
-//
-// // GetRequest is called in the service layer when the model has a custom request type.
-// //
-// // It returns the custom request object unmarshaled from the HTTP request body.
-// // This method is only supported in the following service hooks:
-// //
-// //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
-// //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-// //	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
-// //	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
-// //	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
-// //	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
-// //
-// // For all other service hooks, GetRequest always returns nil, including:
-// //
-// //	DELETE_BEFORE (DELETE), DELETE_AFTER (DELETE)
-// //	LIST_BEFORE (GET), LIST_AFTER (GET)
-// //	GET_BEFORE (GET), GET_AFTER (GET)
-// func (sc *ServiceContext) GetRequest() any { return sc.request }
-//
-// // GetResponse is typically called in the controller layer to return a custom response object to the client.
-// // The response object is set in the following service hooks:
-// //
-// //	CREATE_BEFORE (POST), CREATE_AFTER (POST)
-// //	UPDATE_BEFORE (PUT), UPDATE_AFTER (PUT)
-// //	PATCH_BEFORE (PATCH), PATCH_AFTER (PATCH)
-// //	CREATE_MANY_BEFORE (POST), CREATE_MANY_AFTER (POST)
-// //	UPDATE_MANY_BEFORE (PUT), UPDATE_MANY_AFTER (PUT)
-// //	PATCH_MANY_BEFORE (PATCH), PATCH_MANY_AFTER (PATCH)
-// func (sc *ServiceContext) GetResponse() any { return sc.response }
+// NewServiceContext creates ServiceContext from gin.Context.
+// Including request details, headers and user information.
+func NewServiceContext(c *gin.Context) *ServiceContext {
+	if c == nil {
+		return new(ServiceContext)
+	}
+
+	params := make(map[string]string)
+	for _, key := range c.GetStringSlice(consts.PARAMS) {
+		params[key] = c.Param(key)
+	}
+
+	return &ServiceContext{
+		Request: c.Request,
+
+		Method:       c.Request.Method,
+		URL:          c.Request.URL,
+		Header:       c.Request.Header,
+		WriterHeader: c.Writer.Header(),
+		ClientIP:     c.ClientIP(),
+		UserAgent:    c.Request.UserAgent(),
+		Params:       params,
+		Query:        c.Request.URL.Query(),
+
+		Route:     c.GetString(consts.CTX_ROUTE),
+		Username:  c.GetString(consts.CTX_USERNAME),
+		UserId:    c.GetString(consts.CTX_USER_ID),
+		SessionId: c.GetString(consts.CTX_SESSION_ID),
+
+		RequestId: c.GetString(consts.REQUEST_ID),
+		TraceId:   c.GetString(consts.TRACE_ID),
+
+		ginCtx: c,
+	}
+}
+
+func (sc *ServiceContext) Redirect(code int, location string) {
+	sc.ginCtx.Redirect(code, location)
+}
+
+func (sc *ServiceContext) Data(code int, contentType string, data []byte) {
+	sc.ginCtx.Data(code, contentType, data)
+}
 
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
 func (sc *ServiceContext) GetPhase() consts.Phase      { return sc.phase }

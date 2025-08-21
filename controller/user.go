@@ -15,8 +15,8 @@ import (
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/response"
 	. "github.com/forbearing/golib/response"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/types/helper"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -35,7 +35,7 @@ var User = new(user)
 
 // Login 多次登陆之后，使用先前的 token 会报错 "access token not match"
 func (*user) Login(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Login"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("Login"))
 	limiter, found := loginRatelimiterMap.Get(c.ClientIP())
 	if !found {
 		limiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 10)
@@ -55,7 +55,7 @@ func (*user) Login(c *gin.Context) {
 		return
 	}
 	users := make([]*model.User, 0)
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeInvalidLogin)
 		return
@@ -94,12 +94,12 @@ func (*user) Login(c *gin.Context) {
 
 	u.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	u.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLoginAt); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLoginAt); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).UpdateById(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -108,7 +108,7 @@ func (*user) Login(c *gin.Context) {
 }
 
 func (*user) Logout(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Logout"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("Logout"))
 	_, claims, err := jwt.ParseTokenFromHeader(c.Request.Header)
 	if err != nil {
 		log.Error(err)
@@ -124,7 +124,7 @@ func (*user) RefreshToken(c *gin.Context) {
 }
 
 func (*user) Signup(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Signup"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("Signup"))
 	limiter, found := signupRatelimiterMap.Get(c.ClientIP())
 	if !found {
 		limiter = rate.NewLimiter(rate.Every(1000*time.Millisecond), 1)
@@ -160,7 +160,7 @@ func (*user) Signup(c *gin.Context) {
 	}
 
 	users := make([]*model.User, 0)
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).WithLimit(1).WithQuery(&model.User{Name: req.Name}).List(&users); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -180,7 +180,7 @@ func (*user) Signup(c *gin.Context) {
 	req.ID = util.UUID()
 	req.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	req.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
-	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Create(req); err != nil {
+	if err := database.Database[*model.User](types.NewDatabaseContext(c)).Create(req); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -189,7 +189,7 @@ func (*user) Signup(c *gin.Context) {
 }
 
 func (*user) ChangePasswd(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("ChangePasswd"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("ChangePasswd"))
 
 	req := new(model.User)
 	if err := c.ShouldBindJSON(req); err != nil {
@@ -203,7 +203,7 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	u := new(model.User)
-	if err := database.Database[*model.User](helper.NewDatabaseContext(c)).Get(u, req.ID); err != nil {
+	if err := database.Database[*model.User](types.NewDatabaseContext(c)).Get(u, req.ID); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -236,7 +236,7 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	u.Password = hashedPasswd
-	if err = database.Database[*model.User](helper.NewDatabaseContext(c)).Update(u); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).Update(u); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return

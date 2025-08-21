@@ -4,8 +4,8 @@ import (
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/provider/minio"
 	. "github.com/forbearing/golib/response"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/types/helper"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -15,7 +15,7 @@ type upload struct{}
 var Upload = new(upload)
 
 func (*upload) Put(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Put"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("Put"))
 
 	// NOTE:字段为 file 必须和前端协商好.
 	file, err := c.FormFile("file")
@@ -50,7 +50,7 @@ func (*upload) Put(c *gin.Context) {
 }
 
 func (*upload) Preview(c *gin.Context) {
-	log := logger.Controller.WithControllerContext(helper.NewControllerContext(c), consts.Phase("Preview"))
+	log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.Phase("Preview"))
 	data, err := minio.Get(c.Param(consts.PARAM_FILE))
 	if err != nil {
 		log.Error(err)
