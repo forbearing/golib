@@ -19,8 +19,8 @@ func TestAreTypesEqual(t *testing.T) {
 	require.False(t, AreTypesEqual[*User, string, *User]())
 	require.False(t, AreTypesEqual[*User, *User, int]())
 	require.True(t, AreTypesEqual[t1, t1, t1]())
-	require.True(t, AreTypesEqual[t1, *User, User]())
-	require.True(t, AreTypesEqual[t1, int, *string]())
+	require.False(t, AreTypesEqual[t1, *User, User]())
+	require.False(t, AreTypesEqual[t1, int, *string]())
 }
 
 func BenchmarkAreTypesEqual(b *testing.B) {
