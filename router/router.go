@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	gopath "path"
@@ -28,8 +29,9 @@ import (
 )
 
 var (
-	base *gin.Engine
-	api  *gin.RouterGroup
+	root *gin.Engine
+	auth *gin.RouterGroup
+	pub  *gin.RouterGroup
 
 	server *http.Server
 )
@@ -38,29 +40,36 @@ var globalErrors = make([]error, 0)
 
 func Init() error {
 	gin.SetMode(gin.ReleaseMode)
-	base = gin.New()
+	root = gin.New()
 
-	base.Use(
+	root.Use(
 		middleware.TraceID(),
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
 		middleware.RouteParams(),
-	)
-	base.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	base.GET("/-/healthz", controller.Probe.Healthz)
-	base.GET("/-/readyz", controller.Probe.Readyz)
-	base.GET("/-/pageid", controller.PageID)
-	base.GET("/-/api.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
-	base.GET("/-/api/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/-/api.json")))
-	base.GET("/-/api/redoc", middleware.BaseAuth(), controller.Redoc)
-
-	api = base.Group("/api")
-	api.Use(
 		middleware.Gzip(),
-		// middleware.JwtAuth(),
-		// middleware.Authz(),
 	)
+	root.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	root.GET("/-/healthz", controller.Probe.Healthz)
+	root.GET("/-/readyz", controller.Probe.Readyz)
+	root.GET("/-/pageid", controller.PageID)
+	root.GET("/-/api.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
+	root.GET("/-/api/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/-/api.json")))
+	root.GET("/-/api/redoc", middleware.BaseAuth(), controller.Redoc)
+
+	base := root.Group("/api")
+
+	auth = base.Group("")
+	pub = base.Group("")
+
+	fmt.Println("----- len(middleware.CommonMiddlewares)", len(middleware.CommonMiddlewares))
+	fmt.Println("----- len(middleware.AuthMiddlewares)", len(middleware.AuthMiddlewares))
+
+	auth.Use(middleware.CommonMiddlewares...)
+	auth.Use(middleware.AuthMiddlewares...)
+	pub.Use(middleware.CommonMiddlewares...)
+
 	return nil
 }
 
@@ -98,13 +107,13 @@ func Run() error {
 
 	addr := net.JoinHostPort(config.App.Server.Listen, strconv.Itoa(config.App.Server.Port))
 	log.Infow("backend server started", "addr", addr, "mode", config.App.Mode, "domain", config.App.Domain)
-	for _, r := range base.Routes() {
+	for _, r := range root.Routes() {
 		log.Debugw("", "method", r.Method, "path", r.Path)
 	}
 
 	server = &http.Server{
 		Addr:           addr,
-		Handler:        base,
+		Handler:        root,
 		ReadTimeout:    config.App.Server.ReadTimeout,
 		WriteTimeout:   config.App.Server.WriteTimeout,
 		IdleTimeout:    config.App.IdleTimeout,
@@ -118,8 +127,8 @@ func Run() error {
 	return nil
 }
 
-func API() *gin.RouterGroup { return api }
-func Base() *gin.Engine     { return base }
+func Auth() *gin.RouterGroup { return auth }
+func Pub() *gin.RouterGroup  { return pub }
 
 func Stop() {
 	if server == nil {
