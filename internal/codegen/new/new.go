@@ -1,6 +1,7 @@
 package new
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,15 @@ import (
 
 	"github.com/forbearing/golib/config"
 )
+
+var fileContentMap = map[string]string{
+	"configx/configx.go":         configxContent,
+	"cronjobx/cronjobx.go":       cronjobxContent,
+	"middlewarex/middlewarex.go": middlewarexContent,
+	"model/model.go":             modelContent,
+	"service/service.go":         serviceContent,
+	"router/router.go":           routerContent,
+}
 
 // Run initializes a new Go project with the specified project name.
 func Run(projectName string) error {
@@ -36,68 +46,21 @@ func Run(projectName string) error {
 		return err
 	}
 
-	// Create directories with .gitkeep files
-	dirs := []string{"configx", "cronjobx", "model", "service", "router"}
-	for _, dir := range dirs {
-		fmt.Printf("Creating directory: %s\n", dir)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	for file, content := range fileContentMap {
+		if err := createFile(file, content); err != nil {
 			return err
 		}
-
-		// Create .gitkeep file in each directory
-		gitkeepPath := filepath.Join(dir, ".gitkeep")
-		fmt.Printf("Creating file: %s\n", gitkeepPath)
-		var file *os.File
-		var err error
-		if file, err = os.Create(gitkeepPath); err != nil {
-			return err
-		}
-		file.Close()
-	}
-
-	// Create configx/configx.go
-	fmt.Println("Creating configx/configx.go")
-	if err := os.WriteFile("configx/configx.go", []byte(configxContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create cronjobx/cronjobx.go
-	fmt.Println("Creating cronjobx/cronjobx.go")
-	if err := os.WriteFile("cronjobx/cronjobx.go", []byte(cronjobxContent), 0o644); err != nil {
-		return err
-	}
-
-	fmt.Println("Creating model/model.go")
-	if err := os.WriteFile("model/model.go", []byte(modelContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create service/service.go
-	fmt.Println("Creating service/service.go")
-	if err := os.WriteFile("service/service.go", []byte(serviceContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create router/router.go
-	fmt.Println("Creating router/router.go")
-	if err := os.WriteFile("router/router.go", []byte(routerContent), 0o644); err != nil {
-		return err
 	}
 
 	// Create main.go file
-	fmt.Println("Creating main.go")
-	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName, projectName, projectName, projectName), 0o644); err != nil {
+	if err := createFile("main.go", fmt.Sprintf(mainContent, projectName, projectName, projectName, projectName, projectName, projectName)); err != nil {
 		return err
 	}
-
 	// Create .gitignore file
-	fmt.Println("Creating .gitignore")
-	if err := os.WriteFile(".gitignore", []byte(gitignoreContent), 0o644); err != nil {
+	if err := createFile(".gitignore", gitignoreContent); err != nil {
 		return err
 	}
-
 	// Create template config.ini
-	fmt.Println("Creating config.ini")
 	if err := createTeplConfig(); err != nil {
 		return err
 	}
@@ -129,7 +92,25 @@ func Run(projectName string) error {
 	return nil
 }
 
+func EnsureFileExists() {
+	for file, content := range fileContentMap {
+		if _, err := os.Stat(file); err != nil && errors.Is(err, os.ErrNotExist) {
+			createFile(file, content)
+		}
+	}
+}
+
+func createFile(path string, content string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	fmt.Println("Creating", path)
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
 func createTeplConfig() error {
+	fmt.Println("Creating config.ini")
 	oldStdout := os.Stdout
 	defer func() {
 		os.Stdout = oldStdout
