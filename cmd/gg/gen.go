@@ -38,24 +38,35 @@ func init() {
 	genCmd.AddCommand(tsCmd)
 }
 
+// ============================================================
+// 代码生成核心逻辑
+// ============================================================
+
 func genRun() {
 	if len(module) == 0 {
 		var err error
 		module, err = gen.GetModulePath()
 		checkErr(err)
 	}
+
+	// 确保基础文件存在
+	logSection("Ensure Required Files")
 	pkgnew.EnsureFileExists()
 
 	if !fileExists(modelDir) {
-		fmt.Fprintf(os.Stderr, "Error: model dir not found: %s\n", modelDir)
+		logError(fmt.Sprintf("model dir not found: %s", modelDir))
 		os.Exit(1)
 	}
 
+	// 扫描所有 model
+	logSection("Scan Models")
 	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
 	if len(allModels) == 0 {
+		fmt.Println(gray("  No models found, nothing to do"))
 		return
 	}
+	fmt.Printf("  %s %d models found\n", green("✔"), len(allModels))
 
 	modelStmts := make([]ast.Stmt, 0)
 	serviceStmts := make([]ast.Stmt, 0)
@@ -63,6 +74,7 @@ func genRun() {
 	modelImportMap := make(map[string]struct{})
 	routerImportMap := make(map[string]struct{})
 	serviceImportMap := make(map[string]struct{})
+
 	for _, m := range allModels {
 		if m.Design.Enabled && m.Design.Migrate {
 			// If the ModelFileDir is "model" or "model/", the model package name is the same as the model name,
@@ -82,7 +94,6 @@ func genRun() {
 			if path, shouldImport := m.ModelImportPath(); shouldImport {
 				modelImportMap[path] = struct{}{}
 			}
-
 		}
 
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
@@ -93,6 +104,7 @@ func genRun() {
 		})
 	}
 
+	// 解决 import 冲突
 	serviceAliasMap := gen.ResolveImportConflicts(lo.Keys(serviceImportMap))
 	for _, m := range allModels {
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
@@ -109,6 +121,11 @@ func genRun() {
 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
 		})
 	}
+
+	// ============================================================
+	// 生成 model/service/router/main 文件
+	// ============================================================
+	logSection("Generate Files")
 
 	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImportMap), modelStmts...)
 	checkErr(err)
@@ -128,6 +145,11 @@ func genRun() {
 	mainCode, err := gen.BuildMainFile(module)
 	checkErr(err)
 	writeFileWithLog("main.go", mainCode)
+
+	// ============================================================
+	// 将 Action 应用到 service 文件
+	// ============================================================
+	logSection("Apply Actions To Services")
 
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
@@ -174,4 +196,10 @@ func genRun() {
 			}
 		})
 	}
+
+	// ============================================================
+	// 完成提示
+	// ============================================================
+	logSection("Done")
+	fmt.Printf("\n%s Code generation completed successfully!\n", green("🎉"))
 }
