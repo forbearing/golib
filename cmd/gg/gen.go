@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/dsl"
 	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
+	pkgnew "github.com/forbearing/golib/internal/codegen/new"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -43,6 +44,7 @@ func genRun() {
 		module, err = gen.GetModulePath()
 		checkErr(err)
 	}
+	pkgnew.EnsureFileExists()
 
 	if !fileExists(modelDir) {
 		fmt.Fprintf(os.Stderr, "Error: model dir not found: %s\n", modelDir)
