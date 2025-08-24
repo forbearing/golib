@@ -386,4 +386,3 @@ func TestDatabase_List_Categories(t *testing.T) {
 		}
 	})
 }
-

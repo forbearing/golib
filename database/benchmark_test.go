@@ -514,4 +514,3 @@ func BenchmarkDatabase_Delete(b *testing.B) {
 		}
 	})
 }
-

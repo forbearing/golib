@@ -216,4 +216,3 @@ func TestDatabase_UpdateById(t *testing.T) {
 		assert.Equal(t, "UpdateById Category", retrievedCategory.Name)
 	})
 }
-
