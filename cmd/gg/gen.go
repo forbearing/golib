@@ -64,7 +64,7 @@ func genRun() {
 	}
 	fmt.Printf("  %s %d models found\n", green("✔"), len(allModels))
 
-	// Record old service files list (if prune-disabled option is enabled)
+	// Record old service files list (if prune option is enabled)
 	var oldServiceFiles []string
 	if prune {
 		oldServiceFiles = scanExistingServiceFiles(serviceDir, allModels)
@@ -125,7 +125,7 @@ func genRun() {
 	}
 
 	// ============================================================
-	// 生成 model/service/router/main 文件
+	// Generate model/service/router/main files
 	// ============================================================
 	logSection("Generate Files")
 
@@ -203,7 +203,7 @@ func genRun() {
 	// Prune disabled service files
 	// ============================================================
 	if prune && len(oldServiceFiles) > 0 {
-		pruneDisabledServiceFiles(oldServiceFiles, allModels)
+		pruneServiceFiles(oldServiceFiles, allModels)
 	}
 
 	// ============================================================
@@ -252,8 +252,8 @@ func scanExistingServiceFiles(serviceDir string, allModels []*gen.ModelInfo) []s
 	return files
 }
 
-// pruneDisabledServiceFiles prunes disabled service files
-func pruneDisabledServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
+// pruneServiceFiles prunes disabled service files
+func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 	// Get list of service files that should currently exist
 	currentServiceFiles := make(map[string]bool)
 	for _, m := range allModels {
