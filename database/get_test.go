@@ -124,4 +124,3 @@ func TestDatabase_Get(t *testing.T) {
 		assert.Empty(t, retrievedCategory.ParentID)
 	})
 }
-

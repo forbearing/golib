@@ -93,9 +93,9 @@ func genAccessToken(userId string, username string) (token string, err error) {
 		userId, username,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(config.App.Auth.AccessTokenExpireDuration)), // 过期时间
-			IssuedAt:  jwt.NewNumericDate(now),                                                
-			NotBefore: jwt.NewNumericDate(now),                                                
-			Issuer:    issuer,                                                     // 签发人
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    issuer, // 签发人
 			Subject:   userId,
 		},
 	}
@@ -113,9 +113,9 @@ func genRefreshToken(userId string) (rToken string, err error) {
 	// 使用指定的 secret 签名并获得完整的编码后的字符串 token
 	if rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(now.Add(config.App.Auth.RefreshTokenExpireDuration)), // 过期时间
-		IssuedAt:  jwt.NewNumericDate(now),                                     // 签发时间
-		NotBefore: jwt.NewNumericDate(now),                                     // 生效时间
-		Issuer:    issuer,                                                      // 签发人
+		IssuedAt:  jwt.NewNumericDate(now),                                                 // 签发时间
+		NotBefore: jwt.NewNumericDate(now),                                                 // 生效时间
+		Issuer:    issuer,                                                                  // 签发人
 		Subject:   userId,
 	}).SignedString(secret); err != nil {
 		return "", errors.Wrap(err, "failed to generate refresh token")
