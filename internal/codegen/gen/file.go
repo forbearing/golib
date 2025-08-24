@@ -348,6 +348,17 @@ func BuildMainFile(projectName string) (string, error) {
 								Fun: ast.NewIdent("RunOrDie"),
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
+										X:   ast.NewIdent("middlewarex"),
+										Sel: ast.NewIdent("Init"),
+									},
+								},
+							},
+						},
+						&ast.ExprStmt{
+							X: &ast.CallExpr{
+								Fun: ast.NewIdent("RunOrDie"),
+								Args: []ast.Expr{
+									&ast.SelectorExpr{
 										X:   ast.NewIdent("bootstrap"),
 										Sel: ast.NewIdent("Bootstrap"),
 									},
@@ -371,17 +382,6 @@ func BuildMainFile(projectName string) (string, error) {
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
 										X:   ast.NewIdent("cronjobx"),
-										Sel: ast.NewIdent("Init"),
-									},
-								},
-							},
-						},
-						&ast.ExprStmt{
-							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
-								Args: []ast.Expr{
-									&ast.SelectorExpr{
-										X:   ast.NewIdent("middlewarex"),
 										Sel: ast.NewIdent("Init"),
 									},
 								},
