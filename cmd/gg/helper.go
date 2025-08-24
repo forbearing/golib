@@ -35,19 +35,30 @@ func ensureParentDir(filename string) error {
 var (
 	green  = color.New(color.FgHiGreen).SprintFunc()
 	yellow = color.New(color.FgHiYellow).SprintFunc()
-	gray   = color.New(color.FgHiBlack).SprintFunc()
+	red    = color.New(color.FgHiRed).SprintFunc()
+	cyan   = color.New(color.FgHiCyan).SprintFunc()
+	gray   = color.New(color.Faint).SprintFunc()
+	bold   = color.New(color.Bold).SprintFunc()
 )
 
+func logSection(title string) {
+	fmt.Printf("\n%s %s\n", cyan("▶"), bold(title))
+}
+
 func logCreate(filename string) {
-	fmt.Printf("%s %s\n", green("[CREATE]"), filename)
+	fmt.Printf("  %s %s\n", green("✔ CREATE"), filename)
 }
 
 func logUpdate(filename string) {
-	fmt.Printf("%s %s\n", yellow("[UPDATE]"), filename)
+	fmt.Printf("  %s %s\n", yellow("✔ UPDATE"), filename)
 }
 
 func logSkip(filename string) {
-	fmt.Printf("%s %s\n", gray("[SKIP]"), filename)
+	fmt.Printf("  %s %s\n", gray("→ SKIP"), filename)
+}
+
+func logError(msg string) {
+	fmt.Printf("  %s %s\n", red("✘ ERROR"), msg)
 }
 
 func writeFileWithLog(filename string, content string) {
