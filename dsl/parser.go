@@ -245,6 +245,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
@@ -253,6 +254,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
@@ -261,6 +263,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
@@ -269,6 +272,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
@@ -277,6 +281,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
@@ -285,6 +290,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
@@ -293,6 +299,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
@@ -301,6 +308,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
@@ -309,6 +317,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
@@ -317,6 +326,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_IMPORT.MethodName(), funcName, call.Args); exists {
@@ -325,6 +335,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 		if res, exists := parseAction(consts.PHASE_EXPORT.MethodName(), funcName, call.Args); exists {
@@ -333,6 +344,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				Result:  res.result,
 				Enabled: res.enabled,
 				Service: res.service,
+				Public:  res.public,
 			}
 		}
 
@@ -346,8 +358,9 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 func parseAction(name string, funcName string, args []ast.Expr) (actionResult, bool) {
 	var payload string
 	var result string
-	var enabled bool        // default to false,
+	var enabled bool        // default to false
 	var service bool = true // default to true
+	var public bool         // default to false
 
 	if funcName == name && len(args) == 1 {
 		if flit, ok := args[0].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
@@ -362,19 +375,17 @@ func parseAction(name string, funcName string, args []ast.Expr) (actionResult, b
 							// anonymous import: Enabled(true)
 							if fun != nil && fun.Name == "Enabled" {
 								isEnabledCall = true
-								enabled = true
 							}
 						case *ast.SelectorExpr:
 							// non-anonymous import: dsl.Enabled(true)
 							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Enabled" {
 								isEnabledCall = true
-								enabled = true
 							}
 						}
-						if isEnabledCall && enabled && len(call.Args) > 0 && call.Args[0] != nil {
+						if isEnabledCall && len(call.Args) > 0 && call.Args[0] != nil {
 							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
 								// check the argument of Enabled() is true.
-								enabled = enabled && identExpr.Name == "true"
+								enabled = identExpr.Name == "true"
 							}
 						}
 
@@ -394,10 +405,32 @@ func parseAction(name string, funcName string, args []ast.Expr) (actionResult, b
 								service = true
 							}
 						}
-						if isServiceCall && service && len(call.Args) > 0 && call.Args[0] != nil {
+						if isServiceCall && len(call.Args) > 0 && call.Args[0] != nil {
 							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
 								// check the argument of Service() is true.
-								service = service && identExpr.Name == "true"
+								service = identExpr.Name == "true"
+							}
+						}
+
+						// Parse Public(true)/Public(false)
+						var isPublicCall bool
+						switch fun := call.Fun.(type) {
+						case *ast.Ident:
+							// anonymous import: Public(false)
+							if fun != nil && fun.Name == "Public" {
+								isPublicCall = true
+							}
+						case *ast.SelectorExpr:
+							// non-anonymous import: dsl.Public(false)
+							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Public" {
+								isPublicCall = true
+							}
+						}
+
+						if isPublicCall && len(call.Args) > 0 && call.Args[0] != nil {
+							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
+								// check the argument of Public() is true.
+								public = identExpr.Name == "true"
 							}
 						}
 
@@ -452,6 +485,7 @@ func parseAction(name string, funcName string, args []ast.Expr) (actionResult, b
 			result:  result,
 			enabled: enabled,
 			service: service,
+			public:  public,
 		}, true
 	}
 
@@ -463,6 +497,7 @@ type actionResult struct {
 	result  string
 	enabled bool
 	service bool
+	public  bool
 
 	payloadHasStar bool
 	resultHasStar  bool
