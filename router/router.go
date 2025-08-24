@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	gopath "path"
@@ -59,12 +58,8 @@ func Init() error {
 	root.GET("/-/api/redoc", middleware.BaseAuth(), controller.Redoc)
 
 	base := root.Group("/api")
-
 	auth = base.Group("")
 	pub = base.Group("")
-
-	fmt.Println("----- len(middleware.CommonMiddlewares)", len(middleware.CommonMiddlewares))
-	fmt.Println("----- len(middleware.AuthMiddlewares)", len(middleware.AuthMiddlewares))
 
 	auth.Use(middleware.CommonMiddlewares...)
 	auth.Use(middleware.AuthMiddlewares...)
