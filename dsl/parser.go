@@ -10,10 +10,30 @@ import (
 	"github.com/forbearing/golib/types/consts"
 )
 
-// Parse parses the whole file node to find all models with its "Design".
-// returns the map that key is model name, value is *Design.
+// Parse analyzes a Go source file and extracts DSL design information from models.
+// It looks for structs that have a Design() method and parses the DSL calls within that method.
 //
-// Pass the "Endpoint" to overwrite the default endpoint.
+// The parser identifies models by finding structs that embed either model.Base or model.Empty,
+// then locates their Design() method and analyzes the DSL function calls to build the Design configuration.
+//
+// Parameters:
+//   - file: The parsed AST file node to analyze
+//   - endpoint: Optional endpoint override - if provided, will overwrite the default endpoint for enabled designs
+//
+// Returns:
+//   - map[string]*Design: A map where keys are model names and values are their parsed Design configurations
+//
+// Example usage:
+//
+//	designs := Parse(fileNode, "custom-endpoint")
+//	for modelName, design := range designs {
+//		fmt.Printf("Model %s has endpoint: %s\n", modelName, design.Endpoint)
+//	}
+//
+// The parser supports various DSL patterns:
+//   - Global settings: Enabled(), Endpoint("path"), Migrate(true)
+//   - Action configuration: Create().Enabled(true).Payload[Type].Result[Type]
+//   - Service and visibility: Service(true), Public(false)
 func Parse(file *ast.File, endpoint string) map[string]*Design {
 	designBase, designEmpty := parse(file)
 
@@ -108,8 +128,16 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 	return m
 }
 
-// initDefaultAction will init the default payload and result for the action.
-// If the action is enabled, then init the default payload and result to the star name of the model name.
+// initDefaultAction initializes default payload and result values for an enabled action.
+// If the action is enabled but has empty Payload or Result fields, they are set to
+// the pointer type of the model name (e.g., "*User" for model "User").
+//
+// Parameters:
+//   - modelName: The name of the model (e.g., "User")
+//   - action: The action to initialize defaults for
+//
+// This function only modifies enabled actions. For disabled actions, the Payload
+// and Result fields remain unchanged.
 func initDefaultAction(modelName string, action *Action) {
 	if action.Enabled {
 		if len(action.Payload) == 0 {
@@ -121,9 +149,19 @@ func initDefaultAction(modelName string, action *Action) {
 	}
 }
 
-// parse will parse the whole file node to find all models with its "Design" method node.
+// parse analyzes an AST file to find all models and their Design method declarations.
+// It identifies models by looking for structs that embed model.Base or model.Empty,
+// then searches for their corresponding Design() method declarations.
 //
-// key is model name, value is ast node that represents the model "Design" method.
+// Parameters:
+//   - file: The AST file node to analyze
+//
+// Returns:
+//   - First map: Models with model.Base embedding (modelName -> Design method AST node)
+//   - Second map: Models with model.Empty embedding (modelName -> Design method AST node)
+//
+// If a model doesn't have a Design() method, the corresponding value in the map is nil.
+// This allows the caller to generate default design configurations for such models.
 func parse(file *ast.File) (map[string]*ast.FuncDecl, map[string]*ast.FuncDecl) {
 	designBase := make(map[string]*ast.FuncDecl)
 	designEmpty := make(map[string]*ast.FuncDecl)
@@ -180,7 +218,18 @@ func parse(file *ast.File) (map[string]*ast.FuncDecl, map[string]*ast.FuncDecl) 
 	return designBase, designEmpty
 }
 
-// parseDesign parse the *ast.FuncDecl that represents "Design" method and returns a *Design object.
+// parseDesign parses a Design method's AST declaration and extracts the DSL configuration.
+// It analyzes the function body to find DSL calls like Enabled(), Endpoint(), Migrate(),
+// and action configurations like Create().Enabled(true).Payload[Type].
+//
+// Parameters:
+//   - fn: The AST function declaration for the Design() method
+//
+// Returns:
+//   - *Design: The parsed design configuration with default values applied
+//
+// If fn is nil or has no body, returns a default Design with Enabled=true and Migrate=false.
+// The parser recognizes various DSL patterns and converts them into the Design structure.
 func parseDesign(fn *ast.FuncDecl) *Design {
 	defaults := &Design{Enabled: true, Migrate: false}
 	// model don't have "Design" method, so returns the default design values.
@@ -353,8 +402,34 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 	return defaults
 }
 
-// parseAction parse the "Payload" and "Result" type from Action function.
-// The "Action" is represented by function name that already defined in the method list.
+// parseAction parses DSL configuration from an action function's body.
+// It extracts Payload, Result types and configuration flags (Enabled, Service, Public)
+// from the function literal passed to action methods like Create(), Update(), etc.
+//
+// Parameters:
+//   - name: The expected action name to match (e.g., "Create", "Update")
+//   - funcName: The actual function name being called
+//   - args: The function call arguments, expected to contain a function literal
+//
+// Returns:
+//   - actionResult: Parsed configuration including payload/result types and flags
+//   - bool: true if parsing was successful, false otherwise
+//
+// The function parses DSL calls within the action function body:
+//   - Enabled(true/false): Sets whether the action is enabled
+//   - Service(true/false): Sets whether to generate service layer code
+//   - Public(true/false): Sets whether the API endpoint is public
+//   - Payload[Type]: Sets the request payload type
+//   - Result[Type]: Sets the response result type
+//
+// Example usage in DSL:
+//
+//	Create(func() {
+//	    Enabled(true)
+//	    Service(true)
+//	    Payload[CreateUserRequest]
+//	    Result[*User]
+//	})
 func parseAction(name string, funcName string, args []ast.Expr) (actionResult, bool) {
 	var payload string
 	var result string
@@ -492,18 +567,39 @@ func parseAction(name string, funcName string, args []ast.Expr) (actionResult, b
 	return actionResult{}, false
 }
 
+// actionResult holds the parsed configuration for a single DSL action.
+// It contains all the settings that can be configured for an API action
+// through the DSL, including type information and behavioral flags.
 type actionResult struct {
+	// payload is the name of the request payload type (e.g., "CreateUserRequest")
 	payload string
-	result  string
+	// result is the name of the response result type (e.g., "User" or "*User")
+	result string
+	// enabled indicates whether this action should generate API endpoints
 	enabled bool
+	// service indicates whether to generate service layer code for this action
 	service bool
-	public  bool
+	// public indicates whether the generated API endpoint should be publicly accessible
+	public bool
 
+	// payloadHasStar indicates if the payload type is a pointer (starts with "*")
 	payloadHasStar bool
-	resultHasStar  bool
+	// resultHasStar indicates if the result type is a pointer (starts with "*")
+	resultHasStar bool
 }
 
-// findAllModelBase finds all struct anynomous field that has "model.Base" or "aliasmodelname.Base"
+// findAllModelBase finds all struct types that embed model.Base as an anonymous field.
+// It searches for structs containing anonymous fields of type "model.Base" or aliased versions
+// like "pkgmodel.Base" where pkgmodel is an import alias for the model package.
+//
+// Parameters:
+//   - file: The AST file to search in
+//
+// Returns:
+//   - []string: Names of all struct types that embed model.Base
+//
+// This function is used to identify models that should have full database functionality,
+// as opposed to lightweight models that embed model.Empty.
 func findAllModelBase(file *ast.File) []string {
 	names := make([]string, 0)
 	if file == nil {
@@ -535,7 +631,18 @@ func findAllModelBase(file *ast.File) []string {
 	return names
 }
 
-// findAllModelEmpty finds all struct anynomous field that has "model.Empty" or "aliasmodelname.Empty"
+// findAllModelEmpty finds all struct types that embed model.Empty as an anonymous field.
+// It searches for structs containing anonymous fields of type "model.Empty" or aliased versions
+// like "pkgmodel.Empty" where pkgmodel is an import alias for the model package.
+//
+// Parameters:
+//   - file: The AST file to search in
+//
+// Returns:
+//   - []string: Names of all struct types that embed model.Empty
+//
+// This function is used to identify lightweight models that typically don't require
+// database migration and have simplified API generation.
 func findAllModelEmpty(file *ast.File) []string {
 	names := make([]string, 0)
 	if file == nil {
@@ -567,16 +674,26 @@ func findAllModelEmpty(file *ast.File) []string {
 	return names
 }
 
-// isModelBase check if the struct field is "model.Base" or "aliasmodelname.Base"
+// isModelBase checks if a struct field is an anonymous embedding of model.Base.
+// It handles various import patterns including direct imports, aliased imports,
+// and dot imports of the model package.
 //
-/*
-import (
-	"github.com/forbearing/golib/dsl"
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
-	pkgmodel "github.com/forbearing/golib/model"
-)
-*/
+// Parameters:
+//   - file: The AST file containing import information
+//   - field: The struct field to check
+//
+// Returns:
+//   - bool: true if the field is an anonymous model.Base embedding
+//
+// Supported import patterns:
+//   - import "github.com/forbearing/golib/model"
+//   - import pkgmodel "github.com/forbearing/golib/model"
+//   - import . "github.com/forbearing/golib/model"
+//
+// Example field patterns that return true:
+//   - model.Base (with standard import)
+//   - pkgmodel.Base (with aliased import)
+//   - Base (with dot import)
 func isModelBase(file *ast.File, field *ast.Field) bool {
 	// Not anonymouse field.
 	if file == nil || field == nil || len(field.Names) != 0 {
@@ -607,16 +724,26 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 	return false
 }
 
-// isModelEmpty check if the struct field is "model.Empty" or "aliasmodelname.Empty"
+// isModelEmpty checks if a struct field is an anonymous embedding of model.Empty.
+// It handles various import patterns including direct imports, aliased imports,
+// and dot imports of the model package.
 //
-/*
-import (
-	"github.com/forbearing/golib/dsl"
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
-	pkgmodel "github.com/forbearing/golib/model"
-)
-*/
+// Parameters:
+//   - file: The AST file containing import information
+//   - field: The struct field to check
+//
+// Returns:
+//   - bool: true if the field is an anonymous model.Empty embedding
+//
+// Supported import patterns:
+//   - import "github.com/forbearing/golib/model"
+//   - import pkgmodel "github.com/forbearing/golib/model"
+//   - import . "github.com/forbearing/golib/model"
+//
+// Example field patterns that return true:
+//   - model.Empty (with standard import)
+//   - pkgmodel.Empty (with aliased import)
+//   - Empty (with dot import)
 func isModelEmpty(file *ast.File, field *ast.Field) bool {
 	// Not anonymouse field.
 	if file == nil || field == nil || len(field.Names) != 0 {
@@ -647,6 +774,20 @@ func isModelEmpty(file *ast.File, field *ast.Field) bool {
 	return false
 }
 
+// starName converts a type name to its pointer equivalent.
+// If the name already starts with '*', it removes any existing '*' prefix first
+// to avoid double pointers, then adds a single '*' prefix.
+//
+// Parameters:
+//   - name: The type name to convert (e.g., "User", "*User")
+//
+// Returns:
+//   - string: The pointer type name (e.g., "*User")
+//
+// Examples:
+//   - starName("User") returns "*User"
+//   - starName("*User") returns "*User"
+//   - starName("") returns ""
 func starName(name string) string {
 	if len(name) == 0 {
 		return ""
