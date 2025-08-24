@@ -137,6 +137,7 @@ func (Base[M, REQ, RSP]) PatchManyAfter(*types.ServiceContext, ...M) error   { r
 func (Base[M, REQ, RSP]) Import(*types.ServiceContext, io.Reader) ([]M, error) {
 	return make([]M, 0), nil
 }
+
 func (Base[M, REQ, RSP]) Export(*types.ServiceContext, ...M) ([]byte, error) {
 	return make([]byte, 0), nil
 }
