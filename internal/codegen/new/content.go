@@ -42,10 +42,10 @@ import (
 )
 
 func main() {
+	RunOrDie(middlewarex.Init)
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(middlewarex.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
