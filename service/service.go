@@ -92,7 +92,7 @@ type factory[M types.Model, REQ types.Request, RSP types.Response] struct{}
 func (f factory[M, REQ, RSP]) Service(phase consts.Phase) types.Service[M, REQ, RSP] {
 	svc, ok := serviceMap[serviceKey[M](phase)]
 	if !ok {
-		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
+		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
 		return new(Base[M, REQ, RSP])
 	}
 	return svc.(types.Service[M, REQ, RSP])
