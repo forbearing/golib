@@ -165,6 +165,7 @@ func TestStmtRouterRegister(t *testing.T) {
 		modelName    string
 		reqName      string
 		respName     string
+		router       string
 		endpoint     string
 		verb         string
 		want         string
@@ -174,10 +175,11 @@ func TestStmtRouterRegister(t *testing.T) {
 			modelPkgName: "model",
 			modelName:    "Group",
 			reqName:      "Group",
+			router:       "Auth",
 			respName:     "Group",
 			endpoint:     "group",
 			verb:         "Create",
-			want:         `router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group", consts.Create)`,
+			want:         `router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group", consts.Create)`,
 		},
 		{
 			name:         "test2",
@@ -185,9 +187,10 @@ func TestStmtRouterRegister(t *testing.T) {
 			modelName:    "Group",
 			reqName:      "GroupRequest",
 			respName:     "GroupResponse",
+			router:       "Auth",
 			endpoint:     "group2",
 			verb:         "Update",
-			want:         `router.Register[*pkgmodel.Group, pkgmodel.GroupRequest, pkgmodel.GroupResponse](router.API(), "group2", consts.Update)`,
+			want:         `router.Register[*pkgmodel.Group, pkgmodel.GroupRequest, pkgmodel.GroupResponse](router.Auth(), "group2", consts.Update)`,
 		},
 		{
 			name:         "test3",
@@ -195,14 +198,15 @@ func TestStmtRouterRegister(t *testing.T) {
 			modelName:    "Group",
 			reqName:      "*GroupRequest",
 			respName:     "*GroupResponse",
-			endpoint:     "group2",
+			router:       "Pub",
+			endpoint:     "login",
 			verb:         "Update",
-			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.API(), "group2", consts.Update)`,
+			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.Pub(), "login", consts.Update)`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName, tt.endpoint, tt.verb)
+			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName, tt.router, tt.endpoint, tt.verb)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)

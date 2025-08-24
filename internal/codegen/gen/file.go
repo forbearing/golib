@@ -205,8 +205,8 @@ import (
 )
 
 func Init() error {
-	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-	router.Register[*model.User, *model.User, *model.User](router.API(), "user")
+	router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group")
+	router.Register[*model.User, *model.User, *model.User](router.Pub(), "user")
 	return nil
 }
 */
