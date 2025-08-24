@@ -3,14 +3,40 @@ package middleware
 import (
 	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/config"
+	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"
 )
 
 var (
-	cb           *gobreaker.CircuitBreaker
-	RouteManager *routeParamsManager
+	cb                *gobreaker.CircuitBreaker
+	RouteManager      *routeParamsManager
+	CommonMiddlewares = []gin.HandlerFunc{}
+	AuthMiddlewares   = []gin.HandlerFunc{}
 )
+
+// Register adds global middlewares that apply to all routes.
+// Call this if a middlewares should run for every requests.
+func Register(middlewares ...gin.HandlerFunc) {
+	for _, m := range middlewares {
+		if m == nil {
+			continue
+		}
+		CommonMiddlewares = append(CommonMiddlewares, m)
+	}
+}
+
+// RegisterAuth adds authentication/authorization middlewares,
+// which are only appied to routes that requests authentication/authorization.
+// Call this if a route must be protected by auth logic.
+func RegisterAuth(middlewares ...gin.HandlerFunc) {
+	for _, m := range middlewares {
+		if m == nil {
+			continue
+		}
+		AuthMiddlewares = append(AuthMiddlewares, m)
+	}
+}
 
 func Init() (err error) {
 	// Init circuit breaker
