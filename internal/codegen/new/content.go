@@ -32,7 +32,7 @@ package main
 import (
 	"%s/configx"
 	"%s/cronjobx"
-	"%s/middlewarex"
+	_ "%s/middlewarex"
 	_ "%s/model"
 	"%s/router"
 	_ "%s/service"
@@ -42,7 +42,6 @@ import (
 )
 
 func main() {
-	RunOrDie(middlewarex.Init)
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
@@ -67,8 +66,7 @@ func Init() error {
 
 const middlewarexContent = `package middlewarex
 
-func Init() error {
-	return nil
+func init() {
 }
 `
 
