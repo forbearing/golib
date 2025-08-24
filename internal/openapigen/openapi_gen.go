@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
@@ -14,16 +15,22 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-var doc = &openapi3.T{
-	OpenAPI: "3.0.0",
-	Paths:   openapi3.NewPaths(),
-	Components: &openapi3.Components{
-		Schemas: openapi3.Schemas{},
-	},
-}
+var (
+	doc = &openapi3.T{
+		OpenAPI: "3.0.0",
+		Paths:   openapi3.NewPaths(),
+		Components: &openapi3.Components{
+			Schemas: openapi3.Schemas{},
+		},
+	}
+	// docMutex protects concurrent access to the global doc variable
+	docMutex sync.RWMutex
+)
 
 func Write(filename string) error {
+	docMutex.RLock()
 	data, err := json.MarshalIndent(doc, "", "  ")
+	docMutex.RUnlock()
 	if err != nil {
 		return err
 	}
@@ -45,11 +52,13 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 	pathipt := path + "/import"
 	pathexpt := path + "/export"
 
+	docMutex.Lock()
 	pathItem := getOrCreate(path)
 	pathidItem := getOrCreate(pathid)
 	pathbatchItem := getOrCreate(pathbatch)
 	pathiptItem := getOrCreate(pathipt)
 	pathexptItem := getOrCreate(pathexpt)
+	docMutex.Unlock()
 
 	for _, verb := range buildVerbs(verb...) {
 		switch verb {
@@ -80,11 +89,13 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 		}
 	}
 
+	docMutex.Lock()
 	doc.Paths.Set(path, pathItem)
 	doc.Paths.Set(pathid, pathidItem)
 	doc.Paths.Set(pathbatch, pathbatchItem)
 	doc.Paths.Set(pathipt, pathiptItem)
 	doc.Paths.Set(pathexpt, pathexptItem)
+	docMutex.Unlock()
 }
 
 // func Set[M types.Model](path string, verb ...consts.HTTPVerb) {
@@ -170,11 +181,15 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 
 // DocumentHandler returns an http.Handler that serves the OpenAPI document
 func DocumentHandler() http.Handler {
+	docMutex.Lock()
 	setDocInfo(doc)
+	docMutex.Unlock()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		docMutex.RLock()
 		// data, _ := json.MarshalIndent(doc, "", "  ")
 		data, _ := json.Marshal(doc)
+		docMutex.RUnlock()
 		w.Write(data)
 	})
 }

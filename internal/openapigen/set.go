@@ -385,7 +385,9 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 	}
 	// Add field descriptions to schema
 	addSchemaTitleDesc[M](schemaRef)
+	docMutex.Lock()
 	doc.Components.Schemas[name] = schemaRef
+	docMutex.Unlock()
 
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.List, typ),
@@ -495,7 +497,9 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 	// Add field descriptions to schema
 	addSchemaTitleDesc[M](schemaRef)
 
+	docMutex.Lock()
 	doc.Components.Schemas[name] = schemaRef
+	docMutex.Unlock()
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.Get, typ),
 		Summary:     summary(consts.Get, typ),
