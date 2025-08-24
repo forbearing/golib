@@ -235,7 +235,7 @@ package main
 import (
 	"helloworld/configx"
 	"helloworld/cronjobx"
-	"helloworld/middlewarex"
+	_ "helloworld/middlewarex"
 	_ "helloworld/model"
 	"helloworld/router"
 	_ "helloworld/service"
@@ -248,7 +248,6 @@ func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
 	RunOrDie(cronjobx.Init)
-	RunOrDie(middlewarex.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
