@@ -327,6 +327,7 @@ func BuildMainFile(projectName string) (string, error) {
 				Specs: []ast.Spec{
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/middlewarex")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
@@ -370,6 +371,17 @@ func BuildMainFile(projectName string) (string, error) {
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
 										X:   ast.NewIdent("cronjobx"),
+										Sel: ast.NewIdent("Init"),
+									},
+								},
+							},
+						},
+						&ast.ExprStmt{
+							X: &ast.CallExpr{
+								Fun: ast.NewIdent("RunOrDie"),
+								Args: []ast.Expr{
+									&ast.SelectorExpr{
+										X:   ast.NewIdent("middlewarex"),
 										Sel: ast.NewIdent("Init"),
 									},
 								},
