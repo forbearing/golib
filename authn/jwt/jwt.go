@@ -36,8 +36,23 @@ var (
 var sessionCache *expirable.LRU[string, *model.Session]
 
 type Claims struct {
-	UserId   string `json:"user_id"`
-	Username string `json:"username"`
+	UserId            string `json:"user_id,omitempty"`
+	Username          string `json:"username,omitempty"`
+	PreferredUsername string `json:"preferred_username,omitempty"`
+	GivenName         string `json:"given_name,omitempty"`
+	FamilyName        string `json:"family_name,omitempty"`
+	Email             string `json:"email,omitempty"`
+	EmailVerified     bool   `json:"email_verified,omitempty"`
+	Scope             string `json:"scope,omitempty"`
+
+	// Standard Claims
+	AuthTime *jwt.NumericDate `json:"auth_time"` // The time at which the JWT was issued.
+	Typ      string           `json:"typ"`       // The media type of this complete JWT. eg: Bearer
+	Azp      string           `json:"azp"`       // The authorized party to which the ID Token was issued.
+	Sid      string           `json:"sid"`       // An identifier for a session at the relying party.
+	Acr      string           `json:"acr"`       // Authentication Context Class. Learn more
+	AtHash   string           `json:"at_hash"`   // Access Token hash value encoded in base64url format.
+
 	jwt.RegisteredClaims
 }
 
@@ -90,8 +105,9 @@ func RevokeTokens(userId string) {
 func genAccessToken(userId string, username string) (token string, err error) {
 	now := time.Now()
 	claims := Claims{
-		userId, username,
-		jwt.RegisteredClaims{
+		UserId:   userId,
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(config.App.Auth.AccessTokenExpireDuration)), // 过期时间
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
@@ -155,7 +171,7 @@ func RefreshTokens(accessToken, refreshToken string, session *model.Session) (ne
 	return GenTokens(accessClaims.UserId, accessClaims.Username, session)
 }
 
-// ParseToken
+// ParseToken parse token
 func ParseToken(tokenStr string) (*Claims, error) {
 	if len(tokenStr) == 0 {
 		return nil, ErrTokenMalformed
