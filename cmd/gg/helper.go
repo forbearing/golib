@@ -37,7 +37,7 @@ var (
 	yellow = color.New(color.FgHiYellow).SprintFunc()
 	red    = color.New(color.FgHiRed).SprintFunc()
 	cyan   = color.New(color.FgHiCyan).SprintFunc()
-	gray   = color.New(color.Faint).SprintFunc()
+	gray   = color.New(color.FgHiBlack).SprintFunc()
 	bold   = color.New(color.Bold).SprintFunc()
 )
 
