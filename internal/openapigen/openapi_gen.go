@@ -173,7 +173,8 @@ func DocumentHandler() http.Handler {
 	setDocInfo(doc)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		data, _ := json.MarshalIndent(doc, "", "  ")
+		// data, _ := json.MarshalIndent(doc, "", "  ")
+		data, _ := json.Marshal(doc)
 		w.Write(data)
 	})
 }
