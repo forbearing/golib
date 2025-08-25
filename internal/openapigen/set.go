@@ -83,7 +83,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		Responses: func() *openapi3.Responses {
 			resp := openapi3.NewResponses()
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
 			var err error
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
@@ -108,16 +108,19 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 				},
 			})
 
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf("Invalid request"),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf("Invalid request"),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+
+			// // Mybe used in the future, DO NOT DELETE it.
 			// resp.Set("401", &openapi3.ResponseRef{
 			// 	Value: &openapi3.Response{
 			// 		Description: util.ValueOf("Unauthorized"),
@@ -165,18 +168,19 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef204 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef204 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 			resp := openapi3.NewResponses()
 			resp.Set("204", &openapi3.ResponseRef{
 				Value: &openapi3.Response{
@@ -184,18 +188,19 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef204),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf("Invalid request"),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf("Invalid request"),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 
 			return resp
 		}(),
@@ -235,8 +240,8 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		},
 		Responses: func() *openapi3.Responses {
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
-			var schemaRef404 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef404 *openapi3.SchemaRef
 			var err error
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
@@ -251,16 +256,17 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 				}
 			}
 
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
 				Value: &openapi3.Response{
@@ -271,18 +277,19 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 					// }),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf("Invalid request"),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf("Invalid request"),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 			return resp
 		}(),
 	}
@@ -321,8 +328,8 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 		},
 		Responses: func() *openapi3.Responses {
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
-			var schemaRef404 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef404 *openapi3.SchemaRef
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 			if err != nil {
@@ -335,16 +342,17 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
 				Value: &openapi3.Response{
@@ -355,18 +363,19 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 					// }),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf("Invalid request"),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf("Invalid request"),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 			return resp
 		}(),
 	}
@@ -443,18 +452,19 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 					}
 				}
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiListResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
@@ -463,18 +473,19 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef200),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(msgBadRequest),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(msgNotFound),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(msgBadRequest),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(msgNotFound),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 
 			return resp
 		}(),
@@ -518,18 +529,19 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 					addSchemaTitleDesc[M](dataProperty)
 				}
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
@@ -541,18 +553,19 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 					// }),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 			return resp
 		}(),
 	}
@@ -621,8 +634,8 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		},
 		Responses: func() *openapi3.Responses {
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
-			var schemaRef404 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef404 *openapi3.SchemaRef
 			var err error
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
@@ -642,16 +655,17 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					}
 				}
 			}
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 
 			resp := openapi3.NewResponses()
 			resp.Set("201", &openapi3.ResponseRef{
@@ -660,18 +674,19 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef200),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 
 			return resp
 		}(),
@@ -729,16 +744,17 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					}
 				}
 			}
-			schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
-			if err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
+			// // Mybe used in the future, DO NOT DELETE it.
+			// schemaRef400, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404, err := openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil)
+			// if err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
 
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
@@ -747,18 +763,19 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef200),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 			return resp
 		}(),
 	}
@@ -799,8 +816,8 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		},
 		Responses: func() *openapi3.Responses {
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
-			var schemaRef404 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef404 *openapi3.SchemaRef
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
 			if err != nil {
@@ -819,16 +836,17 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					}
 				}
 			}
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
@@ -837,18 +855,19 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef200),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 
 			return resp
 		}(),
@@ -890,8 +909,8 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 		},
 		Responses: func() *openapi3.Responses {
 			var schemaRef200 *openapi3.SchemaRef
-			var schemaRef400 *openapi3.SchemaRef
-			var schemaRef404 *openapi3.SchemaRef
+			// var schemaRef400 *openapi3.SchemaRef
+			// var schemaRef404 *openapi3.SchemaRef
 			var err error
 
 			schemaRef200, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
@@ -911,16 +930,17 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 					}
 				}
 			}
-			if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef400 = new(openapi3.SchemaRef)
-			}
-			schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
-			if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
-				zap.S().Error(err)
-				schemaRef404 = new(openapi3.SchemaRef)
-			}
-			schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
+			// // Mybe used in the future, DO NOT DELETE it.
+			// if schemaRef400, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef400 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef400.Value.Example = exampleValue(response.CodeBadRequest)
+			// if schemaRef404, err = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[string]), nil); err != nil {
+			// 	zap.S().Error(err)
+			// 	schemaRef404 = new(openapi3.SchemaRef)
+			// }
+			// schemaRef404.Value.Example = exampleValue(response.CodeNotFound)
 
 			resp := openapi3.NewResponses()
 			resp.Set("200", &openapi3.ResponseRef{
@@ -929,18 +949,19 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef200),
 				},
 			})
-			resp.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
-				},
-			})
-			resp.Set("404", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
-					Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
-				},
-			})
+			// // Mybe used in the future, DO NOT DELETE it.
+			// resp.Set("400", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef400),
+			// 	},
+			// })
+			// resp.Set("404", &openapi3.ResponseRef{
+			// 	Value: &openapi3.Response{
+			// 		Description: util.ValueOf(fmt.Sprintf("%s not found", name)),
+			// 		Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef404),
+			// 	},
+			// })
 
 			return resp
 		}(),
@@ -956,58 +977,59 @@ func setExport[M types.Model, REQ types.Request, RSP types.Response](path string
 
 func addHeaderParameters(op *openapi3.Operation) {
 	headers := []*openapi3.ParameterRef{
-		{
-			Value: &openapi3.Parameter{
-				In:          "header",
-				Name:        "Authorization",
-				Description: "Authentication token (e.g. Bearer <token>)",
-				Required:    false,
-				Schema: &openapi3.SchemaRef{
-					Value: &openapi3.Schema{
-						Type: &openapi3.Types{openapi3.TypeString},
-					},
-				},
-			},
-		},
-		{
-			Value: &openapi3.Parameter{
-				In:          "header",
-				Name:        "X-Request-ID",
-				Description: "Optional request ID for tracing",
-				Required:    false,
-				Schema: &openapi3.SchemaRef{
-					Value: &openapi3.Schema{
-						Type: &openapi3.Types{openapi3.TypeString},
-					},
-				},
-			},
-		},
-		{
-			Value: &openapi3.Parameter{
-				In:          "header",
-				Name:        "X-Client-Version",
-				Description: "Client version (e.g. v1.2.3)",
-				Required:    false,
-				Schema: &openapi3.SchemaRef{
-					Value: &openapi3.Schema{
-						Type: &openapi3.Types{openapi3.TypeString},
-					},
-				},
-			},
-		},
-		{
-			Value: &openapi3.Parameter{
-				In:          "header",
-				Name:        "Accept-Language",
-				Description: "Preferred language (e.g. zh-CN, en-US)",
-				Required:    false,
-				Schema: &openapi3.SchemaRef{
-					Value: &openapi3.Schema{
-						Type: &openapi3.Types{openapi3.TypeString},
-					},
-				},
-			},
-		},
+		// // Mybe used in the future, DO NOT DELETE it.
+		// {
+		// 	Value: &openapi3.Parameter{
+		// 		In:          "header",
+		// 		Name:        "Authorization",
+		// 		Description: "Authentication token (e.g. Bearer <token>)",
+		// 		Required:    false,
+		// 		Schema: &openapi3.SchemaRef{
+		// 			Value: &openapi3.Schema{
+		// 				Type: &openapi3.Types{openapi3.TypeString},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Value: &openapi3.Parameter{
+		// 		In:          "header",
+		// 		Name:        "X-Request-ID",
+		// 		Description: "Optional request ID for tracing",
+		// 		Required:    false,
+		// 		Schema: &openapi3.SchemaRef{
+		// 			Value: &openapi3.Schema{
+		// 				Type: &openapi3.Types{openapi3.TypeString},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Value: &openapi3.Parameter{
+		// 		In:          "header",
+		// 		Name:        "X-Client-Version",
+		// 		Description: "Client version (e.g. v1.2.3)",
+		// 		Required:    false,
+		// 		Schema: &openapi3.SchemaRef{
+		// 			Value: &openapi3.Schema{
+		// 				Type: &openapi3.Types{openapi3.TypeString},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Value: &openapi3.Parameter{
+		// 		In:          "header",
+		// 		Name:        "Accept-Language",
+		// 		Description: "Preferred language (e.g. zh-CN, en-US)",
+		// 		Required:    false,
+		// 		Schema: &openapi3.SchemaRef{
+		// 			Value: &openapi3.Schema{
+		// 				Type: &openapi3.Types{openapi3.TypeString},
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 
 	// Avoid duplicate additions
@@ -1233,8 +1255,12 @@ func tags(path string, op consts.HTTPVerb, typ reflect.Type) []string {
 	// return []string{typ.Elem().Name()}
 	tag := strings.TrimPrefix(path, `/api/`)
 	tag = strings.TrimSuffix(tag, `/batch`)
-	tag = strings.TrimSuffix(tag, `/{id}`)
-	tag = strings.ReplaceAll(tag, "/", "_")
+	items := strings.Split(tag, `/`)
+	if len(items) > 0 {
+		tag = items[0]
+	} else {
+		tag = typ.Elem().Name()
+	}
 	return []string{tag}
 }
 
