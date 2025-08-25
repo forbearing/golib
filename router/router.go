@@ -57,6 +57,7 @@ func Init() error {
 	root.GET("/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi.json")))
 	root.GET("/redoc", middleware.BaseAuth(), controller.Redoc)
 	root.GET("/scalar", middleware.BaseAuth(), controller.Scalar)
+	root.GET("/stoplight", middleware.BaseAuth(), controller.Stoplight)
 
 	base := root.Group("/api")
 	auth = base.Group("")
