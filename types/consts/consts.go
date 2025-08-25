@@ -142,6 +142,23 @@ func (p Phase) MethodName() string {
 	return strcase.UpperCamelCase(string(p))
 }
 
+// Filename returns the Phase generated filename converted to lower case format.
+// Example:
+//
+//	PHASE_CREATE         -> "create.go"
+//	PHASE_CREATE_BEFORE  -> "create.go"
+//	PHASE_UPDATE_MANY    -> "update_many.go"
+func (p Phase) Filename() string {
+	s := string(p)
+
+	// 去掉 _before / _after
+	s = strings.TrimSuffix(s, "_before")
+	s = strings.TrimSuffix(s, "_after")
+
+	// 转小写并拼接 .go
+	return strings.ToLower(s) + ".go"
+}
+
 // RoleName returns the associated role name for the Phase in human-readable form.
 // It maps CRUD and ManyCRUD phases (including "_before" and "_after") to specific role names.
 // Non-CRUD phases return an empty string.
