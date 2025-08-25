@@ -227,4 +227,3 @@ func TestDatabase_Create(t *testing.T) {
 		assert.Equal(t, "", retrievedCategory.ParentID)
 	})
 }
-

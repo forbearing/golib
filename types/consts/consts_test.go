@@ -203,3 +203,63 @@ func TestPhase_ToHTTPVerb(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase_Filename(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase consts.Phase
+		want  string
+	}{
+		// 单个 CRUD
+		{"create", consts.PHASE_CREATE, "create.go"},
+		{"update", consts.PHASE_UPDATE, "update.go"},
+		{"delete", consts.PHASE_DELETE, "delete.go"},
+		{"patch", consts.PHASE_PATCH, "patch.go"},
+		{"list", consts.PHASE_LIST, "list.go"},
+		{"get", consts.PHASE_GET, "get.go"},
+
+		// Many CRUD
+		{"create_many", consts.PHASE_CREATE_MANY, "create_many.go"},
+		{"update_many", consts.PHASE_UPDATE_MANY, "update_many.go"},
+		{"delete_many", consts.PHASE_DELETE_MANY, "delete_many.go"},
+		{"patch_many", consts.PHASE_PATCH_MANY, "patch_many.go"},
+
+		// before/after 单个
+		{"create_before", consts.PHASE_CREATE_BEFORE, "create.go"},
+		{"create_after", consts.PHASE_CREATE_AFTER, "create.go"},
+		{"update_before", consts.PHASE_UPDATE_BEFORE, "update.go"},
+		{"update_after", consts.PHASE_UPDATE_AFTER, "update.go"},
+		{"delete_before", consts.PHASE_DELETE_BEFORE, "delete.go"},
+		{"delete_after", consts.PHASE_DELETE_AFTER, "delete.go"},
+		{"patch_before", consts.PHASE_PATCH_BEFORE, "patch.go"},
+		{"patch_after", consts.PHASE_PATCH_AFTER, "patch.go"},
+		{"list_before", consts.PHASE_LIST_BEFORE, "list.go"},
+		{"list_after", consts.PHASE_LIST_AFTER, "list.go"},
+		{"get_before", consts.PHASE_GET_BEFORE, "get.go"},
+		{"get_after", consts.PHASE_GET_AFTER, "get.go"},
+
+		// before/after Many
+		{"create_many_before", consts.PHASE_CREATE_MANY_BEFORE, "create_many.go"},
+		{"create_many_after", consts.PHASE_CREATE_MANY_AFTER, "create_many.go"},
+		{"update_many_before", consts.PHASE_UPDATE_MANY_BEFORE, "update_many.go"},
+		{"update_many_after", consts.PHASE_UPDATE_MANY_AFTER, "update_many.go"},
+		{"delete_many_before", consts.PHASE_DELETE_MANY_BEFORE, "delete_many.go"},
+		{"delete_many_after", consts.PHASE_DELETE_MANY_AFTER, "delete_many.go"},
+		{"patch_many_before", consts.PHASE_PATCH_MANY_BEFORE, "patch_many.go"},
+		{"patch_many_after", consts.PHASE_PATCH_MANY_AFTER, "patch_many.go"},
+
+		// 其他 phase
+		{"filter", consts.PHASE_FILTER, "filter.go"},
+		{"import", consts.PHASE_IMPORT, "import.go"},
+		{"export", consts.PHASE_EXPORT, "export.go"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.phase.Filename()
+			if got != tt.want {
+				t.Errorf("Filename() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

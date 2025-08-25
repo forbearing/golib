@@ -186,6 +186,10 @@ func (sc *ServiceContext) SetCookie(name, value string, maxAge int, path, domain
 	sc.ginCtx.SetCookie(name, value, maxAge, path, domain, secure, httpOnly)
 }
 
+func (sc *ServiceContext) Cookie(name string) (string, error) {
+	return sc.ginCtx.Cookie(name)
+}
+
 func (sc *ServiceContext) SetPhase(phase consts.Phase) { sc.phase = phase }
 func (sc *ServiceContext) GetPhase() consts.Phase      { return sc.phase }
 func (sc *ServiceContext) WithPhase(phase consts.Phase) *ServiceContext {

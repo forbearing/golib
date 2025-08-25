@@ -1,139 +1,180 @@
 package new
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/forbearing/golib/config"
 )
 
-// Run initializes a new Go project with the specified project name.
+// ============================================================
+// 文件模板映射
+// ============================================================
+
+var fileContentMap = map[string]string{
+	"configx/configx.go":         configxContent,
+	"cronjobx/cronjobx.go":       cronjobxContent,
+	"middlewarex/middlewarex.go": middlewarexContent,
+	"model/model.go":             modelContent,
+	"service/service.go":         serviceContent,
+	"router/router.go":           routerContent,
+}
+
+// ============================================================
+// 彩色输出工具
+// ============================================================
+
+var (
+	green  = color.New(color.FgHiGreen).SprintFunc()
+	yellow = color.New(color.FgHiYellow).SprintFunc()
+	red    = color.New(color.FgHiRed).SprintFunc()
+	cyan   = color.New(color.FgHiCyan).SprintFunc()
+	gray   = color.New(color.FgHiBlack).SprintFunc()
+	bold   = color.New(color.Bold).SprintFunc()
+)
+
+func logSection(title string) {
+	fmt.Printf("\n%s %s\n", cyan("▶"), bold(title))
+}
+
+func logSuccess(msg string) {
+	fmt.Printf("  %s %s\n", green("✔"), msg)
+}
+
+func logInfo(msg string) {
+	fmt.Printf("  %s %s\n", yellow("ℹ"), msg)
+}
+
+func logError(msg string) {
+	fmt.Printf("  %s %s\n", red("✘"), msg)
+}
+
+func logFileCreate(filename string) {
+	fmt.Printf("  %s %s\n", green("✔"), filename)
+}
+
+// ============================================================
+// Run: 初始化新项目
+// ============================================================
+
 func Run(projectName string) error {
-	// Extract project name from module path (e.g., "github.com/user/project" -> "project")
 	projectDir := filepath.Base(projectName)
 
-	// Create project directory
-	fmt.Printf("Creating project directory: %s\n", projectDir)
+	// 项目目录
+	logSection("Create Project Directory")
 	if err := os.MkdirAll(projectDir, 0o755); err != nil {
+		logError("failed to create project directory")
 		return err
 	}
+	logSuccess(projectDir)
 
-	// Change to project directory
-	fmt.Printf("Entering directory: %s\n", projectDir)
+	// 切换目录
 	if err := os.Chdir(projectDir); err != nil {
 		return err
 	}
 
-	// Initialize Go module
-	fmt.Printf("Initializing Go module: %s\n", projectName)
+	// 初始化 Go module
+	logSection("Initialize Go Module")
+	logInfo(fmt.Sprintf("go mod init %s", projectName))
 	cmd := exec.Command("go", "mod", "init", projectName)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		logError("go mod init failed")
 		return err
 	}
+	logSuccess("Go module initialized")
 
-	// Create directories with .gitkeep files
-	dirs := []string{"configx", "cronjobx", "model", "service", "router"}
-	for _, dir := range dirs {
-		fmt.Printf("Creating directory: %s\n", dir)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	// 生成项目文件
+	logSection("Generate Project Files")
+	for file, content := range fileContentMap {
+		if err := createFile(file, content); err != nil {
+			logError(fmt.Sprintf("Failed to create %s", file))
 			return err
 		}
-
-		// Create .gitkeep file in each directory
-		gitkeepPath := filepath.Join(dir, ".gitkeep")
-		fmt.Printf("Creating file: %s\n", gitkeepPath)
-		var file *os.File
-		var err error
-		if file, err = os.Create(gitkeepPath); err != nil {
-			return err
-		}
-		file.Close()
+		logFileCreate(file)
 	}
 
-	// Create configx/configx.go
-	fmt.Println("Creating configx/configx.go")
-	if err := os.WriteFile("configx/configx.go", []byte(configxContent), 0o644); err != nil {
+	// main.go
+	if err := createFile("main.go", fmt.Sprintf(mainContent,
+		projectName, projectName, projectName, projectName, projectName, projectName)); err != nil {
 		return err
 	}
+	logFileCreate("main.go")
 
-	// Create cronjobx/cronjobx.go
-	fmt.Println("Creating cronjobx/cronjobx.go")
-	if err := os.WriteFile("cronjobx/cronjobx.go", []byte(cronjobxContent), 0o644); err != nil {
+	// .gitignore
+	if err := createFile(".gitignore", gitignoreContent); err != nil {
 		return err
 	}
+	logFileCreate(".gitignore")
 
-	fmt.Println("Creating model/model.go")
-	if err := os.WriteFile("model/model.go", []byte(modelContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create service/service.go
-	fmt.Println("Creating service/service.go")
-	if err := os.WriteFile("service/service.go", []byte(serviceContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create router/router.go
-	fmt.Println("Creating router/router.go")
-	if err := os.WriteFile("router/router.go", []byte(routerContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create main.go file
-	fmt.Println("Creating main.go")
-	if err := os.WriteFile("main.go", fmt.Appendf(nil, mainContent, projectName, projectName, projectName, projectName, projectName), 0o644); err != nil {
-		return err
-	}
-
-	// Create .gitignore file
-	fmt.Println("Creating .gitignore")
-	if err := os.WriteFile(".gitignore", []byte(gitignoreContent), 0o644); err != nil {
-		return err
-	}
-
-	// Create template config.ini
-	fmt.Println("Creating config.ini")
+	// config.ini.example
 	if err := createTeplConfig(); err != nil {
 		return err
 	}
+	logFileCreate("config.ini.example")
 
-	// Run go mod tidy
-	fmt.Println("Running go mod tidy...")
+	// 运行 go mod tidy
+	logSection("Run Go Mod Tidy")
 	cmd = exec.Command("go", "mod", "tidy")
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	if err := cmd.Run(); err != nil {
+		logError("go mod tidy failed")
 		return err
 	}
+	logSuccess("Dependencies tidied")
 
-	// Initialize git repository
-	fmt.Println("Initializing git repository...")
+	// 初始化 git 仓库
+	logSection("Initialize Git Repository")
 	cmd = exec.Command("git", "init")
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	if err := cmd.Run(); err != nil {
+		logError("git init failed")
 		return err
 	}
+	logSuccess("Git repository initialized")
 
-	fmt.Println("Project initialization completed successfully!")
+	// 最终提示
+	logSection("Project Initialization Completed")
+	fmt.Printf("\n%s Project %s created successfully!\n", green("🎉"), bold(projectDir))
 	fmt.Println("\nNext steps:")
-	fmt.Println("  cd", projectDir)
-	fmt.Println("  git add .")
-	fmt.Println("  git commit -m \"Initial commit\"")
+	fmt.Printf("  %s %s\n", cyan("$"), "cd "+projectDir)
+	fmt.Printf("  %s %s\n", cyan("$"), "git add .")
+	fmt.Printf("  %s %s\n", cyan("$"), "git commit -m \"Initial commit\"")
 
 	return nil
 }
 
+// ============================================================
+// 辅助函数
+// ============================================================
+
+func EnsureFileExists() {
+	for file, content := range fileContentMap {
+		if _, err := os.Stat(file); err != nil && errors.Is(err, os.ErrNotExist) {
+			createFile(file, content)
+		}
+	}
+}
+
+func createFile(path string, content string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
 func createTeplConfig() error {
 	oldStdout := os.Stdout
-	defer func() {
-		os.Stdout = oldStdout
-	}()
+	defer func() { os.Stdout = oldStdout }()
 
 	null, err := os.Open(os.DevNull)
 	if err != nil {

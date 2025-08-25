@@ -356,4 +356,3 @@ func TestDatabase_Take(t *testing.T) {
 		assert.Equal(t, "", retrievedCategory.ParentID)
 	})
 }
-

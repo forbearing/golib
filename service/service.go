@@ -92,7 +92,7 @@ type factory[M types.Model, REQ types.Request, RSP types.Response] struct{}
 func (f factory[M, REQ, RSP]) Service(phase consts.Phase) types.Service[M, REQ, RSP] {
 	svc, ok := serviceMap[serviceKey[M](phase)]
 	if !ok {
-		logger.Service.Warnz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
+		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
 		return new(Base[M, REQ, RSP])
 	}
 	return svc.(types.Service[M, REQ, RSP])
@@ -134,8 +134,13 @@ func (Base[M, REQ, RSP]) UpdateManyAfter(*types.ServiceContext, ...M) error  { r
 func (Base[M, REQ, RSP]) PatchManyBefore(*types.ServiceContext, ...M) error  { return nil }
 func (Base[M, REQ, RSP]) PatchManyAfter(*types.ServiceContext, ...M) error   { return nil }
 
-func (Base[M, REQ, RSP]) Import(*types.ServiceContext, io.Reader) ([]M, error) { return make([]M, 0), nil }
-func (Base[M, REQ, RSP]) Export(*types.ServiceContext, ...M) ([]byte, error) { return make([]byte, 0), nil }
+func (Base[M, REQ, RSP]) Import(*types.ServiceContext, io.Reader) ([]M, error) {
+	return make([]M, 0), nil
+}
+
+func (Base[M, REQ, RSP]) Export(*types.ServiceContext, ...M) ([]byte, error) {
+	return make([]byte, 0), nil
+}
 
 func (Base[M, REQ, RSP]) Filter(_ *types.ServiceContext, m M) M    { return m }
 func (Base[M, REQ, RSP]) FilterRaw(_ *types.ServiceContext) string { return "" }

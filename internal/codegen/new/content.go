@@ -32,6 +32,7 @@ package main
 import (
 	"%s/configx"
 	"%s/cronjobx"
+	_ "%s/middlewarex"
 	_ "%s/model"
 	"%s/router"
 	_ "%s/service"
@@ -60,6 +61,12 @@ const cronjobxContent = `package cronjobx
 
 func Init() error {
 	return nil
+}
+`
+
+const middlewarexContent = `package middlewarex
+
+func init() {
 }
 `
 

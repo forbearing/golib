@@ -6,9 +6,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type t1 struct {
-	Empty
-}
+type (
+	t1 struct{ Empty }
+	t2 struct{}
+	t3 struct{ Name string }
+	t4 struct {
+		Name string
+		Empty
+	}
+)
 
 func TestAreTypesEqual(t *testing.T) {
 	require.True(t, AreTypesEqual[*User, *User, *User]())
@@ -18,7 +24,8 @@ func TestAreTypesEqual(t *testing.T) {
 	require.False(t, AreTypesEqual[*User, *Menu, *Menu]())
 	require.False(t, AreTypesEqual[*User, string, *User]())
 	require.False(t, AreTypesEqual[*User, *User, int]())
-	require.True(t, AreTypesEqual[t1, t1, t1]())
+	require.False(t, AreTypesEqual[t1, t1, t1]())
+	require.True(t, AreTypesEqual[t4, t4, t4]())
 	require.False(t, AreTypesEqual[t1, *User, User]())
 	require.False(t, AreTypesEqual[t1, int, *string]())
 }
@@ -63,6 +70,9 @@ func BenchmarkAreTypesEqual(b *testing.B) {
 
 func TestIsModelEmpty(t *testing.T) {
 	require.True(t, IsModelEmpty[t1]())
+	require.True(t, IsModelEmpty[t2]())
+	require.False(t, IsModelEmpty[t3]())
+	require.False(t, IsModelEmpty[t4]())
 }
 
 func BenchmarkIsModelEmpty(b *testing.B) {

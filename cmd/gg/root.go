@@ -11,6 +11,7 @@ var (
 	excludes   []string
 	module     string
 	debug      bool
+	prune      bool
 )
 
 var rootCmd = &cobra.Command{
@@ -27,6 +28,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&routerDir, "router", "r", "router", "router directory path")
 	rootCmd.PersistentFlags().StringSliceVarP(&excludes, "exclude", "e", nil, "exclude files or directories")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debug logging")
+	rootCmd.PersistentFlags().BoolVar(&prune, "prune", false, "Prune disabled service action files with user confirmation")
 
-	rootCmd.AddCommand(genCmd, newCmd, astCmd)
+	rootCmd.AddCommand(genCmd, newCmd, astCmd, pruneCmd)
 }

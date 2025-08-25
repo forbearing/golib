@@ -5,21 +5,36 @@ name: Go
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
 
-    - name: Build
-      run: go build -v ./...
+      - name: Install gofumpt
+        run: go install mvdan.cc/gofumpt@latest
+
+      - name: Check formatting
+        run: |
+          files=$(gofumpt -l .)
+          if [ -n "$files" ]; then
+            echo "❌ gofumpt found unformatted files:"
+            echo "$files"
+            echo ""
+            echo "👉 Please run 'gofumpt -w .' locally and commit again."
+            exit 1
+          else
+            echo "✅ gofumpt formatting check passed"
+          fi
+
+      - name: Build
+        run: go build -v ./...

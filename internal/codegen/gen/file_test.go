@@ -235,6 +235,7 @@ package main
 import (
 	"helloworld/configx"
 	"helloworld/cronjobx"
+	_ "helloworld/middlewarex"
 	_ "helloworld/model"
 	"helloworld/router"
 	_ "helloworld/service"
