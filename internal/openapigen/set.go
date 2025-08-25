@@ -67,6 +67,9 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 	}
 	setupExample(reqSchemaRef)
 	addSchemaTitleDesc[M](reqSchemaRef)
+	docMutex.Lock()
+	doc.Components.Schemas[name] = reqSchemaRef
+	docMutex.Unlock()
 
 	pathItem.Post = &openapi3.Operation{
 		OperationID: operationID(consts.Create, typ),
@@ -150,6 +153,17 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
+	docMutex.Lock()
+	if _, ok := doc.Components.Schemas[name]; !ok {
+		schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(M), nil)
+		if err != nil {
+			zap.S().Error(err)
+			schemaRef = new(openapi3.SchemaRef)
+		}
+		doc.Components.Schemas[name] = schemaRef
+	}
+	docMutex.Unlock()
+
 	pathItem.Delete = &openapi3.Operation{
 		OperationID: operationID(consts.Delete, typ),
 		Summary:     summary(consts.Delete, typ),
@@ -224,6 +238,9 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 	}
 	setupExample(reqSchemaRef)
 	addSchemaTitleDesc[M](reqSchemaRef)
+	docMutex.Lock()
+	doc.Components.Schemas[name] = reqSchemaRef
+	docMutex.Unlock()
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.Update, typ),
@@ -312,6 +329,9 @@ func setUpdatePartial[M types.Model, REQ types.Request, RSP types.Response](path
 	}
 	setupExample(reqSchemaRef)
 	addSchemaTitleDesc[M](reqSchemaRef)
+	docMutex.Lock()
+	doc.Components.Schemas[name] = reqSchemaRef
+	docMutex.Unlock()
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.Patch, typ),
@@ -507,10 +527,10 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 
 	// Add field descriptions to schema
 	addSchemaTitleDesc[M](schemaRef)
-
 	docMutex.Lock()
 	doc.Components.Schemas[name] = schemaRef
 	docMutex.Unlock()
+
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.Get, typ),
 		Summary:     summary(consts.Get, typ),
@@ -577,12 +597,16 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
-	// schemaRef, err := gen.NewSchemaRefForValue(*new(M), nil)
-	// if err != nil {
-	// 	zap.S().Error(err)
-	// 	schemaRef = new(openapi3.SchemaRef)
-	// }
-	// doc.Components.Schemas[name] = schemaRef
+	docMutex.Lock()
+	if _, ok := doc.Components.Schemas[name]; !ok {
+		schemaRef, err := gen.NewSchemaRefForValue(*new(M), nil)
+		if err != nil {
+			zap.S().Error(err)
+			schemaRef = new(openapi3.SchemaRef)
+		}
+		doc.Components.Schemas[name] = schemaRef
+	}
+	docMutex.Unlock()
 
 	// // 定义 BatchCreateRequest schema
 	// reqSchemaName := name + "BatchRequest"
@@ -698,6 +722,17 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 
+	docMutex.Lock()
+	if _, ok := doc.Components.Schemas[name]; !ok {
+		schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(M), nil)
+		if err != nil {
+			zap.S().Error(err)
+			schemaRef = new(openapi3.SchemaRef)
+		}
+		doc.Components.Schemas[name] = schemaRef
+	}
+	docMutex.Unlock()
+
 	reqSchemaRef := &openapi3.SchemaRef{
 		Value: &openapi3.Schema{
 			Type:     &openapi3.Types{openapi3.TypeObject},
@@ -786,6 +821,17 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
+
+	docMutex.Lock()
+	if _, ok := doc.Components.Schemas[name]; !ok {
+		schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(M), nil)
+		if err != nil {
+			zap.S().Error(err)
+			schemaRef = new(openapi3.SchemaRef)
+		}
+		doc.Components.Schemas[name] = schemaRef
+	}
+	docMutex.Unlock()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
@@ -879,6 +925,17 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
+
+	docMutex.Lock()
+	if _, ok := doc.Components.Schemas[name]; !ok {
+		schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(M), nil)
+		if err != nil {
+			zap.S().Error(err)
+			schemaRef = new(openapi3.SchemaRef)
+		}
+		doc.Components.Schemas[name] = schemaRef
+	}
+	docMutex.Unlock()
 
 	var reqSchemaRef *openapi3.SchemaRef
 	var err error
