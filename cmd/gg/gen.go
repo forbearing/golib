@@ -228,12 +228,19 @@ func scanExistingServiceFiles(serviceDir string, allModels []*gen.ModelInfo) []s
 	}
 
 	// Get all valid phase names
-	validPhases := make(map[string]bool)
-	for _, m := range allModels {
-		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
-			phaseFileName := strings.ToLower(string(p)) + ".go"
-			validPhases[phaseFileName] = true
-		})
+	validPhases := map[string]bool{
+		consts.PHASE_CREATE.Filename():      true,
+		consts.PHASE_DELETE.Filename():      true,
+		consts.PHASE_UPDATE.Filename():      true,
+		consts.PHASE_PATCH.Filename():       true,
+		consts.PHASE_LIST.Filename():        true,
+		consts.PHASE_GET.Filename():         true,
+		consts.PHASE_CREATE_MANY.Filename(): true,
+		consts.PHASE_DELETE_MANY.Filename(): true,
+		consts.PHASE_UPDATE_MANY.Filename(): true,
+		consts.PHASE_PATCH_MANY.Filename():  true,
+		consts.PHASE_IMPORT.Filename():      true,
+		consts.PHASE_EXPORT.Filename():      true,
 	}
 
 	// Walk through the service directory
