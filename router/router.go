@@ -56,6 +56,7 @@ func Init() error {
 	root.GET("/openapi.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
 	root.GET("/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi.json")))
 	root.GET("/redoc", middleware.BaseAuth(), controller.Redoc)
+	root.GET("/scalar", middleware.BaseAuth(), controller.Scalar)
 
 	base := root.Group("/api")
 	auth = base.Group("")
