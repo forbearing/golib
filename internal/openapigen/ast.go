@@ -10,8 +10,6 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
-
-	"github.com/forbearing/golib/types"
 )
 
 // parseModelDocs
@@ -28,10 +26,10 @@ type Field struct {
 	Comment *CommentGroup // line comments; or nil
 }
 */
-func parseModelDocs(m types.Model) map[string]string {
+func parseModelDocs(t any) map[string]string {
 	result := make(map[string]string)
 
-	typ := reflect.TypeOf(m)
+	typ := reflect.TypeOf(t)
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
