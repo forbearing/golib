@@ -31,7 +31,7 @@ const (
 
 func Redoc(c *gin.Context) {
 	content := replaceByMap(redocTemplate, map[string]string{
-		redocSpecURLPlaceholder: "/-/api.json",
+		redocSpecURLPlaceholder: "/openapi.json",
 	})
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 }

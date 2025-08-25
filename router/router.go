@@ -53,9 +53,9 @@ func Init() error {
 	root.GET("/-/healthz", controller.Probe.Healthz)
 	root.GET("/-/readyz", controller.Probe.Readyz)
 	root.GET("/-/pageid", controller.PageID)
-	root.GET("/-/api.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
-	root.GET("/-/api/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/-/api.json")))
-	root.GET("/-/api/redoc", middleware.BaseAuth(), controller.Redoc)
+	root.GET("/openapi.json", middleware.BaseAuth(), gin.WrapH(openapigen.DocumentHandler()))
+	root.GET("/docs/*any", middleware.BaseAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/openapi.json")))
+	root.GET("/redoc", middleware.BaseAuth(), controller.Redoc)
 
 	base := root.Group("/api")
 	auth = base.Group("")
