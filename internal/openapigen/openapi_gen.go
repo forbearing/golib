@@ -20,7 +20,9 @@ var (
 		OpenAPI: "3.0.0",
 		Paths:   openapi3.NewPaths(),
 		Components: &openapi3.Components{
-			Schemas: openapi3.Schemas{},
+			Schemas:       openapi3.Schemas{},
+			RequestBodies: openapi3.RequestBodies{},
+			Responses:     openapi3.ResponseBodies{},
 		},
 	}
 	// docMutex protects concurrent access to the global doc variable
@@ -69,7 +71,7 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 		case consts.Update:
 			setUpdate[M, REQ, RSP](pathid, pathidItem)
 		case consts.Patch:
-			setUpdatePartial[M, REQ, RSP](pathid, pathidItem)
+			setPatch[M, REQ, RSP](pathid, pathidItem)
 		case consts.List:
 			setList[M, REQ, RSP](path, pathItem)
 		case consts.Get:
