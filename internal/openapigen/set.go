@@ -1251,7 +1251,7 @@ func registerSchema[M types.Model, REQ types.Request, RSP types.Response](reqKey
 			doc.Components.RequestBodies = openapi3.RequestBodies{}
 		}
 		if _, ok := doc.Components.RequestBodies[reqKey]; !ok && reqSchemaRef != nil {
-			addSchemaTitleDesc[REQ](reqSchemaRef)
+			processAllRequestTypes[REQ](reqSchemaRef)
 			setupExample(reqSchemaRef)
 			setupBatchExample(reqSchemaRef)
 			doc.Components.RequestBodies[reqKey] = &openapi3.RequestBodyRef{
@@ -1262,17 +1262,6 @@ func registerSchema[M types.Model, REQ types.Request, RSP types.Response](reqKey
 				},
 			}
 
-			// if schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(REQ), nil); err == nil {
-			// 	setupExample(schemaRef)
-			// 	addSchemaTitleDesc[REQ](schemaRef)
-			// 	doc.Components.RequestBodies[reqKey] = &openapi3.RequestBodyRef{
-			// 		Value: &openapi3.RequestBody{
-			// 			Description: fmt.Sprintf("%s payload", name),
-			// 			Required:    !model.IsModelEmpty[REQ](),
-			// 			Content:     openapi3.NewContentWithJSONSchemaRef(schemaRef),
-			// 		},
-			// 	}
-			// }
 		}
 		docMutex.Unlock()
 	}
@@ -1289,6 +1278,7 @@ func registerSchema[M types.Model, REQ types.Request, RSP types.Response](reqKey
 			doc.Components.Responses = openapi3.ResponseBodies{}
 		}
 		if _, ok := doc.Components.Responses[rspKey]; !ok && rspSchemaRef != nil {
+			processAllResponseTypes[RSP](rspSchemaRef)
 			doc.Components.Responses[rspKey] = &openapi3.ResponseRef{
 				Value: &openapi3.Response{
 					Description: util.ValueOf(fmt.Sprintf("%s Response", name)),
@@ -1306,6 +1296,66 @@ func registerSchema[M types.Model, REQ types.Request, RSP types.Response](reqKey
 			// }
 		}
 		docMutex.Unlock()
+	}
+}
+
+// processAllRequestTypes 统一处理所有类型的 Request schema
+func processAllRequestTypes[REQ types.Request](reqSchemaRef *openapi3.SchemaRef) {
+	if reqSchemaRef == nil || reqSchemaRef.Value == nil {
+		return
+	}
+
+	// 如果是普通请求，直接处理
+	if reqSchemaRef.Value.Properties == nil || len(reqSchemaRef.Value.Properties) == 0 {
+		addSchemaTitleDesc[REQ](reqSchemaRef)
+		return
+	}
+
+	// 检查是否是批量请求（有 items 字段）
+	if itemsProperty, hasItems := reqSchemaRef.Value.Properties["items"]; hasItems {
+		if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+			// 为批量请求的 items 添加注释
+			addSchemaTitleDesc[REQ](itemsProperty.Value.Items)
+		}
+	} else {
+		// 普通请求
+		addSchemaTitleDesc[REQ](reqSchemaRef)
+	}
+}
+
+// processAllResponseTypes 统一处理所有类型的 Response schema
+func processAllResponseTypes[RSP types.Response](rspSchemaRef *openapi3.SchemaRef) {
+	if rspSchemaRef == nil || rspSchemaRef.Value == nil || rspSchemaRef.Value.Properties == nil {
+		return
+	}
+
+	// 处理 data 字段
+	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists && dataProperty.Value != nil {
+		// 检查 data 是什么类型的结构
+
+		// 1. 如果 data 直接是 RSP 类型（普通的 apiResponse[RSP]）
+		if dataProperty.Value.Properties == nil || len(dataProperty.Value.Properties) == 0 {
+			// data 是一个简单类型或者没有嵌套属性
+			addSchemaTitleDesc[RSP](dataProperty)
+		} else {
+			// 2. 检查是否是 apiListResponse（有 items 和 total）
+			if itemsProperty, hasItems := dataProperty.Value.Properties["items"]; hasItems {
+				if totalProperty, hasTotal := dataProperty.Value.Properties["total"]; hasTotal && totalProperty != nil {
+					// 这是 apiListResponse 类型
+					if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+						addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
+					}
+				} else if summaryProperty, hasSummary := dataProperty.Value.Properties["summary"]; hasSummary && summaryProperty != nil {
+					// 3. 这是 apiBatchResponse 类型（有 items, options, summary）
+					if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+						addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
+					}
+				}
+			} else {
+				// 4. 可能是直接的 RSP 类型，但有嵌套属性
+				addSchemaTitleDesc[RSP](dataProperty)
+			}
+		}
 	}
 }
 
@@ -1797,7 +1847,10 @@ func addSchemaTitleDesc[T any](schemaRef *openapi3.SchemaRef) {
 	propertyDescriptions := make(map[string]string)
 
 	// Process model fields
-	typ := reflect.TypeOf(*new(T)).Elem()
+	typ := reflect.TypeOf(*new(T))
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
 	for i := range typ.NumField() {
 		field := typ.Field(i)
 		jsonTag := getFieldTag(field, consts.TAG_JSON)
