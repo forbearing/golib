@@ -35,6 +35,16 @@ var (
 	statusBadRequest = strconv.Itoa(response.CodeBadRequest.Status())
 )
 
+var removeFieldMap = map[string]bool{
+	"id":         true,
+	"created_at": true,
+	"created_by": true,
+	"updated_at": true,
+	"updated_by": true,
+	"deleted_at": true,
+	"deleted_by": true,
+}
+
 var idParameters []*openapi3.ParameterRef = []*openapi3.ParameterRef{
 	{
 		Value: &openapi3.Parameter{
@@ -138,6 +148,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		// }(),
 	}
 	addHeaderParameters(pathItem.Post)
+	removeFieldsFromRequestBody(pathItem.Post)
 }
 
 func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -294,6 +305,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		// }(),
 	}
 	addHeaderParameters(pathItem.Put)
+	removeFieldsFromRequestBody(pathItem.Put)
 }
 
 func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -757,6 +769,7 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		// }(),
 	}
 	addHeaderParameters(pathItem.Post)
+	removeFieldsFromBatchRequestBody(pathItem.Post)
 }
 
 func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -992,6 +1005,7 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		// }(),
 	}
 	addHeaderParameters(pathItem.Put)
+	removeFieldsFromBatchRequestBody(pathItem.Put)
 }
 
 func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -1115,6 +1129,7 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 		// }(),
 	}
 	addHeaderParameters(pathItem.Patch)
+	removeFieldsFromBatchRequestBody(pathItem.Patch)
 }
 
 func setImport[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -1408,6 +1423,226 @@ func setupBatchExample(schemaRef *openapi3.SchemaRef) {
 				schemaRef.Value.Example = map[string]any{
 					"items": []map[string]any{example},
 				}
+			}
+		}
+	}
+}
+
+// removeFieldsFromRequestBody 从单个 CRUD 操作的 RequestBody 中移除指定字段
+func removeFieldsFromRequestBody(op *openapi3.Operation, fieldsToRemove ...string) {
+	if op == nil || op.RequestBody == nil {
+		return
+	}
+
+	// 创建一个 map 方便查找
+	removeMap := make(map[string]bool)
+	for _, field := range fieldsToRemove {
+		removeMap[field] = true
+	}
+
+	// 如果默认没有传入要移除的字段，使用默认值
+	if len(fieldsToRemove) == 0 {
+		removeMap = removeFieldMap
+	}
+
+	// 处理 RequestBodyRef
+	var requestBody *openapi3.RequestBody
+
+	if op.RequestBody.Ref != "" {
+		// 如果是引用，需要从 components 中获取实际的 RequestBody
+		// 这里需要访问全局的 doc 对象
+		if doc.Components.RequestBodies != nil {
+			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
+			if rb, exists := doc.Components.RequestBodies[refKey]; exists && rb.Value != nil {
+				requestBody = rb.Value
+			}
+		}
+	} else if op.RequestBody.Value != nil {
+		requestBody = op.RequestBody.Value
+	}
+
+	if requestBody == nil || requestBody.Content == nil {
+		return
+	}
+
+	// 处理每个 content type
+	for contentType, mediaType := range requestBody.Content {
+		if mediaType.Schema == nil || mediaType.Schema.Value == nil {
+			continue
+		}
+
+		schema := mediaType.Schema.Value
+
+		// 移除 properties 中的字段
+		if schema.Properties != nil {
+			for field := range removeMap {
+				delete(schema.Properties, field)
+			}
+		}
+
+		// 移除 required 中的字段
+		if len(schema.Required) > 0 {
+			newRequired := []string{}
+			for _, req := range schema.Required {
+				if !removeMap[req] {
+					newRequired = append(newRequired, req)
+				}
+			}
+			schema.Required = newRequired
+		}
+
+		// 处理 example
+		if schema.Example != nil {
+			if exampleMap, ok := schema.Example.(map[string]any); ok {
+				for field := range removeMap {
+					delete(exampleMap, field)
+				}
+			}
+		}
+
+		// 更新 content
+		requestBody.Content[contentType] = mediaType
+	}
+}
+
+// removeFieldsFromBatchRequestBody 从批量 CRUD 操作的 RequestBody 中移除指定字段
+func removeFieldsFromBatchRequestBody(op *openapi3.Operation, fieldsToRemove ...string) {
+	if op == nil || op.RequestBody == nil {
+		return
+	}
+
+	// 创建一个 map 方便查找
+	removeMap := make(map[string]bool)
+	for _, field := range fieldsToRemove {
+		removeMap[field] = true
+	}
+
+	// 如果默认没有传入要移除的字段，使用默认值
+	if len(fieldsToRemove) == 0 {
+		removeMap = removeFieldMap
+	}
+
+	// 处理 RequestBodyRef
+	var requestBody *openapi3.RequestBody
+
+	if op.RequestBody.Ref != "" {
+		// 如果是引用，需要从 components 中获取实际的 RequestBody
+		if doc.Components.RequestBodies != nil {
+			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
+			if rb, exists := doc.Components.RequestBodies[refKey]; exists && rb.Value != nil {
+				requestBody = rb.Value
+			}
+		}
+	} else if op.RequestBody.Value != nil {
+		requestBody = op.RequestBody.Value
+	}
+
+	if requestBody == nil || requestBody.Content == nil {
+		return
+	}
+
+	// 处理每个 content type
+	for contentType, mediaType := range requestBody.Content {
+		if mediaType.Schema == nil || mediaType.Schema.Value == nil {
+			continue
+		}
+
+		schema := mediaType.Schema.Value
+
+		// 对于批量操作，需要处理 items 数组
+		if schema.Properties != nil {
+			if itemsProp, exists := schema.Properties["items"]; exists {
+				if itemsProp.Value != nil && itemsProp.Value.Items != nil && itemsProp.Value.Items.Value != nil {
+					itemSchema := itemsProp.Value.Items.Value
+
+					// 移除 items 中每个元素的字段
+					if itemSchema.Properties != nil {
+						for field := range removeMap {
+							delete(itemSchema.Properties, field)
+						}
+					}
+
+					// 移除 required 中的字段
+					if len(itemSchema.Required) > 0 {
+						newRequired := []string{}
+						for _, req := range itemSchema.Required {
+							if !removeMap[req] {
+								newRequired = append(newRequired, req)
+							}
+						}
+						itemSchema.Required = newRequired
+					}
+
+					// 处理 items 的 example
+					if itemSchema.Example != nil {
+						if exampleMap, ok := itemSchema.Example.(map[string]any); ok {
+							for field := range removeMap {
+								delete(exampleMap, field)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 处理整个 batch request 的 example
+		if schema.Example != nil {
+			if exampleMap, ok := schema.Example.(map[string]any); ok {
+				if items, exists := exampleMap["items"]; exists {
+					if itemsArray, ok := items.([]map[string]any); ok {
+						for _, item := range itemsArray {
+							for field := range removeMap {
+								delete(item, field)
+							}
+						}
+					} else if itemsArray, ok := items.([]any); ok {
+						for i, item := range itemsArray {
+							if itemMap, ok := item.(map[string]any); ok {
+								for field := range removeMap {
+									delete(itemMap, field)
+								}
+								itemsArray[i] = itemMap
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 更新 content
+		requestBody.Content[contentType] = mediaType
+	}
+}
+
+// 辅助函数：直接处理 schema，可以被上面两个函数调用
+func removeFieldsFromSchema(schema *openapi3.Schema, fieldsToRemove map[string]bool) {
+	if schema == nil {
+		return
+	}
+
+	// 移除 properties
+	if schema.Properties != nil {
+		for field := range fieldsToRemove {
+			delete(schema.Properties, field)
+		}
+	}
+
+	// 移除 required
+	if len(schema.Required) > 0 {
+		newRequired := []string{}
+		for _, req := range schema.Required {
+			if !fieldsToRemove[req] {
+				newRequired = append(newRequired, req)
+			}
+		}
+		schema.Required = newRequired
+	}
+
+	// 处理 example
+	if schema.Example != nil {
+		if exampleMap, ok := schema.Example.(map[string]any); ok {
+			for field := range fieldsToRemove {
+				delete(exampleMap, field)
 			}
 		}
 	}
