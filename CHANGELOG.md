@@ -2,6 +2,7 @@
 ## [Unreleased]
 
 ### Chore
+- update CHANGELOG.md
 - update examples
 - gofumpt format
 - apply gofumpt formatting fixes across repo
@@ -46,19 +47,20 @@
 ### Refactor
 - **codegen:** switch middlewarex to side-effect import
 - **config:** simplify Register/Get API, auto-drive config name, default to the lowcase name of struct name
-- **model:** implement `Empty` methods on value receiver
 - **model:** remove reflection-based request/response helpers
-- **openapi:** introduce reusable request/response components
+- **model:** implement `Empty` methods on value receiver
 - **openapi:** improve schema handling for request/response types
 - **openapi:** centralize schema registration with registerSchema
+- **openapi:** introduce reusable request/response components
 - **openapi:** generalize OpenAPI generators to accept REQ/RSP generics
-- **openapigen:** unify schema processing for requests & responses
 - **openapigen:** simplify response spec and tag generation
+- **openapigen:** make newRequestBody/newResponses generic and skip empty models
+- **openapigen:** unify schema processing for requests & responses
 - **openapigen:** simplify schema enrichment & field removal
 - **router:** simplify OpenAPI and docs endpoints
 - **router:** split API into Auth and Pub groups with middleware support
-- **types:** inline helper context constructors into `types` package
 - **types:** enhance ServiceContext with Writer and cookie support
+- **types:** inline helper context constructors into `types` package
 
 
 <a name="v0.7.0"></a>
