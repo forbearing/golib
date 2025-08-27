@@ -218,7 +218,6 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 }
 
 func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
-	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 	reqKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_UPDATE)
@@ -226,14 +225,6 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 	reqSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(REQ), nil)
 	rspSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
-
-	var err error
-	if !model.IsModelEmpty[REQ]() {
-		if reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil); err == nil {
-			setupExample(reqSchemaRef)
-			addSchemaTitleDesc[M](reqSchemaRef)
-		}
-	}
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.Update, typ),
@@ -309,7 +300,6 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 }
 
 func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
-	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 	reqKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_PATCH)
@@ -317,14 +307,6 @@ func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string,
 	reqSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(REQ), nil)
 	rspSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
-
-	var err error
-	if !model.IsModelEmpty[REQ]() {
-		if reqSchemaRef, err = gen.NewSchemaRefForValue(*new(REQ), nil); err == nil {
-			setupExample(reqSchemaRef)
-			addSchemaTitleDesc[M](reqSchemaRef)
-		}
-	}
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.Patch, typ),
@@ -392,6 +374,7 @@ func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string,
 		// }(),
 	}
 	addHeaderParameters(pathItem.Patch)
+	removeFieldsFromRequestBody(pathItem.Patch)
 }
 
 func setList[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
@@ -399,35 +382,30 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 	name := typ.Elem().Name()
 	reqKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_LIST)
 	rspKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_LIST)
-	reqSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(REQ), nil)
 
 	var rspSchemaRef *openapi3.SchemaRef
-	var err error
 	if model.AreTypesEqual[M, REQ, RSP]() {
-		if rspSchemaRef, err = openapi3gen.NewSchemaRefForValue(*new(apiListResponse[M]), nil); err == nil {
-			// Add field descriptions to response data schema
-			if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-				if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-					if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
-						if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
-							if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-								addSchemaTitleDesc[M](itemsProperty.Value.Items)
-							}
-						}
-					}
-				}
-			}
-		}
+		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiListResponse[M]), nil)
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+		// 			if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+		// 				if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 					addSchemaTitle[M](itemsProperty.Value.Items)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 	} else {
-		if rspSchemaRef, err = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil); err == nil {
-			if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-				if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-					addSchemaTitleDesc[RSP](dataProperty)
-				}
-			}
-		}
+		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		addSchemaTitle[RSP](dataProperty)
+		// 	}
+		// }
 	}
-	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
+	registerSchema[M, REQ, RSP](reqKey, rspKey, nil, rspSchemaRef)
 
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.List, typ),
@@ -538,21 +516,12 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 }
 
 func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, pathItem *openapi3.PathItem) {
-	gen := openapi3gen.NewGenerator()
 	typ := reflect.TypeOf(*new(M))
 	name := typ.Elem().Name()
 	reqKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_GET)
 	rspKey := fmt.Sprintf("%s_%s", strings.ToLower(name), consts.PHASE_GET)
-	reqSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(REQ), nil)
 	rspSchemaRef, _ := openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
-	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
-
-	var schemaRef *openapi3.SchemaRef
-	var err error
-	if schemaRef, err = gen.NewSchemaRefForValue(*new(M), nil); err == nil {
-		// Add field descriptions to schema
-		addSchemaTitleDesc[M](schemaRef)
-	}
+	registerSchema[M, REQ, RSP](reqKey, rspKey, nil, rspSchemaRef)
 
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.Get, typ),
@@ -627,31 +596,31 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	var rspSchemaRef *openapi3.SchemaRef
 	if model.AreTypesEqual[M, REQ, RSP]() {
 		reqSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
-		if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
-			if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-				addSchemaTitleDesc[M](itemsProperty.Value.Items)
-			}
-		}
+		// if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		// 	if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 		addSchemaTitle[M](itemsProperty.Value.Items)
+		// 	}
+		// }
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
-					if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
-						if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-							addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
-						}
-					}
-				}
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+		// 			if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+		// 				if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 					addSchemaTitle[RSP](itemsProperty.Value.Items)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 	} else {
 		reqSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(REQ), nil)
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(RSP), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				addSchemaTitleDesc[RSP](dataProperty)
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		addSchemaTitle[RSP](dataProperty)
+		// 	}
+		// }
 	}
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
 
@@ -799,20 +768,20 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	var rspSchemaRef *openapi3.SchemaRef
 	if model.AreTypesEqual[M, REQ, RSP]() {
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists && dataProperty.Value != nil && dataProperty.Value.Properties != nil {
-				if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-					addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
-				}
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists && dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+		// 		if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 			addSchemaTitle[RSP](itemsProperty.Value.Items)
+		// 		}
+		// 	}
+		// }
 	} else {
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(RSP), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				addSchemaTitleDesc[RSP](dataProperty)
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		addSchemaTitle[RSP](dataProperty)
+		// 	}
+		// }
 	}
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
 
@@ -896,30 +865,31 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 	var rspSchemaRef *openapi3.SchemaRef
 	if model.AreTypesEqual[M, REQ, RSP]() {
 		reqSchemaRef, _ = gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
-		if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
-			if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-				addSchemaTitleDesc[M](itemsProperty.Value.Items)
-			}
-		}
+		// if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		// 	if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 		addSchemaTitle[M](itemsProperty.Value.Items)
+		// 	}
+		// }
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiBatchResponse[REQ]), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
-					if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
-						if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-							addSchemaTitleDesc[REQ](itemsProperty.Value.Items)
-						}
-					}
-				}
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+		// 			if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+		// 				if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 					addSchemaTitle[REQ](itemsProperty.Value.Items)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 	} else {
+		reqSchemaRef, _ = gen.NewSchemaRefForValue(*new(REQ), nil)
 		rspSchemaRef, _ = openapi3gen.NewSchemaRefForValue(*new(apiResponse[RSP]), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				addSchemaTitleDesc[RSP](dataProperty)
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		addSchemaTitle[RSP](dataProperty)
+		// 	}
+		// }
 	}
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
 
@@ -1019,31 +989,31 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 	var rspSchemaRef *openapi3.SchemaRef
 	if model.AreTypesEqual[M, REQ, RSP]() {
 		reqSchemaRef, _ = gen.NewSchemaRefForValue(*new(apiBatchRequest[REQ]), nil)
-		if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
-			if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-				addSchemaTitleDesc[M](itemsProperty.Value.Items)
-			}
-		}
+		// if reqSchemaRef.Value != nil && reqSchemaRef.Value.Properties != nil {
+		// 	if itemsProperty, exists := reqSchemaRef.Value.Properties["items"]; exists && itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 		addSchemaTitle[M](itemsProperty.Value.Items)
+		// 	}
+		// }
 		rspSchemaRef, _ = gen.NewSchemaRefForValue(*new(apiBatchResponse[RSP]), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
-					if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
-						if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-							addSchemaTitleDesc[M](itemsProperty.Value.Items)
-						}
-					}
-				}
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		if dataProperty.Value != nil && dataProperty.Value.Properties != nil {
+		// 			if itemsProperty, exists := dataProperty.Value.Properties["items"]; exists {
+		// 				if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
+		// 					addSchemaTitle[M](itemsProperty.Value.Items)
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
 	} else {
 		reqSchemaRef, _ = gen.NewSchemaRefForValue(*new(REQ), nil)
 		rspSchemaRef, _ = gen.NewSchemaRefForValue(*new(RSP), nil)
-		if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
-			if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
-				addSchemaTitleDesc[RSP](dataProperty)
-			}
-		}
+		// if rspSchemaRef.Value != nil && rspSchemaRef.Value.Properties != nil {
+		// 	if dataProperty, exists := rspSchemaRef.Value.Properties["data"]; exists {
+		// 		addSchemaTitle[RSP](dataProperty)
+		// 	}
+		// }
 	}
 	registerSchema[M, REQ, RSP](reqKey, rspKey, reqSchemaRef, rspSchemaRef)
 
@@ -1232,7 +1202,7 @@ func registerSchema[M types.Model, REQ types.Request, RSP types.Response](reqKey
 		}
 		if _, ok := doc.Components.Schemas[name]; !ok {
 			if schemaRef, err := openapi3gen.NewSchemaRefForValue(*new(M), nil); err == nil {
-				addSchemaTitleDesc[M](schemaRef)
+				addSchemaTitle[M](schemaRef)
 				doc.Components.Schemas[name] = schemaRef
 			}
 		}
@@ -1307,7 +1277,7 @@ func processAllRequestTypes[REQ types.Request](reqSchemaRef *openapi3.SchemaRef)
 
 	// 如果是普通请求，直接处理
 	if reqSchemaRef.Value.Properties == nil || len(reqSchemaRef.Value.Properties) == 0 {
-		addSchemaTitleDesc[REQ](reqSchemaRef)
+		addSchemaTitle[REQ](reqSchemaRef)
 		return
 	}
 
@@ -1315,11 +1285,11 @@ func processAllRequestTypes[REQ types.Request](reqSchemaRef *openapi3.SchemaRef)
 	if itemsProperty, hasItems := reqSchemaRef.Value.Properties["items"]; hasItems {
 		if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
 			// 为批量请求的 items 添加注释
-			addSchemaTitleDesc[REQ](itemsProperty.Value.Items)
+			addSchemaTitle[REQ](itemsProperty.Value.Items)
 		}
 	} else {
 		// 普通请求
-		addSchemaTitleDesc[REQ](reqSchemaRef)
+		addSchemaTitle[REQ](reqSchemaRef)
 	}
 }
 
@@ -1336,24 +1306,24 @@ func processAllResponseTypes[RSP types.Response](rspSchemaRef *openapi3.SchemaRe
 		// 1. 如果 data 直接是 RSP 类型（普通的 apiResponse[RSP]）
 		if dataProperty.Value.Properties == nil || len(dataProperty.Value.Properties) == 0 {
 			// data 是一个简单类型或者没有嵌套属性
-			addSchemaTitleDesc[RSP](dataProperty)
+			addSchemaTitle[RSP](dataProperty)
 		} else {
 			// 2. 检查是否是 apiListResponse（有 items 和 total）
 			if itemsProperty, hasItems := dataProperty.Value.Properties["items"]; hasItems {
 				if totalProperty, hasTotal := dataProperty.Value.Properties["total"]; hasTotal && totalProperty != nil {
 					// 这是 apiListResponse 类型
 					if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-						addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
+						addSchemaTitle[RSP](itemsProperty.Value.Items)
 					}
 				} else if summaryProperty, hasSummary := dataProperty.Value.Properties["summary"]; hasSummary && summaryProperty != nil {
 					// 3. 这是 apiBatchResponse 类型（有 items, options, summary）
 					if itemsProperty.Value != nil && itemsProperty.Value.Items != nil {
-						addSchemaTitleDesc[RSP](itemsProperty.Value.Items)
+						addSchemaTitle[RSP](itemsProperty.Value.Items)
 					}
 				}
 			} else {
 				// 4. 可能是直接的 RSP 类型，但有嵌套属性
-				addSchemaTitleDesc[RSP](dataProperty)
+				addSchemaTitle[RSP](dataProperty)
 			}
 		}
 	}
@@ -1397,7 +1367,10 @@ func setupExample(schemaRef *openapi3.SchemaRef) {
 	props := schemaRef.Value.Properties
 	examples := make(map[string]any)
 	for k, v := range props {
-		if k == "created_at" || k == "created_by" || k == "updated_at" || k == "updated_by" || k == "id" {
+		// if k == "created_at" || k == "created_by" || k == "updated_at" || k == "updated_by" || k == "id" {
+		// 	continue
+		// }
+		if removeFieldMap[k] {
 			continue
 		}
 		if v.Value == nil || v.Value.Type == nil {
@@ -1440,7 +1413,10 @@ func setupBatchExample(schemaRef *openapi3.SchemaRef) {
 				// 为数组中的单个元素创建 example
 				example := make(map[string]any)
 				for propName, propRef := range v.Value.Items.Value.Properties {
-					if propName == "created_at" || propName == "created_by" || propName == "updated_at" || propName == "updated_by" || propName == "id" {
+					// if propName == "created_at" || propName == "created_by" || propName == "updated_at" || propName == "updated_by" || propName == "id" {
+					// 	continue
+					// }
+					if removeFieldMap[propName] {
 						continue
 					}
 
@@ -1830,8 +1806,8 @@ func getBaseModelDocs() map[string]string {
 	return baseModelDocsCache
 }
 
-// addSchemaTitleDesc adds field descriptions to schema properties
-func addSchemaTitleDesc[T any](schemaRef *openapi3.SchemaRef) {
+// addSchemaTitle adds field titles to schema properties
+func addSchemaTitle[T any](schemaRef *openapi3.SchemaRef) {
 	if schemaRef == nil || schemaRef.Value == nil || schemaRef.Value.Properties == nil {
 		return
 	}
@@ -1893,7 +1869,7 @@ func addSchemaTitleDesc[T any](schemaRef *openapi3.SchemaRef) {
 			if propRef.Value != nil {
 				// Create a new schema that's a copy of the original
 				newSchema := *propRef.Value
-				newSchema.Description = description
+				// newSchema.Description = description
 				newSchema.Title = description
 				// Create a new SchemaRef and update the Properties map
 				schemaRef.Value.Properties[propName] = &openapi3.SchemaRef{Value: &newSchema}
