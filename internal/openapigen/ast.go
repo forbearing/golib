@@ -10,6 +10,13 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
+)
+
+// structCommentCache caches parsed struct comments to avoid repeated parsing
+var (
+	structCommentCache = make(map[string]string)
+	structCommentMutex sync.RWMutex
 )
 
 // parseModelDocs
@@ -163,6 +170,100 @@ func containsType(filename, typeName string) bool {
 	// This is not a perfect solution, but it works for most cases
 	typeDecl := "type " + typeName + " struct"
 	return strings.Contains(string(content), typeDecl)
+}
+
+// parseStructComment parses the comment of the struct itself (not its fields)
+// Returns the struct's documentation comment
+// Results are cached to avoid repeated parsing
+func parseStructComment(t any) string {
+	typ := reflect.TypeOf(t)
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+
+	// Get the package path and name of the type
+	pkgPath := typ.PkgPath()
+	typeName := typ.Name()
+
+	if pkgPath == "" || typeName == "" {
+		// Silently handle invalid type cases
+		return ""
+	}
+
+	// Create cache key
+	cacheKey := pkgPath + "." + typeName
+
+	// Check cache first (read lock)
+	structCommentMutex.RLock()
+	if cached, exists := structCommentCache[cacheKey]; exists {
+		structCommentMutex.RUnlock()
+		return cached
+	}
+	structCommentMutex.RUnlock()
+
+	// Try to find the source file
+	sourceFile := findSourceFile(pkgPath, typeName)
+	if sourceFile == "" {
+		// Cache empty result and return
+		structCommentMutex.Lock()
+		structCommentCache[cacheKey] = ""
+		structCommentMutex.Unlock()
+		return ""
+	}
+
+	// Parse the source file
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, sourceFile, nil, parser.ParseComments)
+	if err != nil {
+		// Cache empty result and return
+		structCommentMutex.Lock()
+		structCommentCache[cacheKey] = ""
+		structCommentMutex.Unlock()
+		return ""
+	}
+
+	// Find the target struct
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+
+		for _, spec := range genDecl.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok || typeSpec.Name.Name != typeName {
+				continue
+			}
+
+			// Check if it's a struct
+			_, ok = typeSpec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+
+			// Get struct comment, prioritize typeSpec.Doc over genDecl.Doc
+			var comment string
+			if typeSpec.Doc != nil && len(typeSpec.Doc.List) > 0 {
+				comment = extractCommentText(typeSpec.Doc)
+			} else if genDecl.Doc != nil && len(genDecl.Doc.List) > 0 {
+				comment = extractCommentText(genDecl.Doc)
+			}
+
+			// Cache the result (write lock)
+			structCommentMutex.Lock()
+			structCommentCache[cacheKey] = comment
+			structCommentMutex.Unlock()
+
+			return comment
+		}
+	}
+
+	// Cache empty result as well
+	structCommentMutex.Lock()
+	structCommentCache[cacheKey] = ""
+	structCommentMutex.Unlock()
+
+	return ""
 }
 
 // extractCommentText extracts text content from comment group
