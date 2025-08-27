@@ -75,7 +75,7 @@ func Test_parseModelDocs(t *testing.T) {
 			m:    new(UserWithMultiLineDoc),
 			want: map[string]string{
 				"FullName": "User's full name Including first and last name",
-				"Address": "用户的详细地址信息 包括街道、城市、邮编等",
+				"Address":  "用户的详细地址信息 包括街道、城市、邮编等",
 			},
 		},
 	}

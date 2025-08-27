@@ -113,8 +113,9 @@ func StmtServiceRegister(serviceImport string, phase consts.Phase) *ast.ExprStmt
 
 // StmtRouterRegister creates a *ast.ExprStmt represents golang code like below:
 //
-//	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-func StmtRouterRegister(modelPkgName, modelName, reqName, rspName string, endpoint string, verb string) *ast.ExprStmt {
+//	router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group")
+//	router.Register[*model.Group, *model.Group, *model.Group](router.Pub(), "login")
+func StmtRouterRegister(modelPkgName, modelName, reqName, rspName string, router string, endpoint string, verb string) *ast.ExprStmt {
 	// If reqName is equal to modelName or reqName starts with *, then the reqExpr use StarExpr,
 	// otherwise use SelectorExpr
 	var reqExpr ast.Expr
@@ -171,7 +172,7 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, rspName string, endpoi
 				&ast.CallExpr{
 					Fun: &ast.SelectorExpr{
 						X:   ast.NewIdent("router"),
-						Sel: ast.NewIdent("API"),
+						Sel: ast.NewIdent(fmt.Sprintf("%s", router)),
 					},
 				},
 				&ast.BasicLit{

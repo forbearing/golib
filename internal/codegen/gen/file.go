@@ -205,8 +205,8 @@ import (
 )
 
 func Init() error {
-	router.Register[*model.Group, *model.Group, *model.Group](router.API(), "group")
-	router.Register[*model.User, *model.User, *model.User](router.API(), "user")
+	router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group")
+	router.Register[*model.User, *model.User, *model.User](router.Pub(), "user")
 	return nil
 }
 */
@@ -327,6 +327,7 @@ func BuildMainFile(projectName string) (string, error) {
 				Specs: []ast.Spec{
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/middlewarex")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},

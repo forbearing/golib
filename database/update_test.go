@@ -275,4 +275,3 @@ func TestDatabase_Update(t *testing.T) {
 		assert.Equal(t, originalIsActive, retrievedUser.IsActive)
 	})
 }
-

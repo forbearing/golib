@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/dsl"
 	"github.com/forbearing/golib/internal/codegen"
 	"github.com/forbearing/golib/internal/codegen/gen"
+	pkgnew "github.com/forbearing/golib/internal/codegen/new"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -44,15 +45,29 @@ func genRun() {
 		checkErr(err)
 	}
 
+	// Ensure required files exist
+	logSection("Ensure Required Files")
+	pkgnew.EnsureFileExists()
+
 	if !fileExists(modelDir) {
-		fmt.Fprintf(os.Stderr, "Error: model dir not found: %s\n", modelDir)
+		logError(fmt.Sprintf("model dir not found: %s", modelDir))
 		os.Exit(1)
 	}
 
+	// Scan all models
+	logSection("Scan Models")
 	allModels, err := codegen.FindModels(module, modelDir, serviceDir, excludes)
 	checkErr(err)
 	if len(allModels) == 0 {
+		fmt.Println(gray("  No models found, nothing to do"))
 		return
+	}
+	fmt.Printf("  %s %d models found\n", green("✔"), len(allModels))
+
+	// Record old service files list (if prune option is enabled)
+	var oldServiceFiles []string
+	if prune {
+		oldServiceFiles = scanExistingServiceFiles(serviceDir, allModels)
 	}
 
 	modelStmts := make([]ast.Stmt, 0)
@@ -61,6 +76,7 @@ func genRun() {
 	modelImportMap := make(map[string]struct{})
 	routerImportMap := make(map[string]struct{})
 	serviceImportMap := make(map[string]struct{})
+
 	for _, m := range allModels {
 		if m.Design.Enabled && m.Design.Migrate {
 			// If the ModelFileDir is "model" or "model/", the model package name is the same as the model name,
@@ -80,7 +96,6 @@ func genRun() {
 			if path, shouldImport := m.ModelImportPath(); shouldImport {
 				modelImportMap[path] = struct{}{}
 			}
-
 		}
 
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
@@ -91,6 +106,7 @@ func genRun() {
 		})
 	}
 
+	// Resolve import conflicts
 	serviceAliasMap := gen.ResolveImportConflicts(lo.Keys(serviceImportMap))
 	for _, m := range allModels {
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
@@ -104,9 +120,18 @@ func genRun() {
 					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
 				}
 			}
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, s, p.MethodName()))
+			if a.Public {
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, "Pub", s, p.MethodName()))
+			} else {
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, "Auth", s, p.MethodName()))
+			}
 		})
 	}
+
+	// ============================================================
+	// Generate model/service/router/main files
+	// ============================================================
+	logSection("Generate Files")
 
 	modelCode, err := gen.BuildModelFile("model", lo.Keys(modelImportMap), modelStmts...)
 	checkErr(err)
@@ -126,6 +151,11 @@ func genRun() {
 	mainCode, err := gen.BuildMainFile(module)
 	checkErr(err)
 	writeFileWithLog("main.go", mainCode)
+
+	// ============================================================
+	// Apply actions to services
+	// ============================================================
+	logSection("Apply Actions To Services")
 
 	fset := token.NewFileSet()
 	applyFile := func(filename string, code string, action *dsl.Action) {
@@ -171,5 +201,119 @@ func genRun() {
 				applyFile(filename, code, a)
 			}
 		})
+	}
+
+	// ============================================================
+	// Prune disabled service files
+	// ============================================================
+	if prune && len(oldServiceFiles) > 0 {
+		pruneServiceFiles(oldServiceFiles, allModels)
+	}
+
+	// ============================================================
+	// Completion message
+	// ============================================================
+	logSection("Done")
+	fmt.Printf("\n%s Code generation completed successfully!\n", green("🎉"))
+}
+
+// scanExistingServiceFiles scans existing service files in the service directory
+// Only includes files that match phase names (e.g., create.go, update.go, etc.)
+func scanExistingServiceFiles(serviceDir string, allModels []*gen.ModelInfo) []string {
+	var files []string
+
+	// Check if service directory exists
+	if _, err := os.Stat(serviceDir); os.IsNotExist(err) {
+		return files
+	}
+
+	// Get all valid phase names
+	validPhases := map[string]bool{
+		consts.PHASE_CREATE.Filename():      true,
+		consts.PHASE_DELETE.Filename():      true,
+		consts.PHASE_UPDATE.Filename():      true,
+		consts.PHASE_PATCH.Filename():       true,
+		consts.PHASE_LIST.Filename():        true,
+		consts.PHASE_GET.Filename():         true,
+		consts.PHASE_CREATE_MANY.Filename(): true,
+		consts.PHASE_DELETE_MANY.Filename(): true,
+		consts.PHASE_UPDATE_MANY.Filename(): true,
+		consts.PHASE_PATCH_MANY.Filename():  true,
+		consts.PHASE_IMPORT.Filename():      true,
+		consts.PHASE_EXPORT.Filename():      true,
+	}
+
+	// Walk through the service directory
+	err := filepath.Walk(serviceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".go") {
+			fileName := filepath.Base(path)
+			// Only include files that match phase names
+			if validPhases[fileName] {
+				files = append(files, path)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("Warning: failed to scan existing service files: %v\n", err)
+	}
+	return files
+}
+
+// pruneServiceFiles prunes disabled service files
+func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
+	// Get list of service files that should currently exist
+	currentServiceFiles := make(map[string]bool)
+	for _, m := range allModels {
+		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
+			if a.Enabled && a.Service {
+				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
+				dir = strings.TrimRight(dir, ".go")
+				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
+				currentServiceFiles[filename] = true
+			}
+		})
+	}
+
+	// Find files to delete (exist in old list but not in current list)
+	filesToDelete := make([]string, 0)
+	for _, oldFile := range oldServiceFiles {
+		if !currentServiceFiles[oldFile] {
+			filesToDelete = append(filesToDelete, oldFile)
+		}
+	}
+
+	if len(filesToDelete) == 0 {
+		fmt.Printf("  %s No disabled service files to prune\n", green("✔"))
+		return
+	}
+
+	// Display list of files to be deleted
+	fmt.Printf("\n%s Files to be deleted:\n", yellow("⚠"))
+	for _, file := range filesToDelete {
+		fmt.Printf("  %s %s\n", red("✘"), file)
+	}
+
+	// Ask user for confirmation
+	fmt.Printf("\n%s Do you want to delete these files? (y/N): ", cyan("?"))
+	var response string
+	fmt.Scanln(&response)
+
+	response = strings.ToLower(strings.TrimSpace(response))
+	if response != "y" && response != "yes" {
+		fmt.Printf("  %s Deletion cancelled\n", gray("→"))
+		return
+	}
+
+	// Execute deletion operation
+	for _, file := range filesToDelete {
+		if err := os.Remove(file); err != nil {
+			fmt.Printf("  %s Failed to delete %s: %v\n", red("✘"), file, err)
+		} else {
+			fmt.Printf("  %s Deleted %s\n", green("✔"), file)
+		}
 	}
 }

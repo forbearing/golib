@@ -214,4 +214,3 @@ func TestDatabase_Delete(t *testing.T) {
 		assert.Empty(t, retrievedCategory.ID)
 	})
 }
-
