@@ -24,6 +24,7 @@ var fileContentMap = map[string]string{
 	"service/service.go":         serviceContent,
 	"router/router.go":           routerContent,
 	"dao/.gitkeep":               "",
+	"provider/.gitkeep":          "",
 }
 
 // ============================================================
