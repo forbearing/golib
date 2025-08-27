@@ -233,8 +233,8 @@ func TestBuildMainFile(t *testing.T) {
 package main
 
 import (
-	"helloworld/configx"
-	"helloworld/cronjob"
+	_ "helloworld/configx"
+	_ "helloworld/cronjob"
 	_ "helloworld/middleware"
 	_ "helloworld/model"
 	"helloworld/router"
@@ -246,8 +246,6 @@ import (
 
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
-	RunOrDie(configx.Init)
-	RunOrDie(cronjob.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
