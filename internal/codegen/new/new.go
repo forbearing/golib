@@ -23,6 +23,7 @@ var fileContentMap = map[string]string{
 	"model/model.go":             modelContent,
 	"service/service.go":         serviceContent,
 	"router/router.go":           routerContent,
+	"dao/.gitkeep":               "",
 }
 
 // ============================================================
