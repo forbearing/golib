@@ -2,6 +2,75 @@
 ## [Unreleased]
 
 ### Chore
+- update examples
+- gofumpt format
+- apply gofumpt formatting fixes across repo
+- apply gofumpt formatting fixes across repo
+- update examples
+- **codegen:** correct initialization order in generated main
+- **deps:** downgrade `github.com/scylladb/gocqlx/v3` from v3.0.3 -> v3.0.1
+- **deps:** upgrade dependencies to latest version
+- **router:** remove debug logging from Init
+- **service:** chang warn -> debug when service not found
+
+### Ci
+- add gofumpt formatting check to workflow
+
+### Docs
+- **dsl:** improve DSL documentation and commentds
+- **model:** add detailed documentation for `Empty` marker type
+
+### Feat
+- **consts:** add Phase.Filename helper with tests
+- **docs:** add Stoplight Elements UI
+- **docs:** add Scalar API Reference UI
+- **dsl:** support `Public` flag in action design
+- **dsl:** add IsEmpty flag to Design for model.Empty detection
+- **middlware:** add function Register to register global middlewares, RegisterAuth to register auth middlewares
+- **types:** ServiceContext add Cookie()
+
+### Fix
+- **gen:** use Phase.Filename for valid service file detection
+- **middleware:** dynamically set allowed origin in cors
+- **model:** improve IsModelEmpty to handle empty structs
+- **model:** correct `AreTypesEqual` semantics for `Empty` models
+- **openapi:** skip schema registration for empty models
+- **openapi:** ensure models are always registered in Components.Schemas
+- **openapigen:** remove system fields from request bodies
+- **openapigen:** if struct only has model.Empty field, skip generate request doc
+
+### Perf
+- **openapi:** use compact JSON for OpenAPI doc response
+- **openapigen:** add concurrency safety and async schema registration
+
+### Refactor
+- **codegen:** switch middlewarex to side-effect import
+- **config:** simplify Register/Get API, auto-drive config name, default to the lowcase name of struct name
+- **model:** implement `Empty` methods on value receiver
+- **model:** remove reflection-based request/response helpers
+- **openapi:** introduce reusable request/response components
+- **openapi:** improve schema handling for request/response types
+- **openapi:** centralize schema registration with registerSchema
+- **openapi:** generalize OpenAPI generators to accept REQ/RSP generics
+- **openapigen:** unify schema processing for requests & responses
+- **openapigen:** simplify response spec and tag generation
+- **openapigen:** simplify schema enrichment & field removal
+- **router:** simplify OpenAPI and docs endpoints
+- **router:** split API into Auth and Pub groups with middleware support
+- **types:** inline helper context constructors into `types` package
+- **types:** enhance ServiceContext with Writer and cookie support
+
+
+<a name="v0.7.0"></a>
+## [v0.7.0] - 2025-08-20
+
+<a name="v0.7.0-beta.3"></a>
+## [v0.7.0-beta.3] - 2025-08-20
+
+<a name="list"></a>
+## [list] - 2025-08-20
+### Chore
+- update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
 - **model:** assert `Empty` implements `types.Model`
 
@@ -1590,7 +1659,10 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.0-beta.2...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.0...HEAD
+[v0.7.0]: https://github.com/forbearing/golib/compare/v0.7.0-beta.3...v0.7.0
+[v0.7.0-beta.3]: https://github.com/forbearing/golib/compare/list...v0.7.0-beta.3
+[list]: https://github.com/forbearing/golib/compare/v0.7.0-beta.2...list
 [v0.7.0-beta.2]: https://github.com/forbearing/golib/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/golib/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/golib/compare/v0.6.1...v0.6.2
