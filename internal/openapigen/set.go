@@ -1991,7 +1991,8 @@ func operationID(op consts.HTTPVerb, typ reflect.Type) string {
 
 func summary(path string, op consts.HTTPVerb, typ reflect.Type) string {
 	path = strings.TrimPrefix(path, `/api/`)
-	return strings.ReplaceAll(path, `/`, `_`)
+	path = strings.TrimSuffix(path, `/{id}`)
+	return strings.ReplaceAll(path, `/`, `_`) + "_" + string(op)
 
 	// Try to get struct comment first
 	var modelInstance any
