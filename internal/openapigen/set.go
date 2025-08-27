@@ -85,8 +85,8 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		Summary:     summary(consts.Create, typ),
 		Description: description(consts.Create, typ),
 		Tags:        tags(path, consts.Create, typ),
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(201, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](201, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{Ref: "#/components/requestBodies/" + reqKey},
 		// Responses:   openapi3.NewResponses(openapi3.WithStatus(201, &openapi3.ResponseRef{Ref: "#/components/responses/" + rspKey})),
 
@@ -165,7 +165,7 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 		Description: description(consts.Delete, typ),
 		Tags:        tags(path, consts.Delete, typ),
 		Parameters:  idParameters,
-		Responses:   newResponses(204, rspKey),
+		Responses:   newResponses[RSP](204, rspKey),
 		// Responses: func() *openapi3.Responses {
 		// 	var schemaRef204 *openapi3.SchemaRef
 		// 	var err error
@@ -232,8 +232,8 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		Description: description(consts.Update, typ),
 		Tags:        tags(path, consts.Update, typ),
 		Parameters:  idParameters,
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(200, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Description: fmt.Sprintf("The %s data to update", name),
@@ -314,8 +314,8 @@ func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string,
 		Description: description(consts.Patch, typ),
 		Tags:        tags(path, consts.Patch, typ),
 		Parameters:  idParameters,
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(200, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Description: fmt.Sprintf("Partial fields of %s to update", name),
@@ -412,7 +412,7 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 		Summary:     summary(consts.List, typ),
 		Description: description(consts.List, typ),
 		Tags:        tags(path, consts.List, typ),
-		Responses:   newResponses(200, rspKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// // Parameters: []*openapi3.ParameterRef{
 		// // 	{
 		// // 		Value: &openapi3.Parameter{
@@ -529,7 +529,7 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 		Description: description(consts.Get, typ),
 		Tags:        tags(path, consts.Get, typ),
 		Parameters:  idParameters,
-		Responses:   newResponses(200, rspKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// Responses: func() *openapi3.Responses {
 		// 	var schemaRef200 *openapi3.SchemaRef
 		// 	var err error
@@ -659,8 +659,8 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(consts.CreateMany, typ),
 		Description: description(consts.CreateMany, typ),
 		Tags:        tags(path, consts.CreateMany, typ),
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(201, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](201, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Description: fmt.Sprintf("Request body for batch creating %s", name),
@@ -790,8 +790,8 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(consts.DeleteMany, typ),
 		Description: description(consts.DeleteMany, typ),
 		Tags:        tags(path, consts.DeleteMany, typ),
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(204, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](204, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Required:    true,
@@ -898,8 +898,8 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(consts.UpdateMany, typ),
 		Description: description(consts.UpdateMany, typ),
 		Tags:        tags(path, consts.UpdateMany, typ),
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(200, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Description: fmt.Sprintf("Request body for batch updating %s", name),
@@ -1022,8 +1022,8 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 		Summary:     summary(consts.PatchMany, typ),
 		Description: description(consts.PatchMany, typ),
 		Tags:        tags(path, consts.PatchMany, typ),
-		RequestBody: newRequestBody(reqKey),
-		Responses:   newResponses(200, rspKey),
+		RequestBody: newRequestBody[REQ](reqKey),
+		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
 		// 	Value: &openapi3.RequestBody{
 		// 		Description: fmt.Sprintf("Request body for batch partial updating %s", name),
@@ -2090,13 +2090,19 @@ func fieldType2openapiType(field reflect.StructField) *openapi3.Types {
 	}
 }
 
-func newRequestBody(reqKey string) *openapi3.RequestBodyRef {
+func newRequestBody[REQ types.Request](reqKey string) *openapi3.RequestBodyRef {
+	if model.IsModelEmpty[REQ]() {
+		return nil
+	}
 	return &openapi3.RequestBodyRef{
 		Ref: "#/components/requestBodies/" + reqKey,
 	}
 }
 
-func newResponses(status int, rspKey string) *openapi3.Responses {
+func newResponses[RSP types.Response](status int, rspKey string) *openapi3.Responses {
+	if model.IsModelEmpty[RSP]() {
+		return nil
+	}
 	return openapi3.NewResponses(openapi3.WithStatus(status, &openapi3.ResponseRef{Ref: "#/components/responses/" + rspKey}))
 }
 
