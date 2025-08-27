@@ -300,7 +300,7 @@ package main
 
 import (
 	"helloworld/configx"
-	"helloworld/cronjobx"
+	"helloworld/cronjob"
 	_ "helloworld/model"
 	"helloworld/router"
 	"helloworld/service"
@@ -312,7 +312,7 @@ import (
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
-	RunOrDie(cronjobx.Init)
+	RunOrDie(cronjob.Init)
 	RunOrDie(service.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
@@ -326,8 +326,8 @@ func BuildMainFile(projectName string) (string, error) {
 				Tok: token.IMPORT,
 				Specs: []ast.Spec{
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjobx")}},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/middlewarex")}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjob")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/middleware")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
@@ -370,7 +370,7 @@ func BuildMainFile(projectName string) (string, error) {
 								Fun: ast.NewIdent("RunOrDie"),
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
-										X:   ast.NewIdent("cronjobx"),
+										X:   ast.NewIdent("cronjob"),
 										Sel: ast.NewIdent("Init"),
 									},
 								},

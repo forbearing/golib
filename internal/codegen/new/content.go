@@ -31,8 +31,8 @@ package main
 
 import (
 	"%s/configx"
-	"%s/cronjobx"
-	_ "%s/middlewarex"
+	"%s/cronjob"
+	_ "%s/middleware"
 	_ "%s/model"
 	"%s/router"
 	_ "%s/service"
@@ -44,7 +44,7 @@ import (
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
 	RunOrDie(configx.Init)
-	RunOrDie(cronjobx.Init)
+	RunOrDie(cronjob.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
@@ -57,14 +57,14 @@ func Init() error {
 }
 `
 
-const cronjobxContent = `package cronjobx
+const cronjobContent = `package cronjob
 
 func Init() error {
 	return nil
 }
 `
 
-const middlewarexContent = `package middlewarex
+const middlewareContent = `package middleware
 
 func init() {
 }
