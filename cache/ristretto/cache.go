@@ -50,7 +50,7 @@ func Cache[T any]() types.Cache[T] {
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
-	c.c.Set(key, value, 1)
+	c.c.SetWithTTL(key, value, 1, ttl)
 }
 
 func (c *cache[T]) Get(key string) (T, bool) {
