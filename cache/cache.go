@@ -30,4 +30,5 @@ func Init() error {
 	)
 }
 
-func Cache[T any]() types.Cache[T] { return lrue.Cache[T]() }
+func Cache[T any]() types.Cache[T]          { return lrue.Cache[T]() }
+func ExpirableCache[T any]() types.Cache[T] { return fastcache.Cache[T]() }
