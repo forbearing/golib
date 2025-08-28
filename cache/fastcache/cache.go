@@ -45,7 +45,7 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
+func (c *cache[T]) Set(key string, value T, _ time.Duration) {
 	val, err := util.Marshal(value)
 	if err != nil {
 		zap.S().Error(err)
