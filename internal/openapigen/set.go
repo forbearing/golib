@@ -1993,10 +1993,21 @@ func summary(path string, op consts.HTTPVerb, typ reflect.Type) string {
 	path = strings.TrimPrefix(path, `/api/`)
 	path = strings.TrimSuffix(path, `/{id}`)
 	items := strings.Split(path, `/`)
+
 	if len(items) > 1 { // trim the first segment
 		items = items[1:]
 	}
-	path = strings.Join(items, `/`)
+
+	// remove the segment that starts with ":"
+	filtered := make([]string, 0, len(items))
+	for _, seg := range items {
+		if seg == "" || strings.HasPrefix(seg, ":") {
+			continue
+		}
+		filtered = append(filtered, seg)
+	}
+
+	path = strings.Join(filtered, `/`)
 	return strings.ReplaceAll(path, `/`, `_`) + "_" + string(op)
 
 	// Try to get struct comment first
