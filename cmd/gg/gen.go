@@ -196,7 +196,7 @@ func genRun() {
 				checkErr(err)
 				// code = gen.MethodAddComments(code, m.ModelName)
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
-				dir = strings.TrimRight(dir, ".go")
+				dir = strings.TrimSuffix(dir, ".go")
 				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
 				applyFile(filename, code, a)
 			}
@@ -271,7 +271,7 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
 			if a.Enabled && a.Service {
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
-				dir = strings.TrimRight(dir, ".go")
+				dir = strings.TrimSuffix(dir, ".go")
 				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
 				currentServiceFiles[filename] = true
 			}

@@ -40,7 +40,7 @@ type ModelInfo struct {
 
 func (m *ModelInfo) ServiceImportPath(modelDir, serviceDir string) string {
 	path := strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
-	path = strings.TrimRight(path, ".go")
+	path = strings.TrimSuffix(path, ".go")
 	return path
 }
 
