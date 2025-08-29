@@ -49,10 +49,11 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 		return newPathItem
 	}
 
-	pathid := path + "/{id}"
-	pathbatch := path + "/batch"
-	pathipt := path + "/import"
-	pathexpt := path + "/export"
+	// pathid := path + "/:id"
+	pathid := path
+	pathbatch := path
+	pathipt := path
+	pathexpt := path
 
 	docMutex.Lock()
 	pathItem := getOrCreate(path)
