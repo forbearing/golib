@@ -18,6 +18,9 @@ type Node[K comparable, V any] struct {
 	count    int  // count is the number of keys that start with this node.
 }
 
+func (n *Node[K, V]) Value() V                    { return n.value }
+func (n *Node[K, V]) Children() map[K]*Node[K, V] { return n.children }
+
 func (n *Node[K, V]) clone() *Node[K, V] {
 	if n == nil {
 		return nil
@@ -63,13 +66,12 @@ func New[K comparable, V any](ops ...Option[K, V]) (*Trie[K, V], error) {
 	return t, nil
 }
 
+func (t *Trie[K, V]) Root() *Node[K, V] { return t.root }
+
 // Put inserts or updates a keys-value pair into the trie.
 // Returns true if the key was inserted,
 // false if the key already exists and value wa updated.
 func (t *Trie[K, V]) Put(keys []K, val V) bool {
-	if len(keys) == 0 {
-		return false
-	}
 	if t.safe {
 		t.mu.Lock()
 		defer t.mu.Unlock()
@@ -111,9 +113,6 @@ func (t *Trie[K, V]) put(keys []K, val V) bool {
 // Get retrives the value associated with the given keys.
 // Returns the value and true if found, zero value and false if not foud.
 func (t *Trie[K, V]) Get(keys []K) (v V, ok bool) {
-	if len(keys) == 0 {
-		return v, false
-	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
@@ -629,21 +628,23 @@ func (t *Trie[K, V]) _range(node *Node[K, V], path []K, fn func([]K, V) bool) bo
 //  2. IP routing: finding the most specific network prefix for an IP
 //  3. Word segmentation: finding the longest dictionary word in a string
 func (t *Trie[K, V]) LongestPrefix(keys []K) ([]K, V, bool) {
+	if len(keys) == 0 {
+		return nil, *new(V), false
+	}
 	if t.safe {
 		t.mu.RLock()
 		defer t.mu.RUnlock()
 	}
+
 	if t.root == nil {
-		var v V
-		return nil, v, false
+		return nil, *new(V), false
 	}
 
 	curr := t.root
-	lastMatch := struct {
-		Keys  []K
-		value V
-		found bool
-	}{}
+	longestPrefix := make([]K, 0)
+	longestValue := *new(V)
+	found := false
+
 	for i, k := range keys {
 		child, exists := curr.children[k]
 		if !exists {
@@ -651,16 +652,64 @@ func (t *Trie[K, V]) LongestPrefix(keys []K) ([]K, V, bool) {
 		}
 		curr = child
 		if curr.hasValue {
-			lastMatch.Keys = keys[:i+1]
-			lastMatch.value = curr.value
-			lastMatch.found = true
+			longestPrefix = keys[:i+1]
+			longestValue = curr.value
+			found = true
 		}
 	}
-	if !lastMatch.found {
-		var v V
-		return nil, v, false
+
+	return longestPrefix, longestValue, found
+}
+
+// PathAncestors returns all ancestor nodes (including the target node) from root to the given path.
+// This is useful for collecting parameters from all levels in a hierarchical structure.
+// Returns a slice of KeysValue where each entry represents an ancestor node with its path and value.
+func (t *Trie[K, V]) PathAncestors(keys []K) []KeysValue[K, V] {
+	if len(keys) == 0 {
+		return nil
 	}
-	return lastMatch.Keys, lastMatch.value, true
+	if t.safe {
+		t.mu.RLock()
+		defer t.mu.RUnlock()
+	}
+
+	if t.root == nil {
+		return nil
+	}
+
+	ancestors := make([]KeysValue[K, V], 0)
+	curr := t.root
+	currentPath := make([]K, 0)
+
+	// Check if root has value
+	if curr.hasValue {
+		ancestors = append(ancestors, KeysValue[K, V]{
+			Keys:  make([]K, 0), // empty path for root
+			Value: curr.value,
+		})
+	}
+
+	// Traverse the path and collect all ancestors with values
+	for _, k := range keys {
+		child, exists := curr.children[k]
+		if !exists {
+			break // Path doesn't exist, stop here
+		}
+		curr = child
+		currentPath = append(currentPath, k)
+
+		// If this node has a value, add it to ancestors
+		if curr.hasValue {
+			pathCopy := make([]K, len(currentPath))
+			copy(pathCopy, currentPath)
+			ancestors = append(ancestors, KeysValue[K, V]{
+				Keys:  pathCopy,
+				Value: curr.value,
+			})
+		}
+	}
+
+	return ancestors
 }
 
 // String returns a string representation of the trie.

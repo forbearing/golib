@@ -341,3 +341,122 @@ func TestTrie_LongestPrefix(t *testing.T) {
 		assert.True(t, ok)
 	}
 }
+
+func TestTrie_PathAncestors(t *testing.T) {
+	{
+		// Router hierarchy example
+		router, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		router.Put([]rune("/"), "Root Handler")
+		router.Put([]rune("/api"), "API Handler")
+		router.Put([]rune("/api/users"), "Users Handler")
+		router.Put([]rune("/api/users/profiles"), "Profiles Handler")
+
+		path := []rune("/api/users/profiles")
+		ancestors := router.PathAncestors(path)
+		assert.Len(t, ancestors, 4)
+
+		// Check root
+		assert.Equal(t, []rune("/"), ancestors[0].Keys)
+		assert.Equal(t, "Root Handler", ancestors[0].Value)
+
+		// Check /api
+		assert.Equal(t, []rune("/api"), ancestors[1].Keys)
+		assert.Equal(t, "API Handler", ancestors[1].Value)
+
+		// Check /api/users
+		assert.Equal(t, []rune("/api/users"), ancestors[2].Keys)
+		assert.Equal(t, "Users Handler", ancestors[2].Value)
+
+		// Check /api/users/profiles
+		assert.Equal(t, []rune("/api/users/profiles"), ancestors[3].Keys)
+		assert.Equal(t, "Profiles Handler", ancestors[3].Value)
+	}
+
+	{
+		// File system hierarchy example
+		fs, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fs.Put([]rune("home"), "Home Directory")
+		fs.Put([]rune("home/user"), "User Directory")
+		fs.Put([]rune("home/user/docs"), "Documents Directory")
+
+		path := []rune("home/user/docs/file.txt")
+		ancestors := fs.PathAncestors(path)
+		assert.Len(t, ancestors, 3)
+
+		assert.Equal(t, []rune("home"), ancestors[0].Keys)
+		assert.Equal(t, "Home Directory", ancestors[0].Value)
+
+		assert.Equal(t, []rune("home/user"), ancestors[1].Keys)
+		assert.Equal(t, "User Directory", ancestors[1].Value)
+
+		assert.Equal(t, []rune("home/user/docs"), ancestors[2].Keys)
+		assert.Equal(t, "Documents Directory", ancestors[2].Value)
+	}
+
+	{
+		// Empty path test
+		trie, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		ancestors := trie.PathAncestors(nil)
+		assert.Nil(t, ancestors)
+	}
+
+	{
+		// Non-existent path test
+		trie, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		trie.Put([]rune("abc"), "ABC")
+		ancestors := trie.PathAncestors([]rune("xyz"))
+		assert.Empty(t, ancestors)
+	}
+
+	{
+		// Partial path with gaps test
+		trie, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		trie.Put([]rune("a"), "A")
+		// Skip "ab" - no value
+		trie.Put([]rune("abc"), "ABC")
+
+		ancestors := trie.PathAncestors([]rune("abc"))
+		assert.Len(t, ancestors, 2)
+
+		assert.Equal(t, []rune("a"), ancestors[0].Keys)
+		assert.Equal(t, "A", ancestors[0].Value)
+
+		assert.Equal(t, []rune("abc"), ancestors[1].Keys)
+		assert.Equal(t, "ABC", ancestors[1].Value)
+	}
+
+	{
+		// Root with value test
+		trie, err := trie.New[rune, string]()
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Put empty slice for root
+		trie.Put([]rune{}, "Root")
+		trie.Put([]rune("a"), "A")
+
+		ancestors := trie.PathAncestors([]rune("a"))
+		assert.Len(t, ancestors, 2)
+
+		assert.Equal(t, []rune{}, ancestors[0].Keys)
+		assert.Equal(t, "Root", ancestors[0].Value)
+
+		assert.Equal(t, []rune("a"), ancestors[1].Keys)
+		assert.Equal(t, "A", ancestors[1].Value)
+	}
+}
