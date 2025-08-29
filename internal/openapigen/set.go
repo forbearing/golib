@@ -1998,10 +1998,13 @@ func summary(path string, op consts.HTTPVerb, typ reflect.Type) string {
 		items = items[1:]
 	}
 
-	// remove the segment that starts with ":"
+	// remove the segment that starts with ":" or wrapped with {}
 	filtered := make([]string, 0, len(items))
 	for _, seg := range items {
 		if seg == "" || strings.HasPrefix(seg, ":") {
+			continue
+		}
+		if strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}") {
 			continue
 		}
 		filtered = append(filtered, seg)
