@@ -109,22 +109,41 @@ func genRun() {
 	// Resolve import conflicts
 	serviceAliasMap := gen.ResolveImportConflicts(lo.Keys(serviceImportMap))
 	for _, m := range allModels {
-		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
-			if a.Service {
+		m.Design.Range(func(edp string, action *dsl.Action, phase consts.Phase) {
+			if action.Service {
 				if alias := serviceAliasMap[m.ServiceImportPath(modelDir, serviceDir)]; len(alias) > 0 {
 					// alias import pacakge, eg:
 					// pkg1_user "service/pkg1/user"
 					// pkg2_user "service/pkg2/user"
-					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, p.RoleName()), p))
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, phase.RoleName()), phase))
 				} else {
-					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), p.RoleName()), p))
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), phase.RoleName()), phase))
 				}
 			}
-			if a.Public {
-				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, "Pub", s, p.MethodName()))
-			} else {
-				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, a.Payload, a.Result, "Auth", s, p.MethodName()))
+			route := "Auth"
+			if action.Public {
+				route = "Pub"
 			}
+			// If the phase is matched, the model endpoint will append the param, eg:
+			// Endpoint: tenant, param is ":tenant", new endpoint is "tenant/:tenant"
+			// Endpoint: tenant, param is ":id", new endpoint is "tenant/:id"
+			switch phase {
+			case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+				if len(m.Design.Param) == 0 {
+					edp = filepath.Join(edp, ":id") // empty param will append default ":id" to endpoint.
+				} else {
+					edp = filepath.Join(edp, m.Design.Param)
+				}
+			case consts.PHASE_CREATE_MANY, consts.PHASE_DELETE_MANY, consts.PHASE_UPDATE_MANY, consts.PHASE_PATCH_MANY:
+				edp = filepath.Join(edp, "batch")
+			case consts.PHASE_IMPORT:
+				edp = filepath.Join(edp, "import")
+			case consts.PHASE_EXPORT:
+				edp = filepath.Join(edp, "export")
+
+			}
+
+			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, phase.MethodName()))
 		})
 	}
 
