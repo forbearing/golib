@@ -268,8 +268,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 
 		// Parse "Enabled()".
 		if funcName == "Enabled" && len(call.Args) == 1 {
-			arg, ok := call.Args[0].(*ast.Ident)
-			if ok && arg != nil {
+			if arg, ok := call.Args[0].(*ast.Ident); ok && arg != nil {
 				defaults.Enabled = arg.Name == "true"
 			}
 		}
@@ -285,6 +284,17 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		if funcName == "Migrate" && len(call.Args) == 1 {
 			if arg, ok := call.Args[0].(*ast.Ident); ok && arg != nil {
 				defaults.Migrate = arg.Name == "true"
+			}
+		}
+
+		// Parse "Param()".
+		if funcName == "Param" && len(call.Args) == 1 {
+			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
+				defaults.Param = trimQuote(arg.Value)
+				defaults.Param = strings.TrimFunc(defaults.Param, func(r rune) bool {
+					return r == ' ' || r == '{' || r == '}' || r == '[' || r == ']' || r == ':'
+				})
+				defaults.Param = ":" + defaults.Param
 			}
 		}
 

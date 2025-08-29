@@ -21,6 +21,7 @@ func (User) Design() {
 
 	// Default to true,
 	Migrate(true)
+	Param("user")
 
 	// Custom create action request "Payload" and response "Result".
 	// Default payload and result is the model name.
@@ -41,6 +42,10 @@ func (User) Design() {
 	})
 
 	Delete(func() {
+		Enabled(true)
+	})
+
+	List(func() {
 		Enabled(true)
 	})
 }

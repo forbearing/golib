@@ -64,6 +64,13 @@ func Enabled(bool) {}
 // Example: Endpoint("users") for a User model
 func Endpoint(string) {}
 
+// Param defines a path parameter for the model's API routes.
+// This creates dynamic route segments by inserting parameter placeholders into the URL path.
+// The parameter name will be prefixed with ':' in the generated routes.
+// Example: Param("app") transforms /api/app/env to /api/app/:app/env
+// Multiple parameters can be defined to create nested dynamic routes.
+func Param(string) {}
+
 // Migrate controls whether database migration should be performed for this model.
 // When true, the model's table structure will be created/updated in the database.
 // Default: false
@@ -151,6 +158,19 @@ type Design struct {
 	// Used by the router to construct API endpoints.
 	Endpoint string
 
+	// Param contains the path parameter name for dynamic routing.
+	// The parameter will be inserted as ":param" in the generated route paths.
+	//
+	// Example: Namespace params is ":ns"
+	// Transfer api: /api/config/namespaces/app -> /api/configs/namespaces/:ns/app
+	//
+	// Example: App params is ":app"
+	// Transfer api: /api/config/namespaces/:ns/app/env -> /api/configs/namespaces/:ns/app/:app/env
+	// Transfer api: /api/config/namespaces/:ns/app/file -> /api/configs/namespaces/:ns/app/:app/file
+	//
+	// Default: ""
+	Param string
+
 	// Migrate indicates whether database migration should be performed.
 	// When true, the model's table structure will be created/updated.
 	// Default: false
@@ -193,7 +213,7 @@ type Design struct {
 //	design.Range(func(endpoint string, action *Action, phase consts.Phase) {
 //		fmt.Printf("Generating %s for %s\n", phase.MethodName(), endpoint)
 //	})
-func (d *Design) Range(fn func(string, *Action, consts.Phase)) {
+func (d *Design) Range(fn func(endpoiint string, action *Action, phase consts.Phase)) {
 	rangeAction(d, fn)
 }
 
@@ -228,6 +248,7 @@ type Action struct {
 var methodList = []string{
 	"Enabled",
 	"Endpoint",
+	"Param",
 	"Migrate",
 	"Payload",
 	"Result",

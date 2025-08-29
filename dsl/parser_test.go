@@ -400,12 +400,13 @@ func TestParse(t *testing.T) {
 				"User": {
 					Enabled:    true,
 					Endpoint:   "user2",
+					Param:      ":user",
 					Migrate:    true,
 					Create:     &Action{Enabled: true, Service: false, Public: true, Payload: "User", Result: "*User"},
 					Delete:     &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "*User"},
 					Update:     &Action{Enabled: false, Service: true, Public: false, Payload: "*User", Result: "User"},
 					Patch:      &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
-					List:       &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
+					List:       &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "*User"},
 					Get:        &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
 					CreateMany: &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
 					DeleteMany: &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
@@ -424,6 +425,7 @@ func TestParse(t *testing.T) {
 				"User2": {
 					Enabled:    false,
 					Endpoint:   "user2",
+					Param:      ":user",
 					Migrate:    false,
 					Create:     &Action{Enabled: false, Service: true, Public: false, Payload: "User2", Result: "*User3"},
 					Delete:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
