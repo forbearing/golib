@@ -26,6 +26,7 @@ func Init() error {
 	router.Register[*env.Item, *env.Item, *env.Item](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env/items/:key", consts.Patch)
 	router.Register[*env.Item, *env.Item, *env.ItemRsp](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env/items", consts.List)
 	router.Register[*env.Item, *env.Item, *env.Item](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env/items/:key", consts.Get)
+	router.Register[*env.ItemParse, *env.ItemParse, *env.ItemParseRsp](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env/items-parse", consts.Create)
 	router.Register[*app.Env, *app.Env, *app.Env](router.Auth(), "config/namespaces/:ns/apps/:app/envs", consts.Create)
 	router.Register[*app.Env, *app.Env, *app.Env](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env", consts.Delete)
 	router.Register[*app.Env, *app.Env, *app.Env](router.Auth(), "config/namespaces/:ns/apps/:app/envs/:env", consts.Update)
