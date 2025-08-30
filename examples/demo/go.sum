@@ -130,6 +130,8 @@ github.com/elastic/go-elasticsearch/v8 v8.19.0 h1:VmfBLNRORY7RZL+9hTxBD97ehl9H8N
 github.com/elastic/go-elasticsearch/v8 v8.19.0/go.mod h1:F3j9e+BubmKvzvLjNui/1++nJuJxbkhHefbaT0kFKGY=
 github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
+github.com/forbearing/golib v0.7.1-0.20250830061613-a7d20f752344 h1:U8uSM+oNPyJjmPU0p1NgoeKWHtgETZ9yEQrI4P2Ysm4=
+github.com/forbearing/golib v0.7.1-0.20250830061613-a7d20f752344/go.mod h1:RTjYNudFWmaWyhevZTaSSlL6AYNqYTNMW1HGTFdd0i4=
 github.com/forbearing/golib v0.7.1 h1:nLg+J92sRn6bKYtraCLs51xEZs0x3ytRXdujJxENjGg=
 github.com/forbearing/golib v0.7.1/go.mod h1:RTjYNudFWmaWyhevZTaSSlL6AYNqYTNMW1HGTFdd0i4=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
