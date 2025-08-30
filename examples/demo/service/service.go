@@ -4,6 +4,7 @@ package service
 import (
 	"demo/service/config/namespace/app"
 	"demo/service/config/namespace/app/env/item"
+	"demo/service/config/namespace/app/env/itemparse"
 
 	"github.com/forbearing/golib/service"
 	"github.com/forbearing/golib/types/consts"
@@ -11,5 +12,6 @@ import (
 
 func init() {
 	service.Register[*item.Lister](consts.PHASE_LIST)
+	service.Register[*itemparse.Creator](consts.PHASE_CREATE)
 	service.Register[*app.Lister](consts.PHASE_LIST)
 }

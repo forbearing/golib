@@ -59,6 +59,10 @@ func performArchitectureCheck() []string {
 	if fileExists(modelDir) {
 		modelViolations := checkModelDependencies(modelDir)
 		violations = append(violations, modelViolations...)
+
+		// // Check model singular naming
+		// singularViolations := checkModelSingularNaming(modelDir)
+		// violations = append(violations, singularViolations...)
 	}
 
 	return violations
@@ -82,6 +86,18 @@ func genRun() {
 		os.Exit(1)
 	}
 	fmt.Printf("  %s No architecture violations found\n", green("✔"))
+
+	// Model package naming check
+	logSection("Model Package Naming Check")
+	packageViolations := checkModelPackageNaming(modelDir)
+	if len(packageViolations) > 0 {
+		fmt.Printf("  %s Package naming violations found, code generation aborted:\n", red("✘"))
+		for _, violation := range packageViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		os.Exit(1)
+	}
+	fmt.Printf("  %s No package naming violations found\n", green("✔"))
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
@@ -130,8 +146,7 @@ func genRun() {
 			if m.ModelPkgName == strings.TrimRight(m.ModelFileDir, "/") {
 				modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
 			} else {
-				pkgName := strings.Split(m.ModelFileDir, "/")[1]
-				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", pkgName, m.ModelName)))
+				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", m.ModelPkgName, m.ModelName)))
 			}
 
 			if path, shouldImport := m.ModelImportPath(); shouldImport {
@@ -348,6 +363,8 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 
 	if len(filesToDelete) == 0 {
 		fmt.Printf("  %s No disabled service files to prune\n", green("✔"))
+		// Still check for empty directories even if no files to delete
+		removeEmptyDirectories(serviceDir)
 		return
 	}
 
@@ -374,6 +391,73 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 			fmt.Printf("  %s Failed to delete %s: %v\n", red("✘"), file, err)
 		} else {
 			fmt.Printf("  %s Deleted %s\n", green("✔"), file)
+		}
+	}
+
+	// Remove empty directories after deleting files
+	removeEmptyDirectories(serviceDir)
+}
+
+// removeEmptyDirectories recursively removes empty directories starting from the given root directory
+func removeEmptyDirectories(rootDir string) {
+	filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Continue walking even if there's an error
+		}
+
+		// Skip the root directory itself
+		if path == rootDir {
+			return nil
+		}
+
+		// Only process directories
+		if !info.IsDir() {
+			return nil
+		}
+
+		// Check if directory is empty
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return nil // Continue if we can't read the directory
+		}
+
+		// If directory is empty, remove it
+		if len(entries) == 0 {
+			if err := os.Remove(path); err == nil {
+				fmt.Printf("  %s Removed empty directory %s\n", green("✔"), path)
+			}
+		}
+
+		return nil
+	})
+
+	// Run multiple passes to handle nested empty directories
+	// After removing a directory, its parent might become empty
+	for i := 0; i < 3; i++ {
+		emptyDirsFound := false
+		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || path == rootDir || !info.IsDir() {
+				return nil
+			}
+
+			entries, err := os.ReadDir(path)
+			if err != nil {
+				return nil
+			}
+
+			if len(entries) == 0 {
+				if err := os.Remove(path); err == nil {
+					fmt.Printf("  %s Removed empty directory %s\n", green("✔"), path)
+					emptyDirsFound = true
+				}
+			}
+
+			return nil
+		})
+
+		// If no empty directories were found in this pass, we're done
+		if !emptyDirsFound {
+			break
 		}
 	}
 }

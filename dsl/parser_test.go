@@ -11,7 +11,7 @@ import (
 	"github.com/kr/pretty"
 )
 
-func Test_isModelBase(t *testing.T) {
+func TestIsModelBase(t *testing.T) {
 	fset := token.NewFileSet()
 
 	tests := []struct {
@@ -80,7 +80,7 @@ func Test_isModelBase(t *testing.T) {
 					}
 					var hasModelBase bool
 					for _, field := range structType.Fields.List {
-						if isModelBase(f, field) {
+						if IsModelBase(f, field) {
 							hasModelBase = true
 							break
 						}
@@ -94,13 +94,13 @@ func Test_isModelBase(t *testing.T) {
 
 			}
 			if !reflect.DeepEqual(modelBases, tt.want) {
-				t.Errorf("isModelBase() = %v, want %v", modelBases, tt.want)
+				t.Errorf("IsModelBase() = %v, want %v", modelBases, tt.want)
 			}
 		})
 	}
 }
 
-func Test_isModelEmpty(t *testing.T) {
+func TestIsModelEmpty(t *testing.T) {
 	fset := token.NewFileSet()
 
 	tests := []struct {
@@ -168,7 +168,7 @@ func Test_isModelEmpty(t *testing.T) {
 					}
 					var hasModelEmpty bool
 					for _, field := range structType.Fields.List {
-						if isModelEmpty(f, field) {
+						if IsModelEmpty(f, field) {
 							hasModelEmpty = true
 							break
 						}
@@ -182,7 +182,7 @@ func Test_isModelEmpty(t *testing.T) {
 
 			}
 			if !reflect.DeepEqual(modelEmptys, tt.want) {
-				t.Errorf("isModelBase() = %v, want %v", modelEmptys, tt.want)
+				t.Errorf("IsModelBase() = %v, want %v", modelEmptys, tt.want)
 			}
 		})
 	}
@@ -266,7 +266,7 @@ func Test_parse(t *testing.T) {
 	}
 }
 
-func Test_findAllModelBase(t *testing.T) {
+func TestFindAllModelBase(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -317,15 +317,15 @@ func Test_findAllModelBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got := findAllModelBase(f)
+			got := FindAllModelBase(f)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findAllModelBase() = %v, want %v", got, tt.want)
+				t.Errorf("FindAllModelBase() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_findAllModelEmpty(t *testing.T) {
+func TestFindAllModelEmpty(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -376,9 +376,9 @@ func Test_findAllModelEmpty(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got := findAllModelEmpty(f)
+			got := FindAllModelEmpty(f)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findAllModelEmpty() = %v, want %v", got, tt.want)
+				t.Errorf("FindAllModelEmpty() = %v, want %v", got, tt.want)
 			}
 		})
 	}

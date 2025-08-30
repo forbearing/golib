@@ -169,8 +169,8 @@ func parse(file *ast.File) (map[string]*ast.FuncDecl, map[string]*ast.FuncDecl) 
 		return designBase, designEmpty
 	}
 
-	modelBase := findAllModelBase(file)
-	modelEmpty := findAllModelEmpty(file)
+	modelBase := FindAllModelBase(file)
+	modelEmpty := FindAllModelEmpty(file)
 	// Every model should always has a *ast.FuncDecl,
 	// If model has no "Design" method, then the value is nil.
 	// It's convenient to generate a default design for the model.
@@ -598,7 +598,7 @@ type actionResult struct {
 	resultHasStar bool
 }
 
-// findAllModelBase finds all struct types that embed model.Base as an anonymous field.
+// FindAllModelBase finds all struct types that embed model.Base as an anonymous field.
 // It searches for structs containing anonymous fields of type "model.Base" or aliased versions
 // like "pkgmodel.Base" where pkgmodel is an import alias for the model package.
 //
@@ -610,7 +610,8 @@ type actionResult struct {
 //
 // This function is used to identify models that should have full database functionality,
 // as opposed to lightweight models that embed model.Empty.
-func findAllModelBase(file *ast.File) []string {
+// FindAllModelBase finds all struct types that embed model.Base as an anonymous field
+func FindAllModelBase(file *ast.File) []string {
 	names := make([]string, 0)
 	if file == nil {
 		return names
@@ -630,7 +631,7 @@ func findAllModelBase(file *ast.File) []string {
 				continue
 			}
 			for _, field := range structType.Fields.List {
-				if isModelBase(file, field) {
+				if IsModelBase(file, field) {
 					names = append(names, typeSpec.Name.Name)
 					break
 				}
@@ -641,7 +642,7 @@ func findAllModelBase(file *ast.File) []string {
 	return names
 }
 
-// findAllModelEmpty finds all struct types that embed model.Empty as an anonymous field.
+// FindAllModelEmpty finds all struct types that embed model.Empty as an anonymous field.
 // It searches for structs containing anonymous fields of type "model.Empty" or aliased versions
 // like "pkgmodel.Empty" where pkgmodel is an import alias for the model package.
 //
@@ -653,7 +654,8 @@ func findAllModelBase(file *ast.File) []string {
 //
 // This function is used to identify lightweight models that typically don't require
 // database migration and have simplified API generation.
-func findAllModelEmpty(file *ast.File) []string {
+// FindAllModelEmpty finds all struct types that embed model.Empty as an anonymous field
+func FindAllModelEmpty(file *ast.File) []string {
 	names := make([]string, 0)
 	if file == nil {
 		return names
@@ -673,7 +675,7 @@ func findAllModelEmpty(file *ast.File) []string {
 				continue
 			}
 			for _, field := range structType.Fields.List {
-				if isModelEmpty(file, field) {
+				if IsModelEmpty(file, field) {
 					names = append(names, typeSpec.Name.Name)
 					break
 				}
@@ -704,7 +706,9 @@ func findAllModelEmpty(file *ast.File) []string {
 //   - model.Base (with standard import)
 //   - pkgmodel.Base (with aliased import)
 //   - Base (with dot import)
-func isModelBase(file *ast.File, field *ast.Field) bool {
+//
+// IsModelBase checks if a struct field is an anonymous embedding of model.Base
+func IsModelBase(file *ast.File, field *ast.Field) bool {
 	// Not anonymouse field.
 	if file == nil || field == nil || len(field.Names) != 0 {
 		return false
@@ -754,7 +758,9 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 //   - model.Empty (with standard import)
 //   - pkgmodel.Empty (with aliased import)
 //   - Empty (with dot import)
-func isModelEmpty(file *ast.File, field *ast.Field) bool {
+//
+// IsModelEmpty checks if a struct field is an anonymous embedding of model.Empty
+func IsModelEmpty(file *ast.File, field *ast.Field) bool {
 	// Not anonymouse field.
 	if file == nil || field == nil || len(field.Names) != 0 {
 		return false
