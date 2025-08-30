@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/forbearing/golib/dsl"
 	"github.com/gertd/go-pluralize"
 	"github.com/spf13/cobra"
 )
@@ -19,22 +22,15 @@ var checkCmd = &cobra.Command{
 1. Service code should not call other service code
 2. DAO code should not call service code
 3. Model code should not call service code
-4. Model directories and files must be singular`,
+4. Model directories and files must be singular
+5. Model struct json tags should use snake_case naming`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
 }
 
-func checkRun() {
-	logSection("Architecture Dependency Check")
-
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		logError(fmt.Sprintf("getting current directory: %v", err))
-		os.Exit(1)
-	}
-
+// performArchitectureCheckForCheck performs architecture dependency checks for check command
+func performArchitectureCheckForCheck(cwd string) []string {
 	var violations []string
 
 	// Check service files
@@ -49,18 +45,62 @@ func checkRun() {
 	modelViolations := checkModelDependencies(filepath.Join(cwd, modelDir))
 	violations = append(violations, modelViolations...)
 
-	// Check model singular naming
-	singularViolations := checkModelSingularNaming(filepath.Join(cwd, modelDir))
-	violations = append(violations, singularViolations...)
+	return violations
+}
 
-	if len(violations) > 0 {
-		fmt.Printf("\n%s Architecture violations found:\n", red("✘"))
-		for _, violation := range violations {
+func checkRun() {
+	// Get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logError(fmt.Sprintf("getting current directory: %v", err))
+		os.Exit(1)
+	}
+
+	var totalViolations int
+
+	// Architecture Dependency Check
+	logSection("Architecture Dependency Check")
+	archViolations := performArchitectureCheckForCheck(cwd)
+	if len(archViolations) > 0 {
+		for _, violation := range archViolations {
 			fmt.Printf("  %s %s\n", red("→"), violation)
 		}
+		totalViolations += len(archViolations)
+	} else {
+		fmt.Printf("  %s No architecture violations found\n", green("✔"))
+	}
+
+	// Model Singular Naming Check
+	logSection("Model Singular Naming Check")
+	singularViolations := checkModelSingularNaming(filepath.Join(cwd, modelDir))
+	if len(singularViolations) > 0 {
+		for _, violation := range singularViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		totalViolations += len(singularViolations)
+	} else {
+		fmt.Printf("  %s No singular naming violations found\n", green("✔"))
+	}
+
+	// Model JSON Tag Naming Check
+	logSection("Model JSON Tag Naming Check")
+	jsonTagViolations := checkModelJSONTagNaming(filepath.Join(cwd, modelDir))
+	if len(jsonTagViolations) > 0 {
+		for _, violation := range jsonTagViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		totalViolations += len(jsonTagViolations)
+	} else {
+		fmt.Printf("  %s No JSON tag naming violations found\n", green("✔"))
+	}
+
+	// Summary
+	logSection("Summary")
+	if totalViolations > 0 {
+		fmt.Printf("  %s %d violations found\n", red("✘"), totalViolations)
 		os.Exit(1)
 	} else {
-		fmt.Printf("\n%s No architecture violations found\n", green("✔"))
+		fmt.Printf("  %s All checks passed\n", green("✔"))
 	}
 }
 
@@ -275,6 +315,178 @@ func containsServiceImport(importPath, layerType string) bool {
 			}
 		}
 	}
-
 	return false
+}
+
+// checkModelJSONTagNaming checks if model struct json tags use camelCase naming
+func checkModelJSONTagNaming(modelDir string) []string {
+	var violations []string
+
+	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
+		return violations
+	}
+
+	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories and non-Go files
+		if info.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		// Skip generated files
+		if strings.HasSuffix(path, "model.go") {
+			return nil
+		}
+
+		fileViolations := checkFileJSONTagNaming(path)
+		violations = append(violations, fileViolations...)
+
+		return nil
+	})
+	if err != nil {
+		logError(fmt.Sprintf("walking model directory: %v", err))
+	}
+
+	return violations
+}
+
+// checkFileJSONTagNaming checks json tag naming in a single file
+func checkFileJSONTagNaming(filePath string) []string {
+	var violations []string
+
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return violations
+	}
+
+	// Find all model structs in this file
+	modelBaseNames := dsl.FindAllModelBase(node)
+	modelEmptyNames := dsl.FindAllModelEmpty(node)
+	allModelNames := append(modelBaseNames, modelEmptyNames...)
+
+	// If no model structs found, skip this file
+	if len(allModelNames) == 0 {
+		return violations
+	}
+
+	// Get relative path for cleaner output
+	cwd, _ := os.Getwd()
+	relPath, _ := filepath.Rel(cwd, filePath)
+
+	// Check only model structs
+	for _, decl := range node.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range genDecl.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+			// Check if this struct is a model
+			isModel := false
+			for _, modelName := range allModelNames {
+				if typeSpec.Name.Name == modelName {
+					isModel = true
+					break
+				}
+			}
+			if !isModel {
+				continue
+			}
+
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok || structType.Fields == nil {
+				continue
+			}
+
+			// Check JSON tags in this model struct
+			for _, field := range structType.Fields.List {
+				if field.Tag != nil {
+					tagValue := strings.Trim(field.Tag.Value, "`")
+					if jsonTag := extractJSONTag(tagValue); jsonTag != "" {
+						if !isSnakeCase(jsonTag) {
+							fieldName := ""
+							if len(field.Names) > 0 {
+								fieldName = field.Names[0].Name
+							}
+							violations = append(violations, fmt.Sprintf(
+								"%s: field '%s' json tag '%s' should be '%s'",
+								relPath, fieldName, jsonTag, toSnakeCase(jsonTag)))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return violations
+}
+
+// extractJSONTag extracts the json tag value from struct tag
+func extractJSONTag(tag string) string {
+	re := regexp.MustCompile(`json:"([^"]+)"`)
+	matches := re.FindStringSubmatch(tag)
+	if len(matches) > 1 {
+		// Remove options like omitempty
+		parts := strings.Split(matches[1], ",")
+		return parts[0]
+	}
+	return ""
+}
+
+// isSnakeCase checks if a string is in snake_case format
+func isSnakeCase(s string) bool {
+	if s == "" {
+		return true
+	}
+
+	// Skip special cases like "-" or single characters
+	if s == "-" || len(s) == 1 {
+		return true
+	}
+
+	// Check if it contains hyphens (kebab-case) or uppercase letters
+	if strings.Contains(s, "-") {
+		return false
+	}
+
+	// Check for uppercase letters (not snake_case)
+	for _, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			return false
+		}
+	}
+
+	return true
+}
+
+// toSnakeCase converts camelCase or kebab-case to snake_case
+func toSnakeCase(s string) string {
+	if s == "" {
+		return s
+	}
+
+	// Replace hyphens with underscores
+	s = strings.ReplaceAll(s, "-", "_")
+
+	// Convert camelCase to snake_case
+	var result strings.Builder
+	for i, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			if i > 0 {
+				result.WriteRune('_')
+			}
+			result.WriteRune(r - 'A' + 'a')
+		} else {
+			result.WriteRune(r)
+		}
+	}
+
+	return result.String()
 }
