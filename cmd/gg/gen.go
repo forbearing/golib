@@ -39,12 +39,49 @@ func init() {
 	genCmd.AddCommand(tsCmd)
 }
 
+// performArchitectureCheck performs the same architecture dependency checks as the check command
+func performArchitectureCheck() []string {
+	var violations []string
+
+	// Check service dependencies
+	if fileExists(serviceDir) {
+		serviceViolations := checkServiceDependencies(serviceDir)
+		violations = append(violations, serviceViolations...)
+	}
+
+	// Check DAO dependencies
+	if fileExists(daoDir) {
+		daoViolations := checkDAODependencies(daoDir)
+		violations = append(violations, daoViolations...)
+	}
+
+	// Check model dependencies
+	if fileExists(modelDir) {
+		modelViolations := checkModelDependencies(modelDir)
+		violations = append(violations, modelViolations...)
+	}
+
+	return violations
+}
+
 func genRun() {
 	if len(module) == 0 {
 		var err error
 		module, err = gen.GetModulePath()
 		checkErr(err)
 	}
+
+	// Architecture dependency check
+	logSection("Architecture Dependency Check")
+	violations := performArchitectureCheck()
+	if len(violations) > 0 {
+		fmt.Printf("  %s Architecture violations found, code generation aborted:\n", red("✘"))
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		os.Exit(1)
+	}
+	fmt.Printf("  %s No architecture violations found\n", green("✔"))
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")

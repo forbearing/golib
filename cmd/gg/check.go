@@ -29,7 +29,7 @@ func checkRun() {
 	// Get current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("Error getting current directory: %v\n", err)
+		logError(fmt.Sprintf("getting current directory: %v", err))
 		os.Exit(1)
 	}
 
@@ -48,13 +48,13 @@ func checkRun() {
 	violations = append(violations, modelViolations...)
 
 	if len(violations) > 0 {
-		fmt.Println("\n❌ Architecture violations found:")
+		fmt.Printf("\n%s Architecture violations found:\n", red("✘"))
 		for _, violation := range violations {
-			fmt.Printf("  - %s\n", violation)
+			fmt.Printf("  %s %s\n", red("→"), violation)
 		}
 		os.Exit(1)
 	} else {
-		fmt.Println("\n✅ No architecture violations found")
+		fmt.Printf("\n%s No architecture violations found\n", green("✔"))
 	}
 }
 
@@ -86,7 +86,7 @@ func checkServiceDependencies(serviceDir string) []string {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("Error walking service directory: %v\n", err)
+		logError(fmt.Sprintf("walking service directory: %v", err))
 	}
 
 	return violations
@@ -115,7 +115,7 @@ func checkDAODependencies(daoDir string) []string {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("Error walking dao directory: %v\n", err)
+		logError(fmt.Sprintf("walking dao directory: %v", err))
 	}
 
 	return violations
@@ -149,7 +149,7 @@ func checkModelDependencies(modelDir string) []string {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("Error walking model directory: %v\n", err)
+		logError(fmt.Sprintf("walking model directory: %v", err))
 	}
 
 	return violations
@@ -162,7 +162,10 @@ func checkFileForServiceImports(filePath, layerType string) []string {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Printf("Error parsing file %s: %v\n", filePath, err)
+		// Treat parse errors as violations to prevent code generation
+		violation := fmt.Sprintf("%s file '%s' has parse error: %v",
+			strings.Title(layerType), filePath, err)
+		violations = append(violations, violation)
 		return violations
 	}
 
@@ -186,23 +189,21 @@ func containsServiceImport(importPath, layerType string) bool {
 	// Split import path by '/'
 	parts := strings.Split(importPath, "/")
 
-	for i, part := range parts {
+	for _, part := range parts {
 		if part == "service" {
 			// For service layer, check if it's importing other service packages
 			if layerType == "service" {
-				// Allow importing the base service package
-				if i == len(parts)-1 && part == "service" {
+				// Allow importing the base golib service package only
+				if strings.Contains(importPath, "github.com/forbearing/golib/service") {
 					return false
 				}
-				// Check if it's importing another service implementation
-				if i < len(parts)-1 {
-					return true
-				}
+				// Forbid importing any other service implementations
+				return true
 			}
-			// For dao and model layers, any service import is forbidden
+			// For dao and model layers, any service import is forbidden except golib service
 			if layerType == "dao" || layerType == "model" {
-				// Allow importing the base service package for interfaces
-				if i == len(parts)-1 && part == "service" {
+				// Allow importing the base golib service package for interfaces
+				if strings.Contains(importPath, "github.com/forbearing/golib/service") {
 					return false
 				}
 				// Forbid importing service implementations
