@@ -9,12 +9,27 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Initalizer interface used to initial configuration, flag arguments or logger, etc.
+// Initalizer interface is used to initialize configuration, flag arguments, logger, or other components.
+// This interface is commonly implemented by bootstrap components that need to perform
+// initialization tasks during application startup.
+//
+// Example implementations:
+//   - Configuration loaders
+//   - Logger initializers
+//   - Database connection setup
+//   - Cache initialization
 type Initalizer interface {
 	Init() error
 }
 
-// StandardLogger interface used for user to custom themselves logger.
+// StandardLogger interface provides standard logging methods for custom logger implementations.
+// This interface follows the traditional logging pattern with both simple and formatted logging methods.
+//
+// Usage:
+//   - Implement this interface to create custom loggers
+//   - Use Debug/Info/Warn/Error for simple logging
+//   - Use Debugf/Infof/Warnf/Errorf for formatted logging
+//   - Fatal methods should terminate the program after logging
 type StandardLogger interface {
 	Debug(args ...any)
 	Info(args ...any)
@@ -29,7 +44,16 @@ type StandardLogger interface {
 	Fatalf(format string, args ...any)
 }
 
-// StructuredLogger is structured logger interface used for user to custom themselves logger.
+// StructuredLogger interface provides structured logging methods with key-value pairs.
+// This interface is designed for structured logging where additional context can be
+// attached to log messages as key-value pairs.
+//
+// Usage:
+//
+//	logger.Infow("User login", "userID", 123, "ip", "192.168.1.1")
+//	logger.Errorw("Database error", "error", err, "query", sql)
+//
+// The 'w' suffix stands for "with" (structured data).
 type StructuredLogger interface {
 	Debugw(msg string, keysAndValues ...any)
 	Infow(msg string, keysAndValues ...any)
@@ -37,14 +61,38 @@ type StructuredLogger interface {
 	Errorw(msg string, keysAndValues ...any)
 	Fatalw(msg string, keysAndValues ...any)
 }
+
+// ZapLogger interface provides zap-specific logging methods with structured fields.
+// This interface is designed for integration with the uber-go/zap logging library,
+// offering high-performance structured logging capabilities.
+//
+// Usage:
+//
+//	logger.Infoz("Request processed", zap.String("method", "GET"), zap.Int("status", 200))
+//	logger.Errorz("Database connection failed", zap.Error(err), zap.String("host", dbHost))
+//
+// The 'z' suffix distinguishes these methods from other logging interfaces.
 type ZapLogger interface {
 	Debugz(msg string, fields ...zap.Field)
 	Infoz(msg string, fields ...zap.Field)
-	Warnz(msg string, feilds ...zap.Field)
+	Warnz(msg string, fields ...zap.Field)
 	Errorz(msg string, fields ...zap.Field)
 	Fatalz(msg string, fields ...zap.Field)
 }
 
+// Logger interface combines all logging capabilities into a unified interface.
+// This interface provides comprehensive logging functionality by embedding
+// StandardLogger, StructuredLogger, and ZapLogger interfaces, along with
+// context-aware logging methods.
+//
+// Key features:
+//   - Standard logging (Debug, Info, Warn, Error, Fatal)
+//   - Structured logging with key-value pairs (Debugw, Infow, etc.)
+//   - Zap-specific structured logging with typed fields
+//   - Context-aware logging for controllers, services, and database operations
+//   - Support for complex object and array marshaling
+//
+// This unified approach allows flexible logging usage throughout the application.
 type Logger interface {
 	With(fields ...string) Logger
 
@@ -60,7 +108,21 @@ type Logger interface {
 	ZapLogger
 }
 
-// Database interface.
+// Database interface provides comprehensive database operations for any model type.
+// This interface is constrained by the Model interface, ensuring type safety
+// for database operations across different model implementations.
+//
+// Generic constraint:
+//
+//	M must implement the Model interface (typically by embedding model.Base)
+//
+// Core operations:
+//   - CRUD operations with automatic timestamp management
+//   - Flexible querying with various finder methods
+//   - Health monitoring and cleanup capabilities
+//   - Optional caching support for improved performance
+//
+// The interface embeds DatabaseOption[M] to provide chainable query building.
 type Database[M Model] interface {
 	// Create one or multiple record.
 	// Pass M to create one record,
@@ -247,11 +309,34 @@ type DatabaseOption[M Model] interface {
 	WithoutHook() Database[M]
 }
 
-// Model interface.
-// The two principles must be follwed before you implements Model interface.
-//   - The object that implements the Model interface must be pointer to structure,
-//     otherwise cause panic.
-//   - The structure must have feild "ID" and the field must be primaryKey in database.
+// Model interface defines the contract for all data models in the framework.
+// This interface ensures consistent behavior across different model implementations
+// and provides comprehensive functionality for database operations, logging, and lifecycle hooks.
+//
+// Implementation requirements:
+//  1. Must be a pointer to a struct (e.g., *User, not User) - otherwise causes panic
+//  2. Must have an "ID" field as the primary key in the database
+//  3. Should embed model.Base to inherit common fields and methods
+//
+// Example implementation:
+//
+//	type User struct {
+//	    model.Base
+//	    Name  string `json:"name"`
+//	    Email string `json:"email"`
+//	}
+//
+//	func (u *User) GetTableName() string {
+//	    return "users"
+//	}
+//
+// Core functionality:
+//   - Table and ID management for database operations
+//   - Audit trail with created/updated timestamps and user tracking
+//   - Relationship management through Expands() for foreign key preloading
+//   - Query filtering through Excludes() for conditional operations
+//   - Structured logging support via zap.ObjectMarshaler
+//   - Lifecycle hooks for custom business logic during CRUD operations
 type Model interface {
 	GetTableName() string // GetTableName returns the table name.
 	GetID() string
@@ -276,8 +361,35 @@ type (
 	Response interface{}
 )
 
-// Service interface.
-// The object that implements this interface must be pointer to struct.
+// Service interface provides comprehensive business logic operations for model types.
+// This interface defines the service layer that sits between controllers and database operations,
+// implementing business rules, validation, complex operations, and lifecycle management.
+//
+// Implementation requirements:
+//   - The implementing object must be a pointer to struct
+//
+// Generic constraints:
+//   - M: Must implement the Model interface
+//   - REQ: Request type (typically DTOs or request structures)
+//   - RSP: Response type (typically DTOs or response structures)
+//
+// Core operations:
+//   - CRUD operations: Create, Delete, Update, Patch, List, Get
+//   - Batch operations: CreateMany, DeleteMany, UpdateMany, PatchMany
+//   - Lifecycle hooks: Before/After methods for each operation
+//   - Data operations: Import/Export for bulk data management
+//   - Filtering: Custom filtering logic for queries
+//
+// ServiceContext provides:
+//   - HTTP request/response context
+//   - Database transaction management
+//   - User authentication and authorization context
+//   - Request validation and data binding
+//   - Logging and tracing capabilities
+//
+// Hook methods allow custom business logic:
+//   - Before hooks: Validation, authorization, data transformation
+//   - After hooks: Notifications, caching, audit logging, cleanup
 type Service[M Model, REQ Request, RSP Response] interface {
 	Create(*ServiceContext, REQ) (RSP, error)
 	Delete(*ServiceContext, REQ) (RSP, error)
@@ -322,7 +434,26 @@ type Service[M Model, REQ Request, RSP Response] interface {
 	Logger
 }
 
-// Hooker interface.
+// Hooker interface defines lifecycle hooks that can be executed at various points
+// during database operations. This interface enables custom business logic,
+// validation, auditing, and side effects to be executed automatically.
+//
+// Hook execution order:
+//  1. Before hooks are called first (validation, authorization)
+//  2. Main operation is performed (database CRUD)
+//  3. After hooks are called last (notifications, caching, cleanup)
+//
+// Common use cases:
+//   - CreateBefore: Validate data, set defaults, check permissions
+//   - CreateAfter: Send notifications, update caches, log audit trail
+//   - UpdateBefore: Validate changes, check business rules
+//   - UpdateAfter: Invalidate caches, trigger workflows
+//   - DeleteBefore: Check dependencies, backup data
+//   - DeleteAfter: Clean up related data, update statistics
+//
+// Error handling:
+//   - Before hooks can prevent the operation by returning an error
+//   - After hooks should handle errors gracefully to avoid rollbacks
 type Hooker interface {
 	CreateBefore() error
 	CreateAfter() error
@@ -336,7 +467,34 @@ type Hooker interface {
 	GetAfter() error
 }
 
-// Cache interface defines the standard operations for a generic cache mechanism.
+// Cache interface provides generic caching operations for any data type.
+// This interface supports multiple caching strategies and implementations,
+// including in-memory caches, distributed caches, and hybrid approaches.
+//
+// Generic type T can be any serializable data type.
+//
+// Available implementations:
+//   - freecache: High-performance in-memory cache with zero GC overhead
+//   - gocache: Multi-tier caching with various backends
+//   - smap: Simple concurrent map-based cache
+//   - cmap: Concurrent map with advanced features
+//   - ccache: LRU cache with size limits
+//
+// Operations:
+//   - Set: Store value with TTL (time-to-live)
+//   - Get: Retrieve value and mark as accessed (affects LRU)
+//   - Peek: Retrieve value without affecting access order
+//   - Delete: Remove specific key
+//   - Exists: Check if key exists without retrieving value
+//   - Len: Get current number of cached items
+//   - Clear: Remove all cached items
+//
+// Usage patterns:
+//   - Application-level caching for expensive computations
+//   - Database query result caching
+//   - Session storage
+//   - Rate limiting counters
+//   - Temporary data storage
 type Cache[T any] interface {
 	Set(key string, values T, ttl time.Duration)
 	Get(key string) (T, bool)
@@ -350,7 +508,30 @@ type Cache[T any] interface {
 	// Decrement(key string, delta int64) (int64, error)
 }
 
-// RBAC interface
+// RBAC interface defines comprehensive role-based access control operations.
+// This interface provides a complete RBAC system supporting roles, permissions,
+// and subject assignments with flexible resource and action management.
+//
+// RBAC Model Components:
+//   - Subject: Users or entities that need access (e.g., "user:123", "service:api")
+//   - Role: Named collection of permissions (e.g., "admin", "editor", "viewer")
+//   - Resource: Protected objects or endpoints (e.g., "users", "posts", "/api/v1/users")
+//   - Action: Operations on resources (e.g., "read", "write", "delete", "create")
+//
+// Permission Model:
+//   - Permissions are defined as (role, resource, action) tuples
+//   - Subjects are assigned roles, inheriting all role permissions
+//   - Supports hierarchical roles and resource patterns
+//
+// Implementation:
+//   - Typically backed by Casbin for policy enforcement
+//   - Supports both file-based and database-backed policy storage
+//   - Can integrate with external identity providers
+//
+// Usage patterns:
+//   - API endpoint authorization
+//   - Resource-level access control
+//   - Multi-tenant permission management
 type RBAC interface {
 	AddRole(name string) error
 	RemoveRole(name string) error
