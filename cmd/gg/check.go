@@ -23,7 +23,8 @@ var checkCmd = &cobra.Command{
 2. DAO code should not call service code
 3. Model code should not call service code
 4. Model directories and files must be singular
-5. Model struct json tags should use snake_case naming`,
+5. Model struct json tags should use snake_case naming
+6. Model package names must match their directory names`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
@@ -92,6 +93,18 @@ func checkRun() {
 		totalViolations += len(jsonTagViolations)
 	} else {
 		fmt.Printf("  %s No JSON tag naming violations found\n", green("✔"))
+	}
+
+	// Model Package Naming Check
+	logSection("Model Package Naming Check")
+	packageViolations := checkModelPackageNaming(filepath.Join(cwd, modelDir))
+	if len(packageViolations) > 0 {
+		for _, violation := range packageViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		totalViolations += len(packageViolations)
+	} else {
+		fmt.Printf("  %s No package naming violations found\n", green("✔"))
 	}
 
 	// Summary
@@ -489,4 +502,59 @@ func toSnakeCase(s string) string {
 	}
 
 	return result.String()
+}
+
+// checkModelPackageNaming checks if model package names match their directory names
+func checkModelPackageNaming(modelDir string) []string {
+	var violations []string
+
+	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
+		return violations
+	}
+
+	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories and non-Go files
+		if info.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		// Skip files in the root model directory
+		relPath, err := filepath.Rel(modelDir, path)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(relPath, string(filepath.Separator)) {
+			return nil
+		}
+
+		// Get the directory name (should match package name)
+		dir := filepath.Dir(path)
+		dirName := filepath.Base(dir)
+
+		// Parse the Go file to get package name
+		fset := token.NewFileSet()
+		node, err := parser.ParseFile(fset, path, nil, parser.PackageClauseOnly)
+		if err != nil {
+			return err
+		}
+
+		packageName := node.Name.Name
+
+		// Check if package name matches directory name
+		if packageName != dirName {
+			relativePath, _ := filepath.Rel(modelDir, path)
+			violations = append(violations, fmt.Sprintf("%s: package name '%s' should match directory name '%s'", relativePath, packageName, dirName))
+		}
+
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("Error walking model directory: %v\n", err)
+	}
+
+	return violations
 }

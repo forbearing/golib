@@ -87,6 +87,18 @@ func genRun() {
 	}
 	fmt.Printf("  %s No architecture violations found\n", green("✔"))
 
+	// Model package naming check
+	logSection("Model Package Naming Check")
+	packageViolations := checkModelPackageNaming(modelDir)
+	if len(packageViolations) > 0 {
+		fmt.Printf("  %s Package naming violations found, code generation aborted:\n", red("✘"))
+		for _, violation := range packageViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		os.Exit(1)
+	}
+	fmt.Printf("  %s No package naming violations found\n", green("✔"))
+
 	// Ensure required files exist
 	logSection("Ensure Required Files")
 	pkgnew.EnsureFileExists()
