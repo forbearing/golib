@@ -134,8 +134,7 @@ func genRun() {
 			if m.ModelPkgName == strings.TrimRight(m.ModelFileDir, "/") {
 				modelStmts = append(modelStmts, gen.StmtModelRegister(m.ModelName))
 			} else {
-				pkgName := strings.Split(m.ModelFileDir, "/")[1]
-				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", pkgName, m.ModelName)))
+				modelStmts = append(modelStmts, gen.StmtModelRegister(fmt.Sprintf("%s.%s", m.ModelPkgName, m.ModelName)))
 			}
 
 			if path, shouldImport := m.ModelImportPath(); shouldImport {
