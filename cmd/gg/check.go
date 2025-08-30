@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gertd/go-pluralize"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,8 @@ var checkCmd = &cobra.Command{
 	Long: `Check architecture dependencies in generated code:
 1. Service code should not call other service code
 2. DAO code should not call service code
-3. Model code should not call service code`,
+3. Model code should not call service code
+4. Model directories and files must be singular`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
@@ -46,6 +48,10 @@ func checkRun() {
 	// Check model files
 	modelViolations := checkModelDependencies(filepath.Join(cwd, modelDir))
 	violations = append(violations, modelViolations...)
+
+	// Check model singular naming
+	singularViolations := checkModelSingularNaming(filepath.Join(cwd, modelDir))
+	violations = append(violations, singularViolations...)
 
 	if len(violations) > 0 {
 		fmt.Printf("\n%s Architecture violations found:\n", red("✘"))
@@ -179,6 +185,64 @@ func checkFileForServiceImports(filePath, layerType string) []string {
 				strings.Title(layerType), filePath, importPath)
 			violations = append(violations, violation)
 		}
+	}
+
+	return violations
+}
+
+// checkModelSingularNaming checks if model directories and files use singular names
+func checkModelSingularNaming(modelDir string) []string {
+	var violations []string
+
+	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
+		return violations
+	}
+
+	client := pluralize.NewClient()
+
+	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Get relative path from model directory
+		relPath, err := filepath.Rel(modelDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Skip the root model directory itself
+		if relPath == "." {
+			return nil
+		}
+
+		if info.IsDir() {
+			// Check directory name
+			dirName := info.Name()
+			if client.IsPlural(dirName) {
+				violation := fmt.Sprintf("Model directory '%s' should be singular (suggested: %s)",
+					path, client.Singular(dirName))
+				violations = append(violations, violation)
+			}
+		} else if strings.HasSuffix(path, ".go") && !strings.Contains(path, "_test.go") {
+			// Skip model.go registration file
+			if strings.HasSuffix(path, "model.go") {
+				return nil
+			}
+
+			// Check Go file name (without .go extension)
+			fileName := strings.TrimSuffix(info.Name(), ".go")
+			if client.IsPlural(fileName) {
+				violation := fmt.Sprintf("Model file '%s' should be singular (suggested: %s.go)",
+					path, client.Singular(fileName))
+				violations = append(violations, violation)
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		logError(fmt.Sprintf("walking model directory: %v", err))
 	}
 
 	return violations
