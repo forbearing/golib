@@ -40,7 +40,7 @@ type ModelInfo struct {
 
 func (m *ModelInfo) ServiceImportPath(modelDir, serviceDir string) string {
 	path := strings.Replace(filepath.Join(m.ModulePath, m.ModelFilePath), modelDir, serviceDir, 1)
-	path = strings.TrimRight(path, ".go")
+	path = strings.TrimSuffix(path, ".go")
 	return path
 }
 
@@ -209,15 +209,18 @@ func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, 
 	}
 
 	designs := dsl.Parse(f, "")
-	for _, design := range designs {
-		// The new endpoint value is the model file dir + the endpoint value
-		// For example: old endpoint is "order", the model dir is "model/user",
-		// then the new endpoint is "user/order"
-		newFilename := strings.TrimPrefix(filename, modelDir) // "/user/order.go"
-		newFilename = strings.TrimPrefix(newFilename, "/")    // "user/order.go"
-		dir := filepath.Dir(newFilename)                      // "user"
-		design.Endpoint = filepath.Join(dir, design.Endpoint) // "user/order"
-	}
+	// Note: Endpoint assembly logic has been moved to concatEndpoints function in cmd/gg/gen.go
+	// to properly handle custom endpoints defined in DSL
+	//
+	// for _, design := range designs {
+	// 	// The new endpoint value is the model file dir + the endpoint value
+	// 	// For example: old endpoint is "order", the model dir is "model/user",
+	// 	// then the new endpoint is "user/order"
+	// 	newFilename := strings.TrimPrefix(filename, modelDir) // "/user/order.go"
+	// 	newFilename = strings.TrimPrefix(newFilename, "/")    // "user/order.go"
+	// 	dir := filepath.Dir(newFilename)                      // "user"
+	// 	design.Endpoint = filepath.Join(dir, design.Endpoint) // "user/order"
+	// }
 
 	var models []*ModelInfo
 	for _, decl := range node.Decls {

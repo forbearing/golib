@@ -25,7 +25,7 @@ func (*MySQL) setDefault() {
 	cv.SetDefault("mysql.port", 3306)
 	cv.SetDefault("mysql.database", "")
 	cv.SetDefault("mysql.username", "root")
-	cv.SetDefault("mysql.password", "toor")
+	cv.SetDefault("mysql.password", "")
 	cv.SetDefault("mysql.charset", "utf8mb4")
 	cv.SetDefault("mysql.enable", true)
 }

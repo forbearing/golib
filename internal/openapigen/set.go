@@ -82,7 +82,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	pathItem.Post = &openapi3.Operation{
 		OperationID: operationID(consts.Create, typ),
-		Summary:     summary(consts.Create, typ),
+		Summary:     summary(path, consts.Create, typ),
 		Description: description(consts.Create, typ),
 		Tags:        tags(path, consts.Create, typ),
 		RequestBody: newRequestBody[REQ](reqKey),
@@ -161,7 +161,7 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	pathItem.Delete = &openapi3.Operation{
 		OperationID: operationID(consts.Delete, typ),
-		Summary:     summary(consts.Delete, typ),
+		Summary:     summary(path, consts.Delete, typ),
 		Description: description(consts.Delete, typ),
 		Tags:        tags(path, consts.Delete, typ),
 		Parameters:  idParameters,
@@ -228,7 +228,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.Update, typ),
-		Summary:     summary(consts.Update, typ),
+		Summary:     summary(path, consts.Update, typ),
 		Description: description(consts.Update, typ),
 		Tags:        tags(path, consts.Update, typ),
 		Parameters:  idParameters,
@@ -310,7 +310,7 @@ func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string,
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.Patch, typ),
-		Summary:     summary(consts.Patch, typ),
+		Summary:     summary(path, consts.Patch, typ),
 		Description: description(consts.Patch, typ),
 		Tags:        tags(path, consts.Patch, typ),
 		Parameters:  idParameters,
@@ -409,7 +409,7 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.List, typ),
-		Summary:     summary(consts.List, typ),
+		Summary:     summary(path, consts.List, typ),
 		Description: description(consts.List, typ),
 		Tags:        tags(path, consts.List, typ),
 		Responses:   newResponses[RSP](200, rspKey),
@@ -525,7 +525,7 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 
 	pathItem.Get = &openapi3.Operation{
 		OperationID: operationID(consts.Get, typ),
-		Summary:     summary(consts.Get, typ),
+		Summary:     summary(path, consts.Get, typ),
 		Description: description(consts.Get, typ),
 		Tags:        tags(path, consts.Get, typ),
 		Parameters:  idParameters,
@@ -656,7 +656,7 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 
 	pathItem.Post = &openapi3.Operation{
 		OperationID: operationID(consts.CreateMany, typ),
-		Summary:     summary(consts.CreateMany, typ),
+		Summary:     summary(path, consts.CreateMany, typ),
 		Description: description(consts.CreateMany, typ),
 		Tags:        tags(path, consts.CreateMany, typ),
 		RequestBody: newRequestBody[REQ](reqKey),
@@ -787,7 +787,7 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 
 	pathItem.Delete = &openapi3.Operation{
 		OperationID: operationID(consts.DeleteMany, typ),
-		Summary:     summary(consts.DeleteMany, typ),
+		Summary:     summary(path, consts.DeleteMany, typ),
 		Description: description(consts.DeleteMany, typ),
 		Tags:        tags(path, consts.DeleteMany, typ),
 		RequestBody: newRequestBody[REQ](reqKey),
@@ -895,7 +895,7 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 
 	pathItem.Put = &openapi3.Operation{
 		OperationID: operationID(consts.UpdateMany, typ),
-		Summary:     summary(consts.UpdateMany, typ),
+		Summary:     summary(path, consts.UpdateMany, typ),
 		Description: description(consts.UpdateMany, typ),
 		Tags:        tags(path, consts.UpdateMany, typ),
 		RequestBody: newRequestBody[REQ](reqKey),
@@ -1019,7 +1019,7 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 
 	pathItem.Patch = &openapi3.Operation{
 		OperationID: operationID(consts.PatchMany, typ),
-		Summary:     summary(consts.PatchMany, typ),
+		Summary:     summary(path, consts.PatchMany, typ),
 		Description: description(consts.PatchMany, typ),
 		Tags:        tags(path, consts.PatchMany, typ),
 		RequestBody: newRequestBody[REQ](reqKey),
@@ -1989,15 +1989,79 @@ func operationID(op consts.HTTPVerb, typ reflect.Type) string {
 	return fmt.Sprintf("%s%s", op, typ.Elem().Name())
 }
 
-func summary(op consts.HTTPVerb, typ reflect.Type) string {
+func summary(path string, op consts.HTTPVerb, typ reflect.Type) string {
+	path = strings.TrimPrefix(path, `/api/`)
+	path = strings.TrimSuffix(path, `/{id}`)
+	items := strings.Split(path, `/`)
+
+	if len(items) > 1 { // trim the first segment
+		items = items[1:]
+	}
+
+	// remove the segment that starts with ":" or wrapped with {}
+	filtered := make([]string, 0, len(items))
+	for _, seg := range items {
+		if seg == "" || strings.HasPrefix(seg, ":") {
+			continue
+		}
+		if strings.HasPrefix(seg, "{") && strings.HasSuffix(seg, "}") {
+			continue
+		}
+		filtered = append(filtered, seg)
+	}
+
+	path = strings.Join(filtered, `/`)
+	return strings.ReplaceAll(path, `/`, `_`) + "_" + string(op)
+
+	// Try to get struct comment first
+	var modelInstance any
+	var elementType reflect.Type
+	if typ.Kind() == reflect.Slice {
+		// For slice types, create an instance of the element type
+		elementType = typ.Elem()
+		modelInstance = reflect.New(elementType).Interface()
+	} else {
+		// For other types, create an instance directly
+		elementType = typ
+		modelInstance = reflect.New(typ).Interface()
+	}
+
+	structComment := parseStructComment(modelInstance)
+	if structComment != "" {
+		return structComment
+	}
+
+	// Dereference pointer types to get the actual struct type name
+	actualType := elementType
+	for actualType.Kind() == reflect.Pointer {
+		actualType = actualType.Elem()
+	}
+
+	// Fallback to original logic if no struct comment found
 	switch op {
 	case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
-		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(typ.Elem().Name()))
+		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(actualType.Name()))
 	}
-	return fmt.Sprintf("%s %s", op, typ.Elem().Name())
+	return fmt.Sprintf("%s %s", op, actualType.Name())
 }
 
 func description(op consts.HTTPVerb, typ reflect.Type) string {
+	// Try to get struct comment first
+	var modelInstance any
+	if typ.Kind() == reflect.Slice {
+		// For slice types, create an instance of the element type
+		modelInstance = reflect.New(typ.Elem()).Interface()
+	} else {
+		// For other types, create an instance directly
+		modelInstance = reflect.New(typ).Interface()
+	}
+
+	structComment := parseStructComment(modelInstance)
+	if structComment != "" {
+		return structComment
+	}
+
+	// Fallback to original logic if no struct comment found
 	switch op {
 	case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
 		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(typ.Elem().Name()))

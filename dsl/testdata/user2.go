@@ -15,6 +15,7 @@ type User2 struct {
 func (User2) Design() {
 	// Default to true.
 	dsl.Enabled(false)
+	dsl.Param("{user}")
 
 	// Default Endpoint is the lower case of the model name.
 	// dsl.Endpoint("user")

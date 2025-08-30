@@ -20,6 +20,9 @@
 //		// Set custom endpoint (default: lowercase model name)
 //		Endpoint("users")
 //
+//		// Add path parameter for dynamic routing
+//		Param("user")  // Creates routes like /api/users/:user
+//
 //		// Enable database migration (default: false)
 //		Migrate(true)
 //
@@ -64,6 +67,35 @@ func Enabled(bool) {}
 // Example: Endpoint("users") for a User model
 func Endpoint(string) {}
 
+// Param defines a path parameter for dynamic routing in RESTful APIs.
+// It adds a URL parameter segment to the endpoint, enabling hierarchical resource access.
+// The parameter is automatically propagated to child resources in nested structures,
+// allowing parent resource parameters to be inherited by child endpoints.
+//
+// Parameter Format:
+//   - Simple name: Param("user") creates ":user" parameter
+//   - Bracketed format: Param("{user}") also creates ":user" parameter
+//
+// Route Generation Examples:
+//   - Param("user") transforms /api/users to /api/users/:user
+//   - Param("app") transforms /api/namespaces/apps to /api/namespaces/apps/:app
+//   - Param("env") transforms /api/namespaces/apps/envs to /api/namespaces/apps/envs/:env
+//
+// Parameter Propagation:
+// When using hierarchical models (namespace -> app -> env), parent parameters are
+// automatically propagated to child resources:
+//   - /api/namespaces/:namespace/apps/:app/envs/:env
+//   - Child resources inherit all parent path parameters
+//
+// Common Use Cases:
+//   - namespace: Param("namespace") or Param("ns") for multi-tenant applications
+//   - app: Param("app") for application-scoped resources
+//   - env: Param("env") for environment-specific configurations
+//
+// The parameter creates RESTful nested resource patterns, enabling hierarchical API designs
+// where child resources are scoped under parent resources through URL path parameters.
+func Param(string) {}
+
 // Migrate controls whether database migration should be performed for this model.
 // When true, the model's table structure will be created/updated in the database.
 // Default: false
@@ -74,9 +106,10 @@ func Migrate(bool) {}
 // Default: true
 func Service(bool) {}
 
-// Public controls whether the current action should be exposed as a public API.
-// When false, the action is only available for internal use.
-// Default: false
+// Public controls whether the current action requires authentication/authorization.
+// When false, the action will be processed by auth middleware if registered via middleware.RegisterAuth.
+// When true, the action is publicly accessible without authentication.
+// Default: false (requires authentication)
 func Public(bool) {}
 
 // Payload specifies the request payload type for the current action.
@@ -151,6 +184,28 @@ type Design struct {
 	// Used by the router to construct API endpoints.
 	Endpoint string
 
+	// Param contains the path parameter name for dynamic routing.
+	// The parameter will be inserted as ":param" in the generated route paths.
+	// Parameters are automatically propagated to child resources in nested structures,
+	// allowing parent resource parameters to be inherited by child endpoints.
+	//
+	// Usage Examples:
+	//   - Param("user") generates routes like /api/users/:user
+	//   - Param("app") generates routes like /api/namespaces/apps/:app
+	//   - Param("env") generates routes like /api/namespaces/apps/envs/:env
+	//
+	// Parameter Propagation:
+	// In hierarchical models (namespace -> app -> env), parent parameters are
+	// automatically propagated: /api/namespaces/:namespace/apps/:app/envs/:env
+	//
+	// Common Use Cases:
+	//   - "namespace" or "ns": for multi-tenant applications
+	//   - "app": for application-scoped resources
+	//   - "env": for environment-specific configurations
+	//
+	// Default: "" (no parameter)
+	Param string
+
 	// Migrate indicates whether database migration should be performed.
 	// When true, the model's table structure will be created/updated.
 	// Default: false
@@ -193,7 +248,7 @@ type Design struct {
 //	design.Range(func(endpoint string, action *Action, phase consts.Phase) {
 //		fmt.Printf("Generating %s for %s\n", phase.MethodName(), endpoint)
 //	})
-func (d *Design) Range(fn func(string, *Action, consts.Phase)) {
+func (d *Design) Range(fn func(endpoiint string, action *Action, phase consts.Phase)) {
 	rangeAction(d, fn)
 }
 
@@ -209,9 +264,10 @@ type Action struct {
 	// Default: true
 	Service bool
 
-	// Public indicates whether this action should be exposed as a public API.
-	// When false, the action is only available for internal use.
-	// Default: false
+	// Public indicates whether this action requires authentication/authorization.
+	// When false, the action will be processed by auth middleware if registered via middleware.RegisterAuth.
+	// When true, the action is publicly accessible without authentication.
+	// Default: false (requires authentication)
 	Public bool
 
 	// Payload specifies the type name for the request payload.
@@ -228,6 +284,7 @@ type Action struct {
 var methodList = []string{
 	"Enabled",
 	"Endpoint",
+	"Param",
 	"Migrate",
 	"Payload",
 	"Result",

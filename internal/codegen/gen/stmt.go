@@ -172,7 +172,7 @@ func StmtRouterRegister(modelPkgName, modelName, reqName, rspName string, router
 				&ast.CallExpr{
 					Fun: &ast.SelectorExpr{
 						X:   ast.NewIdent("router"),
-						Sel: ast.NewIdent(fmt.Sprintf("%s", router)),
+						Sel: ast.NewIdent(router),
 					},
 				},
 				&ast.BasicLit{

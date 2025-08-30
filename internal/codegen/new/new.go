@@ -17,12 +17,14 @@ import (
 // ============================================================
 
 var fileContentMap = map[string]string{
-	"configx/configx.go":         configxContent,
-	"cronjobx/cronjobx.go":       cronjobxContent,
-	"middlewarex/middlewarex.go": middlewarexContent,
-	"model/model.go":             modelContent,
-	"service/service.go":         serviceContent,
-	"router/router.go":           routerContent,
+	"configx/configx.go":       configxContent,
+	"cronjob/cronjob.go":       cronjobContent,
+	"middleware/middleware.go": middlewareContent,
+	"model/model.go":           modelContent,
+	"service/service.go":       serviceContent,
+	"router/router.go":         routerContent,
+	"dao/.gitkeep":             "",
+	"provider/.gitkeep":        "",
 }
 
 // ============================================================

@@ -19,8 +19,7 @@ var (
 	tmp *bigcache.BigCache // tmp is a temporary cache used to check the config is correct.
 	mu  sync.Mutex
 
-	defaultExpire    = time.Hour
-	maxEntrySize     = 1024 // 1KB
+	maxEntrySize     = 1024 * 64 // 64KB
 	hardMaxCacheSize = 0
 	verbose          = false
 )

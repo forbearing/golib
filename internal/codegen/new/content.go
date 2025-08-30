@@ -30,9 +30,9 @@ var mainContent = consts.CodeGeneratedComment() + `
 package main
 
 import (
-	"%s/configx"
-	"%s/cronjobx"
-	_ "%s/middlewarex"
+	_ "%s/configx"
+	_ "%s/cronjob"
+	_ "%s/middleware"
 	_ "%s/model"
 	"%s/router"
 	_ "%s/service"
@@ -43,8 +43,6 @@ import (
 
 func main() {
 	RunOrDie(bootstrap.Bootstrap)
-	RunOrDie(configx.Init)
-	RunOrDie(cronjobx.Init)
 	RunOrDie(router.Init)
 	RunOrDie(bootstrap.Run)
 }
@@ -52,19 +50,17 @@ func main() {
 
 const configxContent = `package configx
 
-func Init() error {
-	return nil
+func init() {
 }
 `
 
-const cronjobxContent = `package cronjobx
+const cronjobContent = `package cronjob
 
-func Init() error {
-	return nil
+func init() {
 }
 `
 
-const middlewarexContent = `package middlewarex
+const middlewareContent = `package middleware
 
 func init() {
 }

@@ -49,10 +49,12 @@ func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb
 		return newPathItem
 	}
 
-	pathid := path + "/{id}"
-	pathbatch := path + "/batch"
-	pathipt := path + "/import"
-	pathexpt := path + "/export"
+	// pathid := path + "/:id"
+	path = convertColonParamsToBraces(path)
+	pathid := path
+	pathbatch := path
+	pathipt := path
+	pathexpt := path
 
 	docMutex.Lock()
 	pathItem := getOrCreate(path)
@@ -306,4 +308,18 @@ func buildVerbs(verbs ...consts.HTTPVerb) []consts.HTTPVerb {
 		vs = append(vs, verb)
 	}
 	return vs
+}
+
+// ConvertColonParamsToBraces converts path parameters from :param to {param}.
+func convertColonParamsToBraces(path string) string {
+	if path == "" {
+		return path
+	}
+	segments := strings.Split(path, "/")
+	for i, seg := range segments {
+		if strings.HasPrefix(seg, ":") && len(seg) > 1 {
+			segments[i] = "{" + seg[1:] + "}"
+		}
+	}
+	return strings.Join(segments, "/")
 }

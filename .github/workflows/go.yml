@@ -1,5 +1,5 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# This workflow builds and validates a Go project
+# It checks formatting, builds the project, and verifies that the generated demo project compiles
 
 name: Go
 
@@ -13,16 +13,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the repository
       - uses: actions/checkout@v4
 
+      # Set up Go environment
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.24"
 
+      # Cache Go modules and build cache
+      - name: Cache Go dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Install gofumpt for formatting checks
       - name: Install gofumpt
         run: go install mvdan.cc/gofumpt@latest
 
+      # Check if code is properly formatted
       - name: Check formatting
         run: |
           files=$(gofumpt -l .)
@@ -36,5 +51,78 @@ jobs:
             echo "✅ gofumpt formatting check passed"
           fi
 
-      - name: Build
+      # Build the current project
+      - name: Build project
         run: go build -v ./...
+
+      # Install gg CLI
+      - name: Install gg CLI
+        run: go install ./cmd/gg
+
+      # Generate demo project
+      - name: Generate demo project
+        run: gg new demo
+
+      # Add user model to demo project
+      - name: Add user model
+        run: |
+          cat > demo/model/user.go <<'EOF'
+          package model
+
+          import (
+            . "github.com/forbearing/golib/dsl"
+            "github.com/forbearing/golib/model"
+          )
+
+          type User struct {
+            Name string
+            Age  string
+
+            model.Base
+          }
+
+          func (User) Design() {
+            Migrate(true)
+
+            Create(func() {
+              Enabled(true)
+            })
+            Delete(func() {
+              Enabled(true)
+            })
+            Update(func() {
+              Enabled(true)
+            })
+            Patch(func() {
+              Enabled(true)
+            })
+            List(func() {
+              Enabled(true)
+            })
+            Get(func() {
+              Enabled(true)
+            })
+            CreateMany(func() {
+              Enabled(true)
+            })
+            DeleteMany(func() {
+              Enabled(true)
+            })
+            UpdateMany(func() {
+              Enabled(true)
+            })
+            PatchMany(func() {
+              Enabled(true)
+            })
+          }
+          EOF
+
+      # Run gg gen inside demo project
+      - name: Run gg gen
+        run: |
+          cd demo
+          gg gen
+
+      # Ensure the generated demo project compiles
+      - name: Build demo project
+        run: go build -C demo ./...
