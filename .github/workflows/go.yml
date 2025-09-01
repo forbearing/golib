@@ -57,7 +57,7 @@ jobs:
 
       # Install gg CLI
       - name: Install gg CLI
-        run: go install ./cmd/gg
+        run: go install github.com/forbearing/golib/cmd/gg@latest
 
       # Generate demo project
       - name: Generate demo project
