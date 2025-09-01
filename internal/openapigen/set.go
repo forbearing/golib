@@ -3,6 +3,7 @@ package openapigen
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -85,6 +86,7 @@ func setCreate[M types.Model, REQ types.Request, RSP types.Response](path string
 		Summary:     summary(path, consts.Create, typ),
 		Description: description(consts.Create, typ),
 		Tags:        tags(path, consts.Create, typ),
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](201, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{Ref: "#/components/requestBodies/" + reqKey},
@@ -164,7 +166,7 @@ func setDelete[M types.Model, REQ types.Request, RSP types.Response](path string
 		Summary:     summary(path, consts.Delete, typ),
 		Description: description(consts.Delete, typ),
 		Tags:        tags(path, consts.Delete, typ),
-		Parameters:  idParameters,
+		Parameters:  parseParametersFromPath(path),
 		Responses:   newResponses[RSP](204, rspKey),
 		// Responses: func() *openapi3.Responses {
 		// 	var schemaRef204 *openapi3.SchemaRef
@@ -231,7 +233,7 @@ func setUpdate[M types.Model, REQ types.Request, RSP types.Response](path string
 		Summary:     summary(path, consts.Update, typ),
 		Description: description(consts.Update, typ),
 		Tags:        tags(path, consts.Update, typ),
-		Parameters:  idParameters,
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -313,7 +315,7 @@ func setPatch[M types.Model, REQ types.Request, RSP types.Response](path string,
 		Summary:     summary(path, consts.Patch, typ),
 		Description: description(consts.Patch, typ),
 		Tags:        tags(path, consts.Patch, typ),
-		Parameters:  idParameters,
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -412,6 +414,7 @@ func setList[M types.Model, REQ types.Request, RSP types.Response](path string, 
 		Summary:     summary(path, consts.List, typ),
 		Description: description(consts.List, typ),
 		Tags:        tags(path, consts.List, typ),
+		Parameters:  parseParametersFromPath(path),
 		Responses:   newResponses[RSP](200, rspKey),
 		// // Parameters: []*openapi3.ParameterRef{
 		// // 	{
@@ -528,7 +531,7 @@ func setGet[M types.Model, REQ types.Request, RSP types.Response](path string, p
 		Summary:     summary(path, consts.Get, typ),
 		Description: description(consts.Get, typ),
 		Tags:        tags(path, consts.Get, typ),
-		Parameters:  idParameters,
+		Parameters:  parseParametersFromPath(path),
 		Responses:   newResponses[RSP](200, rspKey),
 		// Responses: func() *openapi3.Responses {
 		// 	var schemaRef200 *openapi3.SchemaRef
@@ -659,6 +662,7 @@ func setCreateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(path, consts.CreateMany, typ),
 		Description: description(consts.CreateMany, typ),
 		Tags:        tags(path, consts.CreateMany, typ),
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](201, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -790,6 +794,7 @@ func setDeleteMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(path, consts.DeleteMany, typ),
 		Description: description(consts.DeleteMany, typ),
 		Tags:        tags(path, consts.DeleteMany, typ),
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](204, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -898,6 +903,7 @@ func setUpdateMany[M types.Model, REQ types.Request, RSP types.Response](path st
 		Summary:     summary(path, consts.UpdateMany, typ),
 		Description: description(consts.UpdateMany, typ),
 		Tags:        tags(path, consts.UpdateMany, typ),
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -1022,6 +1028,7 @@ func setPatchMany[M types.Model, REQ types.Request, RSP types.Response](path str
 		Summary:     summary(path, consts.PatchMany, typ),
 		Description: description(consts.PatchMany, typ),
 		Tags:        tags(path, consts.PatchMany, typ),
+		Parameters:  parseParametersFromPath(path),
 		RequestBody: newRequestBody[REQ](reqKey),
 		Responses:   newResponses[RSP](200, rspKey),
 		// RequestBody: &openapi3.RequestBodyRef{
@@ -1327,6 +1334,39 @@ func processAllResponseTypes[RSP types.Response](rspSchemaRef *openapi3.SchemaRe
 			}
 		}
 	}
+}
+
+func parseParametersFromPath(path string) []*openapi3.ParameterRef {
+	// re := regexp.MustCompile(`{(.+?)}`)
+	re := regexp.MustCompile(`\{([^}]+)\}`)
+	matches := re.FindAllStringSubmatch(path, -1)
+
+	var params []string
+	for _, m := range matches {
+		if len(m) > 1 {
+			params = append(params, m[1])
+		}
+	}
+
+	var parameterRefList []*openapi3.ParameterRef
+
+	for _, param := range params {
+		parameterRefList = append(parameterRefList, &openapi3.ParameterRef{
+			Value: &openapi3.Parameter{
+				In:       "path",
+				Name:     param,
+				Required: true,
+				Schema: &openapi3.SchemaRef{
+					Value: &openapi3.Schema{
+						Type:   &openapi3.Types{openapi3.TypeString},
+						Format: idFormat,
+					},
+				},
+			},
+		})
+	}
+
+	return nil
 }
 
 // setupExample will remove field "created_at", "created_by", "updated_at", "updated_by", "id".
