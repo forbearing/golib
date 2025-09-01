@@ -646,3 +646,79 @@ func TestGenServiceMethod6(t *testing.T) {
 		})
 	}
 }
+
+func TestGenServiceMethod7(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
+	}{
+		{
+			name: "user",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			phase: consts.PHASE_FILTER,
+			want: `func (u *Lister) Filter(ctx *types.ServiceContext, user *model.User) *model.User {
+	return user
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := genServiceMethod7(tt.info, tt.phase)
+			got, err := FormatNode(node)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("genServiceMethod7() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenServiceMethod8(t *testing.T) {
+	tests := []struct {
+		name string // description of this test case
+		// Named input parameters for target function.
+		info  *ModelInfo
+		phase consts.Phase
+		want  string
+	}{
+		{
+			name: "user",
+			info: &ModelInfo{
+				ModelPkgName: "model",
+				ModelName:    "User",
+				ModelVarName: "u",
+				ModulePath:   "codegen",
+				ModelFileDir: "/tmp/model",
+			},
+			phase: consts.PHASE_FILTER_RAW,
+			want: `func (u *Lister) FilterRaw(ctx *types.ServiceContext) string {
+	return ""
+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := genServiceMethod8(tt.info, tt.phase)
+			got, err := FormatNode(node)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("genServiceMethod8() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
