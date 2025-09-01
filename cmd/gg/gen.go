@@ -60,9 +60,9 @@ func performArchitectureCheck() []string {
 		modelViolations := checkModelDependencies(modelDir)
 		violations = append(violations, modelViolations...)
 
-		// // Check model singular naming
-		// singularViolations := checkModelSingularNaming(modelDir)
-		// violations = append(violations, singularViolations...)
+		// Check model singular naming
+		singularViolations := checkModelSingularNaming(modelDir)
+		violations = append(violations, singularViolations...)
 	}
 
 	return violations
