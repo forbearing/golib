@@ -186,7 +186,14 @@ func genRun() {
 
 			}
 
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, phase.MethodName()))
+			switch phase {
+			case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+				items := strings.Split(edp, "/")
+				lastSegment := strings.TrimLeft(items[len(items)-1], ":")
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, lastSegment, phase.MethodName()))
+			default:
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, "", phase.MethodName()))
+			}
 		})
 	}
 
@@ -205,6 +212,8 @@ func genRun() {
 	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 
 	// generate router/router.go
+	// router always imports "github.com/forbearing/golib/types"
+	routerImportMap["github.com/forbearing/golib/types"] = struct{}{}
 	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImportMap), routerStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(routerDir, "router.go"), routerCode)
