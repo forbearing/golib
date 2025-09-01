@@ -39,7 +39,7 @@ const (
 	CodeNewPasswordNotMatch
 
 	CodeNotFoundQueryID
-	CodeNotFoundRouteID
+	CodeNotFoundRouteParam
 	CodeNotFoundUser
 	CodeNotFoundUserId
 
@@ -79,7 +79,7 @@ var defaultCodeValueMap = map[Code]codeValue{
 	CodeOldPasswordNotMatch: {http.StatusBadRequest, "old password not match"},
 	CodeNewPasswordNotMatch: {http.StatusBadRequest, "new password not match"},
 	CodeNotFoundQueryID:     {http.StatusBadRequest, "not found query parameter 'id'"},
-	CodeNotFoundRouteID:     {http.StatusBadRequest, "not found router 'id'"},
+	CodeNotFoundRouteParam:  {http.StatusBadRequest, "not found router param"},
 	CodeNotFoundUser:        {http.StatusBadRequest, "not found user"},
 	CodeNotFoundUserId:      {http.StatusBadRequest, "not found user id"},
 	CodeAlreadyExistsUser:   {http.StatusConflict, "user already exists"},
