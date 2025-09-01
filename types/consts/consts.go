@@ -125,9 +125,10 @@ const (
 	PHASE_PATCH_MANY_BEFORE  Phase = patch_many_before
 	PHASE_PATCH_MANY_AFTER   Phase = patch_many_after
 
-	PHASE_FILTER Phase = filter
-	PHASE_IMPORT Phase = import_
-	PHASE_EXPORT Phase = export
+	PHASE_IMPORT     Phase = import_
+	PHASE_EXPORT     Phase = export
+	PHASE_FILTER     Phase = filter
+	PHASE_FILTER_RAW Phase = filter_raw
 )
 
 type Phase string
@@ -194,7 +195,7 @@ func (p Phase) RoleName() string {
 		role = "Deleter"
 	case patch:
 		role = "Patcher"
-	case list:
+	case list, filter, filter_raw:
 		role = "Lister"
 	case get:
 		role = "Getter"
