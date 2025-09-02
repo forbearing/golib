@@ -167,6 +167,7 @@ func TestStmtRouterRegister(t *testing.T) {
 		respName     string
 		router       string
 		endpoint     string
+		paramName    string
 		verb         string
 		want         string
 	}{
@@ -179,7 +180,7 @@ func TestStmtRouterRegister(t *testing.T) {
 			respName:     "Group",
 			endpoint:     "group",
 			verb:         "Create",
-			want:         `router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group", consts.Create)`,
+			want:         `router.Register[*model.Group, *model.Group, *model.Group](router.Auth(), "group", &types.ControllerConfig[*model.Group]{}, consts.Create)`,
 		},
 		{
 			name:         "test2",
@@ -190,7 +191,7 @@ func TestStmtRouterRegister(t *testing.T) {
 			router:       "Auth",
 			endpoint:     "group2",
 			verb:         "Update",
-			want:         `router.Register[*pkgmodel.Group, pkgmodel.GroupRequest, pkgmodel.GroupResponse](router.Auth(), "group2", consts.Update)`,
+			want:         `router.Register[*pkgmodel.Group, pkgmodel.GroupRequest, pkgmodel.GroupResponse](router.Auth(), "group2", &types.ControllerConfig[*pkgmodel.Group]{}, consts.Update)`,
 		},
 		{
 			name:         "test3",
@@ -201,12 +202,12 @@ func TestStmtRouterRegister(t *testing.T) {
 			router:       "Pub",
 			endpoint:     "login",
 			verb:         "Update",
-			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.Pub(), "login", consts.Update)`,
+			want:         `router.Register[*pkgmodel.Group, *pkgmodel.GroupRequest, *pkgmodel.GroupResponse](router.Pub(), "login", &types.ControllerConfig[*pkgmodel.Group]{}, consts.Update)`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName, tt.router, tt.endpoint, tt.verb)
+			res := StmtRouterRegister(tt.modelPkgName, tt.modelName, tt.reqName, tt.respName, tt.router, tt.endpoint, tt.paramName, tt.verb)
 			got, err := FormatNode(res)
 			if err != nil {
 				t.Error(err)

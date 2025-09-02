@@ -326,7 +326,8 @@ func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_DELETE)
+		cctx := types.NewControllerContext(c)
+		log := logger.Controller.WithControllerContext(cctx, consts.PHASE_DELETE)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_DELETE)
 		ctx := types.NewServiceContext(c)
 
@@ -373,8 +374,8 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			addId(id)
 		}
 		// Delete one record accoding to "route parameter `id`".
-		if id := c.Param(consts.PARAM_ID); len(id) != 0 {
-			addId(id)
+		if len(cfg) > 0 {
+			addId(cctx.Params[util.Deref(cfg[0]).ParamName])
 		}
 		// Delete multiple records accoding to "http body data".
 		bodyIds := make([]string, 0)
@@ -525,7 +526,8 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 	return func(c *gin.Context) {
 		var err error
 		var reqErr error
-		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_UPDATE)
+		cctx := types.NewControllerContext(c)
+		log := logger.Controller.WithControllerContext(cctx, consts.PHASE_UPDATE)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_UPDATE)
 		ctx := types.NewServiceContext(c)
 
@@ -551,14 +553,17 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req := reflect.New(typ).Interface().(M)
-		if reqErr := c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		if reqErr := c.ShouldBindJSON(&req); reqErr != nil {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 			return
 		}
 
 		// param id has more priority than http body data id
-		paramId := c.Param(consts.PARAM_ID)
+		var paramId string
+		if len(cfg) > 0 {
+			paramId = cctx.Params[util.Deref(cfg[0]).ParamName]
+		}
 		bodyId := req.GetID()
 		var id string
 		log.Infoz("update from request",
@@ -728,7 +733,8 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
 		var id string
-		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_PATCH)
+		cctx := types.NewControllerContext(c)
+		log := logger.Controller.WithControllerContext(cctx, consts.PHASE_PATCH)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_PATCH)
 		ctx := types.NewServiceContext(c)
 
@@ -756,7 +762,9 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req := reflect.New(typ).Interface().(M)
-		id = c.Param(consts.PARAM_ID)
+		if len(cfg) > 0 {
+			id = cctx.Params[util.Deref(cfg[0]).ParamName]
+		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
@@ -764,6 +772,11 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}
 		if len(id) == 0 {
 			id = req.GetID()
+		}
+		if len(id) == 0 {
+			log.Error(CodeNotFoundRouteParam)
+			ResponseJSON(c, CodeNotFoundRouteParam)
+			return
 		}
 		data := make([]M, 0)
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
@@ -1287,7 +1300,8 @@ func Get[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
 func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_GET)
+		cctx := types.NewControllerContext(c)
+		log := logger.Controller.WithControllerContext(cctx, consts.PHASE_GET)
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_GET)
 		ctx := types.NewServiceContext(c)
 
@@ -1309,9 +1323,13 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			return
 		}
 
-		if len(c.Param(consts.PARAM_ID)) == 0 {
-			log.Error(CodeNotFoundRouteID)
-			ResponseJSON(c, CodeNotFoundRouteID)
+		var param string
+		if len(cfg) > 0 {
+			param = cctx.Params[util.Deref(cfg[0]).ParamName]
+		}
+		if len(param) == 0 {
+			log.Error(CodeNotFoundRouteParam)
+			ResponseJSON(c, CodeNotFoundRouteParam)
 			return
 		}
 		index, _ := c.GetQuery(consts.QUERY_INDEX)
@@ -1322,7 +1340,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
 		m := reflect.New(typ).Interface().(M)
-		m.SetID(c.Param(consts.PARAM_ID)) // `GetBefore` hook need id.
+		m.SetID(param) // `GetBefore` hook need id.
 
 		var err error
 		var expands []string
@@ -1398,7 +1416,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			WithSelect(strings.Split(selects, ",")...).
 			WithExpand(expands).
 			WithCache(!nocache).
-			Get(m, c.Param(consts.PARAM_ID), &cache); err != nil {
+			Get(m, param, &cache); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			return

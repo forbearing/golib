@@ -169,17 +169,17 @@ func Stop() {
 //   - PATCH  /{path}/batch   -> PatchMany
 //
 // For custom controller configuration, pass a ControllerConfig object.
-func Register[M types.Model, REQ types.Request, RSP types.Response](router gin.IRouter, rawPath string, verbs ...consts.HTTPVerb) {
-	if validPath(rawPath) {
-		register[M, REQ, RSP](router, buildPath(rawPath), buildVerbMap(verbs...))
-	}
-}
-
-func RegisterWithConfig[M types.Model, REQ types.Request, RSP types.Response](router gin.IRouter, rawPath string, cfg *types.ControllerConfig[M], verbs ...consts.HTTPVerb) {
+func Register[M types.Model, REQ types.Request, RSP types.Response](router gin.IRouter, rawPath string, cfg *types.ControllerConfig[M], verbs ...consts.HTTPVerb) {
 	if validPath(rawPath) {
 		register[M, REQ, RSP](router, buildPath(rawPath), buildVerbMap(verbs...), cfg)
 	}
 }
+
+// func RegisterWithConfig[M types.Model, REQ types.Request, RSP types.Response](router gin.IRouter, rawPath string, cfg *types.ControllerConfig[M], verbs ...consts.HTTPVerb) {
+// 	if validPath(rawPath) {
+// 		register[M, REQ, RSP](router, buildPath(rawPath), buildVerbMap(verbs...), cfg)
+// 	}
+// }
 
 func validPath(rawPath string) bool {
 	rawPath = strings.TrimSpace(rawPath)

@@ -356,6 +356,20 @@ func genServiceMethod6(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	)
 }
 
+// genServiceMethod7 uses AST to generate Filter method.
+func genServiceMethod7(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	return serviceMethod7(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
+		Returns(ast.NewIdent(strings.ToLower(info.ModelName))),
+	)
+}
+
+// genServiceMethod8 uses AST to generate FilterRaw method.
+func genServiceMethod8(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
+	return serviceMethod8(info.ModelVarName, info.ModelName, info.ModelPkgName, phase,
+		Returns(ast.NewIdent(`""`)),
+	)
+}
+
 func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *ast.File {
 	if !action.Enabled || !action.Service {
 		return nil
@@ -396,71 +410,73 @@ func GenerateService(info *ModelInfo, action *dsl.Action, phase consts.Phase) *a
 		//
 		// Only generate before/after hooks for non-empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod1(info, phase.Before()))
-			decls = append(decls, genServiceMethod1(info, phase.After()))
+			decls = append(decls, genServiceMethod1(info, phase.Before())) // generate create before hook
+			decls = append(decls, genServiceMethod1(info, phase.After()))  // generate create after hook
 		}
 	case consts.PHASE_DELETE:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod1(info, phase.Before()))
-			decls = append(decls, genServiceMethod1(info, phase.After()))
+			decls = append(decls, genServiceMethod1(info, phase.Before())) // generate delete before hook
+			decls = append(decls, genServiceMethod1(info, phase.After()))  // generate delete after hook
 		}
 	case consts.PHASE_UPDATE:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod1(info, phase.Before()))
-			decls = append(decls, genServiceMethod1(info, phase.After()))
+			decls = append(decls, genServiceMethod1(info, phase.Before())) // generate update before hook
+			decls = append(decls, genServiceMethod1(info, phase.After()))  // generate update after hook
 		}
 	case consts.PHASE_PATCH:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod1(info, phase.Before()))
-			decls = append(decls, genServiceMethod1(info, phase.After()))
+			decls = append(decls, genServiceMethod1(info, phase.Before())) // generate patch before hook
+			decls = append(decls, genServiceMethod1(info, phase.After()))  // generate patch after hook
 		}
 	case consts.PHASE_LIST: // List method use GenerateServiceMethod2
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod2(info, phase.Before()))
-			decls = append(decls, genServiceMethod2(info, phase.After()))
+			decls = append(decls, genServiceMethod2(info, phase.Before()))          // generate list before hook
+			decls = append(decls, genServiceMethod2(info, phase.After()))           // generate list after hook
+			decls = append(decls, genServiceMethod7(info, consts.PHASE_FILTER))     // generate filter hook
+			decls = append(decls, genServiceMethod8(info, consts.PHASE_FILTER_RAW)) // generate filter raw hook
 		}
 	case consts.PHASE_GET:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod1(info, phase.Before()))
-			decls = append(decls, genServiceMethod1(info, phase.After()))
+			decls = append(decls, genServiceMethod1(info, phase.Before())) // generate get before hook
+			decls = append(decls, genServiceMethod1(info, phase.After()))  // generate get after hook
 		}
 	case consts.PHASE_CREATE_MANY: // XXXMany methods use GenerateServiceMethod3
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod3(info, phase.Before()))
-			decls = append(decls, genServiceMethod3(info, phase.After()))
+			decls = append(decls, genServiceMethod3(info, phase.Before())) // generate create many before hook
+			decls = append(decls, genServiceMethod3(info, phase.After()))  // generate create many after hook
 		}
 	case consts.PHASE_DELETE_MANY:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod3(info, phase.Before()))
-			decls = append(decls, genServiceMethod3(info, phase.After()))
+			decls = append(decls, genServiceMethod3(info, phase.Before())) // generate delete many before hook
+			decls = append(decls, genServiceMethod3(info, phase.After()))  // generate delete many after hook
 		}
 	case consts.PHASE_UPDATE_MANY:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod3(info, phase.Before()))
-			decls = append(decls, genServiceMethod3(info, phase.After()))
+			decls = append(decls, genServiceMethod3(info, phase.Before())) // generate update many before hook
+			decls = append(decls, genServiceMethod3(info, phase.After()))  // generate update many after hook
 		}
 	case consts.PHASE_PATCH_MANY:
 		decls = append(decls, genServiceMethod4(info, action.Payload, action.Result, phase))
 		// Skip generate hooks for empty models
 		if !info.Design.IsEmpty {
-			decls = append(decls, genServiceMethod3(info, phase.Before()))
-			decls = append(decls, genServiceMethod3(info, phase.After()))
+			decls = append(decls, genServiceMethod3(info, phase.Before())) // generate patch many before hook
+			decls = append(decls, genServiceMethod3(info, phase.After()))  // generate patch many after hook
 		}
 	case consts.PHASE_IMPORT:
 		decls = append(decls, genServiceMethod5(info, phase))

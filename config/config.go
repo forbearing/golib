@@ -175,10 +175,6 @@ func Init() (err error) {
 	return nil
 }
 
-func Wokao() map[string]any {
-	return registeredConfigs
-}
-
 func Clean() {
 	if err := os.RemoveAll(tempdir); err != nil {
 		zap.S().Errorw("failed to remove temp dir", "error", err, "dir", tempdir)

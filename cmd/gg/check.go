@@ -24,7 +24,8 @@ var checkCmd = &cobra.Command{
 3. Model code should not call service code
 4. Model directories and files must be singular
 5. Model struct json tags should use snake_case naming
-6. Model package names must match their directory names`,
+6. Model package names must match their directory names
+7. Only allowed directories are enforced for golib framework projects`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
@@ -105,6 +106,18 @@ func checkRun() {
 		totalViolations += len(packageViolations)
 	} else {
 		fmt.Printf("  %s No package naming violations found\n", green("✔"))
+	}
+
+	// Directory Restriction Check
+	logSection("Directory Restriction Check")
+	directoryViolations := checkAllowedDirectories(cwd)
+	if len(directoryViolations) > 0 {
+		for _, violation := range directoryViolations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+		totalViolations += len(directoryViolations)
+	} else {
+		fmt.Printf("  %s No directory restriction violations found\n", green("✔"))
 	}
 
 	// Summary
@@ -270,9 +283,11 @@ func checkModelSingularNaming(modelDir string) []string {
 		}
 
 		if info.IsDir() {
-			// Check directory name
+			// Check directory name.
+			// Directory name length must greater than 3 before check.
+			// Check singular must before plural.
 			dirName := info.Name()
-			if client.IsPlural(dirName) {
+			if len(dirName) > 3 && !client.IsSingular(dirName) && client.IsPlural(dirName) {
 				violation := fmt.Sprintf("Model directory '%s' should be singular (suggested: %s)",
 					path, client.Singular(dirName))
 				violations = append(violations, violation)
@@ -284,8 +299,10 @@ func checkModelSingularNaming(modelDir string) []string {
 			}
 
 			// Check Go file name (without .go extension)
+			// File name length must greater than 3 before check.
+			// Check singular must before plural.
 			fileName := strings.TrimSuffix(info.Name(), ".go")
-			if client.IsPlural(fileName) {
+			if len(fileName) > 3 && !client.IsSingular(fileName) && client.IsPlural(fileName) {
 				violation := fmt.Sprintf("Model file '%s' should be singular (suggested: %s.go)",
 					path, client.Singular(fileName))
 				violations = append(violations, violation)
@@ -557,4 +574,97 @@ func checkModelPackageNaming(modelDir string) []string {
 	}
 
 	return violations
+}
+
+// checkAllowedDirectories checks if only allowed directories exist in the project
+func checkAllowedDirectories(projectDir string) []string {
+	var violations []string
+
+	// Check if this is a golib framework project by reading go.mod
+	if isGolibFrameworkProject(projectDir) {
+		// Skip directory restriction check for golib framework itself
+		return violations
+	}
+
+	// Check if this project uses golib framework
+	if !usesGolibFramework(projectDir) {
+		// Skip directory restriction check for projects not using golib framework
+		return violations
+	}
+
+	// Define allowed directories for golib framework projects
+	allowedDirs := map[string]bool{
+		"docs":       true,
+		"doc":        true,
+		"provider":   true,
+		"dao":        true,
+		"service":    true,
+		"model":      true,
+		"router":     true,
+		"middleware": true,
+		"configx":    true,
+		"config":     true,
+		"typesx":     true,
+		"type":       true,
+		"testcode":   true,
+		"testdata":   true,
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(projectDir)
+	if err != nil {
+		return violations
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		dirName := entry.Name()
+
+		// Skip hidden directories and common project files
+		if strings.HasPrefix(dirName, ".") {
+			continue
+		}
+
+		// Check if directory is allowed
+		if !allowedDirs[dirName] {
+			violations = append(violations, fmt.Sprintf("Directory '%s' is not allowed in project structure", dirName))
+		}
+	}
+
+	return violations
+}
+
+// isGolibFrameworkProject checks if this is the golib framework project itself
+func isGolibFrameworkProject(projectDir string) bool {
+	goModPath := filepath.Join(projectDir, "go.mod")
+	content, err := os.ReadFile(goModPath)
+	if err != nil {
+		return false
+	}
+
+	// Check if module name is github.com/forbearing/golib
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "module ") {
+			moduleName := strings.TrimSpace(strings.TrimPrefix(line, "module"))
+			return moduleName == "github.com/forbearing/golib"
+		}
+	}
+	return false
+}
+
+// usesGolibFramework checks if the project uses golib framework as a dependency
+func usesGolibFramework(projectDir string) bool {
+	goModPath := filepath.Join(projectDir, "go.mod")
+	content, err := os.ReadFile(goModPath)
+	if err != nil {
+		return false
+	}
+
+	// Check if github.com/forbearing/golib is in dependencies
+	return strings.Contains(string(content), "github.com/forbearing/golib")
 }

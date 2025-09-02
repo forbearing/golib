@@ -2,7 +2,10 @@ module demo
 
 go 1.25.0
 
-require github.com/forbearing/golib v0.7.1-0.20250830061613-a7d20f752344
+require (
+	github.com/forbearing/golib v0.7.1-0.20250901115031-cb573dfabe9e
+	gorm.io/datatypes v1.2.6
+)
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect

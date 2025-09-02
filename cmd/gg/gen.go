@@ -39,34 +39,34 @@ func init() {
 	genCmd.AddCommand(tsCmd)
 }
 
-// performArchitectureCheck performs the same architecture dependency checks as the check command
-func performArchitectureCheck() []string {
-	var violations []string
-
-	// Check service dependencies
-	if fileExists(serviceDir) {
-		serviceViolations := checkServiceDependencies(serviceDir)
-		violations = append(violations, serviceViolations...)
-	}
-
-	// Check DAO dependencies
-	if fileExists(daoDir) {
-		daoViolations := checkDAODependencies(daoDir)
-		violations = append(violations, daoViolations...)
-	}
-
-	// Check model dependencies
-	if fileExists(modelDir) {
-		modelViolations := checkModelDependencies(modelDir)
-		violations = append(violations, modelViolations...)
-
-		// // Check model singular naming
-		// singularViolations := checkModelSingularNaming(modelDir)
-		// violations = append(violations, singularViolations...)
-	}
-
-	return violations
-}
+// // performArchitectureCheck performs the same architecture dependency checks as the check command
+// func performArchitectureCheck() []string {
+// 	var violations []string
+//
+// 	// Check service dependencies
+// 	if fileExists(serviceDir) {
+// 		serviceViolations := checkServiceDependencies(serviceDir)
+// 		violations = append(violations, serviceViolations...)
+// 	}
+//
+// 	// Check DAO dependencies
+// 	if fileExists(daoDir) {
+// 		daoViolations := checkDAODependencies(daoDir)
+// 		violations = append(violations, daoViolations...)
+// 	}
+//
+// 	// Check model dependencies
+// 	if fileExists(modelDir) {
+// 		modelViolations := checkModelDependencies(modelDir)
+// 		violations = append(violations, modelViolations...)
+//
+// 		// Check model singular naming
+// 		singularViolations := checkModelSingularNaming(modelDir)
+// 		violations = append(violations, singularViolations...)
+// 	}
+//
+// 	return violations
+// }
 
 func genRun() {
 	if len(module) == 0 {
@@ -76,28 +76,15 @@ func genRun() {
 	}
 
 	// Architecture dependency check
-	logSection("Architecture Dependency Check")
-	violations := performArchitectureCheck()
-	if len(violations) > 0 {
-		fmt.Printf("  %s Architecture violations found, code generation aborted:\n", red("✘"))
-		for _, violation := range violations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		os.Exit(1)
-	}
-	fmt.Printf("  %s No architecture violations found\n", green("✔"))
-
-	// Model package naming check
-	logSection("Model Package Naming Check")
-	packageViolations := checkModelPackageNaming(modelDir)
-	if len(packageViolations) > 0 {
-		fmt.Printf("  %s Package naming violations found, code generation aborted:\n", red("✘"))
-		for _, violation := range packageViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		os.Exit(1)
-	}
-	fmt.Printf("  %s No package naming violations found\n", green("✔"))
+	CheckArchitectureDependency()
+	// Model Singular Naming Check
+	CheckModelSingularNaming()
+	// Model JSON Tag Naming Check
+	CheckModelJSONTagNaming()
+	// Model Package Naming Check
+	CheckModelPackageNaming()
+	// Directory Restriction Check
+	CheckAllowedDirectories()
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
@@ -199,7 +186,14 @@ func genRun() {
 
 			}
 
-			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, phase.MethodName()))
+			switch phase {
+			case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+				items := strings.Split(edp, "/")
+				lastSegment := strings.TrimLeft(items[len(items)-1], ":")
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, lastSegment, phase.MethodName()))
+			default:
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, "", phase.MethodName()))
+			}
 		})
 	}
 
@@ -218,6 +212,8 @@ func genRun() {
 	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 
 	// generate router/router.go
+	// router always imports "github.com/forbearing/golib/types"
+	routerImportMap["github.com/forbearing/golib/types"] = struct{}{}
 	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImportMap), routerStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(routerDir, "router.go"), routerCode)
