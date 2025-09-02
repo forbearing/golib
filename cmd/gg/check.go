@@ -23,9 +23,10 @@ var checkCmd = &cobra.Command{
 2. DAO code should not call service code
 3. Model code should not call service code
 4. Model directories and files must be singular
-5. Model struct json tags should use snake_case naming
-6. Model package names must match their directory names
-7. Only allowed directories are enforced for golib framework projects`,
+5. Model file names should not contain hyphens (use underscores instead)
+6. Model struct json tags should use snake_case naming
+7. Model package names must match their directory names
+8. Only allowed directories are enforced for golib framework projects`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
@@ -256,9 +257,18 @@ func CheckModelSingularNaming() int {
 			}
 
 			// Check Go file name (without .go extension)
+			fileName := strings.TrimSuffix(info.Name(), ".go")
+
+			// Check if file name contains hyphen
+			if strings.Contains(fileName, "-") {
+				suggestedName := strings.ReplaceAll(fileName, "-", "_")
+				violation := fmt.Sprintf("Model file '%s' should not contain hyphens (suggested: %s.go)",
+					path, suggestedName)
+				violations = append(violations, violation)
+			}
+
 			// File name length must greater than 3 before check.
 			// Check singular must before plural.
-			fileName := strings.TrimSuffix(info.Name(), ".go")
 			if len(fileName) > 3 && !client.IsSingular(fileName) && client.IsPlural(fileName) {
 				violation := fmt.Sprintf("Model file '%s' should be singular (suggested: %s.go)",
 					path, client.Singular(fileName))
