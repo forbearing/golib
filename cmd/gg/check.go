@@ -31,94 +31,23 @@ var checkCmd = &cobra.Command{
 	},
 }
 
-// performArchitectureCheckForCheck performs architecture dependency checks for check command
-func performArchitectureCheckForCheck(cwd string) []string {
-	var violations []string
-
-	// Check service files
-	serviceViolations := checkServiceDependencies(filepath.Join(cwd, serviceDir))
-	violations = append(violations, serviceViolations...)
-
-	// Check dao files
-	daoViolations := checkDAODependencies(filepath.Join(cwd, "dao"))
-	violations = append(violations, daoViolations...)
-
-	// Check model files
-	modelViolations := checkModelDependencies(filepath.Join(cwd, modelDir))
-	violations = append(violations, modelViolations...)
-
-	return violations
-}
-
 func checkRun() {
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		logError(fmt.Sprintf("getting current directory: %v", err))
-		os.Exit(1)
-	}
-
 	var totalViolations int
 
 	// Architecture Dependency Check
-	logSection("Architecture Dependency Check")
-	archViolations := performArchitectureCheckForCheck(cwd)
-	if len(archViolations) > 0 {
-		for _, violation := range archViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		totalViolations += len(archViolations)
-	} else {
-		fmt.Printf("  %s No architecture violations found\n", green("✔"))
-	}
+	totalViolations += CheckArchitectureDependency()
 
 	// Model Singular Naming Check
-	logSection("Model Singular Naming Check")
-	singularViolations := checkModelSingularNaming(filepath.Join(cwd, modelDir))
-	if len(singularViolations) > 0 {
-		for _, violation := range singularViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		totalViolations += len(singularViolations)
-	} else {
-		fmt.Printf("  %s No singular naming violations found\n", green("✔"))
-	}
+	totalViolations += CheckModelSingularNaming()
 
 	// Model JSON Tag Naming Check
-	logSection("Model JSON Tag Naming Check")
-	jsonTagViolations := checkModelJSONTagNaming(filepath.Join(cwd, modelDir))
-	if len(jsonTagViolations) > 0 {
-		for _, violation := range jsonTagViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		totalViolations += len(jsonTagViolations)
-	} else {
-		fmt.Printf("  %s No JSON tag naming violations found\n", green("✔"))
-	}
+	totalViolations += CheckModelJSONTagNaming()
 
 	// Model Package Naming Check
-	logSection("Model Package Naming Check")
-	packageViolations := checkModelPackageNaming(filepath.Join(cwd, modelDir))
-	if len(packageViolations) > 0 {
-		for _, violation := range packageViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		totalViolations += len(packageViolations)
-	} else {
-		fmt.Printf("  %s No package naming violations found\n", green("✔"))
-	}
+	totalViolations += CheckModelPackageNaming()
 
 	// Directory Restriction Check
-	logSection("Directory Restriction Check")
-	directoryViolations := checkAllowedDirectories(cwd)
-	if len(directoryViolations) > 0 {
-		for _, violation := range directoryViolations {
-			fmt.Printf("  %s %s\n", red("→"), violation)
-		}
-		totalViolations += len(directoryViolations)
-	} else {
-		fmt.Printf("  %s No directory restriction violations found\n", green("✔"))
-	}
+	totalViolations += CheckAllowedDirectories()
 
 	// Summary
 	logSection("Summary")
@@ -130,8 +59,36 @@ func checkRun() {
 	}
 }
 
+// CheckArchitectureDependency performs architecture dependency checks.
+func CheckArchitectureDependency() int {
+	var violations []string
+
+	// Check service files
+	serviceViolations := checkServiceDependencies()
+	violations = append(violations, serviceViolations...)
+
+	// Check dao files
+	daoViolations := checkDAODependencies()
+	violations = append(violations, daoViolations...)
+
+	// Check model files
+	modelViolations := checkModelDependencies()
+	violations = append(violations, modelViolations...)
+
+	logSection("Architecture Dependency Check")
+	if len(violations) > 0 {
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+	} else {
+		fmt.Printf("  %s No architecture violations found\n", green("✔"))
+	}
+
+	return len(violations)
+}
+
 // checkServiceDependencies checks if service code calls other service code
-func checkServiceDependencies(serviceDir string) []string {
+func checkServiceDependencies() []string {
 	var violations []string
 
 	if _, err := os.Stat(serviceDir); os.IsNotExist(err) {
@@ -165,7 +122,7 @@ func checkServiceDependencies(serviceDir string) []string {
 }
 
 // checkDAODependencies checks if DAO code calls service code
-func checkDAODependencies(daoDir string) []string {
+func checkDAODependencies() []string {
 	var violations []string
 
 	if _, err := os.Stat(daoDir); os.IsNotExist(err) {
@@ -194,7 +151,7 @@ func checkDAODependencies(daoDir string) []string {
 }
 
 // checkModelDependencies checks if model code calls service code
-func checkModelDependencies(modelDir string) []string {
+func checkModelDependencies() []string {
 	var violations []string
 
 	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
@@ -256,12 +213,12 @@ func checkFileForServiceImports(filePath, layerType string) []string {
 	return violations
 }
 
-// checkModelSingularNaming checks if model directories and files use singular names
-func checkModelSingularNaming(modelDir string) []string {
+// CheckModelSingularNaming checks if model directories and files use singular names
+func CheckModelSingularNaming() int {
 	var violations []string
 
 	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
-		return violations
+		return 0
 	}
 
 	client := pluralize.NewClient()
@@ -315,7 +272,16 @@ func checkModelSingularNaming(modelDir string) []string {
 		logError(fmt.Sprintf("walking model directory: %v", err))
 	}
 
-	return violations
+	logSection("Model Singular Naming Check")
+	if len(violations) > 0 {
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+	} else {
+		fmt.Printf("  %s No singular naming violations found\n", green("✔"))
+	}
+
+	return len(violations)
 }
 
 // containsServiceImport checks if an import path contains service code
@@ -348,12 +314,12 @@ func containsServiceImport(importPath, layerType string) bool {
 	return false
 }
 
-// checkModelJSONTagNaming checks if model struct json tags use camelCase naming
-func checkModelJSONTagNaming(modelDir string) []string {
+// CheckModelJSONTagNaming checks if model struct json tags use camelCase naming
+func CheckModelJSONTagNaming() int {
 	var violations []string
 
 	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
-		return violations
+		return 0
 	}
 
 	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
@@ -380,7 +346,16 @@ func checkModelJSONTagNaming(modelDir string) []string {
 		logError(fmt.Sprintf("walking model directory: %v", err))
 	}
 
-	return violations
+	logSection("Model JSON Tag Naming Check")
+	if len(violations) > 0 {
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+	} else {
+		fmt.Printf("  %s No JSON tag naming violations found\n", green("✔"))
+	}
+
+	return len(violations)
 }
 
 // checkFileJSONTagNaming checks json tag naming in a single file
@@ -521,12 +496,12 @@ func toSnakeCase(s string) string {
 	return result.String()
 }
 
-// checkModelPackageNaming checks if model package names match their directory names
-func checkModelPackageNaming(modelDir string) []string {
+// CheckModelPackageNaming checks if model package names match their directory names
+func CheckModelPackageNaming() int {
 	var violations []string
 
 	if _, err := os.Stat(modelDir); os.IsNotExist(err) {
-		return violations
+		return 0
 	}
 
 	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
@@ -573,47 +548,69 @@ func checkModelPackageNaming(modelDir string) []string {
 		fmt.Printf("Error walking model directory: %v\n", err)
 	}
 
-	return violations
+	// Model Package Naming Check
+	logSection("Model Package Naming Check")
+	if len(violations) > 0 {
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+	} else {
+		fmt.Printf("  %s No package naming violations found\n", green("✔"))
+	}
+
+	return len(violations)
 }
 
-// checkAllowedDirectories checks if only allowed directories exist in the project
-func checkAllowedDirectories(projectDir string) []string {
+// CheckAllowedDirectories checks if only allowed directories exist in the project
+func CheckAllowedDirectories() int {
+	projectDir := "."
 	var violations []string
 
 	// Check if this is a golib framework project by reading go.mod
 	if isGolibFrameworkProject(projectDir) {
 		// Skip directory restriction check for golib framework itself
-		return violations
+		return 0
 	}
 
 	// Check if this project uses golib framework
 	if !usesGolibFramework(projectDir) {
 		// Skip directory restriction check for projects not using golib framework
-		return violations
+		return 0
 	}
 
 	// Define allowed directories for golib framework projects
 	allowedDirs := map[string]bool{
-		"docs":       true,
-		"doc":        true,
-		"provider":   true,
-		"dao":        true,
-		"service":    true,
 		"model":      true,
+		"service":    true,
 		"router":     true,
+		"dao":        true,
+		"provider":   true,
 		"middleware": true,
+		"cronjob":    true,
 		"configx":    true,
 		"config":     true,
 		"typesx":     true,
+		"consts":     true,
+		"constx":     true,
 		"type":       true,
+		"typex":      true,
+		"helper":     true,
+		"internal":   true,
 		"testcode":   true,
 		"testdata":   true,
+		"docs":       true,
+		"doc":        true,
+	}
+
+	whitelistDirs := map[string]bool{
+		"tmp":  true,
+		"logs": true,
 	}
 
 	// Read directory contents
 	entries, err := os.ReadDir(projectDir)
 	if err != nil {
-		return violations
+		return 0
 	}
 
 	for _, entry := range entries {
@@ -629,12 +626,22 @@ func checkAllowedDirectories(projectDir string) []string {
 		}
 
 		// Check if directory is allowed
-		if !allowedDirs[dirName] {
+		if !allowedDirs[dirName] && !whitelistDirs[dirName] {
 			violations = append(violations, fmt.Sprintf("Directory '%s' is not allowed in project structure", dirName))
 		}
 	}
 
-	return violations
+	// Directory Restriction Check
+	logSection("Directory Restriction Check")
+	if len(violations) > 0 {
+		for _, violation := range violations {
+			fmt.Printf("  %s %s\n", red("→"), violation)
+		}
+	} else {
+		fmt.Printf("  %s No directory restriction violations found\n", green("✔"))
+	}
+
+	return len(violations)
 }
 
 // isGolibFrameworkProject checks if this is the golib framework project itself
