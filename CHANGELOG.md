@@ -5,11 +5,13 @@
 - **response:** rename CodeNotFoundRouteID -> CodeNotFoundRouteParam
 
 ### Chore
+- update CHANGELOG.md
 - update examples/demo
 - update examples/demo
 - **config:** remove Wokao
 
 ### Ci
+- install gg CLI from local source instead of remote build
 - install gg CLI from module path instead of local build
 
 ### Feat
@@ -25,6 +27,7 @@
 - **codegen:** statement `router.Register` add param `*types.ControllerConfig`
 - **controller:** support configurable route parameter names in factories
 - **dsl:** export model detection helpers for broader reuse
+- **gen:** remove unused performArchitectureCheck stub
 - **router:** remove RegisterWithConfig, Register add param `*types.ControllerConfig`
 
 
