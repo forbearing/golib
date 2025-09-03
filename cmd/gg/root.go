@@ -2,8 +2,6 @@ package main
 
 import "github.com/spf13/cobra"
 
-const rootPkgName = "router"
-
 var (
 	modelDir   string
 	serviceDir string
