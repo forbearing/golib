@@ -25,7 +25,7 @@ var (
 func Init() (err error) {
 	cfg := config.App.SQLServer
 	if !cfg.Enable || config.App.Database.Type != config.DBSQLServer {
-		return
+		return err
 	}
 
 	if Default, err = New(cfg); err != nil {

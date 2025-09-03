@@ -25,7 +25,7 @@ var (
 func Init() (err error) {
 	cfg := config.App.Clickhouse
 	if !cfg.Enable || config.App.Database.Type != config.DBClickHouse {
-		return
+		return err
 	}
 
 	if Default, err = New(cfg); err != nil {

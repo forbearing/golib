@@ -24,7 +24,7 @@ var (
 func Init() (err error) {
 	cfg := config.App.Sqlite
 	if !cfg.Enable || config.App.Database.Type != config.DBSqlite {
-		return
+		return err
 	}
 
 	if Default, err = New(cfg); err != nil {

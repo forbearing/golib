@@ -1792,7 +1792,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		// metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		*count = _cache
 		logger.Cache.Infow("count from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		return
+		return err
 	}
 
 	// =============================
@@ -2413,7 +2413,7 @@ func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, k
 	default:
 		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
 	}
-	return
+	return prefix, key
 }
 
 func boolToInt(b bool) int {

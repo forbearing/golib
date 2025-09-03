@@ -204,7 +204,7 @@ func _tcping(host string, port, count int, interval, timeout time.Duration) (min
 	})
 	<-pinger.Start()
 	if pinger.Result() == nil {
-		return
+		return minLatency, maxLatency, avgLatency, result
 	}
 	return pinger.Result().MinDuration, pinger.Result().MaxDuration, pinger.Result().Avg(), pinger.Result()
 }
