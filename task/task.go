@@ -3,15 +3,12 @@ package task
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/util"
-	"github.com/shirou/gopsutil/v3/process"
 )
 
 var (
@@ -178,30 +175,8 @@ func runtimestats() error {
 		"NextGC", rtm.NextGC,
 	)
 
-	// 进程信息
-	var rusage syscall.Rusage
-	if err := syscall.Getrusage(syscall.RUSAGE_SELF, &rusage); err == nil {
-		logger.Runtime.Infow("Process Stats",
-			"UserTime", time.Duration(rusage.Utime.Sec)*time.Second+time.Duration(rusage.Utime.Usec)*time.Microsecond,
-			"SystemTime", time.Duration(rusage.Stime.Sec)*time.Second+time.Duration(rusage.Stime.Usec)*time.Microsecond,
-			"MaxRSS", rusage.Maxrss, // 最大驻留集大小
-			"PageFaults", rusage.Majflt, // 主缺页错误
-			"IOIn", rusage.Inblock, // 输入操作
-			"IOOut", rusage.Oublock, // 输出操作
-		)
-	}
-
-	// 应用启动时间
-	var startTime time.Time
-	if info, err := process.NewProcess(int32(os.Getpid())); err == nil {
-		if ctime, err := info.CreateTime(); err == nil {
-			startTime = time.Unix(ctime/1000, (ctime%1000)*int64(time.Millisecond))
-			logger.Runtime.Infow("Application Uptime",
-				"StartTime", startTime,
-				"Uptime", util.FormatDurationSmart(time.Since(startTime), 2),
-			)
-		}
-	}
+	// 进程信息 (cross-platform)
+	getProcessStats()
 
 	// 互斥锁争用情况（仅在设置了GODEBUG=mutexprofile=1时可用）
 	logger.Runtime.Info("Note: For mutex contention profiling, run with GODEBUG=mutexprofile=1")
