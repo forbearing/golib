@@ -309,11 +309,11 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		// Route("/config/apps", func() {
 		// 	List(func() {
 		// 		Enabled(true)
-		// 		Service(false)
+		// 		Service(true)
 		// 	})
 		// 	Get(func() {
 		// 		Enabled(true)
-		// 		Service(false)
+		// 		Service(true)
 		// 	})
 		// })
 		if funcName == "Route" && len(call.Args) == 2 {
@@ -388,32 +388,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 						}
 					}
 				}
-
-				// if arg, ok := call.Args[1].(*ast.FuncLit); ok && arg.Body != nil {
-				// 	for _, stmt := range arg.Body.List {
-				// 		// if act, e := parseAction(consts.PHASE_LIST, consts.PHASE_LIST.MethodName(), stmt); e {
-				// 		// 	pretty.Println(route, act)
-				// 		// 	defaults.Routes[route] = append(defaults.Routes[route], act)
-				// 		// }
-				// 	}
-				// 	// if act, e := parseAction(consts.PHASE_LIST, consts.PHASE_LIST.MethodName(), []ast.Expr{arg}); e {
-				// 	// 	pretty.Println(route, act)
-				// 	// 	defaults.Routes[route] = append(defaults.Routes[route], act)
-				// 	// }
-				// 	// get, e2 := parseAction(consts.PHASE_GET, consts.PHASE_GET.MethodName(), []ast.Expr{arg})
-				// }
 			}
-			// if arg, ok := call.Args[1].(*ast.FuncLit); ok && arg != nil && arg.Body != nil {
-			// 	arg2 = arg
-			// }
-
-			// if arg1, ok1 := call.Args[0].(*ast.BasicLit); ok1 && arg1 != nil && arg1.Kind == token.STRING {
-			// 	// route := trimQuote(arg.Value)
-			// 	if defaults.Routes == nil {
-			// 		defaults.Routes = make(map[string][]consts.HTTPVerb)
-			// 	}
-			// 	// defaults.Routes = append(defaults.Routes, route)
-			// }
 		}
 
 		if act, e := parseAction(consts.PHASE_CREATE, funcName, call.Args[0]); e {
