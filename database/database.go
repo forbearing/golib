@@ -1635,6 +1635,9 @@ QUERY:
 
 // Get find one record accoding to `id`.
 func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
+	if len(id) == 0 {
+		return errors.New("id is required")
+	}
 	if err = db.prepare(); err != nil {
 		return err
 	}
@@ -1742,7 +1745,16 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Where("id = ?", id).Find(dest).Error; err != nil {
+	// NOTE: In GORM v2, if the primary key field (e.g. "ID") is already set
+	// on the struct `dest`, calling db.Find(dest) will automatically build
+	// a query with a "WHERE primary_key = ?" clause.
+	// This behavior does NOT exist in older versions of GORM,
+	// where db.Find(dest) without Where(...) would scan the whole table.
+	// To be safe across versions, db.First(dest, id) is explicit.
+	//
+	// if err = db.db.Table(tableName).Where("id = ?", id).Find(dest).Error; err != nil {
+	dest.SetID(id)
+	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
