@@ -3,8 +3,6 @@ package dsl
 import (
 	"slices"
 	"strings"
-
-	"github.com/forbearing/golib/types/consts"
 )
 
 // rangeAction iterates through all actions in a Design and calls the provided function
@@ -15,7 +13,7 @@ import (
 //
 // Parameters:
 //   - d: The Design containing actions to iterate over
-//   - fn: Callback function that receives (endpoint, action, phase) for each enabled action
+//   - fn: Callback function that receives (endpoint, action) for each enabled action
 //
 // Iteration order:
 //  1. Single record operations: Create, Delete, Update, Patch, List, Get
@@ -25,53 +23,52 @@ import (
 // For each enabled action, the callback receives:
 //   - endpoint: The API endpoint path from the Design
 //   - action: The Action configuration
-//   - phase: The corresponding consts.Phase for the operation type
 //
 // Example:
 //
-//	rangeAction(design, func(ep string, a *Action, p consts.Phase) {
-//		fmt.Printf("%s %s payload=%s result=%s\n", p.MethodName(), ep, a.Payload, a.Result)
+//	rangeAction(design, func(route string, a *Action,) {
+//		fmt.Printf("%s %s payload=%s result=%s\n", action.Phase.MethodName(), route, a.Payload, a.Result)
 //	})
-func rangeAction(d *Design, fn func(string, *Action, consts.Phase)) {
+func rangeAction(d *Design, fn func(string, *Action)) {
 	if d == nil || fn == nil || !d.Enabled {
 		return
 	}
 
 	if d.Create.Enabled {
-		fn(d.Endpoint, d.Create, consts.PHASE_CREATE)
+		fn(d.Endpoint, d.Create)
 	}
 	if d.Delete.Enabled {
-		fn(d.Endpoint, d.Delete, consts.PHASE_DELETE)
+		fn(d.Endpoint, d.Delete)
 	}
 	if d.Update.Enabled {
-		fn(d.Endpoint, d.Update, consts.PHASE_UPDATE)
+		fn(d.Endpoint, d.Update)
 	}
 	if d.Patch.Enabled {
-		fn(d.Endpoint, d.Patch, consts.PHASE_PATCH)
+		fn(d.Endpoint, d.Patch)
 	}
 	if d.List.Enabled {
-		fn(d.Endpoint, d.List, consts.PHASE_LIST)
+		fn(d.Endpoint, d.List)
 	}
 	if d.Get.Enabled {
-		fn(d.Endpoint, d.Get, consts.PHASE_GET)
+		fn(d.Endpoint, d.Get)
 	}
 	if d.CreateMany.Enabled {
-		fn(d.Endpoint, d.CreateMany, consts.PHASE_CREATE_MANY)
+		fn(d.Endpoint, d.CreateMany)
 	}
 	if d.DeleteMany.Enabled {
-		fn(d.Endpoint, d.DeleteMany, consts.PHASE_DELETE_MANY)
+		fn(d.Endpoint, d.DeleteMany)
 	}
 	if d.UpdateMany.Enabled {
-		fn(d.Endpoint, d.UpdateMany, consts.PHASE_UPDATE_MANY)
+		fn(d.Endpoint, d.UpdateMany)
 	}
 	if d.PatchMany.Enabled {
-		fn(d.Endpoint, d.PatchMany, consts.PHASE_PATCH_MANY)
+		fn(d.Endpoint, d.PatchMany)
 	}
 	if d.Import.Enabled {
-		fn(d.Endpoint, d.Import, consts.PHASE_IMPORT)
+		fn(d.Endpoint, d.Import)
 	}
 	if d.Export.Enabled {
-		fn(d.Endpoint, d.Export, consts.PHASE_EXPORT)
+		fn(d.Endpoint, d.Export)
 	}
 }
 

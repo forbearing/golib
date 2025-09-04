@@ -615,6 +615,7 @@ func CheckAllowedDirectories() int {
 	whitelistDirs := map[string]bool{
 		"tmp":  true,
 		"logs": true,
+		"dist": true,
 	}
 
 	// Read directory contents

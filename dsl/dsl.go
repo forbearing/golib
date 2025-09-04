@@ -26,6 +26,12 @@
 //		// Enable database migration (default: false)
 //		Migrate(true)
 //
+//		// Define alternative routes for different access patterns
+//		Route("public/users", func() {
+//			List(func() { Enabled(true); Public(true) })
+//			Get(func() { Enabled(true); Public(true) })
+//		})
+//
 //		// Configure Create operation
 //		Create(func() {
 //			Enabled(true)
@@ -95,6 +101,74 @@ func Endpoint(string) {}
 // The parameter creates RESTful nested resource patterns, enabling hierarchical API designs
 // where child resources are scoped under parent resources through URL path parameters.
 func Param(string) {}
+
+// Route defines an alternative API route for the model beyond the default hierarchical route.
+// This allows a resource to be accessible through multiple API endpoints, providing flexibility
+// for different access patterns and use cases.
+//
+// The function accepts two parameters:
+//   - path: The route path string (e.g., "apps", "config/apps")
+//   - config: A function that defines which operations are enabled for this route
+//
+// The function can be called multiple times within a Design() method to add multiple alternative routes.
+// Each call adds a new route to the model's API endpoints without overriding existing ones.
+//
+// Route Format:
+//   - Simple path: Route("apps", func() {...}) creates /api/apps
+//   - Nested path: Route("config/apps", func() {...}) creates /api/config/apps
+//   - Custom path: Route("admin/applications", func() {...}) creates /api/admin/applications
+//
+// Configuration Function:
+// The second parameter is a function that defines which operations are available for this route.
+// You can configure List, Get, Create, Update, Delete, Patch operations within this function:
+//
+//	Route("/config/apps", func() {
+//	    List(func() {
+//	        Enabled(true)
+//	        Service(false)
+//	    })
+//	    Get(func() {
+//	        Enabled(true)
+//	        Service(false)
+//	    })
+//	})
+//
+// Route Generation:
+// For a route path like "/config/apps" with Param("app"), the following routes are generated:
+//   - /api/config/apps (for List operations)
+//   - /api/config/apps/:app (for Get, Update, Delete, Patch operations)
+//
+// Usage Examples:
+//   - Route("apps", func() {...}) - Global app listing endpoint
+//   - Route("config/apps", func() {...}) - Configuration-scoped app endpoint
+//   - Route("public/apps", func() {...}) - Public app directory endpoint
+//
+// Common Use Cases:
+//   - Global resource access: Access resources without namespace/parent constraints
+//   - Alternative endpoints: Provide different API paths for the same resource
+//   - Cross-cutting concerns: Admin, public, or system-level access patterns
+//   - API versioning: Different route structures for API evolution
+//
+// Multiple Routes Example:
+//
+//	func (App) Design() {
+//	    Endpoint("apps")
+//	    Param("app")
+//	    Route("apps", func() {
+//	        List(func() { Enabled(true) })
+//	        Get(func() { Enabled(true) })
+//	    })
+//	    Route("config/apps", func() {
+//	        List(func() { Enabled(true); Service(false) })
+//	        Get(func() { Enabled(true); Service(false) })
+//	    })
+//	}
+//
+// This creates multiple API endpoints for the same model:
+//   - /api/namespaces/:ns/apps (default hierarchical route)
+//   - /api/apps and /api/apps/:app (additional global route)
+//   - /api/config/apps and /api/config/apps/:app (additional config route)
+func Route(string, func()) {}
 
 // Migrate controls whether database migration should be performed for this model.
 // When true, the model's table structure will be created/updated in the database.
@@ -206,6 +280,39 @@ type Design struct {
 	// Default: "" (no parameter)
 	Param string
 
+	// Routes contains alternative API routes for this model beyond the default hierarchical route.
+	// Each route allows the resource to be accessible through alternative API endpoints,
+	// providing flexibility for different access patterns and use cases.
+	//
+	// Map Structure:
+	//   - Key: Route path string (e.g., "apps", "config/apps", "public/apps")
+	//   - Value: Slice of Action configurations for operations enabled on this route
+	//
+	// Route Examples:
+	//   - "apps" creates /api/apps and /api/apps/:param (if Param is defined)
+	//   - "config/apps" creates /api/config/apps and /api/config/apps/:param
+	//   - "public/apps" creates /api/public/apps and /api/public/apps/:param
+	//
+	// Action Configuration:
+	// Each route can have different operations enabled. For example:
+	//   - Route "apps" might only enable List and Get operations
+	//   - Route "admin/apps" might enable all CRUD operations
+	//   - Route "public/apps" might only enable List operation
+	//
+	// Multiple routes can be defined by calling Route() multiple times in Design().
+	// Each alternative route can have its own set of enabled operations and configurations.
+	//
+	// Usage in Design():
+	//   Route("/config/apps", func() {
+	//       List(func() { Enabled(true); Service(false) })
+	//       Get(func() { Enabled(true); Service(false) })
+	//   })
+	//
+	// This populates Routes["/config/apps"] with List and Get Action configurations.
+	//
+	// Default: nil (no alternative routes)
+	Routes map[string][]*Action
+
 	// Migrate indicates whether database migration should be performed.
 	// When true, the model's table structure will be created/updated.
 	// Default: false
@@ -235,20 +342,20 @@ type Design struct {
 }
 
 // Range iterates over all enabled actions in the Design and calls the provided function
-// for each one. The function receives the endpoint, action, and phase for each enabled action.
+// for each one. The function receives the endpoint, action for each enabled action.
 //
 // Parameters:
-//   - fn: Callback function that receives (endpoint, action, phase) for each enabled action
+//   - fn: Callback function that receives (endpoint, action) for each enabled action
 //
 // The iteration order is fixed: Create, Delete, Update, Patch, List, Get,
 // CreateMany, DeleteMany, UpdateMany, PatchMany, Import, Export.
 //
 // Example:
 //
-//	design.Range(func(endpoint string, action *Action, phase consts.Phase) {
-//		fmt.Printf("Generating %s for %s\n", phase.MethodName(), endpoint)
+//	design.Range(func(route string, action *Action) {
+//		fmt.Printf("Generating %s for %s\n", action.Phase.MethodName(), route)
 //	})
-func (d *Design) Range(fn func(endpoiint string, action *Action, phase consts.Phase)) {
+func (d *Design) Range(fn func(route string, action *Action)) {
 	rangeAction(d, fn)
 }
 
@@ -279,12 +386,17 @@ type Action struct {
 	// This determines the structure of outgoing response data.
 	// Example: "*User", "UserResponse", "[]User"
 	Result string
+
+	// The phase of the action
+	// not part of DSL, just used to identify the current Action.
+	Phase consts.Phase
 }
 
 var methodList = []string{
 	"Enabled",
 	"Endpoint",
 	"Param",
+	"Route",
 	"Migrate",
 	"Payload",
 	"Result",
