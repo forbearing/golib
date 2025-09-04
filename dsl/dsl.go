@@ -125,11 +125,11 @@ func Param(string) {}
 //	Route("/config/apps", func() {
 //	    List(func() {
 //	        Enabled(true)
-//	        Service(false)
+//	        Service(true)
 //	    })
 //	    Get(func() {
 //	        Enabled(true)
-//	        Service(false)
+//	        Service(true)
 //	    })
 //	})
 //
@@ -159,8 +159,8 @@ func Param(string) {}
 //	        Get(func() { Enabled(true) })
 //	    })
 //	    Route("config/apps", func() {
-//	        List(func() { Enabled(true); Service(false) })
-//	        Get(func() { Enabled(true); Service(false) })
+//	        List(func() { Enabled(true); Service(true) })
+//	        Get(func() { Enabled(true); Service(true) })
 //	    })
 //	}
 //
@@ -177,7 +177,7 @@ func Migrate(bool) {}
 
 // Service controls whether service layer code should be generated for the current action.
 // This affects the generation of business logic layer code.
-// Default: true
+// Default: false
 func Service(bool) {}
 
 // Public controls whether the current action requires authentication/authorization.
@@ -368,7 +368,7 @@ type Action struct {
 
 	// Service indicates whether service layer code should be generated for this action.
 	// The service layer contains business logic and data access code.
-	// Default: true
+	// Default: false
 	Service bool
 
 	// Public indicates whether this action requires authentication/authorization.

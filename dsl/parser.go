@@ -489,9 +489,9 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 func parseAction(phase consts.Phase, funcName string, expr ast.Expr) (*Action, bool) {
 	var payload string
 	var result string
-	var enabled bool        // default to false
-	var service bool = true // default to true
-	var public bool         // default to false
+	var enabled bool // default to false
+	var service bool // default to true
+	var public bool  // default to false
 
 	if phase.MethodName() != funcName {
 		return nil, false
@@ -529,11 +529,6 @@ func parseAction(phase consts.Phase, funcName string, expr ast.Expr) (*Action, b
 					}
 				}
 
-				// // If the action is not enabled, skip parsing other flags
-				// if !enabled {
-				// 	return nil, false
-				// }
-
 				// Parse Service(true)/Service(false)
 				var isServiceCall bool
 				switch fun := call.Fun.(type) {
@@ -541,13 +536,11 @@ func parseAction(phase consts.Phase, funcName string, expr ast.Expr) (*Action, b
 					// anonymous import: Service(true)
 					if fun != nil && fun.Name == "Service" {
 						isServiceCall = true
-						service = true
 					}
 				case *ast.SelectorExpr:
 					// non-anonymous import: dsl.Service(true)
 					if fun != nil && fun.Sel != nil && fun.Sel.Name == "Service" {
 						isServiceCall = true
-						service = true
 					}
 				}
 				if isServiceCall && len(call.Args) > 0 && call.Args[0] != nil {
