@@ -1,10 +1,31 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- update examples/demo
+- **dsl:** cleanup unnsed comment-out code
+- **style:** format code use `gofumpt`
+
+### Feat
+- **dsl:** add Route keyword for alternative API endpoints
+
+### Fix
+- **router:** remove middleware Gzip to fix error: "cannot write message to writer during serve error: flate: closed writer"
+
+### Perf
+- **database:** avoid redundant id condition query by leveraging gorm v2 primary key recognition
+
+### Refactor
+- **task:** extract cross-platform process stats into OS-specific files
+
+
+<a name="v0.7.3"></a>
+## [v0.7.3] - 2025-09-02
 ### Chg
 - **response:** rename CodeNotFoundRouteID -> CodeNotFoundRouteParam
 
 ### Chore
+- update CHANGELOG.md
 - update CHANGELOG.md
 - update examples/demo
 - update examples/demo
@@ -29,6 +50,10 @@
 - **dsl:** export model detection helpers for broader reuse
 - **gen:** remove unused performArchitectureCheck stub
 - **router:** remove RegisterWithConfig, Register add param `*types.ControllerConfig`
+
+### Pull Requests
+- Merge pull request [#13](https://github.com/forbearing/golib/issues/13) from forbearing/dev
+- Merge pull request [#12](https://github.com/forbearing/golib/issues/12) from forbearing/dev
 
 
 <a name="v0.7.2"></a>
@@ -1752,7 +1777,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.3...HEAD
+[v0.7.3]: https://github.com/forbearing/golib/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/golib/compare/v0.7.1...v0.7.2
 [v0.7.1]: https://github.com/forbearing/golib/compare/v0.7.0-beta.3...v0.7.1
 [v0.7.0-beta.3]: https://github.com/forbearing/golib/compare/v0.7.0...v0.7.0-beta.3
