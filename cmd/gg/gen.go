@@ -167,8 +167,9 @@ func genRun() {
 			}
 		})
 
-		for route, actions := range m.Design.Routes {
+		for key, actions := range m.Design.Routes {
 			for _, act := range actions {
+				route := key
 				base := "Auth"
 				if act.Public {
 					base = "Pub"
