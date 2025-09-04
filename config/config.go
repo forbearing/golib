@@ -431,7 +431,7 @@ func Get[T any]() (t T) {
 	config, exists := registeredConfigs[cfgName]
 	if !exists {
 		zap.S().Warnw("config not found", "name", cfgName)
-		return
+		return t
 	}
 
 	storedVal := reflect.ValueOf(config)

@@ -82,7 +82,7 @@ func genRun() {
 	// Record old service files list (if prune option is enabled)
 	var oldServiceFiles []string
 	if prune {
-		oldServiceFiles = scanExistingServiceFiles(serviceDir, allModels)
+		oldServiceFiles = scanExistingServiceFiles(serviceDir)
 	}
 
 	modelStmts := make([]ast.Stmt, 0)
@@ -112,7 +112,7 @@ func genRun() {
 			}
 		}
 
-		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
+		m.Design.Range(func(s string, a *dsl.Action) {
 			if a.Service {
 				serviceImportMap[m.ServiceImportPath(modelDir, serviceDir)] = struct{}{}
 			}
@@ -123,49 +123,86 @@ func genRun() {
 	// Resolve import conflicts
 	serviceAliasMap := gen.ResolveImportConflicts(lo.Keys(serviceImportMap))
 	for _, m := range allModels {
-		m.Design.Range(func(edp string, action *dsl.Action, phase consts.Phase) {
-			if action.Service {
+		m.Design.Range(func(route string, act *dsl.Action) {
+			if act.Service {
 				if alias := serviceAliasMap[m.ServiceImportPath(modelDir, serviceDir)]; len(alias) > 0 {
 					// alias import pacakge, eg:
 					// pkg1_user "service/pkg1/user"
 					// pkg2_user "service/pkg2/user"
-					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, phase.RoleName()), phase))
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, act.Phase.RoleName()), act.Phase))
 				} else {
-					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), phase.RoleName()), phase))
+					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), act.Phase.RoleName()), act.Phase))
 				}
 			}
-			route := "Auth"
-			if action.Public {
-				route = "Pub"
+			base := "Auth"
+			if act.Public {
+				base = "Pub"
 			}
 			// If the phase is matched, the model endpoint will append the param, eg:
 			// Endpoint: tenant, param is ":tenant", new endpoint is "tenant/:tenant"
 			// Endpoint: tenant, param is ":id", new endpoint is "tenant/:id"
-			switch phase {
+			switch act.Phase {
 			case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
 				if len(m.Design.Param) == 0 {
-					edp = filepath.Join(edp, ":id") // empty param will append default ":id" to endpoint.
+					route = filepath.Join(route, ":id") // empty param will append default ":id" to endpoint.
 				} else {
-					edp = filepath.Join(edp, m.Design.Param)
+					route = filepath.Join(route, m.Design.Param)
 				}
 			case consts.PHASE_CREATE_MANY, consts.PHASE_DELETE_MANY, consts.PHASE_UPDATE_MANY, consts.PHASE_PATCH_MANY:
-				edp = filepath.Join(edp, "batch")
+				route = filepath.Join(route, "batch")
 			case consts.PHASE_IMPORT:
-				edp = filepath.Join(edp, "import")
+				route = filepath.Join(route, "import")
 			case consts.PHASE_EXPORT:
-				edp = filepath.Join(edp, "export")
+				route = filepath.Join(route, "export")
 
 			}
 
-			switch phase {
+			switch act.Phase {
 			case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
-				items := strings.Split(edp, "/")
+				items := strings.Split(route, "/")
 				lastSegment := strings.TrimLeft(items[len(items)-1], ":")
-				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, lastSegment, phase.MethodName()))
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, lastSegment, act.Phase.MethodName()))
 			default:
-				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, action.Payload, action.Result, route, edp, "", phase.MethodName()))
+				routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, "", act.Phase.MethodName()))
 			}
 		})
+
+		for key, actions := range m.Design.Routes {
+			for _, act := range actions {
+				route := key
+				base := "Auth"
+				if act.Public {
+					base = "Pub"
+				}
+				// If the phase is matched, the model endpoint will append the param, eg:
+				// Endpoint: tenant, param is ":tenant", new endpoint is "tenant/:tenant"
+				// Endpoint: tenant, param is ":id", new endpoint is "tenant/:id"
+				switch act.Phase {
+				case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+					if len(m.Design.Param) == 0 {
+						route = filepath.Join(route, ":id") // empty param will append default ":id" to endpoint.
+					} else {
+						route = filepath.Join(route, m.Design.Param)
+					}
+				case consts.PHASE_CREATE_MANY, consts.PHASE_DELETE_MANY, consts.PHASE_UPDATE_MANY, consts.PHASE_PATCH_MANY:
+					route = filepath.Join(route, "batch")
+				case consts.PHASE_IMPORT:
+					route = filepath.Join(route, "import")
+				case consts.PHASE_EXPORT:
+					route = filepath.Join(route, "export")
+
+				}
+
+				switch act.Phase {
+				case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+					items := strings.Split(route, "/")
+					lastSegment := strings.TrimLeft(items[len(items)-1], ":")
+					routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, lastSegment, act.Phase.MethodName()))
+				default:
+					routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, "", act.Phase.MethodName()))
+				}
+			}
+		}
 	}
 
 	// ============================================================
@@ -230,8 +267,8 @@ func genRun() {
 	}
 
 	for _, m := range allModels {
-		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
-			if file := gen.GenerateService(m, a, p); file != nil {
+		m.Design.Range(func(route string, act *dsl.Action) {
+			if file := gen.GenerateService(m, act, act.Phase); file != nil {
 				fset := token.NewFileSet()
 				code, err := gen.FormatNodeExtraWithFileSet(file, fset)
 				// pretty.Println(file)
@@ -239,8 +276,8 @@ func genRun() {
 				// code = gen.MethodAddComments(code, m.ModelName)
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
 				dir = strings.TrimSuffix(dir, ".go")
-				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
-				applyFile(filename, code, a)
+				filename := filepath.Join(dir, strings.ToLower(string(act.Phase))+".go")
+				applyFile(filename, code, act)
 			}
 		})
 	}
@@ -261,7 +298,7 @@ func genRun() {
 
 // scanExistingServiceFiles scans existing service files in the service directory
 // Only includes files that match phase names (e.g., create.go, update.go, etc.)
-func scanExistingServiceFiles(serviceDir string, allModels []*gen.ModelInfo) []string {
+func scanExistingServiceFiles(serviceDir string) []string {
 	var files []string
 
 	// Check if service directory exists
@@ -310,11 +347,11 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 	// Get list of service files that should currently exist
 	currentServiceFiles := make(map[string]bool)
 	for _, m := range allModels {
-		m.Design.Range(func(s string, a *dsl.Action, p consts.Phase) {
-			if a.Enabled && a.Service {
+		m.Design.Range(func(route string, act *dsl.Action) {
+			if act.Enabled && act.Service {
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
 				dir = strings.TrimSuffix(dir, ".go")
-				filename := filepath.Join(dir, strings.ToLower(string(p))+".go")
+				filename := filepath.Join(dir, strings.ToLower(string(act.Phase))+".go")
 				currentServiceFiles[filename] = true
 			}
 		})

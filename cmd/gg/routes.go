@@ -100,8 +100,8 @@ func parseRoutesFromFile() (map[string][]string, error) {
 	routes := make(map[string][]string)
 	lines := strings.Split(string(content), "\n")
 
-	// Pattern to match route registrations like: router.Register[...](router.Auth(), "path", consts.Method)
-	routePattern := regexp.MustCompile(`router\.Register\[.*?\]\([^,]+,\s*"([^"]+)",\s*consts\.(\w+)\)`)
+	// Pattern to match route registrations like: router.Register[*Type, *Type, *Type](router.Auth(), "path", &types.ControllerConfig[*Type]{...}, consts.Method)
+	routePattern := regexp.MustCompile(`router\.Register\[.*?\]\([^,]+,\s*"([^"]+)",\s*&types\.ControllerConfig\[.*?\]\{.*?\},\s*consts\.(\w+)\)`)
 
 	for _, line := range lines {
 		matches := routePattern.FindStringSubmatch(strings.TrimSpace(line))

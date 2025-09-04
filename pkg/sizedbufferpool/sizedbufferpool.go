@@ -34,7 +34,7 @@ func (bp *SizedBufferPool) Get() (b *bytes.Buffer) {
 	default:
 		b = bytes.NewBuffer(make([]byte, 0, bp.a))
 	}
-	return
+	return b
 }
 
 // Put returns the given Buffer to the SizedBufferPool.

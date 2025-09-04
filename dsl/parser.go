@@ -117,6 +117,11 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 		initDefaultAction(name, design.PatchMany)
 		initDefaultAction(name, design.Import)
 		initDefaultAction(name, design.Export)
+		for _, actions := range design.Routes {
+			for _, action := range actions {
+				initDefaultAction(name, action)
+			}
+		}
 
 		if len(endpoint) > 0 && design.Enabled {
 			design.Endpoint = endpoint
@@ -240,7 +245,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 
 	for _, stmt := range stmts {
 		callExpr, ok := stmt.(*ast.ExprStmt)
-		if !ok || callExpr == nil {
+		if !ok || callExpr == nil || callExpr.X == nil {
 			continue
 		}
 		call, ok := callExpr.X.(*ast.CallExpr)
@@ -298,113 +303,129 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 			}
 		}
 
-		if res, exists := parseAction(consts.PHASE_CREATE.MethodName(), funcName, call.Args); exists {
-			defaults.Create = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
+		// Parse "Route()".
+		// Example:
+		//
+		// Route("/config/apps", func() {
+		// 	List(func() {
+		// 		Enabled(true)
+		// 		Service(true)
+		// 	})
+		// 	Get(func() {
+		// 		Enabled(true)
+		// 		Service(true)
+		// 	})
+		// })
+		if funcName == "Route" && len(call.Args) == 2 {
+			var route string
+			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
+				route = trimQuote(arg.Value)
+				route = strings.TrimLeft(route, "/")
+			}
+			if len(route) > 0 {
+				if defaults.Routes == nil {
+					defaults.Routes = make(map[string][]*Action)
+				}
+				if flit, ok := call.Args[1].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
+					for _, stmt := range flit.Body.List {
+						expr, ok := stmt.(*ast.ExprStmt)
+						if !ok || expr == nil {
+							continue
+						}
+						call_, ok := expr.X.(*ast.CallExpr)
+						if !ok || call_ == nil || call_.Fun == nil || len(call_.Args) == 0 {
+							continue
+						}
+
+						var funName_ string
+						switch fun := call_.Fun.(type) {
+						case *ast.Ident:
+							if fun == nil {
+								continue
+							}
+							funName_ = fun.Name
+						case *ast.SelectorExpr:
+							if fun == nil || fun.Sel == nil {
+								continue
+							}
+							funName_ = fun.Sel.Name
+						default:
+							continue
+						}
+						if !is(funName_) {
+							continue
+						}
+
+						if act, e := parseAction(consts.PHASE_CREATE, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_DELETE, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_UPDATE, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_PATCH, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_LIST, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_GET, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_CREATE_MANY, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_DELETE_MANY, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_UPDATE_MANY, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_PATCH_MANY, funName_, call_.Args[0]); e {
+							defaults.Routes[route] = append(defaults.Routes[route], act)
+						}
+					}
+				}
 			}
 		}
-		if res, exists := parseAction(consts.PHASE_DELETE.MethodName(), funcName, call.Args); exists {
-			defaults.Delete = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+
+		if act, e := parseAction(consts.PHASE_CREATE, funcName, call.Args[0]); e {
+			defaults.Create = act
 		}
-		if res, exists := parseAction(consts.PHASE_UPDATE.MethodName(), funcName, call.Args); exists {
-			defaults.Update = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_DELETE, funcName, call.Args[0]); e {
+			defaults.Delete = act
 		}
-		if res, exists := parseAction(consts.PHASE_PATCH.MethodName(), funcName, call.Args); exists {
-			defaults.Patch = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_UPDATE, funcName, call.Args[0]); e {
+			defaults.Update = act
 		}
-		if res, exists := parseAction(consts.PHASE_LIST.MethodName(), funcName, call.Args); exists {
-			defaults.List = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_PATCH, funcName, call.Args[0]); e {
+			defaults.Patch = act
 		}
-		if res, exists := parseAction(consts.PHASE_GET.MethodName(), funcName, call.Args); exists {
-			defaults.Get = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_LIST, funcName, call.Args[0]); e {
+			defaults.List = act
 		}
-		if res, exists := parseAction(consts.PHASE_CREATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.CreateMany = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_GET, funcName, call.Args[0]); e {
+			defaults.Get = act
 		}
-		if res, exists := parseAction(consts.PHASE_DELETE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.DeleteMany = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_CREATE_MANY, funcName, call.Args[0]); e {
+			defaults.CreateMany = act
 		}
-		if res, exists := parseAction(consts.PHASE_UPDATE_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.UpdateMany = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_DELETE_MANY, funcName, call.Args[0]); e {
+			defaults.DeleteMany = act
 		}
-		if res, exists := parseAction(consts.PHASE_PATCH_MANY.MethodName(), funcName, call.Args); exists {
-			defaults.PatchMany = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_UPDATE_MANY, funcName, call.Args[0]); e {
+			defaults.UpdateMany = act
 		}
-		if res, exists := parseAction(consts.PHASE_IMPORT.MethodName(), funcName, call.Args); exists {
-			defaults.Import = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_PATCH_MANY, funcName, call.Args[0]); e {
+			defaults.PatchMany = act
 		}
-		if res, exists := parseAction(consts.PHASE_EXPORT.MethodName(), funcName, call.Args); exists {
-			defaults.Export = &Action{
-				Payload: res.payload,
-				Result:  res.result,
-				Enabled: res.enabled,
-				Service: res.service,
-				Public:  res.public,
-			}
+		if act, e := parseAction(consts.PHASE_IMPORT, funcName, call.Args[0]); e {
+			defaults.Import = act
+		}
+		if act, e := parseAction(consts.PHASE_EXPORT, funcName, call.Args[0]); e {
+			defaults.Export = act
 		}
 
 	}
@@ -417,7 +438,7 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 // from the function literal passed to action methods like Create(), Update(), etc.
 //
 // Parameters:
-//   - name: The expected action name to match (e.g., "Create", "Update")
+//   - phase: The expected phase to match (e.g., consts.PHASE_CREATE, consts.PHASE_LIST)
 //   - funcName: The actual function name being called
 //   - args: The function call arguments, expected to contain a function literal
 //
@@ -440,163 +461,163 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 //	    Payload[CreateUserRequest]
 //	    Result[*User]
 //	})
-func parseAction(name string, funcName string, args []ast.Expr) (actionResult, bool) {
+func parseAction(phase consts.Phase, funcName string, expr ast.Expr) (*Action, bool) {
 	var payload string
 	var result string
-	var enabled bool        // default to false
-	var service bool = true // default to true
-	var public bool         // default to false
+	var enabled bool // default to false
+	var service bool // default to true
+	var public bool  // default to false
 
-	if funcName == name && len(args) == 1 {
-		if flit, ok := args[0].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
-			for _, stmt := range flit.Body.List {
-				if expr, ok := stmt.(*ast.ExprStmt); ok && expr != nil {
-					if call, ok := expr.X.(*ast.CallExpr); ok && call != nil && call.Fun != nil {
+	if phase.MethodName() != funcName {
+		return nil, false
+	}
+	flit, ok := expr.(*ast.FuncLit)
+	if !ok {
+		return nil, false
+	}
+	if flit == nil || flit.Body == nil {
+		return nil, false
+	}
 
-						// Parse Enabled(true)/Enabled(false)
-						var isEnabledCall bool
-						switch fun := call.Fun.(type) {
-						case *ast.Ident:
-							// anonymous import: Enabled(true)
-							if fun != nil && fun.Name == "Enabled" {
-								isEnabledCall = true
-							}
-						case *ast.SelectorExpr:
-							// non-anonymous import: dsl.Enabled(true)
-							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Enabled" {
-								isEnabledCall = true
+	for _, stmt := range flit.Body.List {
+		if expr, ok := stmt.(*ast.ExprStmt); ok && expr != nil {
+			if call, ok := expr.X.(*ast.CallExpr); ok && call != nil && call.Fun != nil {
+
+				// Parse Enabled(true)/Enabled(false)
+				var isEnabledCall bool
+				switch fun := call.Fun.(type) {
+				case *ast.Ident:
+					// anonymous import: Enabled(true)
+					if fun != nil && fun.Name == "Enabled" {
+						isEnabledCall = true
+					}
+				case *ast.SelectorExpr:
+					// non-anonymous import: dsl.Enabled(true)
+					if fun != nil && fun.Sel != nil && fun.Sel.Name == "Enabled" {
+						isEnabledCall = true
+					}
+				}
+				if isEnabledCall && len(call.Args) > 0 && call.Args[0] != nil {
+					if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
+						// check the argument of Enabled() is true.
+						enabled = identExpr.Name == "true"
+					}
+				}
+
+				// Parse Service(true)/Service(false)
+				var isServiceCall bool
+				switch fun := call.Fun.(type) {
+				case *ast.Ident:
+					// anonymous import: Service(true)
+					if fun != nil && fun.Name == "Service" {
+						isServiceCall = true
+					}
+				case *ast.SelectorExpr:
+					// non-anonymous import: dsl.Service(true)
+					if fun != nil && fun.Sel != nil && fun.Sel.Name == "Service" {
+						isServiceCall = true
+					}
+				}
+				if isServiceCall && len(call.Args) > 0 && call.Args[0] != nil {
+					if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
+						// check the argument of Service() is true.
+						service = identExpr.Name == "true"
+					}
+				}
+
+				// Parse Public(true)/Public(false)
+				var isPublicCall bool
+				switch fun := call.Fun.(type) {
+				case *ast.Ident:
+					// anonymous import: Public(false)
+					if fun != nil && fun.Name == "Public" {
+						isPublicCall = true
+					}
+				case *ast.SelectorExpr:
+					// non-anonymous import: dsl.Public(false)
+					if fun != nil && fun.Sel != nil && fun.Sel.Name == "Public" {
+						isPublicCall = true
+					}
+				}
+
+				if isPublicCall && len(call.Args) > 0 && call.Args[0] != nil {
+					if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
+						// check the argument of Public() is true.
+						public = identExpr.Name == "true"
+					}
+				}
+
+				// Parse Payload[User] or Result[*User].
+				if indexExpr, ok := call.Fun.(*ast.IndexExpr); ok && indexExpr != nil {
+					var isPayload bool
+					var isResult bool
+					var funcName string
+					switch x := indexExpr.X.(type) {
+					case *ast.Ident:
+						// anonymous import: Payload[User]
+						if x != nil {
+							funcName = x.Name
+						}
+					case *ast.SelectorExpr:
+						// non-anonymous import: dsl.Payload[User]
+						if x != nil && x.Sel != nil {
+							funcName = x.Sel.Name
+						}
+					}
+					switch funcName {
+					case "Payload":
+						isPayload = true
+					case "Result":
+						isResult = true
+					}
+					if isPayload {
+						if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Payload[User]
+							payload = ident.Name
+						} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Payload[*User]
+							if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
+								payload = "*" + ident.Name
 							}
 						}
-						if isEnabledCall && len(call.Args) > 0 && call.Args[0] != nil {
-							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
-								// check the argument of Enabled() is true.
-								enabled = identExpr.Name == "true"
-							}
-						}
-
-						// Parse Service(true)/Service(false)
-						var isServiceCall bool
-						switch fun := call.Fun.(type) {
-						case *ast.Ident:
-							// anonymous import: Service(true)
-							if fun != nil && fun.Name == "Service" {
-								isServiceCall = true
-								service = true
-							}
-						case *ast.SelectorExpr:
-							// non-anonymous import: dsl.Service(true)
-							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Service" {
-								isServiceCall = true
-								service = true
-							}
-						}
-						if isServiceCall && len(call.Args) > 0 && call.Args[0] != nil {
-							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
-								// check the argument of Service() is true.
-								service = identExpr.Name == "true"
-							}
-						}
-
-						// Parse Public(true)/Public(false)
-						var isPublicCall bool
-						switch fun := call.Fun.(type) {
-						case *ast.Ident:
-							// anonymous import: Public(false)
-							if fun != nil && fun.Name == "Public" {
-								isPublicCall = true
-							}
-						case *ast.SelectorExpr:
-							// non-anonymous import: dsl.Public(false)
-							if fun != nil && fun.Sel != nil && fun.Sel.Name == "Public" {
-								isPublicCall = true
-							}
-						}
-
-						if isPublicCall && len(call.Args) > 0 && call.Args[0] != nil {
-							if identExpr, ok := call.Args[0].(*ast.Ident); ok && identExpr != nil {
-								// check the argument of Public() is true.
-								public = identExpr.Name == "true"
-							}
-						}
-
-						// Parse Payload[User] or Result[*User].
-						if indexExpr, ok := call.Fun.(*ast.IndexExpr); ok && indexExpr != nil {
-							var isPayload bool
-							var isResult bool
-							var funcName string
-							switch x := indexExpr.X.(type) {
-							case *ast.Ident:
-								// anonymous import: Payload[User]
-								if x != nil {
-									funcName = x.Name
-								}
-							case *ast.SelectorExpr:
-								// non-anonymous import: dsl.Payload[User]
-								if x != nil && x.Sel != nil {
-									funcName = x.Sel.Name
-								}
-							}
-							switch funcName {
-							case "Payload":
-								isPayload = true
-							case "Result":
-								isResult = true
-							}
-							if isPayload {
-								if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Payload[User]
-									payload = ident.Name
-								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Payload[*User]
-									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
-										payload = "*" + ident.Name
-									}
-								}
-							}
-							if isResult {
-								if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Result[User]
-									result = ident.Name
-								} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Result[*User]
-									if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
-										result = "*" + ident.Name
-									}
-								}
+					}
+					if isResult {
+						if ident, ok := indexExpr.Index.(*ast.Ident); ok && ident != nil { // Result[User]
+							result = ident.Name
+						} else if starExpr, ok := indexExpr.Index.(*ast.StarExpr); ok && starExpr != nil { // Result[*User]
+							if ident, ok := starExpr.X.(*ast.Ident); ok && ident != nil {
+								result = "*" + ident.Name
 							}
 						}
 					}
 				}
 			}
 		}
-		return actionResult{
-			payload: payload,
-			result:  result,
-			enabled: enabled,
-			service: service,
-			public:  public,
-		}, true
 	}
 
-	return actionResult{}, false
+	return &Action{
+		Payload: payload,
+		Result:  result,
+		Enabled: enabled,
+		Service: service,
+		Public:  public,
+		Phase:   phase,
+	}, true
 }
 
-// actionResult holds the parsed configuration for a single DSL action.
-// It contains all the settings that can be configured for an API action
-// through the DSL, including type information and behavioral flags.
-type actionResult struct {
-	// payload is the name of the request payload type (e.g., "CreateUserRequest")
-	payload string
-	// result is the name of the response result type (e.g., "User" or "*User")
-	result string
-	// enabled indicates whether this action should generate API endpoints
-	enabled bool
-	// service indicates whether to generate service layer code for this action
-	service bool
-	// public indicates whether the generated API endpoint should be publicly accessible
-	public bool
-
-	// payloadHasStar indicates if the payload type is a pointer (starts with "*")
-	payloadHasStar bool
-	// resultHasStar indicates if the result type is a pointer (starts with "*")
-	resultHasStar bool
-}
+// // actionResult holds the parsed configuration for a single DSL action.
+// // It contains all the settings that can be configured for an API action
+// // through the DSL, including type information and behavioral flags.
+// type actionResult struct {
+// 	// payload is the name of the request payload type (e.g., "CreateUserRequest")
+// 	payload string
+// 	// result is the name of the response result type (e.g., "User" or "*User")
+// 	result string
+// 	// enabled indicates whether this action should generate API endpoints
+// 	enabled bool
+// 	// service indicates whether to generate service layer code for this action
+// 	service bool
+// 	// public indicates whether the generated API endpoint should be publicly accessible
+// 	public bool
+// }
 
 // FindAllModelBase finds all struct types that embed model.Base as an anonymous field.
 // It searches for structs containing anonymous fields of type "model.Base" or aliased versions
@@ -686,7 +707,7 @@ func FindAllModelEmpty(file *ast.File) []string {
 	return names
 }
 
-// isModelBase checks if a struct field is an anonymous embedding of model.Base.
+// IsModelBase checks if a struct field is an anonymous embedding of model.Base.
 // It handles various import patterns including direct imports, aliased imports,
 // and dot imports of the model package.
 //
@@ -738,7 +759,7 @@ func IsModelBase(file *ast.File, field *ast.Field) bool {
 	return false
 }
 
-// isModelEmpty checks if a struct field is an anonymous embedding of model.Empty.
+// IsModelEmpty checks if a struct field is an anonymous embedding of model.Empty.
 // It handles various import patterns including direct imports, aliased imports,
 // and dot imports of the model package.
 //

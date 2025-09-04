@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/forbearing/golib/types/consts"
 	"github.com/kr/pretty"
 )
 
@@ -398,15 +399,27 @@ func TestParse(t *testing.T) {
 			endpoint: "",
 			want: map[string]*Design{
 				"User": {
-					Enabled:    true,
-					Endpoint:   "user2",
-					Param:      ":user",
-					Migrate:    true,
-					Create:     &Action{Enabled: true, Service: false, Public: true, Payload: "User", Result: "*User"},
-					Delete:     &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "*User"},
-					Update:     &Action{Enabled: false, Service: true, Public: false, Payload: "*User", Result: "User"},
+					Enabled:  true,
+					Endpoint: "user2",
+					Param:    ":user",
+					Migrate:  true,
+					Routes: map[string][]*Action{
+						"iam/users": {
+							{Enabled: true, Service: true, Payload: "*UserReq", Result: "*UserRsp", Phase: consts.PHASE_LIST},
+							{Enabled: true, Service: true, Payload: "*User", Result: "*User", Phase: consts.PHASE_GET},
+						},
+						"tenant/users": {
+							{Enabled: true, Service: false, Payload: "*UserReq", Result: "*User", Phase: consts.PHASE_CREATE},
+							{Enabled: true, Service: false, Payload: "*User", Result: "*User", Phase: consts.PHASE_UPDATE},
+							{Enabled: true, Service: false, Payload: "*User", Result: "*User", Phase: consts.PHASE_PATCH},
+							{Enabled: true, Service: false, Payload: "*User", Result: "*User", Phase: consts.PHASE_CREATE_MANY},
+						},
+					},
+					Create:     &Action{Enabled: true, Service: true, Public: true, Payload: "User", Result: "*User", Phase: consts.PHASE_CREATE},
+					Delete:     &Action{Enabled: true, Service: false, Public: false, Payload: "*User", Result: "*User", Phase: consts.PHASE_DELETE},
+					Update:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "User", Phase: consts.PHASE_UPDATE},
 					Patch:      &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
-					List:       &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "*User"},
+					List:       &Action{Enabled: true, Service: false, Public: false, Payload: "*User", Result: "*User", Phase: consts.PHASE_LIST},
 					Get:        &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
 					CreateMany: &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
 					DeleteMany: &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "*User"},
@@ -427,10 +440,10 @@ func TestParse(t *testing.T) {
 					Endpoint:   "user2",
 					Param:      ":user",
 					Migrate:    false,
-					Create:     &Action{Enabled: false, Service: true, Public: false, Payload: "User2", Result: "*User3"},
+					Create:     &Action{Enabled: false, Service: false, Public: false, Payload: "User2", Result: "*User3", Phase: consts.PHASE_CREATE},
 					Delete:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
 					Update:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
-					Patch:      &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "User"},
+					Patch:      &Action{Enabled: true, Service: false, Public: false, Payload: "*User", Result: "User", Phase: consts.PHASE_PATCH},
 					List:       &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
 					Get:        &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
 					CreateMany: &Action{Enabled: false, Service: false, Public: false, Payload: "*User2", Result: "*User2"},
@@ -451,9 +464,9 @@ func TestParse(t *testing.T) {
 					Enabled:    true,
 					Endpoint:   "user",
 					Migrate:    false,
-					Create:     &Action{Enabled: false, Service: true, Public: false, Payload: "User", Result: "*User"},
+					Create:     &Action{Enabled: false, Service: false, Public: false, Payload: "User", Result: "*User", Phase: consts.PHASE_CREATE},
 					Delete:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User3", Result: "*User3"},
-					Update:     &Action{Enabled: true, Service: true, Public: false, Payload: "*User", Result: "User"},
+					Update:     &Action{Enabled: true, Service: false, Public: false, Payload: "*User", Result: "User", Phase: consts.PHASE_UPDATE},
 					Patch:      &Action{Enabled: false, Service: false, Public: false, Payload: "*User3", Result: "*User3"},
 					List:       &Action{Enabled: false, Service: false, Public: false, Payload: "*User3", Result: "*User3"},
 					Get:        &Action{Enabled: false, Service: false, Public: false, Payload: "*User3", Result: "*User3"},
@@ -468,9 +481,9 @@ func TestParse(t *testing.T) {
 					Enabled:    true,
 					Endpoint:   "user4",
 					Migrate:    false,
-					Create:     &Action{Enabled: true, Service: true, Public: false, Payload: "User", Result: "*User"},
+					Create:     &Action{Enabled: true, Service: false, Public: false, Payload: "User", Result: "*User", Phase: consts.PHASE_CREATE},
 					Delete:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User4", Result: "*User4"},
-					Update:     &Action{Enabled: false, Service: true, Public: false, Payload: "*User", Result: "User"},
+					Update:     &Action{Enabled: false, Service: false, Public: false, Payload: "*User", Result: "User", Phase: consts.PHASE_UPDATE},
 					Patch:      &Action{Enabled: false, Service: false, Public: false, Payload: "*User4", Result: "*User4"},
 					List:       &Action{Enabled: false, Service: false, Public: false, Payload: "*User4", Result: "*User4"},
 					Get:        &Action{Enabled: false, Service: false, Public: false, Payload: "*User4", Result: "*User4"},

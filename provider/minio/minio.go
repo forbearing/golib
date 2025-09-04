@@ -152,14 +152,14 @@ func Put(reader io.Reader, size int64) (filename string, err error) {
 		if errBucketExists == nil && exists {
 			goto CONTINUE
 		}
-		return
+		return filename, err
 	}
 CONTINUE:
 	filename = util.UUID()
 	_, err = client.PutObject(context.TODO(), bucket, filename, reader, size, minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	})
-	return
+	return filename, err
 }
 
 func Get(filename string) ([]byte, error) {

@@ -355,7 +355,7 @@ func stdListFind(list *golist.List, v any, equal func(int, int) bool) (_v any) {
 			return v
 		}
 	}
-	return
+	return _v
 }
 
 func benchmarkReverse(b *testing.B, size int) {

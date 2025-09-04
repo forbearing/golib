@@ -47,7 +47,7 @@ func Init() error {
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
 		middleware.RouteParams(),
-		middleware.Gzip(),
+		// middleware.Gzip(),
 	)
 	root.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	root.GET("/-/healthz", controller.Probe.Healthz)

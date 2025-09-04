@@ -23,11 +23,40 @@ func (User) Design() {
 	Migrate(true)
 	Param("user")
 
+	Route("/iam/users", func() {
+		List(func() {
+			Enabled(true)
+			Service(true)
+			Payload[*UserReq]()
+			Result[*UserRsp]()
+		})
+		Get(func() {
+			Enabled(true)
+			Service(true)
+		})
+	})
+	Route("///tenant/users", func() {
+		Create(func() {
+			Enabled(true)
+			Payload[*UserReq]()
+			Result[*User]()
+		})
+		Update(func() {
+			Enabled(true)
+		})
+		Patch(func() {
+			Enabled(true)
+		})
+		CreateMany(func() {
+			Enabled(true)
+		})
+	})
+
 	// Custom create action request "Payload" and response "Result".
 	// Default payload and result is the model name.
 	Create(func() {
 		Enabled(true)
-		Service(false)
+		Service(true)
 		Public(true)
 		Payload[User]()
 		Result[*User]()

@@ -41,7 +41,7 @@ func pruneRun() {
 	fmt.Printf("  %s %d models found\n", green("✔"), len(allModels))
 
 	// Scan existing service files
-	oldServiceFiles := scanExistingServiceFiles(serviceDir, allModels)
+	oldServiceFiles := scanExistingServiceFiles(serviceDir)
 
 	// Prune disabled service files
 	logSection("Prune Disabled Service Files")

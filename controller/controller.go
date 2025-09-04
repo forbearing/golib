@@ -2528,5 +2528,5 @@ func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler fu
 		}
 		return fn
 	}
-	return
+	return handler, db
 }
