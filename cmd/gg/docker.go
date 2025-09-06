@@ -13,6 +13,44 @@ import (
 // dockerCmd represents the docker command
 var dockerCmd = &cobra.Command{
 	Use:   "docker",
+	Short: "Docker management for the application",
+	Long: `Docker management for the application.
+
+This command provides subcommands to:
+- Generate Dockerfile
+- Build Docker image using best practices
+- Support both development and production builds
+- Use minimal base images for production
+
+Examples:
+  gg docker gen                # Generate Dockerfile only
+  gg docker build              # Build with default settings
+  gg docker build --tag myapp:v1.0   # Build with custom tag
+  gg docker build --dev        # Build development image
+  gg docker build --no-cache   # Build without using cache`,
+}
+
+// dockerGenCmd represents the docker gen command
+var dockerGenCmd = &cobra.Command{
+	Use:   "gen",
+	Short: "Generate Dockerfile for the application",
+	Long: `Generate Dockerfile for the application using best practices.
+
+This command will generate a Dockerfile with:
+- Multi-stage build for production
+- Development mode with hot reload support
+- Security best practices
+- Minimal base images
+
+Examples:
+  gg docker gen                # Generate production Dockerfile
+  gg docker gen --dev          # Generate development Dockerfile`,
+	RunE: dockerGenRun,
+}
+
+// dockerBuildCmd represents the docker build command
+var dockerBuildCmd = &cobra.Command{
+	Use:   "build",
 	Short: "Build Docker image for the application",
 	Long: `Build Docker image for the application using best practices.
 
@@ -23,11 +61,11 @@ This command will:
 - Use minimal base images for production
 
 Examples:
-  gg docker                    # Build with default settings
-  gg docker --tag myapp:v1.0   # Build with custom tag
-  gg docker --dev              # Build development image
-  gg docker --no-cache         # Build without using cache`,
-	RunE: dockerRun,
+  gg docker build              # Build with default settings
+  gg docker build --tag myapp:v1.0   # Build with custom tag
+  gg docker build --dev        # Build development image
+  gg docker build --no-cache   # Build without using cache`,
+	RunE: dockerBuildRun,
 }
 
 var (
@@ -38,13 +76,32 @@ var (
 )
 
 func init() {
-	dockerCmd.Flags().StringVarP(&dockerTag, "tag", "t", "", "Docker image tag (default: auto-generated from module name)")
-	dockerCmd.Flags().BoolVar(&dockerDev, "dev", false, "Build development image with hot reload support")
-	dockerCmd.Flags().BoolVar(&dockerNoCache, "no-cache", false, "Build without using cache")
-	dockerCmd.Flags().BoolVar(&dockerPush, "push", false, "Push image to registry after build")
+	// Add subcommands to docker command
+	dockerCmd.AddCommand(dockerGenCmd, dockerBuildCmd)
+
+	// Flags for docker gen command
+	dockerGenCmd.Flags().BoolVar(&dockerDev, "dev", false, "Generate development Dockerfile with hot reload support")
+
+	// Flags for docker build command
+	dockerBuildCmd.Flags().StringVarP(&dockerTag, "tag", "t", "", "Docker image tag (default: auto-generated from module name)")
+	dockerBuildCmd.Flags().BoolVar(&dockerDev, "dev", false, "Build development image with hot reload support")
+	dockerBuildCmd.Flags().BoolVar(&dockerNoCache, "no-cache", false, "Build without using cache")
+	dockerBuildCmd.Flags().BoolVar(&dockerPush, "push", false, "Push image to registry after build")
 }
 
-func dockerRun(cmd *cobra.Command, args []string) error {
+// dockerGenRun generates Dockerfile only
+func dockerGenRun(cmd *cobra.Command, args []string) error {
+	// Generate Dockerfile
+	if err := generateDockerfile(); err != nil {
+		return fmt.Errorf("failed to generate Dockerfile: %v", err)
+	}
+
+	fmt.Printf("%s Dockerfile generated successfully at: ./Dockerfile\n", green("✔"))
+	return nil
+}
+
+// dockerBuildRun builds Docker image
+func dockerBuildRun(cmd *cobra.Command, args []string) error {
 	// Check if Docker is installed
 	if err := checkDockerInstalled(); err != nil {
 		return fmt.Errorf("Docker is not installed or not accessible: %v", err)
