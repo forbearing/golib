@@ -1516,13 +1516,15 @@ func removeFieldsFromRequestBody(op *openapi3.Operation, fieldsToRemove ...strin
 
 	if op.RequestBody.Ref != "" {
 		// 如果是引用，需要从 components 中获取实际的 RequestBody
-		// 这里需要访问全局的 doc 对象
+		// 这里需要访问全局的 doc 对象，使用读锁保护
+		docMutex.RLock()
 		if doc.Components.RequestBodies != nil {
 			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
 			if rb, exists := doc.Components.RequestBodies[refKey]; exists && rb.Value != nil {
 				requestBody = rb.Value
 			}
 		}
+		docMutex.RUnlock()
 	} else if op.RequestBody.Value != nil {
 		requestBody = op.RequestBody.Value
 	}
@@ -1593,12 +1595,15 @@ func removeFieldsFromBatchRequestBody(op *openapi3.Operation, fieldsToRemove ...
 
 	if op.RequestBody.Ref != "" {
 		// 如果是引用，需要从 components 中获取实际的 RequestBody
+		// 这里需要访问全局的 doc 对象，使用读锁保护
+		docMutex.RLock()
 		if doc.Components.RequestBodies != nil {
 			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
 			if rb, exists := doc.Components.RequestBodies[refKey]; exists && rb.Value != nil {
 				requestBody = rb.Value
 			}
 		}
+		docMutex.RUnlock()
 	} else if op.RequestBody.Value != nil {
 		requestBody = op.RequestBody.Value
 	}
