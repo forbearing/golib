@@ -1516,7 +1516,6 @@ func removeFieldsFromRequestBody(op *openapi3.Operation, fieldsToRemove ...strin
 
 	if op.RequestBody.Ref != "" {
 		// 如果是引用，需要从 components 中获取实际的 RequestBody
-		// 这里需要访问全局的 doc 对象，使用读锁保护
 		docMutex.RLock()
 		if doc.Components.RequestBodies != nil {
 			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
@@ -1532,6 +1531,10 @@ func removeFieldsFromRequestBody(op *openapi3.Operation, fieldsToRemove ...strin
 	if requestBody == nil || requestBody.Content == nil {
 		return
 	}
+
+	// 使用写锁保护对 schema 的修改操作
+	docMutex.Lock()
+	defer docMutex.Unlock()
 
 	// 处理每个 content type
 	for contentType, mediaType := range requestBody.Content {
@@ -1595,7 +1598,6 @@ func removeFieldsFromBatchRequestBody(op *openapi3.Operation, fieldsToRemove ...
 
 	if op.RequestBody.Ref != "" {
 		// 如果是引用，需要从 components 中获取实际的 RequestBody
-		// 这里需要访问全局的 doc 对象，使用读锁保护
 		docMutex.RLock()
 		if doc.Components.RequestBodies != nil {
 			refKey := strings.TrimPrefix(op.RequestBody.Ref, "#/components/requestBodies/")
@@ -1611,6 +1613,10 @@ func removeFieldsFromBatchRequestBody(op *openapi3.Operation, fieldsToRemove ...
 	if requestBody == nil || requestBody.Content == nil {
 		return
 	}
+
+	// 使用写锁保护对 schema 的修改操作
+	docMutex.Lock()
+	defer docMutex.Unlock()
 
 	// 处理每个 content type
 	for contentType, mediaType := range requestBody.Content {
