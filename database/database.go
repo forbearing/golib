@@ -36,6 +36,7 @@ var (
 	ErrNotAddressableModel = errors.New("model is not addressable")
 	ErrNotAddressableSlice = errors.New("slice is not addressable")
 	ErrNotSetSlice         = errors.New("slice cannot set")
+	ErrIDRequired          = errors.New("id is required")
 )
 
 var (
@@ -1636,7 +1637,7 @@ QUERY:
 // Get find one record accoding to `id`.
 func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	if len(id) == 0 {
-		return errors.New("id is required")
+		return ErrIDRequired
 	}
 	if err = db.prepare(); err != nil {
 		return err
