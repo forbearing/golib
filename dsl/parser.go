@@ -117,7 +117,7 @@ func Parse(file *ast.File, endpoint string) map[string]*Design {
 		initDefaultAction(name, design.PatchMany)
 		initDefaultAction(name, design.Import)
 		initDefaultAction(name, design.Export)
-		for _, actions := range design.Routes {
+		for _, actions := range design.routes {
 			for _, action := range actions {
 				initDefaultAction(name, action)
 			}
@@ -323,8 +323,8 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 				route = strings.TrimLeft(route, "/")
 			}
 			if len(route) > 0 {
-				if defaults.Routes == nil {
-					defaults.Routes = make(map[string][]*Action)
+				if defaults.routes == nil {
+					defaults.routes = make(map[string][]*Action)
 				}
 				if flit, ok := call.Args[1].(*ast.FuncLit); ok && flit != nil && flit.Body != nil {
 					for _, stmt := range flit.Body.List {
@@ -357,34 +357,34 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 						}
 
 						if act, e := parseAction(consts.PHASE_CREATE, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_DELETE, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_UPDATE, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_PATCH, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_LIST, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_GET, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_CREATE_MANY, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_DELETE_MANY, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_UPDATE_MANY, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 						if act, e := parseAction(consts.PHASE_PATCH_MANY, funName_, call_.Args[0]); e {
-							defaults.Routes[route] = append(defaults.Routes[route], act)
+							defaults.routes[route] = append(defaults.routes[route], act)
 						}
 					}
 				}

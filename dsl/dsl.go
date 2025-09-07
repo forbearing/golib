@@ -280,7 +280,7 @@ type Design struct {
 	// Default: "" (no parameter)
 	Param string
 
-	// Routes contains alternative API routes for this model beyond the default hierarchical route.
+	// routes contains alternative API routes for this model beyond the default hierarchical route.
 	// Each route allows the resource to be accessible through alternative API endpoints,
 	// providing flexibility for different access patterns and use cases.
 	//
@@ -308,10 +308,10 @@ type Design struct {
 	//       Get(func() { Enabled(true); Service(false) })
 	//   })
 	//
-	// This populates Routes["/config/apps"] with List and Get Action configurations.
+	// This populates routes["/config/apps"] with List and Get Action configurations.
 	//
 	// Default: nil (no alternative routes)
-	Routes map[string][]*Action
+	routes map[string][]*Action
 
 	// Migrate indicates whether database migration should be performed.
 	// When true, the model's table structure will be created/updated.
@@ -355,9 +355,7 @@ type Design struct {
 //	design.Range(func(route string, action *Action) {
 //		fmt.Printf("Generating %s for %s\n", action.Phase.MethodName(), route)
 //	})
-func (d *Design) Range(fn func(route string, action *Action)) {
-	rangeAction(d, fn)
-}
+func (d *Design) Range(fn func(route string, action *Action)) { rangeAction(d, fn) }
 
 // Action represents the configuration for a specific API operation.
 // Each operation (Create, Update, Delete, etc.) has its own Action configuration.

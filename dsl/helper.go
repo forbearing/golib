@@ -70,6 +70,14 @@ func rangeAction(d *Design, fn func(string, *Action)) {
 	if d.Export.Enabled {
 		fn(d.Endpoint, d.Export)
 	}
+
+	for route, action := range d.routes {
+		for _, a := range action {
+			if a.Enabled {
+				fn(route, a)
+			}
+		}
+	}
 }
 
 // is checks if the given name is a valid DSL method name.
