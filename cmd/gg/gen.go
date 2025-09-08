@@ -47,15 +47,25 @@ func genRun() {
 	}
 
 	// Architecture dependency check
-	CheckArchitectureDependency()
+	if CheckArchitectureDependency() > 0 {
+		os.Exit(1)
+	}
 	// Model Singular Naming Check
-	CheckModelSingularNaming()
+	if CheckModelSingularNaming() > 0 {
+		os.Exit(1)
+	}
 	// Model JSON Tag Naming Check
-	CheckModelJSONTagNaming()
+	if CheckModelJSONTagNaming() > 0 {
+		os.Exit(1)
+	}
 	// Model Package Naming Check
-	CheckModelPackageNaming()
+	if CheckModelPackageNaming() > 0 {
+		os.Exit(1)
+	}
 	// Directory Restriction Check
-	CheckAllowedDirectories()
+	if CheckAllowedDirectories() > 0 {
+		os.Exit(1)
+	}
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
