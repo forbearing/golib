@@ -400,7 +400,7 @@ func TestParse(t *testing.T) {
 			want: map[string]*Design{
 				"User": {
 					Enabled:  true,
-					Endpoint: "user2",
+					Endpoint: "iam-user2",
 					Param:    ":user",
 					Migrate:  true,
 					routes: map[string][]*Action{

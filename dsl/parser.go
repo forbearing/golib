@@ -282,6 +282,8 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 		if funcName == "Endpoint" && len(call.Args) == 1 {
 			if arg, ok := call.Args[0].(*ast.BasicLit); ok && arg != nil && arg.Kind == token.STRING {
 				defaults.Endpoint = trimQuote(arg.Value)
+				defaults.Endpoint = strings.TrimLeft(defaults.Endpoint, "/")
+				defaults.Endpoint = strings.ReplaceAll(defaults.Endpoint, "/", "-")
 			}
 		}
 

@@ -70,7 +70,8 @@ func Enabled(bool) {}
 
 // Endpoint sets a custom endpoint path for the model's API routes.
 // If not specified, defaults to the lowercase version of the model name.
-// Example: Endpoint("users") for a User model
+// Leading slashes are automatically removed and forward slashes are replaced with hyphens.
+// Example: Endpoint("users") for a User model, Endpoint("/iam/users") becomes "iam-users"
 func Endpoint(string) {}
 
 // Param defines a path parameter for dynamic routing in RESTful APIs.
@@ -107,7 +108,7 @@ func Param(string) {}
 // for different access patterns and use cases.
 //
 // The function accepts two parameters:
-//   - path: The route path string (e.g., "apps", "config/apps")
+//   - path: The route path string (e.g., "apps", "config/apps"). Leading slashes are automatically removed.
 //   - config: A function that defines which operations are enabled for this route
 //
 // The function can be called multiple times within a Design() method to add multiple alternative routes.
@@ -117,6 +118,7 @@ func Param(string) {}
 //   - Simple path: Route("apps", func() {...}) creates /api/apps
 //   - Nested path: Route("config/apps", func() {...}) creates /api/config/apps
 //   - Custom path: Route("admin/applications", func() {...}) creates /api/admin/applications
+//   - Leading slash removed: Route("/config/apps", func() {...}) becomes "config/apps"
 //
 // Configuration Function:
 // The second parameter is a function that defines which operations are available for this route.
