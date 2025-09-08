@@ -280,7 +280,7 @@ func modelPkg2ServicePkg(pkgName string) string {
 }
 
 // genServiceMethod1 uses AST to generate CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
-// DeleteBefore,DeleteAfter,GetBefore,GetAfter,UpdatePartialBefore,UpdatePartialAfter methods.
+// DeleteBefore,DeleteAfter,GetBefore,GetAfter,PatchBefore,PatchAfter methods.
 func genServiceMethod1(info *ModelInfo, phase consts.Phase) *ast.FuncDecl {
 	str := strings.ReplaceAll(strcase.SnakeCase(phase.MethodName()), "_", " ")
 
