@@ -606,6 +606,7 @@ func CheckAllowedDirectories() int {
 		"typex":      true,
 		"helper":     true,
 		"internal":   true,
+		"cmd":        true,
 		"testcode":   true,
 		"testdata":   true,
 		"docs":       true,
