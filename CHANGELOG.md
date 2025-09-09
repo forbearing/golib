@@ -1,7 +1,40 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chg
+- **database:** switch to idiomatic DatabaseContext.Context()
+
 ### Chore
+- update examples/demo
+
+### Docs
+- **codegen:** correct comment for genServiceMethod1 phases
+- **database:** improve API documentation for database manipulator
+
+### Enh
+- **database:** add and reuse ErrIDRequired in Get
+
+### Feat
+- **dsl:** normalize Endpoint format by stripping/transforming slashes
+- **types:** ServiceContext add method DatabaseContext(); change NewGormContext -> DatabaseContext.Context()
+
+### Fix
+- **controller:** prevent reflect panic in patchValue when handling nil pointers
+- **dsl:** extends Design.Range to internal `routes` to iterates additional routes
+- **openapigen:** add fine-grained mutex protection for schema modifications in removeFieldsFromRequestBody
+- **openapigen:** add mutex protection for concurrent access to global doc vairable
+
+### Refactor
+- **database:** make ctx parameter required in Database function
+
+### Test
+- **database:** add comprehensive test suite with unit and benchmark tests
+
+
+<a name="v0.7.4"></a>
+## [v0.7.4] - 2025-09-04
+### Chore
+- update CHANGELOG.md
 - update examples/demo
 - **dsl:** cleanup unnsed comment-out code
 - **style:** format code use `gofumpt`
@@ -17,6 +50,9 @@
 
 ### Refactor
 - **task:** extract cross-platform process stats into OS-specific files
+
+### Pull Requests
+- Merge pull request [#14](https://github.com/forbearing/golib/issues/14) from forbearing/dev
 
 
 <a name="v0.7.3"></a>
@@ -1777,7 +1813,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.4...HEAD
+[v0.7.4]: https://github.com/forbearing/golib/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/golib/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/golib/compare/v0.7.1...v0.7.2
 [v0.7.1]: https://github.com/forbearing/golib/compare/v0.7.0-beta.3...v0.7.1
