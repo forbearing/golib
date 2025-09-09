@@ -222,6 +222,30 @@ func CheckModelSingularNaming() int {
 		return 0
 	}
 
+	// Common plural file names that are allowed in Go projects
+	allowedPluralFiles := map[string]bool{
+		"types":       true,
+		"errors":      true,
+		"constants":   true,
+		"consts":      true,
+		"vars":        true,
+		"handlers":    true,
+		"models":      true,
+		"examples":    true,
+		"configs":     true,
+		"options":     true,
+		"helpers":     true,
+		"utils":       true,
+		"interfaces":  true,
+		"services":    true,
+		"clients":     true,
+		"controllers": true,
+		"apis":        true,
+		"schemas":     true,
+		"entities":    true,
+		"records":     true,
+	}
+
 	client := pluralize.NewClient()
 
 	err := filepath.Walk(modelDir, func(path string, info os.FileInfo, err error) error {
@@ -269,7 +293,8 @@ func CheckModelSingularNaming() int {
 
 			// File name length must greater than 3 before check.
 			// Check singular must before plural.
-			if len(fileName) > 3 && !client.IsSingular(fileName) && client.IsPlural(fileName) {
+			// Skip check for allowed plural file names
+			if len(fileName) > 3 && !allowedPluralFiles[fileName] && !client.IsSingular(fileName) && client.IsPlural(fileName) {
 				violation := fmt.Sprintf("Model file '%s' should be singular (suggested: %s.go)",
 					path, client.Singular(fileName))
 				violations = append(violations, violation)
