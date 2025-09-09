@@ -69,7 +69,7 @@ func (m *Menu) ListAfter() (err error) {
 		return err
 	}
 	if m.Path != oldPath || m.Api != oldApi {
-		return database.Database[*Menu]().WithoutHook().Update(m)
+		return database.Database[*Menu](nil).WithoutHook().Update(m)
 	}
 	return nil
 }
@@ -80,7 +80,7 @@ func (m *Menu) GetAfter() (err error) {
 		return err
 	}
 	if m.Path != oldPath || m.Api != oldApi {
-		return database.Database[*Menu]().WithoutHook().Update(m)
+		return database.Database[*Menu](nil).WithoutHook().Update(m)
 	}
 	return nil
 }

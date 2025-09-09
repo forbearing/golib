@@ -17,7 +17,7 @@ func (User) Design() {
 	// Enabled(true)
 
 	// Default Endpoint is the lower case of the model name.
-	Endpoint("user2")
+	Endpoint("//iam/user2")
 
 	// Default to true,
 	Migrate(true)

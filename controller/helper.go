@@ -48,10 +48,20 @@ func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal
 						if !newVal.FieldByName(fieldRemark).IsZero() {
 							// output log must before set value.
 							if newVal.FieldByName(fieldRemark).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", fieldRemark, typ.Name(),
-									oldVal.FieldByName(fieldRemark).Elem(), newVal.FieldByName(fieldRemark).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldRemark).Elem().Interface()
+								var oldValue, newValue any
+								if !oldVal.FieldByName(fieldRemark).IsNil() {
+									oldValue = oldVal.FieldByName(fieldRemark).Elem().Interface()
+								} else {
+									oldValue = "<nil>"
+								}
+								if !newVal.FieldByName(fieldRemark).IsNil() {
+									newValue = newVal.FieldByName(fieldRemark).Elem().Interface()
+								} else {
+									newValue = "<nil>"
+								}
+								log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", fieldRemark, typ.Name(), oldValue, newValue))
 							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", fieldRemark, typ.Name(),
+								log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", fieldRemark, typ.Name(),
 									oldVal.FieldByName(fieldRemark).Interface(), newVal.FieldByName(fieldRemark).Interface()))
 							}
 							oldVal.FieldByName(fieldRemark).Set(newVal.FieldByName(fieldRemark)) // set old value by new value
@@ -65,10 +75,20 @@ func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal
 						if !newVal.FieldByName(fieldOrder).IsZero() {
 							// output log must before set value.
 							if newVal.FieldByName(fieldOrder).Kind() == reflect.Pointer {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", fieldOrder, typ.Name(),
-									oldVal.FieldByName(fieldOrder).Elem(), newVal.FieldByName(fieldOrder).Elem())) // WARN: you shouldn't call oldVal.FieldByName(fieldOrder).Elem().Interface()
+								var oldValue, newValue any
+								if !oldVal.FieldByName(fieldOrder).IsNil() {
+									oldValue = oldVal.FieldByName(fieldOrder).Elem().Interface()
+								} else {
+									oldValue = "<nil>"
+								}
+								if !newVal.FieldByName(fieldOrder).IsNil() {
+									newValue = newVal.FieldByName(fieldOrder).Elem().Interface()
+								} else {
+									newValue = "<nil>"
+								}
+								log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", fieldOrder, typ.Name(), oldValue, newValue))
 							} else {
-								log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", fieldOrder, typ.Name(),
+								log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", fieldOrder, typ.Name(),
 									oldVal.FieldByName(fieldOrder).Interface(), newVal.FieldByName(fieldOrder).Interface()))
 							}
 							oldVal.FieldByName(fieldOrder).Set(newVal.FieldByName(fieldOrder)) // set old value by new value.
@@ -99,9 +119,20 @@ func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal
 		}
 		// output log must before set value.
 		if newVal.Field(i).Kind() == reflect.Pointer {
-			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Elem().Interface(), newVal.Field(i).Elem().Interface()))
+			var oldValue, newValue any
+			if !oldVal.Field(i).IsNil() {
+				oldValue = oldVal.Field(i).Elem().Interface()
+			} else {
+				oldValue = "<nil>"
+			}
+			if !newVal.Field(i).IsNil() {
+				newValue = newVal.Field(i).Elem().Interface()
+			} else {
+				newValue = "<nil>"
+			}
+			log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", typ.Name(), typ.Field(i).Name, oldValue, newValue))
 		} else {
-			log.Info(fmt.Sprintf("[UpdatePartial %s] field: %q: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
+			log.Info(fmt.Sprintf("[PATCH %s] field: %q: %v --> %v", typ.Name(), typ.Field(i).Name, oldVal.Field(i).Interface(), newVal.Field(i).Interface()))
 		}
 		oldVal.Field(i).Set(newVal.Field(i)) // set old value by new value
 	}

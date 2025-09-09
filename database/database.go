@@ -36,6 +36,7 @@ var (
 	ErrNotAddressableModel = errors.New("model is not addressable")
 	ErrNotAddressableSlice = errors.New("slice is not addressable")
 	ErrNotSetSlice         = errors.New("slice cannot set")
+	ErrIDRequired          = errors.New("id is required")
 )
 
 var (
@@ -79,8 +80,9 @@ type database[M types.Model] struct {
 	shouldAutoMigrate bool
 }
 
-// reset will reset the database interface to default value.
-// Dont forget to call this method in all functions except option functions that prefixed with 'With*'.
+// reset resets the database instance to its initial state by clearing all query conditions,
+// restoring default settings, and preparing for the next operation.
+// This method must be called in all functions except option functions prefixed with 'With*'.
 func (db *database[M]) reset() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -106,6 +108,8 @@ func (db *database[M]) reset() {
 	db.db = DB.WithContext(context.Background())
 }
 
+// prepare prepares the database instance for query execution by applying all configured
+// query conditions, joins, and other settings to the underlying GORM database instance.
 func (db *database[M]) prepare() error {
 	if db.db == nil || db.db == new(gorm.DB) {
 		return ErrInvalidDB
@@ -118,15 +122,17 @@ func (db *database[M]) prepare() error {
 	return nil
 }
 
-// WithDB returns a new database manipulator, only support *gorm.DB.
-// eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
+// WithDB sets the underlying GORM database instance for this database manipulator.
+// This allows switching between different database connections or configurations.
+// Only supports *gorm.DB type. Returns the same instance if invalid input is provided.
+// Example: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithDB(x any) types.Database[M] {
 	var empty *gorm.DB
 	if x == nil || x == new(gorm.DB) || x == empty {
 		return db
 	}
 	// v := reflect.ValueOf(x)
-	// if v.Kind() != reflect.Ptr {
+	// if v.Kind() != reflect.Pointer {
 	// 	return db
 	// }
 	// if v.IsNil() {
@@ -148,8 +154,10 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	return db
 }
 
-// WithTable multiple custom table, always used with the method `WithDB`.
-// eg: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
+// WithTable sets the table name for database operations, overriding the default table name
+// derived from the model type. This is useful for working with custom table names or views.
+// Often used in combination with WithDB method.
+// Example: database.Database[*model.MeetingRoom]().WithDB(mysql.Software).WithTable("meeting_rooms").List(&rooms)
 func (db *database[M]) WithTable(name string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -157,7 +165,9 @@ func (db *database[M]) WithTable(name string) types.Database[M] {
 	return db
 }
 
-// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
+// WithBatchSize sets the batch size for batch operations such as batch insert, update, or delete.
+// A larger batch size can improve performance but may consume more memory.
+// Affects Create, Update, and Delete operations.
 func (db *database[M]) WithBatchSize(size int) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -166,7 +176,8 @@ func (db *database[M]) WithBatchSize(size int) types.Database[M] {
 	return db
 }
 
-// WithDebug setting debug mode, the priority is higher than config.Server.LogLevel and default value(false).
+// WithDebug enables debug mode for database operations, showing detailed SQL queries and execution info.
+// This setting has higher priority than config.Server.LogLevel and overrides the default value (false).
 func (db *database[M]) WithDebug() types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -174,8 +185,9 @@ func (db *database[M]) WithDebug() types.Database[M] {
 	return db
 }
 
-// WithAnd with AND query condition(default).
-// It must be called before WithQuery.
+// WithAnd sets the query condition combination mode to AND (default behavior).
+// This method must be called before WithQuery to take effect.
+// All query conditions will be combined using AND logic.
 func (db *database[M]) WithAnd(flag ...bool) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -186,8 +198,9 @@ func (db *database[M]) WithAnd(flag ...bool) types.Database[M] {
 	return db
 }
 
-// WithAnd with OR query condition.
-// It must be called before WithQuery.
+// WithOr sets the query condition combination mode to OR.
+// This method must be called before WithQuery to take effect.
+// All query conditions will be combined using OR logic.
 func (db *database[M]) WithOr(flag ...bool) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -198,7 +211,9 @@ func (db *database[M]) WithOr(flag ...bool) types.Database[M] {
 	return db
 }
 
-// WithIndex use specific index to query.
+// WithIndex specifies a database index to use for query optimization.
+// Helps improve query performance by forcing the database to use a specific index.
+// Empty or whitespace-only index names are ignored.
 func (db *database[M]) WithIndex(index string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -209,15 +224,21 @@ func (db *database[M]) WithIndex(index string) types.Database[M] {
 	return db
 }
 
-// WithQuery
+// WithQuery sets query conditions based on the provided model struct fields.
+// It supports exact matching, fuzzy matching (LIKE), and range queries for different field types.
+// Non-zero fields in the model will be used as query conditions.
+//
+// Parameters:
+//   - query: A model instance with fields set as query conditions
+//   - fuzzyMatch: Optional boolean to enable MySQL fuzzy matching (LIKE queries)
+//
 // Examples:
-// - WithQuery(&model.JobHistory{JobID: req.ID})
-// - WithQuery(&model.CronJobHistory{CronJobID: req.ID})
-// It will using mysql fuzzy matching if fuzzyMatch[0] is ture.
+//   - WithQuery(&model.JobHistory{JobID: req.ID})
+//   - WithQuery(&model.CronJobHistory{CronJobID: req.ID})
+//   - WithQuery(&model.User{Name: "John"}, true) // fuzzy matching
 //
-// NOTE: The underlying type msut be pointer to struct, otherwise panic will occur.
-//
-// NOTE: empty query conditions will casee list all resources from database.
+// NOTE: The underlying type must be pointer to struct, otherwise panic will occur.
+// NOTE: Empty query conditions will cause listing all resources from database.
 func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -637,6 +658,19 @@ func (db *database[M]) applyCursorPagination() {
 	}
 }
 
+// WithTimeRange adds a time range condition to the query using BETWEEN clause.
+// Filters records where the specified column value falls between startTime and endTime (inclusive).
+// Returns the same instance if columnName is empty or either time parameter is zero value.
+//
+// Parameters:
+//   - columnName: The database column name to filter on
+//   - startTime: The start time of the range (inclusive)
+//   - endTime: The end time of the range (inclusive)
+//
+// Example:
+//
+//	WithTimeRange("created_at", time.Now().AddDate(0, -1, 0), time.Now())
+//
 // WithTimeRange
 func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, endTime time.Time) types.Database[M] {
 	db.mu.Lock()
@@ -648,8 +682,16 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 	return db
 }
 
-// WithSelect specify fields that you want when querying, creating, updating
-// default select all fields.
+// WithSelect specifies fields to select when querying, creating, or updating records.
+// The method automatically includes defaultsColumns (id, created_by, updated_by, created_at, updated_at, deleted_at)
+// in addition to the specified columns to ensure essential fields are always available.
+// Empty or whitespace-only column names are filtered out, and duplicate defaultsColumns are avoided.
+//
+// Parameters:
+//   - columns: Field names to select (defaultsColumns will be automatically added)
+//
+// Returns the same instance if no valid columns are provided after filtering.
+//
 // WARNING: Using WithSelect may result in the removal of certain fields from table records
 // if there are multiple hooks in the service and model layers. Use with caution.
 func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
@@ -672,6 +714,19 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithSelectRaw allows specifying raw SQL SELECT clause with optional arguments.
+// Unlike WithSelect, this method does not automatically add defaultsColumns.
+// Use this when you need full control over the SELECT statement.
+//
+// Parameters:
+//   - query: Raw SQL SELECT clause or column expressions
+//   - args: Optional arguments for parameterized queries
+//
+// Example:
+//
+//	WithSelectRaw("COUNT(*) as total, AVG(price) as avg_price")
+//	WithSelectRaw("users.name, orders.amount WHERE orders.status = ?", "completed")
+//
 // WithSelectRaw
 func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
@@ -680,11 +735,17 @@ func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 	return db
 }
 
-// WithTransaction executes operations within a transaction.
-// It's typically used with DB.Transaction():
-// NOTE:
-// 1. If tx is provided, disable GORM's default transaction
-// 2. If tx is nil, use default behavior
+// WithTransaction executes operations within a database transaction.
+// This method is typically used with DB.Transaction() to ensure ACID properties.
+// It disables GORM's default transaction behavior when a transaction is provided.
+//
+// Parameters:
+//   - tx: A *gorm.DB transaction instance (nil values are ignored)
+//
+// Notes:
+//   - If tx is provided, disables GORM's default transaction
+//   - If tx is nil, uses default behavior
+//   - Invalid transaction types are logged and ignored
 //
 // Example:
 //
@@ -700,7 +761,7 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 		return db
 	}
 	// v := reflect.ValueOf(x)
-	// if v.Kind() != reflect.Ptr {
+	// if v.Kind() != reflect.Pointer {
 	// 	return db
 	// }
 	// if v.IsNil() {
@@ -719,6 +780,19 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 	return db
 }
 
+// WithLock adds row-level locking to the query for concurrent access control.
+// Uses SELECT ... FOR UPDATE to prevent other transactions from modifying selected rows.
+// Should be used within a transaction to be effective.
+//
+// Example:
+//
+//	DB.Transaction(func(tx *gorm.DB) error {
+//	    return Database[*User]().
+//	        WithTransaction(tx).
+//	        WithLock().
+//	        Get(&user, userID)
+//	})
+//
 // WithLock adds locking clause to SELECT statement.
 // It must be used within a transaction (WithTransaction).
 //
@@ -781,6 +855,18 @@ func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 	return db
 }
 
+// WithJoinRaw adds a raw SQL JOIN clause to the query.
+// Provides full control over JOIN operations including INNER, LEFT, RIGHT, and FULL OUTER joins.
+//
+// Parameters:
+//   - query: Raw SQL JOIN clause
+//   - args: Optional arguments for parameterized queries
+//
+// Example:
+//
+//	WithJoinRaw("LEFT JOIN orders ON users.id = orders.user_id")
+//	WithJoinRaw("INNER JOIN categories c ON products.category_id = c.id AND c.status = ?", "active")
+//
 // WithJoinRaw adds JOIN clause to query.
 //
 // Basic Join:
@@ -875,6 +961,17 @@ func (db *database[M]) WithJoinRaw(query string, args ...any) types.Database[M] 
 	return db
 }
 
+// WithGroup adds GROUP BY clause to the query for data aggregation.
+// Used with aggregate functions like COUNT, SUM, AVG, etc.
+//
+// Parameters:
+//   - name: Column name or expression to group by
+//
+// Example:
+//
+//	WithGroup("category_id")  // Group by category
+//	WithGroup("DATE(created_at)")  // Group by date
+//
 // WithGroup adds GROUP BY clause to SELECT statement.
 // For example:
 //
@@ -900,6 +997,18 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 	return db
 }
 
+// WithHaving adds HAVING clause to the query for filtering grouped results.
+// Used in conjunction with GROUP BY to filter aggregated data.
+//
+// Parameters:
+//   - query: HAVING condition expression
+//   - args: Optional arguments for parameterized conditions
+//
+// Example:
+//
+//	WithGroup("category_id").WithHaving("COUNT(*) > ?", 5)
+//	WithHaving("SUM(amount) > 1000")
+//
 // WithHaving adds HAVING clause to filter grouped records.
 // HAVING clause is used to filter groups, similar to WHERE but operates on grouped records.
 // For example:
@@ -923,6 +1032,18 @@ func (db *database[M]) WithHaving(query any, args ...any) types.Database[M] {
 	return db
 }
 
+// WithOrder adds ORDER BY clause to sort query results.
+// Supports multiple sorting criteria and directions (ASC/DESC).
+//
+// Parameters:
+//   - value: Column name with optional direction (e.g., "name ASC", "created_at DESC")
+//
+// Example:
+//
+//	WithOrder("name ASC")  // Sort by name ascending
+//	WithOrder("created_at DESC")  // Sort by creation date descending
+//	WithOrder("priority DESC, name ASC")  // Multiple sort criteria
+//
 // WithOrder
 // reference: https://www.cnblogs.com/Braveliu/p/10654091.html
 // For example:
@@ -961,6 +1082,17 @@ func (db *database[M]) WithOrder(order string) types.Database[M] {
 	return db
 }
 
+// WithScope applies predefined query scopes to modify the query.
+// Scopes are reusable query modifiers that can be applied to any query.
+//
+// Parameters:
+//   - funcs: One or more scope functions that modify the query
+//
+// Example:
+//
+//	WithScope(ActiveUsers, RecentlyCreated)
+//	WithScope(func(db *gorm.DB) *gorm.DB { return db.Where("status = ?", "active") })
+//
 // WithScope
 // Examples:
 //   - pageStr, _ := c.GetQuery("page")
@@ -984,6 +1116,19 @@ func (db *database[M]) WithScope(page, size int) types.Database[M] {
 	return db
 }
 
+// WithLimit adds LIMIT clause to restrict the number of returned records.
+// Used for pagination and controlling result set size.
+//
+// Parameters:
+//   - limit: Maximum number of records to return (must be positive)
+//
+// Returns the same instance if limit is not positive.
+//
+// Example:
+//
+//	WithLimit(10)  // Return at most 10 records
+//	WithLimit(100).WithOffset(20)  // Pagination: skip 20, take 100
+//
 // WithLimit specifies the number of record to be retrieved.
 func (db *database[M]) WithLimit(limit int) types.Database[M] {
 	db.mu.Lock()
@@ -992,6 +1137,19 @@ func (db *database[M]) WithLimit(limit int) types.Database[M] {
 	return db
 }
 
+// WithExpand enables eager loading of specified associations.
+// Preloads related data to avoid N+1 query problems.
+//
+// Parameters:
+//   - query: Association name or nested association path
+//   - args: Optional conditions for the preloaded association
+//
+// Example:
+//
+//	WithExpand("Orders")  // Preload user's orders
+//	WithExpand("Orders.Items")  // Preload nested associations
+//	WithExpand("Orders", "status = ?", "completed")  // Conditional preload
+//
 // WithExpand preload associations with given conditions.
 // order: preload with order.
 // eg: [Children.Children.Children Parent.Parent.Parent]
@@ -1058,6 +1216,17 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 	return db
 }
 
+// WithExclude omits specified fields from SELECT queries.
+// Useful when you want most fields except a few (opposite of WithSelect).
+//
+// Parameters:
+//   - columns: Field names to exclude from the result
+//
+// Example:
+//
+//	WithExclude("password", "secret_key")  // Exclude sensitive fields
+//	WithExclude("large_text_field")  // Exclude large fields for performance
+//
 // WithExclude excludes records that matchs a condition within a list.
 // For example:
 //   - If you want exlcude users with specific ids from your query,
@@ -1077,6 +1246,15 @@ func (db *database[M]) WithExclude(excludes map[string][]any) types.Database[M] 
 	return db
 }
 
+// WithPurge enables permanent deletion of records (hard delete).
+// Bypasses soft delete mechanism and removes records from the database permanently.
+// Use with extreme caution as this operation cannot be undone.
+//
+// Example:
+//
+//	WithPurge().Delete(&user)  // Permanently delete user record
+//
+// WARNING: This will permanently remove data from the database.
 // WithPurge will delete resource in database permanently.
 // It only works on 'Delete' method.
 func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
@@ -1090,6 +1268,17 @@ func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
 	return db
 }
 
+// WithCache enables query result caching with specified TTL (Time To Live).
+// Improves performance by storing frequently accessed data in memory.
+//
+// Parameters:
+//   - ttl: Cache duration (time.Duration)
+//
+// Example:
+//
+//	WithCache(5 * time.Minute).List(&users)  // Cache results for 5 minutes
+//	WithCache(time.Hour).Get(&config, "app_settings")  // Cache for 1 hour
+//
 // WithCache will make query resource count from cache.
 // If cache not found or expired. query from database directly.
 func (db *database[M]) WithCache(enable ...bool) types.Database[M] {
@@ -1103,6 +1292,17 @@ func (db *database[M]) WithCache(enable ...bool) types.Database[M] {
 	return db
 }
 
+// WithOmit excludes specified fields from INSERT and UPDATE operations.
+// Useful for skipping auto-generated fields or fields that shouldn't be modified.
+//
+// Parameters:
+//   - columns: Field names to omit from the operation
+//
+// Example:
+//
+//	WithOmit("created_at", "updated_at").Create(&user)  // Skip timestamp fields
+//	WithOmit("id").Update(&user)  // Skip ID field during update
+//
 // WithOmit omit specific columns when create/update/query.
 func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 	db.mu.Lock()
@@ -1111,6 +1311,15 @@ func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 	return db
 }
 
+// WithTryRun enables dry-run mode to preview SQL queries without executing them.
+// Useful for debugging, query optimization, and testing query generation.
+// The generated SQL will be logged but not executed against the database.
+//
+// Example:
+//
+//	WithTryRun().Create(&user)  // Preview INSERT SQL without creating record
+//	WithTryRun().WithQuery(params).List(&users)  // Preview SELECT SQL
+//
 // WithTryRun only executes model hooks without performing actual database operations.
 // Also logs the SQL statements that would have been executed.
 func (db *database[M]) WithTryRun(enable ...bool) types.Database[M] {
@@ -1124,6 +1333,15 @@ func (db *database[M]) WithTryRun(enable ...bool) types.Database[M] {
 	return db
 }
 
+// WithoutHook disables model hooks (callbacks) for the current operation.
+// Bypasses BeforeCreate, AfterCreate, BeforeUpdate, AfterUpdate, etc. hooks.
+// Use when you need direct database operations without business logic interference.
+//
+// Example:
+//
+//	WithoutHook().Create(&user)  // Create without triggering hooks
+//	WithoutHook().Update(&user)  // Update without validation hooks
+//
 // WithoutHook will disable all model hooks.
 func (db *database[M]) WithoutHook() types.Database[M] {
 	db.mu.Lock()
@@ -1132,10 +1350,20 @@ func (db *database[M]) WithoutHook() types.Database[M] {
 	return db
 }
 
-// Create one or multiple objects in database.
-// It will update the "created_at" and "updated_at" field.
-// Examples:
-// - database.XXX().Create(&model.XXX{ID: id, Field1: field1, Field2: field2})
+// Create inserts one or multiple records into the database.
+// Automatically sets ID (if empty), created_at, and updated_at timestamps.
+// Executes CreateBefore and CreateAfter model hooks unless disabled with WithoutHook.
+// Supports batch processing for large datasets using configurable batch sizes.
+//
+// Parameters:
+//   - objs: One or more model instances to create
+//
+// Returns error if validation fails, database constraints are violated, or hooks return errors.
+//
+// Example:
+//
+//	Create(&User{Name: "John", Email: "john@example.com"})
+//	Create(user1, user2, user3)  // Batch create multiple records
 func (db *database[M]) Create(objs ...M) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1246,11 +1474,24 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	return nil
 }
 
-// Delete one or multiple objects in database.
-// Examples:
-// - database.XXX().Delete(&model.XXX{ID: id}) // delete record with primary key
-// - database.XXX().WithQuery(req).Delete(req) // delete record with where condiions.
-// FIXME: is delete should use defaultLimit or defaultBatchSize?
+// Delete removes one or multiple records from the database.
+// By default performs soft delete (sets deleted_at timestamp).
+// Use WithPurge() for permanent deletion (hard delete).
+// Executes DeleteBefore and DeleteAfter model hooks unless disabled with WithoutHook.
+//
+// Parameters:
+//   - objs: One or more model instances to delete
+//
+// Behavior:
+//   - Soft delete: Sets deleted_at field, records remain in database
+//   - Hard delete (with WithPurge): Permanently removes records
+//   - Supports batch processing for performance
+//
+// Example:
+//
+//	Delete(&user)  // Soft delete by primary key
+//	WithQuery(params).Delete(&User{})  // Delete with conditions
+//	WithPurge().Delete(&user)  // Permanent deletion
 func (db *database[M]) Delete(objs ...M) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1346,16 +1587,25 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 	return nil
 }
 
-// Update one or multiple objects in database.
-// It will just update the "updated_at" field.
-// Examples:
-//   - obj := new(model.XXX)
-//     objs := make([]*model.XXX, 0)
-//     // do something on objs and objs.
-//     doSomething(obj)
-//     doSomething(objs)
-//     database.XXX().Update(obj)
-//     database.XXX().Update(objs)
+// Update modifies one or multiple records in the database.
+// Automatically updates the updated_at timestamp for each record.
+// Executes UpdateBefore and UpdateAfter model hooks unless disabled with WithoutHook.
+// Uses GORM's Save method which performs INSERT or UPDATE based on primary key existence.
+//
+// Parameters:
+//   - objs: One or more model instances to update
+//
+// Behavior:
+//   - Sets ID if empty before updating
+//   - Updates all fields of the model
+//   - Supports batch processing for performance
+//   - Clears related cache entries
+//
+// Example:
+//
+//	user.Name = "Updated Name"
+//	Update(&user)  // Update single record
+//	Update(user1, user2, user3)  // Batch update multiple records
 func (db *database[M]) Update(objs ...M) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1434,8 +1684,21 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	return nil
 }
 
-// UpdateById only update one record with specific id.
-// its not invoke model hook.
+// UpdateById updates a specific field of a single record identified by ID.
+// This is a lightweight update operation that bypasses model hooks for performance.
+// Only updates the specified field without triggering validation or business logic.
+//
+// Parameters:
+//   - id: The primary key of the record to update
+//   - key: The field name to update
+//   - val: The new value for the field
+//
+// Note: Does not invoke UpdateBefore/UpdateAfter hooks for performance reasons.
+//
+// Example:
+//
+//	UpdateById("user123", "status", "active")  // Update user status
+//	UpdateById("order456", "amount", 99.99)    // Update order amount
 func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1475,13 +1738,27 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	return nil
 }
 
-// List find all record if not run WithQuery(query).
-// List find record with `where` conditioan if run WithQuery(query).
-// Examples:
-//   - data := make([]*model.XXX, 0)
-//     database.XXX().WithScope(page, size).WithQuery(&model.XXX{Field1: field1, Field2: field2}).List(&data)
-//   - data := make([]*model.XXX, 0)
-//     database.XXX().List(&data)
+// List retrieves multiple records from the database based on applied conditions.
+// Returns all records if no conditions are specified, or filtered records with WithQuery.
+// Supports caching, pagination, sorting, and eager loading of associations.
+//
+// Parameters:
+//   - dest: Pointer to slice where results will be stored
+//   - _cache: Optional cache parameter for advanced caching control
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Supports pagination with WithLimit/WithOffset
+//   - Supports sorting with WithOrder
+//   - Supports filtering with WithQuery
+//   - Supports eager loading with WithExpand
+//
+// Example:
+//
+//	var users []User
+//	List(&users)  // Get all users
+//	WithQuery(&User{Status: "active"}).List(&users)  // Get active users
+//	WithLimit(10).WithOffset(20).List(&users)  // Paginated results
 func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1536,7 +1813,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// 	var _dest []M
 	// 	if _dest, err = redis.GetML[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 		if val.Kind() != reflect.Pointer || val.Elem().Kind() != reflect.Slice {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1552,7 +1829,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// } else {
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 		if val.Kind() != reflect.Pointer || val.Elem().Kind() != reflect.Slice {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1633,10 +1910,31 @@ QUERY:
 // 	return db.db.Where(query).Find(dest).Error
 // }
 
-// Get find one record accoding to `id`.
+// Get retrieves a single record from the database by its primary key (ID).
+// Supports automatic caching to improve performance for frequently accessed records.
+// Executes GetBefore and GetAfter model hooks unless disabled with WithoutHook.
+//
+// Parameters:
+//   - dest: Pointer to model instance where the result will be stored
+//   - id: Primary key value of the record to retrieve
+//   - _cache: Optional cache parameter for advanced caching control
+//
+// Returns ErrIDRequired if id is empty, or database errors if record not found.
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Cache-first lookup for improved performance
+//   - Supports eager loading with WithExpand
+//   - Supports field selection with WithSelect
+//
+// Example:
+//
+//	var user User
+//	Get(&user, "user123")  // Get user by ID
+//	WithExpand("Orders").Get(&user, "user123")  // Get user with orders
 func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	if len(id) == 0 {
-		return errors.New("id is required")
+		return ErrIDRequired
 	}
 	if err = db.prepare(); err != nil {
 		return err
@@ -1659,7 +1957,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -1697,7 +1995,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1711,7 +2009,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1779,8 +2077,28 @@ QUERY:
 	return nil
 }
 
-// Count returns the total number of records with the given query condition.
-// NOTE: The underlying type msut be pointer to struct, otherwise panic will occur.
+// Count returns the total number of records matching the current query conditions.
+// Supports automatic caching to improve performance for frequently executed count queries.
+// Applies all previously set query conditions (WHERE, JOIN, etc.) to the count operation.
+//
+// Parameters:
+//   - count: Pointer to int64 where the result count will be stored
+//
+// Returns database errors if the query fails.
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Cache-first lookup for improved performance
+//   - Respects all query modifiers (WHERE, JOIN, GROUP BY, etc.)
+//   - Uses LIMIT(-1) to ensure accurate count with existing LIMIT clauses
+//
+// Example:
+//
+//	var total int64
+//	WithQuery("status = ?", "active").Count(&total)  // Count active records
+//	WithJoinRaw("LEFT JOIN orders ON users.id = orders.user_id").Count(&total)  // Count with JOIN
+//
+// Note: The underlying type must be pointer to struct, otherwise panic will occur.
 func (db *database[M]) Count(count *int64) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1866,7 +2184,29 @@ QUERY:
 	return nil
 }
 
-// First finds the first record ordered by primary key.
+// First retrieves the first record from the database ordered by primary key.
+// Supports automatic caching to improve performance for frequently accessed queries.
+// Applies all previously set query conditions and returns the first matching record.
+//
+// Parameters:
+//   - dest: Pointer to model instance where the result will be stored
+//   - _cache: Optional cache parameter for advanced caching control
+//
+// Returns database errors if no record is found or query fails.
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Cache-first lookup for improved performance
+//   - Supports all query modifiers (WHERE, ORDER BY, etc.)
+//   - Supports eager loading with WithExpand
+//   - Supports field selection with WithSelect
+//
+// Example:
+//
+//	var user User
+//	First(&user)  // Get first user by primary key
+//	WithQuery("status = ?", "active").First(&user)  // Get first active user
+//	WithOrder("created_at DESC").First(&user)  // Get newest user
 func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -1889,7 +2229,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -1924,7 +2264,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1938,7 +2278,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1997,7 +2337,30 @@ QUERY:
 	return nil
 }
 
-// Last finds the last record ordered by primary key.
+// Last retrieves the last record from the database ordered by primary key.
+// Supports automatic caching to improve performance for frequently accessed queries.
+// Applies all previously set query conditions and returns the last matching record.
+//
+// Parameters:
+//   - dest: Pointer to model instance where the result will be stored
+//   - _cache: Optional cache parameter for advanced caching control
+//
+// Returns database errors if no record is found or query fails.
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Cache-first lookup for improved performance
+//   - Supports all query modifiers (WHERE, ORDER BY, etc.)
+//   - Supports eager loading with WithExpand
+//   - Supports field selection with WithSelect
+//   - Executes GetBefore and GetAfter model hooks unless disabled
+//
+// Example:
+//
+//	var user User
+//	Last(&user)  // Get last user by primary key
+//	WithQuery("status = ?", "active").Last(&user)  // Get last active user
+//	WithOrder("created_at ASC").Last(&user)  // Get oldest user (with custom order)
 func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -2020,7 +2383,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -2055,7 +2418,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2069,7 +2432,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2128,7 +2491,30 @@ QUERY:
 	return nil
 }
 
-// Take finds the first record returned by the database in no specified order.
+// Take retrieves the first record from the database in no specified order.
+// Unlike First/Last which order by primary key, Take returns any matching record.
+// Supports automatic caching to improve performance for frequently accessed queries.
+//
+// Parameters:
+//   - dest: Pointer to model instance where the result will be stored
+//   - _cache: Optional cache parameter for advanced caching control
+//
+// Returns database errors if no record is found or query fails.
+//
+// Features:
+//   - Automatic result caching when enabled
+//   - Cache-first lookup for improved performance
+//   - Supports all query modifiers (WHERE, JOIN, etc.)
+//   - Supports eager loading with WithExpand
+//   - Supports field selection with WithSelect
+//   - Executes GetBefore and GetAfter model hooks unless disabled
+//   - No ordering applied (fastest single record retrieval)
+//
+// Example:
+//
+//	var user User
+//	Take(&user)  // Get any user record
+//	WithQuery("status = ?", "active").Take(&user)  // Get any active user
 func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -2151,7 +2537,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -2186,7 +2572,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2200,7 +2586,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2261,7 +2647,24 @@ QUERY:
 	return nil
 }
 
-// Cleanup delete all records that column 'deleted_at' is not null.
+// Cleanup permanently deletes all soft-deleted records from the database.
+// This operation removes records where 'deleted_at' column is not null.
+// WARNING: This is a destructive operation that cannot be undone.
+//
+// Returns database errors if the cleanup operation fails.
+//
+// Features:
+//   - Permanently removes soft-deleted records
+//   - Uses unscoped delete to bypass soft delete protection
+//   - Applies to all records in the table (ignores query conditions)
+//   - Helps maintain database performance by removing obsolete data
+//
+// Example:
+//
+//	Cleanup()  // Remove all soft-deleted records
+//
+// Note: This operation affects the entire table and ignores any previously
+// set query conditions. Use with caution in production environments.
 func (db *database[M]) Cleanup() (err error) {
 	if err = db.prepare(); err != nil {
 		return err
@@ -2279,8 +2682,28 @@ func (db *database[M]) Cleanup() (err error) {
 	return db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 }
 
-// Health checks the database connectivity and basic operations.
-// It returns nil if the database is healthy, otherwise returns an error.
+// Health performs comprehensive database health checks including connectivity,
+// connection pool status, and response time validation.
+// Returns nil if all checks pass, otherwise returns detailed error information.
+//
+// Health checks performed:
+//  1. Database connection test with SELECT 1 query
+//  2. Connection pool status and capacity validation
+//  3. Database ping test for response time measurement
+//
+// Returns database errors if any health check fails.
+//
+// Features:
+//   - Comprehensive connectivity validation
+//   - Connection pool monitoring and warnings
+//   - Response time measurement
+//   - Detailed logging of health status and metrics
+//
+// Example:
+//
+//	if err := Database[User]().Health(); err != nil {
+//	  log.Fatal("Database unhealthy:", err)
+//	}
 func (db *database[M]) Health() error {
 	if err := db.prepare(); err != nil {
 		return err
@@ -2340,19 +2763,43 @@ func (db *database[M]) Health() error {
 	return nil
 }
 
-// Database implement interface types.Database, its default database manipulator.
-// Database[M] returns a generic database manipulator with the `curd` capabilities.
-func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
+// Database creates and returns a generic database manipulator implementing types.Database interface.
+// Provides comprehensive CRUD capabilities with advanced features like caching, hooks, and query building.
+// Automatically enables debug mode when log level is set to debug.
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface
+//
+// Parameters:
+//   - ctx: Required database context for request tracing and metadata.
+//     In service layer operations, pass a valid DatabaseContext to track requests.
+//     For non-service layer operations, pass nil.
+//
+// Returns a database manipulator with full CRUD and query capabilities.
+//
+// Features:
+//   - Generic type safety for model operations
+//   - Automatic debug mode based on configuration
+//   - Context-aware operations for tracing
+//   - Default query limit protection
+//   - Panic protection for uninitialized database
+//
+// Example:
+//
+//	// Service layer usage with context
+//	db := Database[*User](ctx.DatabaseContext())
+//	// Non-service layer usage
+//	db := Database[*User](nil)
+//	users := db.WithQuery(&User{Name: "John"}).List()
+func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")
 	}
 	dbctx := new(types.DatabaseContext)
 	gctx := context.Background()
-	if len(ctx) > 0 {
-		if ctx[0] != nil {
-			dbctx = ctx[0]
-			gctx = types.NewGormContext(dbctx)
-		}
+	if ctx != nil {
+		dbctx = ctx
+		gctx = dbctx.Context()
 	}
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
 		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
@@ -2360,10 +2807,29 @@ func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 	return &database[M]{db: DB.WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
 }
 
-// trace returns timing function for database operations.
-// It logs operation name, table name and elapsed time when done function is called.
+// trace returns a timing function for database operations that logs performance metrics.
+// The returned function should be called with the operation result to log timing and status.
+// Provides detailed logging including operation name, table name, batch size, and execution time.
 //
-// NOTE: trace function must be called after `defer db.reset()`.
+// Parameters:
+//   - op: Operation name for logging identification
+//   - batch: Optional batch size for batch operations
+//
+// Returns a function that accepts an error and logs the operation result.
+//
+// Features:
+//   - Automatic timing measurement from call to completion
+//   - Error-aware logging with different levels
+//   - Batch operation support with size tracking
+//   - Cache and try-run mode status logging
+//   - Smart duration formatting for readability
+//
+// Usage Pattern:
+//
+//	done := db.trace("Create", len(models))
+//	defer done(err)
+//
+// Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
 func (db *database[M]) trace(op string, batch ...int) func(error) {
 	begin := time.Now()
 	var _batch int
@@ -2408,11 +2874,30 @@ func (db *database[M]) trace(op string, batch ...int) func(error) {
 // 	return &database[*model.User]{db: DB.WithContext(c).Limit(defaultLimit)}
 // }
 
-// buildCacheKey build redis prefix and redis key.
-// The Prefix consist of "redis key prefix" + "table name".
-// The KEY consist of "redis key prefix" + "table name" + "sql statement".
+// buildCacheKey constructs Redis cache keys for database operations.
+// Generates both prefix and full key based on GORM statement and operation type.
+// Uses consistent naming convention for cache key organization and collision avoidance.
 //
-// More details see reference: https://gorm.io/docs/sql_builder.html
+// Parameters:
+//   - stmt: GORM statement containing SQL and table information
+//   - action: Operation type ("get", "list", "count", etc.)
+//   - id: Optional ID for get operations to create simpler keys
+//
+// Returns prefix and full cache key for Redis operations.
+//
+// Key Structure:
+//   - Prefix: namespace:table_name
+//   - Full Key: namespace:table_name:action:identifier
+//   - Get operations with ID: namespace:table_name:get:id_value
+//   - Other operations: namespace:table_name:action:sql_statement
+//
+// Features:
+//   - Namespace isolation for multi-tenant applications
+//   - Table-based key organization
+//   - Operation-specific key generation
+//   - SQL statement-based cache invalidation
+//
+// Reference: https://gorm.io/docs/sql_builder.html
 func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
 	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
 	switch strings.ToLower(action) {
@@ -2446,7 +2931,7 @@ func contains(slice []string, item string) bool {
 }
 
 func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return t, v, false
 		}

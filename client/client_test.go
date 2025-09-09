@@ -78,7 +78,7 @@ func startServer() {
 	}
 
 	go func() {
-		router.Register[*User, *User, *User](router.Auth(), "user", consts.Most, consts.MostBatch)
+		router.Register[*User, *User, *User](router.Auth(), "user", nil, consts.Most)
 		if err := bootstrap.Run(); err != nil {
 			panic(err)
 		}

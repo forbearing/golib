@@ -47,15 +47,25 @@ func genRun() {
 	}
 
 	// Architecture dependency check
-	CheckArchitectureDependency()
+	if CheckArchitectureDependency() > 0 {
+		os.Exit(1)
+	}
 	// Model Singular Naming Check
-	CheckModelSingularNaming()
+	if CheckModelSingularNaming() > 0 {
+		os.Exit(1)
+	}
 	// Model JSON Tag Naming Check
-	CheckModelJSONTagNaming()
+	if CheckModelJSONTagNaming() > 0 {
+		os.Exit(1)
+	}
 	// Model Package Naming Check
-	CheckModelPackageNaming()
+	if CheckModelPackageNaming() > 0 {
+		os.Exit(1)
+	}
 	// Directory Restriction Check
-	CheckAllowedDirectories()
+	if CheckAllowedDirectories() > 0 {
+		os.Exit(1)
+	}
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
@@ -167,42 +177,42 @@ func genRun() {
 			}
 		})
 
-		for key, actions := range m.Design.Routes {
-			for _, act := range actions {
-				route := key
-				base := "Auth"
-				if act.Public {
-					base = "Pub"
-				}
-				// If the phase is matched, the model endpoint will append the param, eg:
-				// Endpoint: tenant, param is ":tenant", new endpoint is "tenant/:tenant"
-				// Endpoint: tenant, param is ":id", new endpoint is "tenant/:id"
-				switch act.Phase {
-				case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
-					if len(m.Design.Param) == 0 {
-						route = filepath.Join(route, ":id") // empty param will append default ":id" to endpoint.
-					} else {
-						route = filepath.Join(route, m.Design.Param)
-					}
-				case consts.PHASE_CREATE_MANY, consts.PHASE_DELETE_MANY, consts.PHASE_UPDATE_MANY, consts.PHASE_PATCH_MANY:
-					route = filepath.Join(route, "batch")
-				case consts.PHASE_IMPORT:
-					route = filepath.Join(route, "import")
-				case consts.PHASE_EXPORT:
-					route = filepath.Join(route, "export")
-
-				}
-
-				switch act.Phase {
-				case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
-					items := strings.Split(route, "/")
-					lastSegment := strings.TrimLeft(items[len(items)-1], ":")
-					routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, lastSegment, act.Phase.MethodName()))
-				default:
-					routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, "", act.Phase.MethodName()))
-				}
-			}
-		}
+		// for key, actions := range m.Design.Routes {
+		// 	for _, act := range actions {
+		// 		route := key
+		// 		base := "Auth"
+		// 		if act.Public {
+		// 			base = "Pub"
+		// 		}
+		// 		// If the phase is matched, the model endpoint will append the param, eg:
+		// 		// Endpoint: tenant, param is ":tenant", new endpoint is "tenant/:tenant"
+		// 		// Endpoint: tenant, param is ":id", new endpoint is "tenant/:id"
+		// 		switch act.Phase {
+		// 		case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+		// 			if len(m.Design.Param) == 0 {
+		// 				route = filepath.Join(route, ":id") // empty param will append default ":id" to endpoint.
+		// 			} else {
+		// 				route = filepath.Join(route, m.Design.Param)
+		// 			}
+		// 		case consts.PHASE_CREATE_MANY, consts.PHASE_DELETE_MANY, consts.PHASE_UPDATE_MANY, consts.PHASE_PATCH_MANY:
+		// 			route = filepath.Join(route, "batch")
+		// 		case consts.PHASE_IMPORT:
+		// 			route = filepath.Join(route, "import")
+		// 		case consts.PHASE_EXPORT:
+		// 			route = filepath.Join(route, "export")
+		//
+		// 		}
+		//
+		// 		switch act.Phase {
+		// 		case consts.PHASE_DELETE, consts.PHASE_UPDATE, consts.PHASE_PATCH, consts.PHASE_GET:
+		// 			items := strings.Split(route, "/")
+		// 			lastSegment := strings.TrimLeft(items[len(items)-1], ":")
+		// 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, lastSegment, act.Phase.MethodName()))
+		// 		default:
+		// 			routerStmts = append(routerStmts, gen.StmtRouterRegister(m.ModelPkgName, m.ModelName, act.Payload, act.Result, base, route, "", act.Phase.MethodName()))
+		// 		}
+		// 	}
+		// }
 	}
 
 	// ============================================================

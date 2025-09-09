@@ -43,7 +43,7 @@ func setSession(userId string, s *model.Session) {
 	if len(userId) == 0 || s == nil {
 		return
 	}
-	database.Database[*model.Session]().Update(s)
+	database.Database[*model.Session](nil).Update(s)
 	// sessionCache.Add 必须在 database.Update 之后, 因为它的ID会在 database.Database 之后生成
 	sessionCache.Add(userId, s)
 }
@@ -56,7 +56,7 @@ func GetSession(userId string) (*model.Session, bool) {
 func removeSession(userId string) {
 	sessionCache.Remove(userId)
 	sessions := make([]*model.Session, 0)
-	if err := database.Database[*model.Session]().WithLimit(-1).WithSelect("id").WithQuery(&model.Session{UserId: userId}).List(&sessions); err == nil {
-		database.Database[*model.Session]().WithPurge().Delete(sessions...)
+	if err := database.Database[*model.Session](nil).WithLimit(-1).WithSelect("id").WithQuery(&model.Session{UserId: userId}).List(&sessions); err == nil {
+		database.Database[*model.Session](nil).WithPurge().Delete(sessions...)
 	}
 }

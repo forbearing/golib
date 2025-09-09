@@ -400,10 +400,10 @@ func TestParse(t *testing.T) {
 			want: map[string]*Design{
 				"User": {
 					Enabled:  true,
-					Endpoint: "user2",
+					Endpoint: "iam-user2",
 					Param:    ":user",
 					Migrate:  true,
-					Routes: map[string][]*Action{
+					routes: map[string][]*Action{
 						"iam/users": {
 							{Enabled: true, Service: true, Payload: "*UserReq", Result: "*UserRsp", Phase: consts.PHASE_LIST},
 							{Enabled: true, Service: true, Payload: "*User", Result: "*User", Phase: consts.PHASE_GET},

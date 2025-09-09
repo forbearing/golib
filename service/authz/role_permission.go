@@ -26,7 +26,7 @@ func (*rolePermission) DeleteAfter(ctx *types.ServiceContext, rolePermission *mo
 	action := ctx.URL.Query().Get("action")
 
 	rolePermissions := make([]*model_authz.RolePermission, 0)
-	if err := database.Database[*model_authz.RolePermission]().WithLimit(-1).WithQuery(&model_authz.RolePermission{
+	if err := database.Database[*model_authz.RolePermission](nil).WithLimit(-1).WithQuery(&model_authz.RolePermission{
 		Role:     role,
 		Resource: resource,
 		Action:   action,
@@ -37,7 +37,7 @@ func (*rolePermission) DeleteAfter(ctx *types.ServiceContext, rolePermission *mo
 	for _, rp := range rolePermissions {
 		log.Infoz("will delete role permission", zap.Object("role_permission", rp))
 	}
-	if err := database.Database[*model_authz.RolePermission]().WithLimit(-1).WithPurge().Delete(rolePermissions...); err != nil {
+	if err := database.Database[*model_authz.RolePermission](nil).WithLimit(-1).WithPurge().Delete(rolePermissions...); err != nil {
 		log.Error(err)
 		return err
 	}

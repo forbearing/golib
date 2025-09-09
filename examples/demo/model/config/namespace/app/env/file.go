@@ -11,7 +11,29 @@ type File struct {
 
 func (File) Design() {
 	Endpoint("files") // 改成复数
-	Param("filename")
+	Param("file")
+
+	Route("/config/files", func() {
+		Create(func() {
+			Enabled(true)
+		})
+		Delete(func() {
+			Enabled(true)
+		})
+		Update(func() {
+			Enabled(true)
+		})
+		Patch(func() {
+			Enabled(true)
+		})
+		List(func() {
+			Enabled(true)
+			Service(true)
+		})
+		Get(func() {
+			Enabled(true)
+		})
+	})
 
 	Create(func() {
 		Enabled(true)

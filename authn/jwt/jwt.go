@@ -57,9 +57,9 @@ type Claims struct {
 }
 
 func Init() error {
-	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session]().WithPurge().Delete(s) }, config.App.Auth.RefreshTokenExpireDuration)
+	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session](nil).WithPurge().Delete(s) }, config.App.Auth.RefreshTokenExpireDuration)
 	sessions := make([]*model.Session, 0)
-	if err := database.Database[*model.Session]().WithLimit(-1).List(&sessions); err != nil {
+	if err := database.Database[*model.Session](nil).WithLimit(-1).List(&sessions); err != nil {
 		return errors.Wrap(err, "failed to list sessions")
 	}
 	for _, session := range sessions {
