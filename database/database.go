@@ -2785,7 +2785,7 @@ func (db *database[M]) Health() error {
 // Example:
 //
 //	db := Database[*User]()
-//	users := Database[*User](ctx).WithQuery("status = ?", "active").List()
+//	users := Database[*User](ctx).WithQuery(&User{Name: "John"}).List()
 func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")
@@ -2795,7 +2795,7 @@ func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
 	if len(ctx) > 0 {
 		if ctx[0] != nil {
 			dbctx = ctx[0]
-			gctx = types.NewGormContext(dbctx)
+			gctx = dbctx.Context()
 		}
 	}
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
