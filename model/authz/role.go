@@ -36,7 +36,7 @@ func (r *Role) UpdateBefore() error { return r.CreateAfter() }
 func (r *Role) CreateAfter() error { return rbac.RBAC().AddRole(r.Name) }
 func (r *Role) DeleteBefore() error {
 	// The delete request always don't have role id, so we should get the role from database.
-	if err := database.Database[*Role]().Get(r, r.ID); err != nil {
+	if err := database.Database[*Role](nil).Get(r, r.ID); err != nil {
 		return err
 	}
 	if len(r.Name) > 0 {
@@ -44,7 +44,7 @@ func (r *Role) DeleteBefore() error {
 	}
 	return nil
 }
-func (r *Role) DeleteAfter() error { return database.Database[*Role]().Cleanup() }
+func (r *Role) DeleteAfter() error { return database.Database[*Role](nil).Cleanup() }
 
 func (r *Role) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {

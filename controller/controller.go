@@ -90,7 +90,7 @@ func Init() (err error) {
 				operationLogs = append(operationLogs, ol)
 			}
 			if len(operationLogs) > 0 {
-				if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
+				if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
 					zap.S().Error(err)
 				}
 			}
@@ -107,7 +107,7 @@ func Clean() {
 		operationLogs = append(operationLogs, ol)
 	}
 	if len(operationLogs) > 0 {
-		if err := database.Database[*model_log.OperationLog]().WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+		if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
 			zap.S().Error(err)
 		}
 	}

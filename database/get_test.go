@@ -16,7 +16,7 @@ func TestDatabase_Get(t *testing.T) {
 
 	t.Run("successfully get existing record", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().Get(&user, "user-001")
+		err := database.Database[*TestUser](nil).Get(&user, "user-001")
 
 		assert.NoError(t, err)
 		assert.Equal(t, "user-001", user.ID)
@@ -30,7 +30,7 @@ func TestDatabase_Get(t *testing.T) {
 
 	t.Run("get non-existent record", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().Get(&user, "non-existent-id")
+		err := database.Database[*TestUser](nil).Get(&user, "non-existent-id")
 
 		// Should have no error, but user object should be empty
 		assert.NoError(t, err)
@@ -41,14 +41,14 @@ func TestDatabase_Get(t *testing.T) {
 
 	t.Run("get record with empty ID", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().Get(&user, "")
+		err := database.Database[*TestUser](nil).Get(&user, "")
 
 		assert.NoError(t, err)
 		assert.Empty(t, user.ID)
 	})
 
 	t.Run("pass nil pointer", func(t *testing.T) {
-		err := database.Database[*TestUser]().Get(nil, "user-001")
+		err := database.Database[*TestUser](nil).Get(nil, "user-001")
 
 		// Should return error because nil pointer was passed
 		assert.Error(t, err)
@@ -57,7 +57,7 @@ func TestDatabase_Get(t *testing.T) {
 	t.Run("verify all test users can be retrieved correctly", func(t *testing.T) {
 		for _, expectedUser := range testUsers {
 			var user TestUser
-			err := database.Database[*TestUser]().Get(&user, expectedUser.ID)
+			err := database.Database[*TestUser](nil).Get(&user, expectedUser.ID)
 
 			assert.NoError(t, err)
 			assert.Equal(t, expectedUser.ID, user.ID)
@@ -83,12 +83,12 @@ func TestDatabase_Get(t *testing.T) {
 			CategoryID:  "category-001",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		// Get product
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Get(&retrievedProduct, "product-001")
+		err = database.Database[*TestProduct](nil).Get(&retrievedProduct, "product-001")
 
 		assert.NoError(t, err)
 		assert.Equal(t, "product-001", retrievedProduct.ID)
@@ -111,12 +111,12 @@ func TestDatabase_Get(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		// Get category
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Get(&retrievedCategory, "category-001")
+		err = database.Database[*TestCategory](nil).Get(&retrievedCategory, "category-001")
 
 		assert.NoError(t, err)
 		assert.Equal(t, "category-001", retrievedCategory.ID)

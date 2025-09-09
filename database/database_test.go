@@ -108,7 +108,7 @@ func createTestUsers(t *testing.T) []*TestUser {
 		},
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	require.NoError(t, err)
 
 	return users

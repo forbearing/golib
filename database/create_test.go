@@ -27,12 +27,12 @@ func TestDatabase_Create(t *testing.T) {
 		}
 
 		// Create user
-		err := database.Database[*TestUser]().Create(user)
+		err := database.Database[*TestUser](nil).Create(user)
 		require.NoError(t, err)
 
 		// Verify user was created
 		var retrievedUser TestUser
-		err = database.Database[*TestUser]().Get(&retrievedUser, "create-user-001")
+		err = database.Database[*TestUser](nil).Get(&retrievedUser, "create-user-001")
 		require.NoError(t, err)
 		assert.Equal(t, "Create Test User", retrievedUser.Name)
 		assert.Equal(t, "createtest@example.com", retrievedUser.Email)
@@ -81,13 +81,13 @@ func TestDatabase_Create(t *testing.T) {
 		}
 
 		// Create multiple users
-		err := database.Database[*TestUser]().Create(users...)
+		err := database.Database[*TestUser](nil).Create(users...)
 		require.NoError(t, err)
 
 		// Verify all users were created
 		for i, user := range users {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			require.NoError(t, err)
 			assert.Equal(t, user.Name, retrievedUser.Name)
 			assert.Equal(t, user.Email, retrievedUser.Email)
@@ -115,13 +115,13 @@ func TestDatabase_Create(t *testing.T) {
 		}
 
 		// Create with batch size of 2
-		err := database.Database[*TestUser]().WithBatchSize(2).Create(batchUsers...)
+		err := database.Database[*TestUser](nil).WithBatchSize(2).Create(batchUsers...)
 		require.NoError(t, err)
 
 		// Verify all users were created
 		for _, user := range batchUsers {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			require.NoError(t, err)
 			assert.Equal(t, user.Name, retrievedUser.Name)
 		}
@@ -154,16 +154,16 @@ func TestDatabase_Create(t *testing.T) {
 		}
 
 		// Create first user
-		err := database.Database[*TestUser]().Create(user1)
+		err := database.Database[*TestUser](nil).Create(user1)
 		require.NoError(t, err)
 
 		// Create second user with same ID (should update existing record due to Save method behavior)
-		err = database.Database[*TestUser]().Create(user2)
+		err = database.Database[*TestUser](nil).Create(user2)
 		require.NoError(t, err) // Should succeed as Save performs upsert
 
 		// Verify the record was updated with user2's data
 		var retrievedUser TestUser
-		err = database.Database[*TestUser]().Get(&retrievedUser, "create-duplicate-001")
+		err = database.Database[*TestUser](nil).Get(&retrievedUser, "create-duplicate-001")
 		require.NoError(t, err)
 		assert.Equal(t, "Duplicate User 2", retrievedUser.Name)
 		assert.Equal(t, "duplicate2@example.com", retrievedUser.Email)
@@ -173,7 +173,7 @@ func TestDatabase_Create(t *testing.T) {
 
 	t.Run("create empty list should not error", func(t *testing.T) {
 		// Creating empty list should not cause error
-		err := database.Database[*TestUser]().Create()
+		err := database.Database[*TestUser](nil).Create()
 		assert.NoError(t, err)
 	})
 
@@ -191,12 +191,12 @@ func TestDatabase_Create(t *testing.T) {
 			CategoryID:  "electronics",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		// Verify product was created
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Get(&retrievedProduct, "create-product-001")
+		err = database.Database[*TestProduct](nil).Get(&retrievedProduct, "create-product-001")
 		require.NoError(t, err)
 		assert.Equal(t, "Create Test Product", retrievedProduct.Name)
 		assert.Equal(t, "This is a create test product", retrievedProduct.Description)
@@ -216,12 +216,12 @@ func TestDatabase_Create(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		// Verify category was created
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Get(&retrievedCategory, "create-category-001")
+		err = database.Database[*TestCategory](nil).Get(&retrievedCategory, "create-category-001")
 		require.NoError(t, err)
 		assert.Equal(t, "Create Test Category", retrievedCategory.Name)
 		assert.Equal(t, "", retrievedCategory.ParentID)

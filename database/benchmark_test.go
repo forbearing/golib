@@ -26,14 +26,14 @@ func BenchmarkDatabase_Get(b *testing.B) {
 			IsActive: true,
 		}
 
-		err := database.Database[*TestUser]().Create(user)
+		err := database.Database[*TestUser](nil).Create(user)
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		for b.Loop() {
 			var retrievedUser TestUser
-			if err = database.Database[*TestUser]().Get(&retrievedUser, "benchmark-user"); err != nil {
+			if err = database.Database[*TestUser](nil).Get(&retrievedUser, "benchmark-user"); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -53,20 +53,20 @@ func BenchmarkDatabase_Get(b *testing.B) {
 			IsActive: true,
 		}
 
-		err := database.Database[*TestUser]().Create(user)
+		err := database.Database[*TestUser](nil).Create(user)
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		// Warm up cache
 		var warmupUser TestUser
-		if err = database.Database[*TestUser]().Get(&warmupUser, "benchmark-user-cached"); err != nil {
+		if err = database.Database[*TestUser](nil).Get(&warmupUser, "benchmark-user-cached"); err != nil {
 			b.Fatal(err)
 		}
 
 		for b.Loop() {
 			var retrievedUser TestUser
-			if err := database.Database[*TestUser]().WithCache(true).Get(&retrievedUser, "benchmark-user-cached"); err != nil {
+			if err := database.Database[*TestUser](nil).WithCache(true).Get(&retrievedUser, "benchmark-user-cached"); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -90,7 +90,7 @@ func BenchmarkDatabase_Create(b *testing.B) {
 				IsActive: true,
 			}
 
-			if err := database.Database[*TestUser]().Create(user); err != nil {
+			if err := database.Database[*TestUser](nil).Create(user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -115,7 +115,7 @@ func BenchmarkDatabase_Create(b *testing.B) {
 				users = append(users, user)
 			}
 
-			if err := database.Database[*TestUser]().Create(users...); err != nil {
+			if err := database.Database[*TestUser](nil).Create(users...); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -142,7 +142,7 @@ func BenchmarkDatabase_List(b *testing.B) {
 		users = append(users, user)
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func BenchmarkDatabase_List(b *testing.B) {
 	b.Run("list_all", func(b *testing.B) {
 		for b.Loop() {
 			var result []*TestUser
-			if err := database.Database[*TestUser]().List(&result); err != nil {
+			if err := database.Database[*TestUser](nil).List(&result); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -159,7 +159,7 @@ func BenchmarkDatabase_List(b *testing.B) {
 	b.Run("list_with_condition", func(b *testing.B) {
 		for b.Loop() {
 			var result []*TestUser
-			if err := database.Database[*TestUser]().WithQueryRaw("age > ?", 30).List(&result); err != nil {
+			if err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 30).List(&result); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -168,7 +168,7 @@ func BenchmarkDatabase_List(b *testing.B) {
 	b.Run("list_with_limit", func(b *testing.B) {
 		for b.Loop() {
 			var result []*TestUser
-			if err := database.Database[*TestUser]().WithLimit(10).List(&result); err != nil {
+			if err := database.Database[*TestUser](nil).WithLimit(10).List(&result); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -195,7 +195,7 @@ func BenchmarkDatabase_Count(b *testing.B) {
 		users = append(users, user)
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func BenchmarkDatabase_Count(b *testing.B) {
 	b.Run("count_all", func(b *testing.B) {
 		for b.Loop() {
 			var count int64
-			if err := database.Database[*TestUser]().Count(&count); err != nil {
+			if err := database.Database[*TestUser](nil).Count(&count); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -212,7 +212,7 @@ func BenchmarkDatabase_Count(b *testing.B) {
 	b.Run("count_with_condition", func(b *testing.B) {
 		for b.Loop() {
 			var count int64
-			if err := database.Database[*TestUser]().WithQueryRaw("age > ?", 30).Count(&count); err != nil {
+			if err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 30).Count(&count); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -239,7 +239,7 @@ func BenchmarkDatabase_First(b *testing.B) {
 		users = append(users, user)
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func BenchmarkDatabase_First(b *testing.B) {
 	b.Run("first_record", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().First(&user); err != nil {
+			if err := database.Database[*TestUser](nil).First(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -256,7 +256,7 @@ func BenchmarkDatabase_First(b *testing.B) {
 	b.Run("first_with_condition", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().WithQueryRaw("age > ?", 30).First(&user); err != nil {
+			if err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 30).First(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -283,7 +283,7 @@ func BenchmarkDatabase_Last(b *testing.B) {
 		users = append(users, user)
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func BenchmarkDatabase_Last(b *testing.B) {
 	b.Run("last_record", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().Last(&user); err != nil {
+			if err := database.Database[*TestUser](nil).Last(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -300,7 +300,7 @@ func BenchmarkDatabase_Last(b *testing.B) {
 	b.Run("last_with_condition", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().WithQueryRaw("age > ?", 30).Last(&user); err != nil {
+			if err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 30).Last(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -327,7 +327,7 @@ func BenchmarkDatabase_Take(b *testing.B) {
 		users = append(users, user)
 	}
 
-	err := database.Database[*TestUser]().Create(users...)
+	err := database.Database[*TestUser](nil).Create(users...)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -335,7 +335,7 @@ func BenchmarkDatabase_Take(b *testing.B) {
 	b.Run("take_record", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().Take(&user); err != nil {
+			if err := database.Database[*TestUser](nil).Take(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -344,7 +344,7 @@ func BenchmarkDatabase_Take(b *testing.B) {
 	b.Run("take_with_condition", func(b *testing.B) {
 		for b.Loop() {
 			var user TestUser
-			if err := database.Database[*TestUser]().WithQueryRaw("age > ?", 30).Take(&user); err != nil {
+			if err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 30).Take(&user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -369,7 +369,7 @@ func BenchmarkDatabase_Update(b *testing.B) {
 				IsActive: true,
 			}
 
-			err := database.Database[*TestUser]().Create(user)
+			err := database.Database[*TestUser](nil).Create(user)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -379,7 +379,7 @@ func BenchmarkDatabase_Update(b *testing.B) {
 			user.Age = 31
 
 			// Execute update
-			if err = database.Database[*TestUser]().Update(user); err != nil {
+			if err = database.Database[*TestUser](nil).Update(user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -405,7 +405,7 @@ func BenchmarkDatabase_Update(b *testing.B) {
 				users = append(users, user)
 			}
 
-			err := database.Database[*TestUser]().Create(users...)
+			err := database.Database[*TestUser](nil).Create(users...)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -417,7 +417,7 @@ func BenchmarkDatabase_Update(b *testing.B) {
 			}
 
 			// Execute batch update
-			if err = database.Database[*TestUser]().Update(users...); err != nil {
+			if err = database.Database[*TestUser](nil).Update(users...); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -442,13 +442,13 @@ func BenchmarkDatabase_Delete(b *testing.B) {
 				IsActive: true,
 			}
 
-			err := database.Database[*TestUser]().Create(user)
+			err := database.Database[*TestUser](nil).Create(user)
 			if err != nil {
 				b.Fatal(err)
 			}
 
 			// Execute soft delete
-			if err = database.Database[*TestUser]().Delete(user); err != nil {
+			if err = database.Database[*TestUser](nil).Delete(user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -470,13 +470,13 @@ func BenchmarkDatabase_Delete(b *testing.B) {
 				IsActive: true,
 			}
 
-			err := database.Database[*TestUser]().Create(user)
+			err := database.Database[*TestUser](nil).Create(user)
 			if err != nil {
 				b.Fatal(err)
 			}
 
 			// Execute permanent delete
-			if err = database.Database[*TestUser]().WithPurge().Delete(user); err != nil {
+			if err = database.Database[*TestUser](nil).WithPurge().Delete(user); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -502,13 +502,13 @@ func BenchmarkDatabase_Delete(b *testing.B) {
 				users = append(users, user)
 			}
 
-			err := database.Database[*TestUser]().Create(users...)
+			err := database.Database[*TestUser](nil).Create(users...)
 			if err != nil {
 				b.Fatal(err)
 			}
 
 			// Execute batch delete
-			if err = database.Database[*TestUser]().Delete(users...); err != nil {
+			if err = database.Database[*TestUser](nil).Delete(users...); err != nil {
 				b.Fatal(err)
 			}
 		}

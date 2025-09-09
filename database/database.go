@@ -132,7 +132,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 		return db
 	}
 	// v := reflect.ValueOf(x)
-	// if v.Kind() != reflect.Ptr {
+	// if v.Kind() != reflect.Pointer {
 	// 	return db
 	// }
 	// if v.IsNil() {
@@ -761,7 +761,7 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 		return db
 	}
 	// v := reflect.ValueOf(x)
-	// if v.Kind() != reflect.Ptr {
+	// if v.Kind() != reflect.Pointer {
 	// 	return db
 	// }
 	// if v.IsNil() {
@@ -1813,7 +1813,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// 	var _dest []M
 	// 	if _dest, err = redis.GetML[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 		if val.Kind() != reflect.Pointer || val.Elem().Kind() != reflect.Slice {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1829,7 +1829,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	// } else {
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+	// 		if val.Kind() != reflect.Pointer || val.Elem().Kind() != reflect.Slice {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -1957,7 +1957,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -1995,7 +1995,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2009,7 +2009,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2229,7 +2229,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -2264,7 +2264,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2278,7 +2278,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2383,7 +2383,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -2418,7 +2418,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2432,7 +2432,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2537,7 +2537,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	} else {
 		// metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		val := reflect.ValueOf(dest)
-		if val.Kind() != reflect.Ptr {
+		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
 		}
 		if !val.Elem().CanAddr() {
@@ -2572,7 +2572,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 	var _dest M
 	// 	if _dest, err = redis.GetM[M](key); err == nil {
 	// 		val := reflect.ValueOf(dest)
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrStruct
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2586,7 +2586,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	// 	var _cache []byte
 	// 	if _cache, err = redis.Get(key); err == nil {
 	// 		val := reflect.ValueOf(cache[0])
-	// 		if val.Kind() != reflect.Ptr {
+	// 		if val.Kind() != reflect.Pointer {
 	// 			return ErrNotPtrSlice
 	// 		}
 	// 		if !val.Elem().CanAddr() {
@@ -2771,7 +2771,9 @@ func (db *database[M]) Health() error {
 //   - M: Model type that implements types.Model interface
 //
 // Parameters:
-//   - ctx: Optional database context for request tracing and metadata
+//   - ctx: Required database context for request tracing and metadata.
+//     In service layer operations, pass a valid DatabaseContext to track requests.
+//     For non-service layer operations, pass nil.
 //
 // Returns a database manipulator with full CRUD and query capabilities.
 //
@@ -2784,19 +2786,20 @@ func (db *database[M]) Health() error {
 //
 // Example:
 //
-//	db := Database[*User]()
-//	users := Database[*User](ctx).WithQuery(&User{Name: "John"}).List()
-func Database[M types.Model](ctx ...*types.DatabaseContext) types.Database[M] {
+//	// Service layer usage with context
+//	db := Database[*User](ctx.DatabaseContext())
+//	// Non-service layer usage
+//	db := Database[*User](nil)
+//	users := db.WithQuery(&User{Name: "John"}).List()
+func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
 	if DB == nil || DB == new(gorm.DB) {
 		panic("database is not initialized")
 	}
 	dbctx := new(types.DatabaseContext)
 	gctx := context.Background()
-	if len(ctx) > 0 {
-		if ctx[0] != nil {
-			dbctx = ctx[0]
-			gctx = dbctx.Context()
-		}
+	if ctx != nil {
+		dbctx = ctx
+		gctx = dbctx.Context()
 	}
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
 		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
@@ -2928,7 +2931,7 @@ func contains(slice []string, item string) bool {
 }
 
 func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return t, v, false
 		}

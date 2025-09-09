@@ -17,7 +17,7 @@ func TestDatabase_List(t *testing.T) {
 
 	t.Run("list all users without conditions", func(t *testing.T) {
 		var users []*TestUser
-		err := database.Database[*TestUser]().List(&users)
+		err := database.Database[*TestUser](nil).List(&users)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(users), len(testUsers))
@@ -44,7 +44,7 @@ func TestDatabase_List(t *testing.T) {
 		// Query by age
 		var users []*TestUser
 		query := &TestUser{Age: 25}
-		err := database.Database[*TestUser]().WithQuery(query).List(&users)
+		err := database.Database[*TestUser](nil).WithQuery(query).List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 0)
@@ -56,7 +56,7 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list with query by name", func(t *testing.T) {
 		var users []*TestUser
 		query := &TestUser{Name: "Zhang San"}
-		err := database.Database[*TestUser]().WithQuery(query).List(&users)
+		err := database.Database[*TestUser](nil).WithQuery(query).List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 0)
@@ -68,7 +68,7 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list with query by active status", func(t *testing.T) {
 		var users []*TestUser
 		query := &TestUser{IsActive: true}
-		err := database.Database[*TestUser]().WithQuery(query).List(&users)
+		err := database.Database[*TestUser](nil).WithQuery(query).List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 0)
@@ -80,7 +80,7 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list with fuzzy match", func(t *testing.T) {
 		var users []*TestUser
 		query := &TestUser{Name: "Zhang"}
-		err := database.Database[*TestUser]().WithQuery(query, true).List(&users)
+		err := database.Database[*TestUser](nil).WithQuery(query, true).List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 0)
@@ -91,7 +91,7 @@ func TestDatabase_List(t *testing.T) {
 
 	t.Run("list with order by name ascending", func(t *testing.T) {
 		var users []*TestUser
-		err := database.Database[*TestUser]().WithOrder("name ASC").List(&users)
+		err := database.Database[*TestUser](nil).WithOrder("name ASC").List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 1)
@@ -104,7 +104,7 @@ func TestDatabase_List(t *testing.T) {
 
 	t.Run("list with order by age descending", func(t *testing.T) {
 		var users []*TestUser
-		err := database.Database[*TestUser]().WithOrder("age DESC").List(&users)
+		err := database.Database[*TestUser](nil).WithOrder("age DESC").List(&users)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(users), 1)
@@ -117,7 +117,7 @@ func TestDatabase_List(t *testing.T) {
 
 	t.Run("list with limit", func(t *testing.T) {
 		var users []*TestUser
-		err := database.Database[*TestUser]().WithLimit(2).List(&users)
+		err := database.Database[*TestUser](nil).WithLimit(2).List(&users)
 
 		assert.NoError(t, err)
 		assert.LessOrEqual(t, len(users), 2)
@@ -126,14 +126,14 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list with scope pagination", func(t *testing.T) {
 		// First page
 		var page1Users []*TestUser
-		err := database.Database[*TestUser]().WithScope(1, 2).List(&page1Users)
+		err := database.Database[*TestUser](nil).WithScope(1, 2).List(&page1Users)
 
 		assert.NoError(t, err)
 		assert.LessOrEqual(t, len(page1Users), 2)
 
 		// Second page
 		var page2Users []*TestUser
-		err = database.Database[*TestUser]().WithScope(2, 2).List(&page2Users)
+		err = database.Database[*TestUser](nil).WithScope(2, 2).List(&page2Users)
 
 		assert.NoError(t, err)
 		assert.LessOrEqual(t, len(page2Users), 2)
@@ -153,11 +153,11 @@ func TestDatabase_List(t *testing.T) {
 
 	t.Run("list with cache enabled", func(t *testing.T) {
 		var users1 []*TestUser
-		err := database.Database[*TestUser]().WithCache(true).List(&users1)
+		err := database.Database[*TestUser](nil).WithCache(true).List(&users1)
 		assert.NoError(t, err)
 
 		var users2 []*TestUser
-		err = database.Database[*TestUser]().WithCache(true).List(&users2)
+		err = database.Database[*TestUser](nil).WithCache(true).List(&users2)
 		assert.NoError(t, err)
 
 		// Results should be the same
@@ -167,7 +167,7 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list with multiple conditions", func(t *testing.T) {
 		var users []*TestUser
 		query := &TestUser{Age: 25, IsActive: true}
-		err := database.Database[*TestUser]().
+		err := database.Database[*TestUser](nil).
 			WithQuery(query).
 			WithOrder("name ASC").
 			WithLimit(10).
@@ -192,14 +192,14 @@ func TestDatabase_List(t *testing.T) {
 	t.Run("list empty result", func(t *testing.T) {
 		var users []*TestUser
 		query := &TestUser{Name: "NonExistentUser"}
-		err := database.Database[*TestUser]().WithQuery(query).List(&users)
+		err := database.Database[*TestUser](nil).WithQuery(query).List(&users)
 
 		assert.NoError(t, err)
 		assert.Empty(t, users)
 	})
 
 	t.Run("list with nil pointer", func(t *testing.T) {
-		err := database.Database[*TestUser]().List(nil)
+		err := database.Database[*TestUser](nil).List(nil)
 		assert.NoError(t, err)
 	})
 }
@@ -244,13 +244,13 @@ func TestDatabase_List_Products(t *testing.T) {
 	}
 
 	for _, product := range products {
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 	}
 
 	t.Run("list all products", func(t *testing.T) {
 		var products []*TestProduct
-		err := database.Database[*TestProduct]().List(&products)
+		err := database.Database[*TestProduct](nil).List(&products)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(products), 3)
@@ -259,7 +259,7 @@ func TestDatabase_List_Products(t *testing.T) {
 	t.Run("list products by category", func(t *testing.T) {
 		var products []*TestProduct
 		query := &TestProduct{CategoryID: "electronics"}
-		err := database.Database[*TestProduct]().WithQuery(query).List(&products)
+		err := database.Database[*TestProduct](nil).WithQuery(query).List(&products)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(products), 2)
@@ -270,7 +270,7 @@ func TestDatabase_List_Products(t *testing.T) {
 
 	t.Run("list products ordered by price", func(t *testing.T) {
 		var products []*TestProduct
-		err := database.Database[*TestProduct]().WithOrder("price ASC").List(&products)
+		err := database.Database[*TestProduct](nil).WithOrder("price ASC").List(&products)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(products), 1)
@@ -284,7 +284,7 @@ func TestDatabase_List_Products(t *testing.T) {
 	t.Run("list_products_with_name_like_match", func(t *testing.T) {
 		var products []*TestProduct
 		query := &TestProduct{Name: "Product"}
-		err := database.Database[*TestProduct]().WithQuery(query, true).List(&products)
+		err := database.Database[*TestProduct](nil).WithQuery(query, true).List(&products)
 		assert.NoError(t, err)
 		assert.Greater(t, len(products), 0, "Should find products with name containing 'Product'")
 
@@ -298,9 +298,9 @@ func TestDatabase_List_Products(t *testing.T) {
 func TestDatabase_List_Categories(t *testing.T) {
 	// 清理现有数据 - 先查询所有分类，然后删除
 	var existingCategories []*TestCategory
-	database.Database[*TestCategory]().List(&existingCategories)
+	database.Database[*TestCategory](nil).List(&existingCategories)
 	if len(existingCategories) > 0 {
-		database.Database[*TestCategory]().WithPurge(true).Delete(existingCategories...)
+		database.Database[*TestCategory](nil).WithPurge(true).Delete(existingCategories...)
 	}
 
 	// Create test categories with unique names
@@ -337,13 +337,13 @@ func TestDatabase_List_Categories(t *testing.T) {
 	}
 
 	for _, category := range categories {
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 	}
 
 	t.Run("list all categories", func(t *testing.T) {
 		var categories []*TestCategory
-		err := database.Database[*TestCategory]().List(&categories)
+		err := database.Database[*TestCategory](nil).List(&categories)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(categories), 3)
@@ -352,7 +352,7 @@ func TestDatabase_List_Categories(t *testing.T) {
 	t.Run("list root categories", func(t *testing.T) {
 		var categories []*TestCategory
 		// 使用 WithQueryRaw 来正确查询 ParentID 为空字符串的记录
-		err := database.Database[*TestCategory]().WithQueryRaw("parent_id = ?", "").List(&categories)
+		err := database.Database[*TestCategory](nil).WithQueryRaw("parent_id = ?", "").List(&categories)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(categories), 2)
@@ -364,7 +364,7 @@ func TestDatabase_List_Categories(t *testing.T) {
 	t.Run("list subcategories", func(t *testing.T) {
 		var categories []*TestCategory
 		query := &TestCategory{ParentID: "category-list-001"}
-		err := database.Database[*TestCategory]().WithQuery(query).List(&categories)
+		err := database.Database[*TestCategory](nil).WithQuery(query).List(&categories)
 
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(categories), 1)
@@ -375,7 +375,7 @@ func TestDatabase_List_Categories(t *testing.T) {
 
 	t.Run("list categories ordered by name", func(t *testing.T) {
 		var categories []*TestCategory
-		err := database.Database[*TestCategory]().WithOrder("name ASC").List(&categories)
+		err := database.Database[*TestCategory](nil).WithOrder("name ASC").List(&categories)
 
 		assert.NoError(t, err)
 		assert.Greater(t, len(categories), 1)

@@ -79,11 +79,11 @@ func Run() error {
 
 	// Delete all permissions in database
 	permissions := make([]*model_authz.Permission, 0)
-	if err := database.Database[*model_authz.Permission]().WithLimit(-1).List(&permissions); err != nil {
+	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).List(&permissions); err != nil {
 		log.Error(err)
 		return err
 	}
-	if err := database.Database[*model_authz.Permission]().WithLimit(-1).WithBatchSize(100).WithPurge().Delete(permissions...); err != nil {
+	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).WithBatchSize(100).WithPurge().Delete(permissions...); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -97,7 +97,7 @@ func Run() error {
 			})
 		}
 	}
-	if err := database.Database[*model_authz.Permission]().WithLimit(-1).WithBatchSize(100).Create(permissions...); err != nil {
+	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).WithBatchSize(100).Create(permissions...); err != nil {
 		log.Error(err)
 		return err
 	}

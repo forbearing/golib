@@ -34,10 +34,10 @@ func (r *UserRole) CreateBefore() error {
 	}
 	// expands field: user and role
 	user, role := new(model.User), new(Role)
-	if err := database.Database[*model.User]().Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](nil).Get(user, r.UserId); err != nil {
 		return err
 	}
-	if err := database.Database[*Role]().Get(role, r.RoleId); err != nil {
+	if err := database.Database[*Role](nil).Get(role, r.RoleId); err != nil {
 		return err
 	}
 	r.User, r.Role = user.Name, role.Name
@@ -49,7 +49,7 @@ func (r *UserRole) CreateBefore() error {
 }
 
 func (r *UserRole) CreateAfter() error {
-	if err := database.Database[*UserRole]().Update(r); err != nil {
+	if err := database.Database[*UserRole](nil).Update(r); err != nil {
 		return err
 	}
 	// NOTE: must be role name not role id.
@@ -59,32 +59,32 @@ func (r *UserRole) CreateAfter() error {
 
 	// update casbin_rule field: `user`, `role`, `remark`
 	user := new(model.User)
-	if err := database.Database[*model.User]().Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](nil).Get(user, r.UserId); err != nil {
 		return err
 	}
 	casbinRules := make([]*CasbinRule, 0)
-	if err := database.Database[*CasbinRule]().WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
+	if err := database.Database[*CasbinRule](nil).WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
 		return err
 	}
 	if len(casbinRules) > 0 {
 		casbinRules[0].User = user.Name
 		casbinRules[0].Role = r.Role
 		casbinRules[0].Remark = util.ValueOf(fmt.Sprintf("%s -> %s", r.User, r.Role))
-		return database.Database[*CasbinRule]().Update(casbinRules[0])
+		return database.Database[*CasbinRule](nil).Update(casbinRules[0])
 	}
 	return nil
 }
 
 func (r *UserRole) DeleteBefore() error {
 	// The delete request always don't have user_id and role_id, so we should get the role from database.
-	if err := database.Database[*UserRole]().Get(r, r.ID); err != nil {
+	if err := database.Database[*UserRole](nil).Get(r, r.ID); err != nil {
 		return err
 	}
 	// NOTE: must be role name not role id.
 	return rbac.RBAC().UnassignRole(r.UserId, r.Role)
 }
 
-func (r *UserRole) DeleteAfter() error { return database.Database[*UserRole]().Cleanup() }
+func (r *UserRole) DeleteAfter() error { return database.Database[*UserRole](nil).Cleanup() }
 
 func (r *UserRole) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {

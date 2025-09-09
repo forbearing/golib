@@ -29,13 +29,13 @@ func BenchmarkDatabase_UpdateById(b *testing.B) {
 				IsActive: true,
 			}
 
-			err := database.Database[*TestUser]().Create(user)
+			err := database.Database[*TestUser](nil).Create(user)
 			if err != nil {
 				b.Fatal(err)
 			}
 
 			// Execute UpdateById
-			if err = database.Database[*TestUser]().UpdateById(user.ID, "name", "Benchmark UpdateById User - Updated"); err != nil {
+			if err = database.Database[*TestUser](nil).UpdateById(user.ID, "name", "Benchmark UpdateById User - Updated"); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -57,19 +57,19 @@ func BenchmarkDatabase_UpdateById(b *testing.B) {
 				IsActive: true,
 			}
 
-			err := database.Database[*TestUser]().Create(user)
+			err := database.Database[*TestUser](nil).Create(user)
 			if err != nil {
 				b.Fatal(err)
 			}
 
 			// Update multiple fields sequentially
-			if err = database.Database[*TestUser]().UpdateById(user.ID, "name", "Benchmark UpdateById Multi User - Updated"); err != nil {
+			if err = database.Database[*TestUser](nil).UpdateById(user.ID, "name", "Benchmark UpdateById Multi User - Updated"); err != nil {
 				b.Fatal(err)
 			}
-			if err = database.Database[*TestUser]().UpdateById(user.ID, "age", 35); err != nil {
+			if err = database.Database[*TestUser](nil).UpdateById(user.ID, "age", 35); err != nil {
 				b.Fatal(err)
 			}
-			if err = database.Database[*TestUser]().UpdateById(user.ID, "is_active", false); err != nil {
+			if err = database.Database[*TestUser](nil).UpdateById(user.ID, "is_active", false); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -82,12 +82,12 @@ func TestDatabase_UpdateById(t *testing.T) {
 
 	t.Run("successfully update single field by ID", func(t *testing.T) {
 		// Update first user's name
-		err := database.Database[*TestUser]().UpdateById(testUsers[0].ID, "name", "Zhang San Updated by ID")
+		err := database.Database[*TestUser](nil).UpdateById(testUsers[0].ID, "name", "Zhang San Updated by ID")
 		assert.NoError(t, err)
 
 		// Verify update was successful
 		var updatedUser TestUser
-		err = database.Database[*TestUser]().Get(&updatedUser, testUsers[0].ID)
+		err = database.Database[*TestUser](nil).Get(&updatedUser, testUsers[0].ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "Zhang San Updated by ID", updatedUser.Name)
 		// Other fields should remain unchanged
@@ -98,21 +98,21 @@ func TestDatabase_UpdateById(t *testing.T) {
 
 	t.Run("update multiple different fields", func(t *testing.T) {
 		// Update second user's age
-		err := database.Database[*TestUser]().UpdateById(testUsers[1].ID, "age", 35)
+		err := database.Database[*TestUser](nil).UpdateById(testUsers[1].ID, "age", 35)
 		assert.NoError(t, err)
 
 		// Verify age update
 		var updatedUser TestUser
-		err = database.Database[*TestUser]().Get(&updatedUser, testUsers[1].ID)
+		err = database.Database[*TestUser](nil).Get(&updatedUser, testUsers[1].ID)
 		assert.NoError(t, err)
 		assert.Equal(t, 35, updatedUser.Age)
 
 		// Update same user's email
-		err = database.Database[*TestUser]().UpdateById(testUsers[1].ID, "email", "lisi_updated_by_id@example.com")
+		err = database.Database[*TestUser](nil).UpdateById(testUsers[1].ID, "email", "lisi_updated_by_id@example.com")
 		assert.NoError(t, err)
 
 		// Verify email update
-		err = database.Database[*TestUser]().Get(&updatedUser, testUsers[1].ID)
+		err = database.Database[*TestUser](nil).Get(&updatedUser, testUsers[1].ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "lisi_updated_by_id@example.com", updatedUser.Email)
 		assert.Equal(t, 35, updatedUser.Age) // Previous update should persist
@@ -120,37 +120,37 @@ func TestDatabase_UpdateById(t *testing.T) {
 
 	t.Run("update boolean field", func(t *testing.T) {
 		// Update third user's active status
-		err := database.Database[*TestUser]().UpdateById(testUsers[2].ID, "is_active", false)
+		err := database.Database[*TestUser](nil).UpdateById(testUsers[2].ID, "is_active", false)
 		assert.NoError(t, err)
 
 		// Verify boolean field update
 		var updatedUser TestUser
-		err = database.Database[*TestUser]().Get(&updatedUser, testUsers[2].ID)
+		err = database.Database[*TestUser](nil).Get(&updatedUser, testUsers[2].ID)
 		assert.NoError(t, err)
 		assert.False(t, updatedUser.IsActive)
 	})
 
 	t.Run("update non-existent record", func(t *testing.T) {
 		// Try to update non-existent record
-		err := database.Database[*TestUser]().UpdateById("non-existent-id", "name", "Non-existent User")
+		err := database.Database[*TestUser](nil).UpdateById("non-existent-id", "name", "Non-existent User")
 		assert.NoError(t, err) // GORM won't error for non-existent records
 
 		// Verify record indeed doesn't exist
 		var user TestUser
-		err = database.Database[*TestUser]().Get(&user, "non-existent-id")
+		err = database.Database[*TestUser](nil).Get(&user, "non-existent-id")
 		assert.NoError(t, err)
 		assert.Empty(t, user.ID)
 	})
 
 	t.Run("update with empty ID", func(t *testing.T) {
 		// Using empty ID should not error but have no effect
-		err := database.Database[*TestUser]().UpdateById("", "name", "Empty ID User")
+		err := database.Database[*TestUser](nil).UpdateById("", "name", "Empty ID User")
 		assert.NoError(t, err)
 	})
 
 	t.Run("update non-existent field", func(t *testing.T) {
 		// Try to update non-existent field, should return error
-		err := database.Database[*TestUser]().UpdateById(testUsers[0].ID, "non_existent_field", "some value")
+		err := database.Database[*TestUser](nil).UpdateById(testUsers[0].ID, "non_existent_field", "some value")
 		assert.Error(t, err) // Database should error for non-existent field
 		assert.Contains(t, err.Error(), "no such column")
 	})
@@ -170,16 +170,16 @@ func TestDatabase_UpdateById(t *testing.T) {
 			CategoryID:  "category-001",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		// Update product price by ID
-		err = database.Database[*TestProduct]().UpdateById("updatebyid-product-001", "price", 299.99)
+		err = database.Database[*TestProduct](nil).UpdateById("updatebyid-product-001", "price", 299.99)
 		assert.NoError(t, err)
 
 		// Verify product price was updated
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Get(&retrievedProduct, "updatebyid-product-001")
+		err = database.Database[*TestProduct](nil).Get(&retrievedProduct, "updatebyid-product-001")
 		assert.NoError(t, err)
 		assert.Equal(t, 299.99, retrievedProduct.Price)
 		// Other fields should remain unchanged
@@ -200,16 +200,16 @@ func TestDatabase_UpdateById(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		// Update category's parent ID by ID
-		err = database.Database[*TestCategory]().UpdateById("updatebyid-category-001", "parent_id", "parent-category-001")
+		err = database.Database[*TestCategory](nil).UpdateById("updatebyid-category-001", "parent_id", "parent-category-001")
 		assert.NoError(t, err)
 
 		// Verify category parent ID was updated
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Get(&retrievedCategory, "updatebyid-category-001")
+		err = database.Database[*TestCategory](nil).Get(&retrievedCategory, "updatebyid-category-001")
 		assert.NoError(t, err)
 		assert.Equal(t, "parent-category-001", retrievedCategory.ParentID)
 		// Name should remain unchanged

@@ -17,17 +17,17 @@ func TestDatabase_Delete(t *testing.T) {
 
 	t.Run("successfully delete existing record", func(t *testing.T) {
 		// Delete first user
-		err := database.Database[*TestUser]().Delete(testUsers[0])
+		err := database.Database[*TestUser](nil).Delete(testUsers[0])
 		assert.NoError(t, err)
 
 		// Verify record is soft deleted (deleted_at is not null)
 		var user TestUser
-		err = database.Database[*TestUser]().Get(&user, testUsers[0].ID)
+		err = database.Database[*TestUser](nil).Get(&user, testUsers[0].ID)
 		assert.NoError(t, err)
 		assert.Empty(t, user.ID) // Cannot be retrieved through normal query after soft delete
 
 		// Use Unscoped query to verify record still exists but marked as deleted
-		err = database.Database[*TestUser]().WithDB(database.DB.Unscoped()).Get(&user, testUsers[0].ID)
+		err = database.Database[*TestUser](nil).WithDB(database.DB.Unscoped()).Get(&user, testUsers[0].ID)
 		assert.NoError(t, err)
 		assert.Equal(t, testUsers[0].ID, user.ID)
 		assert.NotNil(t, user.DeletedAt) // Confirm deleted_at field is set
@@ -35,17 +35,17 @@ func TestDatabase_Delete(t *testing.T) {
 
 	t.Run("permanently delete record with WithPurge", func(t *testing.T) {
 		// Permanently delete second user
-		err := database.Database[*TestUser]().WithPurge().Delete(testUsers[1])
+		err := database.Database[*TestUser](nil).WithPurge().Delete(testUsers[1])
 		assert.NoError(t, err)
 
 		// Verify record is permanently deleted
 		var user TestUser
-		err = database.Database[*TestUser]().Get(&user, testUsers[1].ID)
+		err = database.Database[*TestUser](nil).Get(&user, testUsers[1].ID)
 		assert.NoError(t, err)
 		assert.Empty(t, user.ID)
 
 		// Even with Unscoped, record cannot be found
-		err = database.Database[*TestUser]().WithDB(database.DB.Unscoped()).Get(&user, testUsers[1].ID)
+		err = database.Database[*TestUser](nil).WithDB(database.DB.Unscoped()).Get(&user, testUsers[1].ID)
 		assert.NoError(t, err)
 		assert.Empty(t, user.ID)
 	})
@@ -89,17 +89,17 @@ func TestDatabase_Delete(t *testing.T) {
 			},
 		}
 
-		err := database.Database[*TestUser]().Create(batchUsers...)
+		err := database.Database[*TestUser](nil).Create(batchUsers...)
 		require.NoError(t, err)
 
 		// Batch delete
-		err = database.Database[*TestUser]().Delete(batchUsers...)
+		err = database.Database[*TestUser](nil).Delete(batchUsers...)
 		assert.NoError(t, err)
 
 		// Verify all records are deleted
 		for _, user := range batchUsers {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			assert.NoError(t, err)
 			assert.Empty(t, retrievedUser.ID)
 		}
@@ -113,13 +113,13 @@ func TestDatabase_Delete(t *testing.T) {
 		}
 
 		// Deleting non-existent record should not error
-		err := database.Database[*TestUser]().Delete(nonExistentUser)
+		err := database.Database[*TestUser](nil).Delete(nonExistentUser)
 		assert.NoError(t, err)
 	})
 
 	t.Run("delete empty list", func(t *testing.T) {
 		// Passing empty list should not error
-		err := database.Database[*TestUser]().Delete()
+		err := database.Database[*TestUser](nil).Delete()
 		assert.NoError(t, err)
 	})
 
@@ -142,17 +142,17 @@ func TestDatabase_Delete(t *testing.T) {
 			batchSizeUsers = append(batchSizeUsers, user)
 		}
 
-		err := database.Database[*TestUser]().Create(batchSizeUsers...)
+		err := database.Database[*TestUser](nil).Create(batchSizeUsers...)
 		require.NoError(t, err)
 
 		// Delete with small batch size
-		err = database.Database[*TestUser]().WithBatchSize(2).Delete(batchSizeUsers...)
+		err = database.Database[*TestUser](nil).WithBatchSize(2).Delete(batchSizeUsers...)
 		assert.NoError(t, err)
 
 		// Verify all records are deleted
 		for _, user := range batchSizeUsers {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			assert.NoError(t, err)
 			assert.Empty(t, retrievedUser.ID)
 		}
@@ -173,16 +173,16 @@ func TestDatabase_Delete(t *testing.T) {
 			CategoryID:  "category-001",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		// Delete product
-		err = database.Database[*TestProduct]().Delete(product)
+		err = database.Database[*TestProduct](nil).Delete(product)
 		assert.NoError(t, err)
 
 		// Verify product is deleted
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Get(&retrievedProduct, "delete-product-001")
+		err = database.Database[*TestProduct](nil).Get(&retrievedProduct, "delete-product-001")
 		assert.NoError(t, err)
 		assert.Empty(t, retrievedProduct.ID)
 	})
@@ -200,16 +200,16 @@ func TestDatabase_Delete(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		// Delete category
-		err = database.Database[*TestCategory]().Delete(category)
+		err = database.Database[*TestCategory](nil).Delete(category)
 		assert.NoError(t, err)
 
 		// Verify category is deleted
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Get(&retrievedCategory, "delete-category-001")
+		err = database.Database[*TestCategory](nil).Get(&retrievedCategory, "delete-category-001")
 		assert.NoError(t, err)
 		assert.Empty(t, retrievedCategory.ID)
 	})

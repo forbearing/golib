@@ -23,16 +23,16 @@ func TestDatabase_Update(t *testing.T) {
 		// Note: Due to GORM Save method not updating zero value fields (like false),
 		// we update other fields first, then update boolean field separately
 
-		err := database.Database[*TestUser]().Update(testUsers[0])
+		err := database.Database[*TestUser](nil).Update(testUsers[0])
 		assert.NoError(t, err)
 
 		// Update boolean field to false separately
-		err = database.Database[*TestUser]().UpdateById(testUsers[0].ID, "is_active", false)
+		err = database.Database[*TestUser](nil).UpdateById(testUsers[0].ID, "is_active", false)
 		assert.NoError(t, err)
 
 		// Verify update was successful
 		var updatedUser TestUser
-		err = database.Database[*TestUser]().Get(&updatedUser, testUsers[0].ID)
+		err = database.Database[*TestUser](nil).Get(&updatedUser, testUsers[0].ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "Zhang San Updated", updatedUser.Name)
 		assert.Equal(t, "zhangsan_updated@example.com", updatedUser.Email)
@@ -71,7 +71,7 @@ func TestDatabase_Update(t *testing.T) {
 			},
 		}
 
-		err := database.Database[*TestUser]().Create(batchUsers...)
+		err := database.Database[*TestUser](nil).Create(batchUsers...)
 		require.NoError(t, err)
 
 		// Modify user information
@@ -81,13 +81,13 @@ func TestDatabase_Update(t *testing.T) {
 		batchUsers[1].Age = 32
 
 		// Batch update
-		err = database.Database[*TestUser]().Update(batchUsers...)
+		err = database.Database[*TestUser](nil).Update(batchUsers...)
 		assert.NoError(t, err)
 
 		// Verify all records were updated
 		for _, user := range batchUsers {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, user.Name, retrievedUser.Name)
 			assert.Equal(t, user.Age, retrievedUser.Age)
@@ -110,12 +110,12 @@ func TestDatabase_Update(t *testing.T) {
 
 		// Update method uses GORM's Save, which performs upsert operation
 		// If record doesn't exist, it will create a new record
-		err := database.Database[*TestUser]().Update(nonExistentUser)
+		err := database.Database[*TestUser](nil).Update(nonExistentUser)
 		assert.NoError(t, err)
 
 		// Verify record was created
 		var user TestUser
-		err = database.Database[*TestUser]().Get(&user, "non-existent-update-user")
+		err = database.Database[*TestUser](nil).Get(&user, "non-existent-update-user")
 		assert.NoError(t, err)
 		assert.Equal(t, "Non-existent User", user.Name)
 		assert.Equal(t, "nonexistent@example.com", user.Email)
@@ -125,7 +125,7 @@ func TestDatabase_Update(t *testing.T) {
 
 	t.Run("update empty list", func(t *testing.T) {
 		// Passing empty list should not error
-		err := database.Database[*TestUser]().Update()
+		err := database.Database[*TestUser](nil).Update()
 		assert.NoError(t, err)
 	})
 
@@ -148,7 +148,7 @@ func TestDatabase_Update(t *testing.T) {
 			batchSizeUsers = append(batchSizeUsers, user)
 		}
 
-		err := database.Database[*TestUser]().Create(batchSizeUsers...)
+		err := database.Database[*TestUser](nil).Create(batchSizeUsers...)
 		require.NoError(t, err)
 
 		// Modify all users' age
@@ -158,13 +158,13 @@ func TestDatabase_Update(t *testing.T) {
 		}
 
 		// Update with small batch size
-		err = database.Database[*TestUser]().WithBatchSize(2).Update(batchSizeUsers...)
+		err = database.Database[*TestUser](nil).WithBatchSize(2).Update(batchSizeUsers...)
 		assert.NoError(t, err)
 
 		// Verify all records were updated
 		for _, user := range batchSizeUsers {
 			var retrievedUser TestUser
-			err = database.Database[*TestUser]().Get(&retrievedUser, user.ID)
+			err = database.Database[*TestUser](nil).Get(&retrievedUser, user.ID)
 			assert.NoError(t, err)
 			assert.Equal(t, user.Name, retrievedUser.Name)
 			assert.Equal(t, user.Age, retrievedUser.Age)
@@ -186,7 +186,7 @@ func TestDatabase_Update(t *testing.T) {
 			CategoryID:  "category-001",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		// Update product information
@@ -194,12 +194,12 @@ func TestDatabase_Update(t *testing.T) {
 		product.Description = "This is an updated test product"
 		product.Price = 299.99
 
-		err = database.Database[*TestProduct]().Update(product)
+		err = database.Database[*TestProduct](nil).Update(product)
 		assert.NoError(t, err)
 
 		// Verify product was updated
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Get(&retrievedProduct, "update-product-001")
+		err = database.Database[*TestProduct](nil).Get(&retrievedProduct, "update-product-001")
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Product", retrievedProduct.Name)
 		assert.Equal(t, "This is an updated test product", retrievedProduct.Description)
@@ -219,19 +219,19 @@ func TestDatabase_Update(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		// Update category information
 		category.Name = "Updated Category"
 		category.ParentID = "parent-category-001"
 
-		err = database.Database[*TestCategory]().Update(category)
+		err = database.Database[*TestCategory](nil).Update(category)
 		assert.NoError(t, err)
 
 		// Verify category was updated
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Get(&retrievedCategory, "update-category-001")
+		err = database.Database[*TestCategory](nil).Get(&retrievedCategory, "update-category-001")
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Category", retrievedCategory.Name)
 		assert.Equal(t, "parent-category-001", retrievedCategory.ParentID)
@@ -252,7 +252,7 @@ func TestDatabase_Update(t *testing.T) {
 			IsActive: true,
 		}
 
-		err := database.Database[*TestUser]().Create(user)
+		err := database.Database[*TestUser](nil).Create(user)
 		require.NoError(t, err)
 
 		// Update only some fields
@@ -262,12 +262,12 @@ func TestDatabase_Update(t *testing.T) {
 		user.Age = 30
 		// Email and IsActive remain unchanged
 
-		err = database.Database[*TestUser]().Update(user)
+		err = database.Database[*TestUser](nil).Update(user)
 		assert.NoError(t, err)
 
 		// Verify update results
 		var retrievedUser TestUser
-		err = database.Database[*TestUser]().Get(&retrievedUser, "partial-update-user")
+		err = database.Database[*TestUser](nil).Get(&retrievedUser, "partial-update-user")
 		assert.NoError(t, err)
 		assert.Equal(t, "Partial Update User - Updated", retrievedUser.Name)
 		assert.Equal(t, 30, retrievedUser.Age)

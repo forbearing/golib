@@ -2181,7 +2181,7 @@ func exampleValue(code response.Code) map[string]any {
 func fieldType2openapiType(field reflect.StructField) *openapi3.Types {
 	typ := field.Type
 
-	for typ.Kind() == reflect.Ptr {
+	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 

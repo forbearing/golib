@@ -16,28 +16,28 @@ func TestDatabase_Count(t *testing.T) {
 
 	t.Run("count all records", func(t *testing.T) {
 		var count int64
-		err := database.Database[*TestUser]().Count(&count)
+		err := database.Database[*TestUser](nil).Count(&count)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(len(testUsers)))
 	})
 
 	t.Run("count with query condition", func(t *testing.T) {
 		var count int64
-		err := database.Database[*TestUser]().WithQuery(&TestUser{IsActive: true}).Count(&count)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{IsActive: true}).Count(&count)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(2)) // At least 2 active users from test data
 	})
 
 	t.Run("count with raw query", func(t *testing.T) {
 		var count int64
-		err := database.Database[*TestUser]().WithQueryRaw("age > ?", 25).Count(&count)
+		err := database.Database[*TestUser](nil).WithQueryRaw("age > ?", 25).Count(&count)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(1)) // At least 1 user with age > 25
 	})
 
 	t.Run("count empty result", func(t *testing.T) {
 		var count int64
-		err := database.Database[*TestUser]().WithQuery(&TestUser{Name: "NonExistentUser"}).Count(&count)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{Name: "NonExistentUser"}).Count(&count)
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), count)
 	})
@@ -57,11 +57,11 @@ func TestDatabase_Count(t *testing.T) {
 			CategoryID:  "electronics",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		var count int64
-		err = database.Database[*TestProduct]().Count(&count)
+		err = database.Database[*TestProduct](nil).Count(&count)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(1))
 	})
@@ -79,11 +79,11 @@ func TestDatabase_Count(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		var count int64
-		err = database.Database[*TestCategory]().Count(&count)
+		err = database.Database[*TestCategory](nil).Count(&count)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(1))
 	})
@@ -95,7 +95,7 @@ func TestDatabase_First(t *testing.T) {
 
 	t.Run("get first record", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().First(&user)
+		err := database.Database[*TestUser](nil).First(&user)
 		require.NoError(t, err)
 		assert.NotEmpty(t, user.ID)
 		assert.NotEmpty(t, user.Name)
@@ -105,27 +105,27 @@ func TestDatabase_First(t *testing.T) {
 
 	t.Run("first with query condition", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{IsActive: true}).First(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{IsActive: true}).First(&user)
 		require.NoError(t, err)
 		assert.True(t, user.IsActive)
 	})
 
 	t.Run("first with order", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithOrder("name").First(&user)
+		err := database.Database[*TestUser](nil).WithOrder("name").First(&user)
 		require.NoError(t, err)
 		assert.NotEmpty(t, user.Name)
 	})
 
 	t.Run("first with no results", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{Name: "NonExistentUser"}).First(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{Name: "NonExistentUser"}).First(&user)
 		assert.Error(t, err) // Should return error when no records found
 		assert.Empty(t, user.ID)
 	})
 
 	t.Run("first with nil destination", func(t *testing.T) {
-		err := database.Database[*TestUser]().First(nil)
+		err := database.Database[*TestUser](nil).First(nil)
 		assert.Error(t, err) // Should return error for nil destination
 	})
 
@@ -144,11 +144,11 @@ func TestDatabase_First(t *testing.T) {
 			CategoryID:  "electronics",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().First(&retrievedProduct)
+		err = database.Database[*TestProduct](nil).First(&retrievedProduct)
 		require.NoError(t, err)
 		assert.NotEmpty(t, retrievedProduct.ID)
 		assert.NotEmpty(t, retrievedProduct.Name)
@@ -167,11 +167,11 @@ func TestDatabase_First(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().First(&retrievedCategory)
+		err = database.Database[*TestCategory](nil).First(&retrievedCategory)
 		require.NoError(t, err)
 		assert.NotEmpty(t, retrievedCategory.ID)
 		assert.NotEmpty(t, retrievedCategory.Name)
@@ -184,7 +184,7 @@ func TestDatabase_Last(t *testing.T) {
 
 	t.Run("get last record", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().Last(&user)
+		err := database.Database[*TestUser](nil).Last(&user)
 		require.NoError(t, err)
 		assert.NotEmpty(t, user.ID)
 		assert.NotEmpty(t, user.Name)
@@ -194,27 +194,27 @@ func TestDatabase_Last(t *testing.T) {
 
 	t.Run("last with query condition", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{IsActive: true}).Last(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{IsActive: true}).Last(&user)
 		require.NoError(t, err)
 		assert.True(t, user.IsActive)
 	})
 
 	t.Run("last with order", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithOrder("name desc").Last(&user)
+		err := database.Database[*TestUser](nil).WithOrder("name desc").Last(&user)
 		require.NoError(t, err)
 		assert.NotEmpty(t, user.Name)
 	})
 
 	t.Run("last with no results", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{Name: "NonExistentUser"}).Last(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{Name: "NonExistentUser"}).Last(&user)
 		assert.Error(t, err) // Should return error when no records found
 		assert.Empty(t, user.ID)
 	})
 
 	t.Run("last with nil destination", func(t *testing.T) {
-		err := database.Database[*TestUser]().Last(nil)
+		err := database.Database[*TestUser](nil).Last(nil)
 		assert.Error(t, err) // Should return error for nil destination
 	})
 
@@ -233,11 +233,11 @@ func TestDatabase_Last(t *testing.T) {
 			CategoryID:  "electronics",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().Last(&retrievedProduct)
+		err = database.Database[*TestProduct](nil).Last(&retrievedProduct)
 		require.NoError(t, err)
 		assert.NotEmpty(t, retrievedProduct.ID)
 		assert.NotEmpty(t, retrievedProduct.Name)
@@ -256,11 +256,11 @@ func TestDatabase_Last(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().Last(&retrievedCategory)
+		err = database.Database[*TestCategory](nil).Last(&retrievedCategory)
 		require.NoError(t, err)
 		assert.NotEmpty(t, retrievedCategory.ID)
 		assert.NotEmpty(t, retrievedCategory.Name)
@@ -273,7 +273,7 @@ func TestDatabase_Take(t *testing.T) {
 
 	t.Run("take first record found", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().Take(&user)
+		err := database.Database[*TestUser](nil).Take(&user)
 		require.NoError(t, err)
 		assert.NotEmpty(t, user.ID)
 		assert.NotEmpty(t, user.Name)
@@ -283,14 +283,14 @@ func TestDatabase_Take(t *testing.T) {
 
 	t.Run("take with query condition", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{IsActive: true}).Take(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{IsActive: true}).Take(&user)
 		require.NoError(t, err)
 		assert.True(t, user.IsActive)
 	})
 
 	t.Run("take with specific condition", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQueryRaw("name = ?", testUsers[0].Name).Take(&user)
+		err := database.Database[*TestUser](nil).WithQueryRaw("name = ?", testUsers[0].Name).Take(&user)
 		require.NoError(t, err)
 		assert.Equal(t, testUsers[0].Name, user.Name)
 		assert.Equal(t, testUsers[0].Email, user.Email)
@@ -298,13 +298,13 @@ func TestDatabase_Take(t *testing.T) {
 
 	t.Run("take with no results", func(t *testing.T) {
 		var user TestUser
-		err := database.Database[*TestUser]().WithQuery(&TestUser{Name: "NonExistentUser"}).Take(&user)
+		err := database.Database[*TestUser](nil).WithQuery(&TestUser{Name: "NonExistentUser"}).Take(&user)
 		assert.Error(t, err) // Should return error when no records found
 		assert.Empty(t, user.ID)
 	})
 
 	t.Run("take with nil destination", func(t *testing.T) {
-		err := database.Database[*TestUser]().Take(nil)
+		err := database.Database[*TestUser](nil).Take(nil)
 		assert.Error(t, err) // Should return error for nil destination
 	})
 
@@ -323,11 +323,11 @@ func TestDatabase_Take(t *testing.T) {
 			CategoryID:  "electronics",
 		}
 
-		err := database.Database[*TestProduct]().Create(product)
+		err := database.Database[*TestProduct](nil).Create(product)
 		require.NoError(t, err)
 
 		var retrievedProduct TestProduct
-		err = database.Database[*TestProduct]().WithQueryRaw("name = ?", "Take Test Product").Take(&retrievedProduct)
+		err = database.Database[*TestProduct](nil).WithQueryRaw("name = ?", "Take Test Product").Take(&retrievedProduct)
 		require.NoError(t, err)
 		assert.Equal(t, "Take Test Product", retrievedProduct.Name)
 		assert.Equal(t, 599.99, retrievedProduct.Price)
@@ -346,11 +346,11 @@ func TestDatabase_Take(t *testing.T) {
 			ParentID: "",
 		}
 
-		err := database.Database[*TestCategory]().Create(category)
+		err := database.Database[*TestCategory](nil).Create(category)
 		require.NoError(t, err)
 
 		var retrievedCategory TestCategory
-		err = database.Database[*TestCategory]().WithQueryRaw("name = ?", "Take Test Category").Take(&retrievedCategory)
+		err = database.Database[*TestCategory](nil).WithQueryRaw("name = ?", "Take Test Category").Take(&retrievedCategory)
 		require.NoError(t, err)
 		assert.Equal(t, "Take Test Category", retrievedCategory.Name)
 		assert.Equal(t, "", retrievedCategory.ParentID)

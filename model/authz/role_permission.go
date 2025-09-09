@@ -61,14 +61,16 @@ func (r *RolePermission) CreateAfter() error {
 
 func (r *RolePermission) DeleteBefore() error {
 	// The request always only contains id, so we should get the RolePermission from database.
-	if err := database.Database[*RolePermission]().Get(r, r.ID); err != nil {
+	if err := database.Database[*RolePermission](nil).Get(r, r.ID); err != nil {
 		return err
 	}
 	// revoke the role's permission
 	return rbac.RBAC().RevokePermission(r.Role, r.Resource, r.Action)
 }
 
-func (r *RolePermission) DeleteAfter() error { return database.Database[*RolePermission]().Cleanup() }
+func (r *RolePermission) DeleteAfter() error {
+	return database.Database[*RolePermission](nil).Cleanup()
+}
 
 func (r *RolePermission) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {
