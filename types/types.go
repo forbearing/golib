@@ -81,8 +81,8 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 	}
 }
 
-// NewGormContext converts *types.DatabaseContext to context.Context for use with gorm custom logger.
-func NewGormContext(ctx *DatabaseContext) context.Context {
+// Context converts *types.DatabaseContext to context.Context for use with gorm custom logger.
+func (ctx *DatabaseContext) Context() context.Context {
 	c := context.Background()
 	if ctx == nil {
 		return c
@@ -168,6 +168,10 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 		Context: c.Request.Context(),
 		Writer:  c.Writer,
 	}
+}
+
+func (sc *ServiceContext) DatabaseContext() *DatabaseContext {
+	return NewDatabaseContext(sc.ginCtx)
 }
 
 func (sc *ServiceContext) Data(code int, contentType string, data []byte) {
