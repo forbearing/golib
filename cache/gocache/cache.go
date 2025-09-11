@@ -1,10 +1,12 @@
 package gocache
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -43,23 +45,24 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
+func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
 	c.c.Set(key, value, ttl)
+	return nil
 }
 
-func (c *cache[T]) Get(key string) (T, bool) {
+func (c *cache[T]) Get(key string) (T, error) {
 	var zero T
 	val, ok := c.c.Get(key)
 	if !ok {
-		return zero, false
+		return zero, types.ErrEntryNotFound
 	}
 	if val == nil {
-		return zero, false
+		return zero, types.ErrEntryNotFound
 	}
-	return val.(T), ok
+	return val.(T), nil
 }
 
-func (c *cache[T]) Peek(key string) (T, bool) {
+func (c *cache[T]) Peek(key string) (T, error) {
 	return c.Get(key)
 }
 
@@ -68,8 +71,9 @@ func (c *cache[T]) Exists(key string) bool {
 	return exists
 }
 
-func (c *cache[T]) Delete(key string) {
+func (c *cache[T]) Delete(key string) error {
 	c.c.Delete(key)
+	return nil
 }
 
 func (c *cache[T]) Len() int {
@@ -78,4 +82,9 @@ func (c *cache[T]) Len() int {
 
 func (c *cache[T]) Clear() {
 	c.c.Flush()
+}
+
+// WithContext returns a new Cache instance with the given context for tracing
+func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
+	return tracing.NewTracingWrapper(c, "gocache").WithContext(ctx)
 }

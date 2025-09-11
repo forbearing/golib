@@ -32,7 +32,7 @@ type User struct {
 
 func init() {
 	os.Setenv(config.REDIS_ENABLE, "true")
-	os.Setenv(config.MEMCACHED_ENABLE, "true")
+	os.Setenv(config.MEMCACHED_ENABLE, "false")
 	os.Setenv(config.REDIS_ADDR, "127.0.0.1:6378")
 	os.Setenv(config.REDIS_PASSWORD, "password123")
 	if err := config.Init(); err != nil {
@@ -289,7 +289,7 @@ func BenchmarkUserParallel(b *testing.B) {
 func benchInt(b *testing.B, cache types.Cache[int]) {
 	b.Run("Set", func(b *testing.B) {
 		for i := range b.N {
-			cache.Set(fmt.Sprintf("key%d", i), i, config.App.Cache.Expiration)
+			_ = cache.Set(fmt.Sprintf("key%d", i), i, 0)
 		}
 	})
 	b.Run("Get", func(b *testing.B) {
@@ -304,7 +304,7 @@ func benchIntParallel(b *testing.B, cache types.Cache[int]) {
 		b.RunParallel(func(p *testing.PB) {
 			i := 0
 			for p.Next() {
-				cache.Set(fmt.Sprintf("key%d", i), i, config.App.Cache.Expiration)
+				_ = cache.Set(fmt.Sprintf("key%d", i), i, 0)
 				i++
 			}
 		})
@@ -323,7 +323,7 @@ func benchIntParallel(b *testing.B, cache types.Cache[int]) {
 func benchString(b *testing.B, cache types.Cache[string]) {
 	b.Run("Set", func(b *testing.B) {
 		for i := range b.N {
-			cache.Set(fmt.Sprintf("key%d", i), strconv.Itoa(i), config.App.Cache.Expiration)
+			_ = cache.Set(fmt.Sprintf("key%d", i), strconv.Itoa(i), 0)
 		}
 	})
 	b.Run("Get", func(b *testing.B) {
@@ -338,7 +338,7 @@ func benchStringParallel(b *testing.B, cache types.Cache[string]) {
 		b.RunParallel(func(p *testing.PB) {
 			i := 0
 			for p.Next() {
-				cache.Set(fmt.Sprintf("key%d", i), strconv.Itoa(i), config.App.Cache.Expiration)
+				_ = cache.Set(fmt.Sprintf("key%d", i), strconv.Itoa(i), 0)
 				i++
 			}
 		})
@@ -357,7 +357,7 @@ func benchStringParallel(b *testing.B, cache types.Cache[string]) {
 func benchUser(b *testing.B, cache types.Cache[User]) {
 	b.Run("Set", func(b *testing.B) {
 		for i := range b.N {
-			cache.Set(fmt.Sprintf("key%d", i), User{Name: fmt.Sprintf("user%d", i)}, config.App.Cache.Expiration)
+			_ = cache.Set(fmt.Sprintf("key%d", i), User{Name: fmt.Sprintf("user%d", i)}, 0)
 		}
 	})
 	b.Run("Get", func(b *testing.B) {
@@ -372,7 +372,7 @@ func benchUserParallel(b *testing.B, cache types.Cache[User]) {
 		b.RunParallel(func(p *testing.PB) {
 			i := 0
 			for p.Next() {
-				cache.Set(fmt.Sprintf("key%d", i), User{Name: fmt.Sprintf("user%d", i)}, config.App.Cache.Expiration)
+				_ = cache.Set(fmt.Sprintf("key%d", i), User{Name: fmt.Sprintf("user%d", i)}, 0)
 				i++
 			}
 		})

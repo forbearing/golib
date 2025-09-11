@@ -1,11 +1,13 @@
 package ristretto
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -49,16 +51,28 @@ func Cache[T any]() types.Cache[T] {
 	return val.(*cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
+func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
 	c.c.SetWithTTL(key, value, 1, ttl)
+	c.c.Wait()
+	return nil
 }
 
-func (c *cache[T]) Get(key string) (T, bool) {
-	return c.c.Get(key)
+func (c *cache[T]) Get(key string) (T, error) {
+	value, ok := c.c.Get(key)
+	if !ok {
+		var zero T
+		return zero, types.ErrEntryNotFound
+	}
+	return value, nil
 }
 
-func (c *cache[T]) Peek(key string) (T, bool) {
-	return c.c.Get(key)
+func (c *cache[T]) Peek(key string) (T, error) {
+	value, ok := c.c.Get(key)
+	if !ok {
+		var zero T
+		return zero, types.ErrEntryNotFound
+	}
+	return value, nil
 }
 
 func (c *cache[T]) Exists(key string) bool {
@@ -66,8 +80,9 @@ func (c *cache[T]) Exists(key string) bool {
 	return exists
 }
 
-func (c *cache[T]) Delete(key string) {
+func (c *cache[T]) Delete(key string) error {
 	c.c.Del(key)
+	return nil
 }
 
 func (c *cache[T]) Len() int {
@@ -84,4 +99,9 @@ func buildConf[T any]() *ristretto.Config[string, T] {
 		MaxCost:     1 << 30,
 		BufferItems: 64,
 	}
+}
+
+// WithContext returns a new Cache instance with the given context for tracing
+func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
+	return tracing.NewTracingWrapper(c, "ristretto").WithContext(ctx)
 }

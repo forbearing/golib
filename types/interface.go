@@ -1,6 +1,8 @@
 package types
 
 import (
+	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -8,6 +10,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// ErrEntryNotFound is returned when a cache entry is not found.
+var ErrEntryNotFound = errors.New("cache entry not found")
 
 // Initalizer interface is used to initialize configuration, flag arguments, logger, or other components.
 // This interface is commonly implemented by bootstrap components that need to perform
@@ -467,45 +472,68 @@ type Hooker interface {
 	GetAfter() error
 }
 
-// Cache interface provides generic caching operations for any data type.
-// This interface supports multiple caching strategies and implementations,
-// including in-memory caches, distributed caches, and hybrid approaches.
+// Cache interface provides a unified caching abstraction with consistent error handling.
+// This interface supports various cache operations with proper error reporting and
+// distributed tracing capabilities.
 //
 // Generic type T can be any serializable data type.
 //
-// Available implementations:
-//   - freecache: High-performance in-memory cache with zero GC overhead
-//   - gocache: Multi-tier caching with various backends
-//   - smap: Simple concurrent map-based cache
-//   - cmap: Concurrent map with advanced features
-//   - ccache: LRU cache with size limits
+// Error Handling:
+//
+//	All operations return an error to provide comprehensive error information.
+//	For Get/Peek operations, ErrEntryNotFound is returned when the key doesn't exist.
+//	This design follows Go best practices and aligns with standard library patterns.
 //
 // Operations:
-//   - Set: Store value with TTL (time-to-live)
-//   - Get: Retrieve value and mark as accessed (affects LRU)
-//   - Peek: Retrieve value without affecting access order
-//   - Delete: Remove specific key
-//   - Exists: Check if key exists without retrieving value
-//   - Len: Get current number of cached items
+//   - Set: Store value with TTL, returns error on failure
+//   - Get: Retrieve value and mark as accessed, returns ErrEntryNotFound if key doesn't exist
+//   - Peek: Retrieve value without affecting access order, returns ErrEntryNotFound if key doesn't exist
+//   - Delete: Remove specific key, returns error on failure
+//   - Exists: Check if key exists, returns bool
+//   - Len: Get current number of cached items, returns int
 //   - Clear: Remove all cached items
+//   - WithContext: Returns cache instance with tracing context for distributed tracing
 //
-// Usage patterns:
-//   - Application-level caching for expensive computations
-//   - Database query result caching
-//   - Session storage
-//   - Rate limiting counters
-//   - Temporary data storage
+// Key features:
+//   - Type-safe operations with generics
+//   - Consistent error handling across all operations
+//   - TTL support for expirable entries
+//   - Context-aware operations for tracing
+//   - Thread-safe operations
+//
+// Error handling:
+//   - Returns ErrEntryNotFound when cache entries are not found
+//   - All operations return errors for proper error handling
+//   - Supports graceful degradation in distributed environments
 type Cache[T any] interface {
-	Set(key string, values T, ttl time.Duration)
-	Get(key string) (T, bool)
-	Peek(key string) (T, bool)
-	Delete(key string)
+	// Get retrieves a value from the cache by key.
+	// Returns ErrEntryNotFound if the key does not exist.
+	Get(key string) (T, error)
+
+	// Peek retrieves a value from the cache by key without affecting its position or access time.
+	// Returns ErrEntryNotFound if the key does not exist.
+	Peek(key string) (T, error)
+
+	// Set stores a value in the cache with the specified TTL.
+	// A zero TTL means the entry will not expire.
+	Set(key string, value T, ttl time.Duration) error
+
+	// Delete removes a key from the cache.
+	// Returns ErrEntryNotFound if the key does not exist.
+	Delete(key string) error
+
+	// Exists checks if a key exists in the cache.
+	// Returns true if the key exists, false otherwise.
 	Exists(key string) bool
+
+	// Len returns the number of entries currently stored in the cache.
 	Len() int
+
+	// Clear removes all entries from the cache.
 	Clear()
 
-	// Increment(key string, delta int64) (int64, error)
-	// Decrement(key string, delta int64) (int64, error)
+	// WithContext returns a new Cache instance with the given context for tracing.
+	WithContext(ctx context.Context) Cache[T]
 }
 
 // RBAC interface defines comprehensive role-based access control operations.
