@@ -8,6 +8,7 @@ import (
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
 	"github.com/forbearing/golib/util"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -16,6 +17,18 @@ import (
 // NOTE:The version of gorm.io/driver/postgres lower than v1.5.4 have some issues.
 // more details see: https://github.com/go-gorm/gorm/issues/6886
 func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
+	// Install GORM OpenTelemetry tracing plugin
+	if err = db.Use(otelgorm.NewPlugin()); err != nil {
+		zap.S().Warnw("failed to install GORM OpenTelemetry tracing plugin", "error", err)
+	}
+
+	// Install tracing plugin for custom databases
+	for _, customDB := range dbmap {
+		if err = customDB.Use(otelgorm.NewPlugin()); err != nil {
+			zap.S().Warnw("failed to install GORM OpenTelemetry tracing plugin for custom DB", "error", err)
+		}
+	}
+
 	begin := time.Now()
 	// create table automatically in default database.
 	for _, m := range model.Tables {

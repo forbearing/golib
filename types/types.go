@@ -52,6 +52,7 @@ type DatabaseContext struct {
 	Params   map[string]string
 	Query    map[string][]string
 
+	context   context.Context
 	RequestID string
 	TraceID   string
 	PSpanID   string
@@ -71,6 +72,7 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 	}
 
 	return &DatabaseContext{
+		context:   c.Request.Context(),
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserID:    c.GetString(consts.CTX_USER_ID),
@@ -83,10 +85,10 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 
 // Context converts *types.DatabaseContext to context.Context for use with gorm custom logger.
 func (ctx *DatabaseContext) Context() context.Context {
-	c := context.Background()
-	if ctx == nil {
-		return c
+	if ctx == nil || ctx.context == nil {
+		return context.Background()
 	}
+	c := ctx.context
 	c = context.WithValue(c, consts.CTX_USERNAME, ctx.Username)
 	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserID)
 	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestID)

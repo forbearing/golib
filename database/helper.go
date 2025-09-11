@@ -1,0 +1,218 @@
+package database
+
+import (
+	"context"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/provider/jaeger"
+	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/golib/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+)
+
+// trace returns a timing function for database operations that provides comprehensive
+// performance monitoring, logging, and distributed tracing capabilities.
+// The returned function should be called with the operation result to complete tracing and logging.
+//
+// Parameters:
+//   - op: Operation name for logging and tracing identification (Create, List, Update, Delete, etc.)
+//   - batch: Optional batch size for batch operations (used for span attributes and logging)
+//
+// Returns a function that accepts an error and completes the operation tracing and logging.
+//
+// Features:
+//   - Automatic timing measurement from call to completion
+//   - Jaeger distributed tracing integration with OpenTelemetry spans
+//   - Comprehensive span attributes including operation metadata
+//   - Error-aware logging and span status management
+//   - Batch operation support with size tracking
+//   - Cache and try-run mode status recording
+//   - Smart duration formatting for readability
+//   - Context propagation to GORM operations
+//
+// Jaeger Tracing Integration:
+//   - Creates OpenTelemetry spans with naming pattern: "Database.{Operation} {ModelName}"
+//   - Records detailed span attributes: component, operation, model, table, batch_size, etc.
+//   - Propagates span context to GORM operations for complete tracing hierarchy
+//   - Automatically handles span lifecycle (creation, attribute setting, completion)
+//   - Integrates with existing tracing infrastructure (controller and service layers)
+//
+// Usage Pattern:
+//
+//	done := db.trace("Create", len(models))
+//	defer done(err)
+//
+// Tracing Hierarchy:
+//
+//	HTTP → Controller → Service → Database → GORM
+//
+// Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
+// Jaeger tracing is automatically enabled when jaeger.IsEnabled() returns true.
+func (db *database[M]) trace(op string, batch ...int) func(error) {
+	begin := time.Now()
+	var _batch int
+	if len(batch) > 0 {
+		_batch = batch[0]
+	}
+
+	// Create database operation span if Jaeger is enabled
+	var span trace.Span
+	if jaeger.IsEnabled() && db.ctx != nil {
+		modelName := reflect.TypeOf(*new(M)).Elem().Name()
+		spanName := "Database." + op + " " + modelName
+		var ctx context.Context
+		ctx, span = jaeger.StartSpan(db.ctx.Context(), spanName)
+
+		// Update GORM database context with new span context
+		db.db = db.db.WithContext(ctx)
+
+		// Add database-specific attributes
+		span.SetAttributes(
+			attribute.String("component", "database"),
+			attribute.String("database.operation", op),
+			attribute.String("database.model", modelName),
+			attribute.String("database.table", modelName),
+		)
+
+		if _batch > 0 {
+			span.SetAttributes(attribute.Int("database.batch_size", _batch))
+		}
+
+		span.SetAttributes(
+			attribute.Bool("database.cache_enabled", db.enableCache),
+			attribute.Bool("database.try_run", db.tryRun),
+		)
+	}
+
+	return func(err error) {
+		// Record duration
+		duration := time.Since(begin)
+
+		// Update span with results if available
+		if span != nil && span.IsRecording() {
+			span.SetAttributes(attribute.Int64("database.duration_ms", duration.Milliseconds()))
+
+			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				jaeger.RecordError(span, err)
+				span.SetAttributes(attribute.Bool("error", true))
+			} else {
+				span.SetStatus(codes.Ok, "")
+			}
+
+			span.End()
+		}
+
+		// Log operation results
+		if err != nil {
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Errorz("",
+				zap.Error(err),
+				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("batch", strconv.Itoa(_batch)),
+				zap.String("cost", util.FormatDurationSmart(duration)),
+				zap.Bool("cache_enabled", db.enableCache),
+				zap.Bool("try_run", db.tryRun),
+			)
+		} else {
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
+				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+				zap.String("batch", strconv.Itoa(_batch)),
+				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
+				zap.Bool("cache_enabled", db.enableCache),
+				zap.Bool("try_run", db.tryRun),
+			)
+		}
+	}
+}
+
+// // User returns a generic database manipulator with the `curd` capabilities
+// // for *model.User to create/delete/update/list/get in database.
+// // The database type deponds on the value of config.Server.DBType.
+// func User(ctx ...context.Context) types.Database[*model.User] {
+// 	c := context.TODO()
+// 	if len(ctx) > 0 {
+// 		if ctx[0] != nil {
+// 			c = ctx[0]
+// 		}
+// 	}
+// 	if strings.ToLower(config.App.LogLevel) == "debug" {
+// 		return &database[*model.User]{db: DB.WithContext(c).Debug().Limit(defaultLimit)}
+// 	}
+// 	return &database[*model.User]{db: DB.WithContext(c).Limit(defaultLimit)}
+// }
+
+// buildCacheKey constructs Redis cache keys for database operations.
+// Generates both prefix and full key based on GORM statement and operation type.
+// Uses consistent naming convention for cache key organization and collision avoidance.
+//
+// Parameters:
+//   - stmt: GORM statement containing SQL and table information
+//   - action: Operation type ("get", "list", "count", etc.)
+//   - id: Optional ID for get operations to create simpler keys
+//
+// Returns prefix and full cache key for Redis operations.
+//
+// Key Structure:
+//   - Prefix: namespace:table_name
+//   - Full Key: namespace:table_name:action:identifier
+//   - Get operations with ID: namespace:table_name:get:id_value
+//   - Other operations: namespace:table_name:action:sql_statement
+//
+// Features:
+//   - Namespace isolation for multi-tenant applications
+//   - Table-based key organization
+//   - Operation-specific key generation
+//   - SQL statement-based cache invalidation
+//
+// Reference: https://gorm.io/docs/sql_builder.html
+func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
+	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
+	switch strings.ToLower(action) {
+	case "get":
+		if len(id) > 0 {
+			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, id[0]}, ":")
+		} else {
+			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
+		}
+	default:
+		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
+	}
+	return prefix, key
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func contains(slice []string, item string) bool {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+	_, ok := set[item]
+	return ok
+}
+
+func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
+	for t.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return t, v, false
+		}
+		t = t.Elem()
+		v = v.Elem()
+	}
+	return t, v, true
+}

@@ -59,6 +59,7 @@ func Init() error {
 	logger.Redis = New("redis.log")
 
 	logger.Authz = New("authz.log")
+	logger.Jaeger = New("jaeger.log")
 	logger.Cassandra = New("cassandra.log")
 	logger.Elastic = New("elastic.log")
 	logger.Etcd = New("etcd.log")

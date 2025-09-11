@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -105,7 +104,7 @@ func (db *database[M]) reset() {
 	db.cursorNext = true
 	db.enableCursor = false
 
-	db.db = DB.WithContext(context.Background())
+	// db.db = DB.WithContext(context.Background())
 }
 
 // prepare prepares the database instance for query execution by applying all configured
@@ -145,11 +144,19 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	ctx := db.db.Statement.Context
+	if ctx == nil {
+		ctx = context.Background()
+		if db.ctx != nil {
+			ctx = db.ctx.Context()
+		}
+	}
 	// db.shouldAutoMigrate = true
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
+		db.db = _db.WithContext(ctx).Debug().Limit(defaultLimit)
 	} else {
-		db.db = _db.WithContext(context.TODO()).Limit(defaultLimit)
+		db.db = _db.WithContext(ctx).Limit(defaultLimit)
 	}
 	return db
 }
@@ -2801,142 +2808,16 @@ func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
 		dbctx = ctx
 		gctx = dbctx.Context()
 	}
+
+	var ins *gorm.DB
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
-	}
-	return &database[M]{db: DB.WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
-}
-
-// trace returns a timing function for database operations that logs performance metrics.
-// The returned function should be called with the operation result to log timing and status.
-// Provides detailed logging including operation name, table name, batch size, and execution time.
-//
-// Parameters:
-//   - op: Operation name for logging identification
-//   - batch: Optional batch size for batch operations
-//
-// Returns a function that accepts an error and logs the operation result.
-//
-// Features:
-//   - Automatic timing measurement from call to completion
-//   - Error-aware logging with different levels
-//   - Batch operation support with size tracking
-//   - Cache and try-run mode status logging
-//   - Smart duration formatting for readability
-//
-// Usage Pattern:
-//
-//	done := db.trace("Create", len(models))
-//	defer done(err)
-//
-// Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
-func (db *database[M]) trace(op string, batch ...int) func(error) {
-	begin := time.Now()
-	var _batch int
-	if len(batch) > 0 {
-		_batch = batch[0]
-	}
-	return func(err error) {
-		if err != nil {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Errorz("",
-				zap.Error(err),
-				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
-				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
-				zap.Bool("cache_enabled", db.enableCache),
-				zap.Bool("try_run", db.tryRun),
-			)
-		} else {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
-				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
-				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
-				zap.Bool("cache_enabled", db.enableCache),
-				zap.Bool("try_run", db.tryRun),
-			)
-		}
-	}
-}
-
-// // User returns a generic database manipulator with the `curd` capabilities
-// // for *model.User to create/delete/update/list/get in database.
-// // The database type deponds on the value of config.Server.DBType.
-// func User(ctx ...context.Context) types.Database[*model.User] {
-// 	c := context.TODO()
-// 	if len(ctx) > 0 {
-// 		if ctx[0] != nil {
-// 			c = ctx[0]
-// 		}
-// 	}
-// 	if strings.ToLower(config.App.LogLevel) == "debug" {
-// 		return &database[*model.User]{db: DB.WithContext(c).Debug().Limit(defaultLimit)}
-// 	}
-// 	return &database[*model.User]{db: DB.WithContext(c).Limit(defaultLimit)}
-// }
-
-// buildCacheKey constructs Redis cache keys for database operations.
-// Generates both prefix and full key based on GORM statement and operation type.
-// Uses consistent naming convention for cache key organization and collision avoidance.
-//
-// Parameters:
-//   - stmt: GORM statement containing SQL and table information
-//   - action: Operation type ("get", "list", "count", etc.)
-//   - id: Optional ID for get operations to create simpler keys
-//
-// Returns prefix and full cache key for Redis operations.
-//
-// Key Structure:
-//   - Prefix: namespace:table_name
-//   - Full Key: namespace:table_name:action:identifier
-//   - Get operations with ID: namespace:table_name:get:id_value
-//   - Other operations: namespace:table_name:action:sql_statement
-//
-// Features:
-//   - Namespace isolation for multi-tenant applications
-//   - Table-based key organization
-//   - Operation-specific key generation
-//   - SQL statement-based cache invalidation
-//
-// Reference: https://gorm.io/docs/sql_builder.html
-func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
-	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
-	switch strings.ToLower(action) {
-	case "get":
-		if len(id) > 0 {
-			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, id[0]}, ":")
-		} else {
-			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
-		}
-	default:
-		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
-	}
-	return prefix, key
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
+		ins = DB.Debug().WithContext(gctx).Limit(defaultLimit)
 	} else {
-		return 0
+		ins = DB.WithContext(gctx).Limit(defaultLimit)
 	}
-}
 
-func contains(slice []string, item string) bool {
-	set := make(map[string]struct{}, len(slice))
-	for _, s := range slice {
-		set[s] = struct{}{}
+	return &database[M]{
+		db:  ins,
+		ctx: dbctx,
 	}
-	_, ok := set[item]
-	return ok
-}
-
-func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
-	for t.Kind() == reflect.Pointer {
-		if v.IsNil() {
-			return t, v, false
-		}
-		t = t.Elem()
-		v = v.Elem()
-	}
-	return t, v, true
 }

@@ -42,7 +42,7 @@ func Init() error {
 	root = gin.New()
 
 	root.Use(
-		middleware.TraceID(),
+		middleware.Tracing(),
 		middleware.Logger("api.log"),
 		middleware.Recovery("recovery.log"),
 		middleware.Cors(),
