@@ -1283,8 +1283,7 @@ func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
 //
 // Example:
 //
-//	WithCache(5 * time.Minute).List(&users)  // Cache results for 5 minutes
-//	WithCache(time.Hour).Get(&config, "app_settings")  // Cache for 1 hour
+//	WithCache().List(&users)
 //
 // WithCache will make query resource count from cache.
 // If cache not found or expired. query from database directly.
@@ -1383,7 +1382,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(db.ctx.Context()).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1448,7 +1447,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 	if db.enableCache {
 		for i := range objs {
-			_ = cache.Cache[M]().Delete(objs[i].GetID())
+			_ = cache.Cache[M]().WithContext(db.ctx.Context()).Delete(objs[i].GetID())
 		}
 	}
 
@@ -1525,7 +1524,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(db.ctx.Context()).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1579,7 +1578,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				_ = cache.Cache[M]().Delete(objs[i].GetID())
+				_ = cache.Cache[M]().WithContext(db.ctx.Context()).Delete(objs[i].GetID())
 			}
 		}
 	} else {
@@ -1600,7 +1599,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				_ = cache.Cache[M]().Delete(objs[i].GetID())
+				_ = cache.Cache[M]().WithContext(db.ctx.Context()).Delete(objs[i].GetID())
 			}
 		}
 	}
@@ -1653,7 +1652,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(db.ctx.Context()).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1711,7 +1710,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		}
 		if db.enableCache {
 			for j := range objs[i:end] {
-				_ = cache.Cache[M]().Delete(objs[j].GetID())
+				_ = cache.Cache[M]().WithContext(db.ctx.Context()).Delete(objs[j].GetID())
 			}
 		}
 	}
@@ -1757,7 +1756,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 	defer done(err)
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(db.ctx.Context()).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1782,7 +1781,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 		return err
 	}
 	if db.enableCache {
-		_ = cache.Cache[M]().Delete(id)
+		_ = cache.Cache[M]().WithContext(db.ctx.Context()).Delete(id)
 	}
 	return nil
 }
@@ -1825,7 +1824,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
-	if _dest, err := cache.Cache[[]M]().Get(key); err != nil {
+	if _dest, err := cache.Cache[[]M]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1959,7 +1958,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("list from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[[]M]().Set(key, *dest, 5*time.Minute)
+		_ = cache.Cache[[]M]().WithContext(db.ctx.Context()).Set(key, *dest, config.App.Cache.Expiration)
 	}
 
 	return nil
@@ -2010,7 +2009,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, err := cache.Cache[M]().Get(key); err != nil {
+	if _dest, err := cache.Cache[M]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2135,7 +2134,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("get from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[M]().Set(key, dest, 5*time.Minute)
+		_ = cache.Cache[M]().WithContext(db.ctx.Context()).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2176,7 +2175,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, err := cache.Cache[int64]().Get(key); err != nil {
+	if _cache, err := cache.Cache[int64]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2239,7 +2238,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[int64]().Set(key, *count, 5*time.Minute)
+		_ = cache.Cache[int64]().WithContext(db.ctx.Context()).Set(key, *count, config.App.Cache.Expiration)
 
 	}
 	return nil
@@ -2282,7 +2281,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
-	if _dest, err := cache.Cache[M]().Get(key); err != nil {
+	if _dest, err := cache.Cache[M]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2395,7 +2394,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("first from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[M]().Set(key, dest, 5*time.Minute)
+		_ = cache.Cache[M]().WithContext(db.ctx.Context()).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2438,7 +2437,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
-	if _dest, err := cache.Cache[M]().Get(key); err != nil {
+	if _dest, err := cache.Cache[M]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2551,7 +2550,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("last from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[M]().Set(key, dest, 5*time.Minute)
+		_ = cache.Cache[M]().WithContext(db.ctx.Context()).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2594,7 +2593,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
-	if _dest, err := cache.Cache[M]().Get(key); err != nil {
+	if _dest, err := cache.Cache[M]().WithContext(db.ctx.Context()).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2709,7 +2708,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("take from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		_ = cache.Cache[M]().Set(key, dest, 5*time.Minute)
+		_ = cache.Cache[M]().WithContext(db.ctx.Context()).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
