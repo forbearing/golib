@@ -1376,7 +1376,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Create", len(objs))
+	done, span := db.trace("Create", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -1399,12 +1399,19 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// }
 
 	var empty M // call nil value M will cause panic.
-	// Invoke model hook: CreateBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].CreateBefore(); err != nil {
-				return err
+	// Invoke model hook: CreateBefore for the entire batch.
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_CREATE_BEFORE, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].CreateBefore(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	for i := range objs {
@@ -1470,12 +1477,19 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// 	}
 	// }
 
-	// Invoke model hook: CreateAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].CreateAfter(); err != nil {
-				return err
+	// Invoke model hook: CreateAfter for the entire batch.
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_CREATE_AFTER, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].CreateAfter(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1504,7 +1518,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Delete", len(objs))
+	done, span := db.trace("Delete", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -1529,11 +1543,18 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: DeleteBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].DeleteBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_DELETE_BEFORE, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].DeleteBefore(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	typ := reflect.TypeOf(*new(M)).Elem()
@@ -1584,11 +1605,18 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		}
 	}
 	// Invoke model hook: DeleteAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].DeleteAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_DELETE_AFTER, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].DeleteAfter(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1618,7 +1646,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Update", len(objs))
+	done, span := db.trace("Update", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
@@ -1642,11 +1670,18 @@ func (db *database[M]) Update(objs ...M) (err error) {
 
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: UpdateBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].UpdateBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_UPDATE_BEFORE, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].UpdateBefore(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	for i := range objs {
@@ -1681,11 +1716,18 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		}
 	}
 	// Invoke model hook: UpdateAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].UpdateAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_UPDATE_AFTER, span, func() error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].UpdateAfter(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1711,7 +1753,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("UpdateById")
+	done, _ := db.trace("UpdateById")
 	defer done(err)
 
 	if db.enableCache {
@@ -1771,7 +1813,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("List")
+	done, span := db.trace("List")
 	defer done(err)
 	if dest == nil {
 		return nil
@@ -1862,11 +1904,18 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: ListBefore.
-	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
-			if err = (*dest)[i].ListBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_LIST_BEFORE, span, func() error {
+			for i := range *dest {
+				if !reflect.DeepEqual(empty, (*dest)[i]) {
+					if err = (*dest)[i].ListBefore(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	// if err = db.db.Find(dest).Error; err != nil {
@@ -1887,11 +1936,18 @@ QUERY:
 	}
 
 	// Invoke model hook: ListAfter()
-	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
-			if err = (*dest)[i].ListAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_LIST_AFTER, span, func() error {
+			for i := range *dest {
+				if !reflect.DeepEqual(empty, (*dest)[i]) {
+					if err = (*dest)[i].ListAfter(); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	// Cache the result.
@@ -1947,7 +2003,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Get")
+	done, span := db.trace("Get")
 	defer done(err)
 
 	begin := time.Now()
@@ -2039,8 +2095,10 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func() error {
+			return dest.GetBefore()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2063,8 +2121,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func() error {
+			return dest.GetAfter()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2111,7 +2171,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Count")
+	done, _ := db.trace("Count")
 	defer done(err)
 
 	begin := time.Now()
@@ -2219,7 +2279,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("First")
+	done, span := db.trace("First")
 	defer done(err)
 
 	begin := time.Now()
@@ -2308,8 +2368,10 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func() error {
+			return dest.GetBefore()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2323,8 +2385,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func() error {
+			return dest.GetAfter()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2373,7 +2437,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Last")
+	done, span := db.trace("Last")
 	defer done(err)
 
 	begin := time.Now()
@@ -2462,8 +2526,10 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func() error {
+			return dest.GetBefore()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2477,8 +2543,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func() error {
+			return dest.GetAfter()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2527,7 +2595,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Take")
+	done, span := db.trace("Take")
 	defer done(err)
 
 	begin := time.Now()
@@ -2616,8 +2684,10 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func() error {
+			return dest.GetBefore()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2631,8 +2701,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func() error {
+			return dest.GetAfter()
+		}); err != nil {
 			return err
 		}
 	}
@@ -2677,7 +2749,7 @@ func (db *database[M]) Cleanup() (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Cleanup")
+	done, _ := db.trace("Cleanup")
 	defer done(err)
 
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error

@@ -10,6 +10,7 @@ import (
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/provider/jaeger"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	"go.opentelemetry.io/otel/attribute"
@@ -57,7 +58,7 @@ import (
 //
 // Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
 // Jaeger tracing is automatically enabled when jaeger.IsEnabled() returns true.
-func (db *database[M]) trace(op string, batch ...int) func(error) {
+func (db *database[M]) trace(op string, batch ...int) (func(error), trace.Span) {
 	begin := time.Now()
 	var _batch int
 	if len(batch) > 0 {
@@ -131,7 +132,7 @@ func (db *database[M]) trace(op string, batch ...int) func(error) {
 				zap.Bool("try_run", db.tryRun),
 			)
 		}
-	}
+	}, span
 }
 
 // // User returns a generic database manipulator with the `curd` capabilities
@@ -192,9 +193,73 @@ func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, k
 func boolToInt(b bool) int {
 	if b {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
+}
+
+// traceModelHook traces model hook execution with OpenTelemetry spans.
+// Creates a span for the hook execution and records timing and error information.
+//
+// Parameters:
+//   - ctx: Database context for span creation
+//   - hookName: Name of the hook being executed (CreateBefore, CreateAfter, etc.)
+//   - modelName: Name of the model type
+//   - fn: Hook function to execute
+//
+// Returns error from hook execution, with span automatically completed.
+//
+// Features:
+//   - Automatic span creation with naming pattern: "Hook.{HookName} {ModelName}"
+//   - Records hook execution timing and success/failure status
+//   - Integrates with existing tracing infrastructure
+//   - Error recording and span status management
+//
+// Usage Pattern:
+//
+//	err := traceModelHook(db.ctx, "CreateBefore", "User", func() error {
+//		return obj.CreateBefore()
+//	})
+func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phase, parentSpan trace.Span, fn func() error) error {
+	if !jaeger.IsEnabled() || ctx == nil || parentSpan == nil {
+		return fn()
+	}
+
+	modelName := reflect.TypeOf(*new(M)).Elem().Name()
+	// Create child span under database span for hook execution
+	spanName := "Model." + phase.MethodName() + " " + modelName
+	parentCtx := trace.ContextWithSpan(context.Background(), parentSpan)
+	_, span := jaeger.StartSpan(parentCtx, spanName)
+	defer span.End()
+
+	// Add hook-specific attributes
+	span.SetAttributes(
+		attribute.String("component", "model"),
+		attribute.String("model.model", modelName),
+		attribute.String("model.phase", phase.MethodName()),
+	)
+
+	// Record start time
+	start := time.Now()
+
+	// Execute hook function
+	err := fn()
+
+	// Record execution results
+	duration := time.Since(start)
+	span.SetAttributes(
+		attribute.Int64("model.duration_ms", duration.Milliseconds()),
+		attribute.Bool("model.success", err == nil),
+	)
+
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		jaeger.RecordError(span, err)
+		span.SetAttributes(attribute.Bool("error", true))
+	} else {
+		span.SetStatus(codes.Ok, "")
+	}
+
+	return err
 }
 
 func contains(slice []string, item string) bool {
