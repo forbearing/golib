@@ -105,7 +105,7 @@ type ServiceContext struct {
 	ClientIP     string        // client ip
 	UserAgent    string        // user agent
 
-	Context context.Context
+	context context.Context
 	Writer  http.ResponseWriter
 	// Body    []byte
 
@@ -167,9 +167,13 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 		TraceID:   c.GetString(consts.TRACE_ID),
 
 		ginCtx:  c,
-		Context: c.Request.Context(),
+		context: c.Request.Context(),
 		Writer:  c.Writer,
 	}
+}
+
+func (sc *ServiceContext) Context() context.Context {
+	return sc.context
 }
 
 func (sc *ServiceContext) DatabaseContext() *DatabaseContext {
