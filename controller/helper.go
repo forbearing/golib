@@ -177,11 +177,11 @@ func traceServiceHook[M types.Model](c *gin.Context, phase consts.Phase, fn func
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
@@ -217,11 +217,11 @@ func traceServiceOperation[M types.Model, RSP types.Response](c *gin.Context, ph
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
@@ -258,11 +258,11 @@ func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Ph
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
@@ -299,11 +299,11 @@ func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn fu
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
@@ -331,40 +331,4 @@ func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn fu
 
 	ml, err = fn()
 	return ml, err
-}
-
-// traceDatabaseOperation measures and traces database operations
-func traceDatabaseOperation(c *gin.Context, operation string, modelName string, fn func() error) error {
-	spanName := fmt.Sprintf("Database.%s %s", operation, modelName)
-	ctx, span := jaeger.StartSpan(c.Request.Context(), spanName)
-	defer span.End()
-
-	// Update request context
-	c.Request = c.Request.WithContext(ctx)
-
-	// Add database-specific attributes
-	jaeger.AddSpanTags(span, map[string]interface{}{
-		"component":    "database",
-		"db.operation": operation,
-		"db.model":     modelName,
-	})
-
-	// Record start time
-	startTime := time.Now()
-
-	// Execute the database operation
-	err := fn()
-
-	// Record duration
-	duration := time.Since(startTime)
-	jaeger.AddSpanTags(span, map[string]interface{}{
-		"db.duration_ms": duration.Milliseconds(),
-		"db.success":     err == nil,
-	})
-
-	if err != nil {
-		jaeger.RecordError(span, err)
-	}
-
-	return err
 }
