@@ -58,7 +58,7 @@ import (
 //
 // Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
 // Jaeger tracing is automatically enabled when jaeger.IsEnabled() returns true.
-func (db *database[M]) trace(op string, batch ...int) (func(error), trace.Span) {
+func (db *database[M]) trace(op string, batch ...int) (func(error), context.Context, trace.Span) {
 	begin := time.Now()
 	var _batch int
 	if len(batch) > 0 {
@@ -66,11 +66,11 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), trace.Span) 
 	}
 
 	// Create database operation span if Jaeger is enabled
+	var ctx context.Context
 	var span trace.Span
 	if jaeger.IsEnabled() && db.ctx != nil {
 		modelName := reflect.TypeOf(*new(M)).Elem().Name()
 		spanName := "Database." + op + " " + modelName
-		var ctx context.Context
 		ctx, span = jaeger.StartSpan(db.ctx.Context(), spanName)
 
 		// Update GORM database context with new span context
@@ -132,7 +132,7 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), trace.Span) 
 				zap.Bool("try_run", db.tryRun),
 			)
 		}
-	}, span
+	}, ctx, span
 }
 
 // // User returns a generic database manipulator with the `curd` capabilities
