@@ -12,6 +12,7 @@ import (
 	"github.com/forbearing/golib/model"
 	model_log "github.com/forbearing/golib/model/log"
 	"github.com/forbearing/golib/provider/redis"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
 	"github.com/mssola/useragent"
@@ -165,7 +166,7 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
-	database.Database[*model_log.LoginLog](nil).Create(&model_log.LoginLog{
+	database.Database[*model_log.LoginLog](types.NewDatabaseContext(c)).Create(&model_log.LoginLog{
 		UserID:   userInfo.UserId,
 		Username: userInfo.Name,
 		Token:    aToken,

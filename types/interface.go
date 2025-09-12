@@ -358,7 +358,16 @@ type Model interface {
 	Excludes() map[string][]any
 	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
 
-	Hooker
+	CreateBefore(*ModelContext) error
+	CreateAfter(*ModelContext) error
+	DeleteBefore(*ModelContext) error
+	DeleteAfter(*ModelContext) error
+	UpdateBefore(*ModelContext) error
+	UpdateAfter(*ModelContext) error
+	ListBefore(*ModelContext) error
+	ListAfter(*ModelContext) error
+	GetBefore(*ModelContext) error
+	GetAfter(*ModelContext) error
 }
 
 type (
@@ -437,39 +446,6 @@ type Service[M Model, REQ Request, RSP Response] interface {
 	FilterRaw(*ServiceContext) string
 
 	Logger
-}
-
-// Hooker interface defines lifecycle hooks that can be executed at various points
-// during database operations. This interface enables custom business logic,
-// validation, auditing, and side effects to be executed automatically.
-//
-// Hook execution order:
-//  1. Before hooks are called first (validation, authorization)
-//  2. Main operation is performed (database CRUD)
-//  3. After hooks are called last (notifications, caching, cleanup)
-//
-// Common use cases:
-//   - CreateBefore: Validate data, set defaults, check permissions
-//   - CreateAfter: Send notifications, update caches, log audit trail
-//   - UpdateBefore: Validate changes, check business rules
-//   - UpdateAfter: Invalidate caches, trigger workflows
-//   - DeleteBefore: Check dependencies, backup data
-//   - DeleteAfter: Clean up related data, update statistics
-//
-// Error handling:
-//   - Before hooks can prevent the operation by returning an error
-//   - After hooks should handle errors gracefully to avoid rollbacks
-type Hooker interface {
-	CreateBefore() error
-	CreateAfter() error
-	DeleteBefore() error
-	DeleteAfter() error
-	UpdateBefore() error
-	UpdateAfter() error
-	ListBefore() error
-	ListAfter() error
-	GetBefore() error
-	GetAfter() error
 }
 
 // Cache interface provides a unified caching abstraction with consistent error handling.

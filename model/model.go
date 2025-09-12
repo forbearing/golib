@@ -187,16 +187,16 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (*Base) CreateBefore() error { return nil }
-func (*Base) CreateAfter() error  { return nil }
-func (*Base) DeleteBefore() error { return nil }
-func (*Base) DeleteAfter() error  { return nil }
-func (*Base) UpdateBefore() error { return nil }
-func (*Base) UpdateAfter() error  { return nil }
-func (*Base) ListBefore() error   { return nil }
-func (*Base) ListAfter() error    { return nil }
-func (*Base) GetBefore() error    { return nil }
-func (*Base) GetAfter() error     { return nil }
+func (*Base) CreateBefore(*types.ModelContext) error { return nil }
+func (*Base) CreateAfter(*types.ModelContext) error  { return nil }
+func (*Base) DeleteBefore(*types.ModelContext) error { return nil }
+func (*Base) DeleteAfter(*types.ModelContext) error  { return nil }
+func (*Base) UpdateBefore(*types.ModelContext) error { return nil }
+func (*Base) UpdateAfter(*types.ModelContext) error  { return nil }
+func (*Base) ListBefore(*types.ModelContext) error   { return nil }
+func (*Base) ListAfter(*types.ModelContext) error    { return nil }
+func (*Base) GetBefore(*types.ModelContext) error    { return nil }
+func (*Base) GetAfter(*types.ModelContext) error     { return nil }
 
 func setID(m types.Model, id ...string) {
 	val := reflect.ValueOf(m).Elem()
@@ -249,16 +249,17 @@ func (Empty) GetID() string              { return "" }
 func (Empty) SetID(id ...string)         {}
 func (Empty) Expands() []string          { return nil }
 func (Empty) Excludes() map[string][]any { return nil }
-func (Empty) CreateBefore() error        { return nil }
-func (Empty) CreateAfter() error         { return nil }
-func (Empty) DeleteBefore() error        { return nil }
-func (Empty) DeleteAfter() error         { return nil }
-func (Empty) UpdateBefore() error        { return nil }
-func (Empty) UpdateAfter() error         { return nil }
-func (Empty) ListBefore() error          { return nil }
-func (Empty) ListAfter() error           { return nil }
-func (Empty) GetBefore() error           { return nil }
-func (Empty) GetAfter() error            { return nil }
 func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
+
+func (Empty) CreateBefore(*types.ModelContext) error { return nil }
+func (Empty) CreateAfter(*types.ModelContext) error  { return nil }
+func (Empty) DeleteBefore(*types.ModelContext) error { return nil }
+func (Empty) DeleteAfter(*types.ModelContext) error  { return nil }
+func (Empty) UpdateBefore(*types.ModelContext) error { return nil }
+func (Empty) UpdateAfter(*types.ModelContext) error  { return nil }
+func (Empty) ListBefore(*types.ModelContext) error   { return nil }
+func (Empty) ListAfter(*types.ModelContext) error    { return nil }
+func (Empty) GetBefore(*types.ModelContext) error    { return nil }
+func (Empty) GetAfter(*types.ModelContext) error     { return nil }

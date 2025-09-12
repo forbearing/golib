@@ -25,14 +25,14 @@ func (r *userRole) DeleteAfter(ctx *types.ServiceContext, userRole *model_authz.
 	role := ctx.URL.Query().Get("role")
 
 	userRoles := make([]*model_authz.UserRole, 0)
-	if err := database.Database[*model_authz.UserRole](nil).WithQuery(&model_authz.UserRole{User: user, Role: role}).WithLimit(-1).List(&userRoles); err != nil {
+	if err := database.Database[*model_authz.UserRole](ctx.DatabaseContext()).WithQuery(&model_authz.UserRole{User: user, Role: role}).WithLimit(-1).List(&userRoles); err != nil {
 		log.Error(err)
 		return err
 	}
 	for _, rb := range userRoles {
 		log.Infoz("will delete user role", zap.Object("user_role", rb))
 	}
-	if err := database.Database[*model_authz.UserRole](nil).WithLimit(-1).WithPurge().Delete(userRoles...); err != nil {
+	if err := database.Database[*model_authz.UserRole](ctx.DatabaseContext()).WithLimit(-1).WithPurge().Delete(userRoles...); err != nil {
 		return err
 	}
 

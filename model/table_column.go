@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
@@ -31,7 +32,7 @@ type TableColumn struct {
 	Base
 }
 
-func (t *TableColumn) CreateBefore() error {
+func (t *TableColumn) CreateBefore(*types.ModelContext) error {
 	if (t.Visiable) == nil {
 		t.Visiable = util.ValueOf(true)
 	}
@@ -42,7 +43,7 @@ func (t *TableColumn) CreateBefore() error {
 	return nil
 }
 
-func (t *TableColumn) UpdateBefore() error {
+func (t *TableColumn) UpdateBefore(*types.ModelContext) error {
 	// id cannot be hidden
 	if t.Key == "id" {
 		t.Visiable = util.Pointer(true)

@@ -83,17 +83,32 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 	}
 }
 
-// Context converts *types.DatabaseContext to context.Context for use with gorm custom logger.
-func (ctx *DatabaseContext) Context() context.Context {
-	if ctx == nil || ctx.context == nil {
+// Context converts *DatabaseContext to context.Context.
+// It starts from the underlying ctx.context and conditionally injects extra metadata.
+func (dc *DatabaseContext) Context() context.Context {
+	if dc == nil || dc.context == nil {
 		return context.Background()
 	}
-	c := ctx.context
-	c = context.WithValue(c, consts.CTX_USERNAME, ctx.Username)
-	c = context.WithValue(c, consts.CTX_USER_ID, ctx.UserID)
-	c = context.WithValue(c, consts.REQUEST_ID, ctx.RequestID)
-	c = context.WithValue(c, consts.TRACE_ID, ctx.TraceID)
+
+	c := dc.context
+	if len(dc.Username) != 0 {
+		c = context.WithValue(c, consts.CTX_USERNAME, dc.Username)
+	}
+	if len(dc.UserID) != 0 {
+		c = context.WithValue(c, consts.CTX_USER_ID, dc.UserID)
+	}
+	if len(dc.RequestID) != 0 {
+		c = context.WithValue(c, consts.REQUEST_ID, dc.RequestID)
+	}
+	if len(dc.TraceID) != 0 {
+		c = context.WithValue(c, consts.TRACE_ID, dc.TraceID)
+	}
+
 	return c
+}
+
+func (dc *DatabaseContext) ModelContext() *ModelContext {
+	return &ModelContext{dbctx: dc}
 }
 
 type ServiceContext struct {
@@ -172,8 +187,28 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 	}
 }
 
+// Context converts *ServiceContex to context.Context.
+// It starts from the underlying ctx.context and conditionally injects extra metadata.
 func (sc *ServiceContext) Context() context.Context {
-	return sc.context
+	if sc == nil || sc.context == nil {
+		return context.Background()
+	}
+
+	c := sc.context
+	if len(sc.Username) != 0 {
+		c = context.WithValue(c, consts.CTX_USERNAME, sc.Username)
+	}
+	if len(sc.UserID) != 0 {
+		c = context.WithValue(c, consts.CTX_USER_ID, sc.UserID)
+	}
+	if len(sc.RequestID) != 0 {
+		c = context.WithValue(c, consts.REQUEST_ID, sc.RequestID)
+	}
+	if len(sc.TraceID) != 0 {
+		c = context.WithValue(c, consts.TRACE_ID, sc.TraceID)
+	}
+
+	return c
 }
 
 func (sc *ServiceContext) DatabaseContext() *DatabaseContext {
@@ -205,4 +240,16 @@ func (sc *ServiceContext) GetPhase() consts.Phase      { return sc.phase }
 func (sc *ServiceContext) WithPhase(phase consts.Phase) *ServiceContext {
 	sc.phase = phase
 	return sc
+}
+
+type ModelContext struct {
+	dbctx *DatabaseContext
+}
+
+func (mc *ModelContext) Context() context.Context {
+	return mc.dbctx.context
+}
+
+func (mc *ModelContext) DatabaseContext() *DatabaseContext {
+	return mc.dbctx
 }
