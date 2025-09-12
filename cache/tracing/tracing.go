@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -63,8 +64,12 @@ func (tw *TracingWrapper[T]) Set(key string, value T, ttl time.Duration) error {
 	)
 
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to set cache key: %v", err))
+		if !errors.Is(err, types.ErrEntryNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to set cache key: %v", err))
+		} else {
+			span.SetStatus(codes.Ok, err.Error())
+		}
 		return err
 	}
 
@@ -100,8 +105,12 @@ func (tw *TracingWrapper[T]) Get(key string) (T, error) {
 		span.SetAttributes(
 			attribute.Bool("cache.hit", false),
 		)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to get cache key: %v", err))
+		if !errors.Is(err, types.ErrEntryNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to get cache key: %v", err))
+		} else {
+			span.SetStatus(codes.Ok, err.Error())
+		}
 		return value, err
 	}
 
@@ -140,8 +149,12 @@ func (tw *TracingWrapper[T]) Peek(key string) (T, error) {
 		span.SetAttributes(
 			attribute.Bool("cache.hit", false),
 		)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to peek cache key: %v", err))
+		if !errors.Is(err, types.ErrEntryNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to peek cache key: %v", err))
+		} else {
+			span.SetStatus(codes.Ok, err.Error())
+		}
 		return value, err
 	}
 
@@ -177,8 +190,12 @@ func (tw *TracingWrapper[T]) Delete(key string) error {
 	)
 
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to delete cache key: %v", err))
+		if !errors.Is(err, types.ErrEntryNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to delete cache key: %v", err))
+		} else {
+			span.SetStatus(codes.Ok, err.Error())
+		}
 		return err
 	}
 
