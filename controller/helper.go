@@ -2,7 +2,9 @@ package controller
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"time"
 
 	"github.com/forbearing/golib/database"
@@ -124,6 +126,15 @@ func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal
 	}
 }
 
+// getCallerInfo returns the file name and line number of the caller
+func getCallerInfo(skip int) (string, int) {
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "unknown", 0
+	}
+	return filepath.Base(file), line
+}
+
 func extractConfig[M types.Model](cfg ...*types.ControllerConfig[M]) (handler func(ctx *types.DatabaseContext) types.Database[M], db any) {
 	if len(cfg) > 0 {
 		if cfg[0] != nil {
@@ -177,17 +188,22 @@ func traceServiceHook[M types.Model](c *gin.Context, phase consts.Phase, fn func
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// // Update request context
-	// c.Request = c.Request.WithContext(spanCtx)
+	// Update request context
+	c.Request = c.Request.WithContext(spanCtx)
+
+	// Get caller information
+	file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
+		"code.file":         file,
+		"code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -217,17 +233,22 @@ func traceServiceOperation[M types.Model, RSP types.Response](c *gin.Context, ph
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// // Update request context
-	// c.Request = c.Request.WithContext(spanCtx)
+	// Update request context
+	c.Request = c.Request.WithContext(spanCtx)
+
+	// Get caller information
+	file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
+		"code.file":         file,
+		"code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -258,17 +279,22 @@ func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Ph
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// // Update request context
-	// c.Request = c.Request.WithContext(spanCtx)
+	// Update request context
+	c.Request = c.Request.WithContext(spanCtx)
+
+	// Get caller information
+	file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
+		"code.file":         file,
+		"code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -299,17 +325,22 @@ func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn fu
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	_, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// // Update request context
-	// c.Request = c.Request.WithContext(spanCtx)
+	// Update request context
+	c.Request = c.Request.WithContext(spanCtx)
+
+	// Get caller information
+	file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
+		"code.file":         file,
+		"code.line":         line,
 	})
 
 	// Declare error variable for use in defer
