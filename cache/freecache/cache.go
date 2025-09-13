@@ -24,7 +24,8 @@ func Init() error {
 }
 
 type cache[T any] struct {
-	c *freecache.Cache
+	c   *freecache.Cache
+	ctx context.Context
 }
 
 func Cache[T any]() types.Cache[T] {
@@ -32,7 +33,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
-		return val.(*cache[T])
+		return val.(types.Cache[T])
 	}
 
 	mu.Lock()
@@ -40,10 +41,10 @@ func Cache[T any]() types.Cache[T] {
 
 	val, exists = cacheMap.Get(key)
 	if !exists {
-		val = &cache[T]{c: freecache.NewCache(config.App.Cache.Capacity)}
+		val = tracing.NewTracingWrapper(&cache[T]{c: freecache.NewCache(config.App.Cache.Capacity), ctx: context.Background()}, "freecache")
 		cacheMap.Set(key, val)
 	}
-	return val.(*cache[T])
+	return val.(types.Cache[T])
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -90,7 +91,7 @@ func (c *cache[T]) Clear() {
 	c.c.Clear()
 }
 
-// WithContext returns a new Cache instance with the given context for tracing
 func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
-	return tracing.NewTracingWrapper(c, "freecache").WithContext(ctx)
+	c.ctx = ctx
+	return c
 }

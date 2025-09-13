@@ -12,13 +12,14 @@ import (
 	"time"
 
 	pkgzap "github.com/forbearing/golib/logger/zap"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 func Recovery(filename ...string) gin.HandlerFunc {
-	// Use custom recovery with tracing support
-	return RecoveryWithTracing(pkgzap.NewGin(filename...), true)
+	// TODO: replace it using custom logger.
+	return ginzap.RecoveryWithZap(pkgzap.NewGin(filename...), true)
 }
 
 // RecoveryWithTracing returns a gin.HandlerFunc (middleware)

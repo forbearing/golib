@@ -16,10 +16,12 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var _ types.Cache[any] = (*cache[any])(nil)
 
-type cache[T any] struct{}
+type cache[T any] struct {
+	ctx context.Context
+}
 
 func Cache[T any]() types.Cache[T] {
-	return new(cache[T])
+	return tracing.NewTracingWrapper(new(cache[T]), "memcached")
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -112,7 +114,7 @@ func (c *cache[T]) Clear() {
 	}
 }
 
-// WithContext returns a new Cache instance with the given context for tracing
 func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
-	return tracing.NewTracingWrapper(c, "memcached").WithContext(ctx)
+	c.ctx = ctx
+	return c
 }

@@ -508,7 +508,7 @@ type Cache[T any] interface {
 	// Clear removes all entries from the cache.
 	Clear()
 
-	// WithContext returns a new Cache instance with the given context for tracing.
+	// WithContext replaces the cache internal cache that used to propagate span context.
 	WithContext(ctx context.Context) Cache[T]
 }
 

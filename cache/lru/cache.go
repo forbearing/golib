@@ -28,7 +28,8 @@ func Init() (err error) {
 }
 
 type cache[T any] struct {
-	c *lru.Cache[string, T]
+	c   *lru.Cache[string, T]
+	ctx context.Context
 }
 
 func Cache[T any]() types.Cache[T] {
@@ -36,7 +37,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
-		return val.(*cache[T])
+		return val.(types.Cache[T])
 	}
 
 	mu.Lock()
@@ -46,10 +47,10 @@ func Cache[T any]() types.Cache[T] {
 	if !exists {
 		// lru.New() only error on negative size.
 		_lru, _ := lru.New[string, T](config.App.Cache.Capacity)
-		val = &cache[T]{c: _lru}
+		val = tracing.NewTracingWrapper(&cache[T]{c: _lru, ctx: context.Background()}, "lru")
 		cacheMap.Set(key, val)
 	}
-	return val.(*cache[T])
+	return val.(types.Cache[T])
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -92,7 +93,7 @@ func (c *cache[T]) Clear() {
 	c.c.Purge()
 }
 
-// WithContext returns a new Cache instance with the given context for tracing
 func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
-	return tracing.NewTracingWrapper(c, "lru").WithContext(ctx)
+	c.ctx = ctx
+	return c
 }

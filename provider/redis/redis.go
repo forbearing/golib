@@ -18,6 +18,8 @@ import (
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	_ "github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -75,6 +77,11 @@ func Init() (err error) {
 		cli = client
 		zap.S().Infow("successfully connect to redis", "addr", cfg.Addr, "db", cfg.DB, "cluster_mode", cfg.ClusterMode)
 
+	}
+
+	if err = errors.Join(redisotel.InstrumentTracing(cli), redisotel.InstrumentMetrics(cli)); err != nil {
+		zap.S().Error(err)
+		return err
 	}
 
 	initialized = true

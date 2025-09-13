@@ -29,18 +29,16 @@ func NewTracingWrapper[T any](cache types.Cache[T], cacheType string) *TracingWr
 	}
 }
 
-// WithContext sets the context for tracing
 func (tw *TracingWrapper[T]) WithContext(ctx context.Context) types.Cache[T] {
-	return &TracingWrapper[T]{
-		cache:     tw.cache,
-		ctx:       ctx,
-		cacheType: tw.cacheType,
+	if ctx != nil {
+		tw.ctx = ctx
 	}
+	return tw
 }
 
 // Set stores a key-value pair with tracing
 func (tw *TracingWrapper[T]) Set(key string, value T, ttl time.Duration) error {
-	_, span := tw.startSpan("Cache.Set")
+	spanCtx, span := tw.startSpan("Cache.Set")
 	defer span.End()
 
 	// Add span attributes
@@ -54,8 +52,8 @@ func (tw *TracingWrapper[T]) Set(key string, value T, ttl time.Duration) error {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	err := tw.cache.Set(key, value, ttl)
+	// Call the underlying cache implementation with span context
+	err := tw.cache.WithContext(spanCtx).Set(key, value, ttl)
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -79,7 +77,7 @@ func (tw *TracingWrapper[T]) Set(key string, value T, ttl time.Duration) error {
 
 // Get retrieves a value by key with tracing
 func (tw *TracingWrapper[T]) Get(key string) (T, error) {
-	_, span := tw.startSpan("Cache.Get")
+	spanCtx, span := tw.startSpan("Cache.Get")
 	defer span.End()
 
 	// Add span attributes
@@ -92,8 +90,8 @@ func (tw *TracingWrapper[T]) Get(key string) (T, error) {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	value, err := tw.cache.Get(key)
+	// Call the underlying cache implementation with span context
+	value, err := tw.cache.WithContext(spanCtx).Get(key)
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -123,7 +121,7 @@ func (tw *TracingWrapper[T]) Get(key string) (T, error) {
 
 // Peek retrieves a value by key without affecting its position with tracing
 func (tw *TracingWrapper[T]) Peek(key string) (T, error) {
-	_, span := tw.startSpan("Cache.Peek")
+	spanCtx, span := tw.startSpan("Cache.Peek")
 	defer span.End()
 
 	// Add span attributes
@@ -136,8 +134,8 @@ func (tw *TracingWrapper[T]) Peek(key string) (T, error) {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	value, err := tw.cache.Peek(key)
+	// Call the underlying cache implementation with span context
+	value, err := tw.cache.WithContext(spanCtx).Peek(key)
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -167,7 +165,7 @@ func (tw *TracingWrapper[T]) Peek(key string) (T, error) {
 
 // Delete removes a key from the cache with tracing
 func (tw *TracingWrapper[T]) Delete(key string) error {
-	_, span := tw.startSpan("Cache.Delete")
+	spanCtx, span := tw.startSpan("Cache.Delete")
 	defer span.End()
 
 	// Add span attributes
@@ -180,8 +178,8 @@ func (tw *TracingWrapper[T]) Delete(key string) error {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	err := tw.cache.Delete(key)
+	// Call the underlying cache implementation with span context
+	err := tw.cache.WithContext(spanCtx).Delete(key)
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -205,7 +203,7 @@ func (tw *TracingWrapper[T]) Delete(key string) error {
 
 // Exists checks if a key exists in the cache with tracing
 func (tw *TracingWrapper[T]) Exists(key string) bool {
-	_, span := tw.startSpan("Cache.Exists")
+	spanCtx, span := tw.startSpan("Cache.Exists")
 	defer span.End()
 
 	// Add span attributes
@@ -218,8 +216,8 @@ func (tw *TracingWrapper[T]) Exists(key string) bool {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	exists := tw.cache.Exists(key)
+	// Call the underlying cache implementation with span context
+	exists := tw.cache.WithContext(spanCtx).Exists(key)
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -234,7 +232,7 @@ func (tw *TracingWrapper[T]) Exists(key string) bool {
 
 // Len returns the number of items in the cache with tracing
 func (tw *TracingWrapper[T]) Len() int {
-	_, span := tw.startSpan("Cache.Len")
+	spanCtx, span := tw.startSpan("Cache.Len")
 	defer span.End()
 
 	// Add span attributes
@@ -246,8 +244,8 @@ func (tw *TracingWrapper[T]) Len() int {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	length := tw.cache.Len()
+	// Call the underlying cache implementation with span context
+	length := tw.cache.WithContext(spanCtx).Len()
 
 	// Record operation duration
 	duration := time.Since(start)
@@ -262,7 +260,7 @@ func (tw *TracingWrapper[T]) Len() int {
 
 // Clear removes all items from the cache with tracing
 func (tw *TracingWrapper[T]) Clear() {
-	_, span := tw.startSpan("Cache.Clear")
+	spanCtx, span := tw.startSpan("Cache.Clear")
 	defer span.End()
 
 	// Add span attributes
@@ -274,8 +272,8 @@ func (tw *TracingWrapper[T]) Clear() {
 	// Record start time for duration measurement
 	start := time.Now()
 
-	// Call the underlying cache implementation
-	tw.cache.Clear()
+	// Call the underlying cache implementation with span context
+	tw.cache.WithContext(spanCtx).Clear()
 
 	// Record operation duration
 	duration := time.Since(start)

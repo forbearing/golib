@@ -12,26 +12,38 @@ import (
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
-var cacheMap = cmap.New[any]()
+var (
+	cacheMap = cmap.New[any]()
+	mu       sync.Mutex
+)
 
 func Init() error {
 	return nil
 }
 
 type cache[T any] struct {
-	m sync.Map
-	n int64
+	m   sync.Map
+	n   int64
+	ctx context.Context
 }
 
 func Cache[T any]() types.Cache[T] {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
+	if exists {
+		return val.(types.Cache[T])
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	val, exists = cacheMap.Get(key)
 	if !exists {
-		val = &cache[T]{m: sync.Map{}}
+		val = tracing.NewTracingWrapper(&cache[T]{ctx: context.Background()}, "smap")
 		cacheMap.Set(key, val)
 	}
-	return val.(*cache[T])
+	return val.(types.Cache[T])
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -87,7 +99,7 @@ func (c *cache[T]) Clear() {
 	atomic.StoreInt64(&c.n, 0)
 }
 
-// WithContext returns a new Cache instance with the given context for tracing
 func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
-	return tracing.NewTracingWrapper(c, "smap").WithContext(ctx)
+	c.ctx = ctx
+	return c
 }

@@ -1,8 +1,6 @@
 package cache
 
 import (
-	"context"
-
 	"github.com/forbearing/golib/cache/bigcache"
 	"github.com/forbearing/golib/cache/ccache"
 	"github.com/forbearing/golib/cache/cmap"
@@ -13,7 +11,6 @@ import (
 	"github.com/forbearing/golib/cache/lrue"
 	"github.com/forbearing/golib/cache/ristretto"
 	"github.com/forbearing/golib/cache/smap"
-	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 )
@@ -56,18 +53,3 @@ func Init() error {
 
 func Cache[T any]() types.Cache[T]          { return lrue.Cache[T]() }
 func ExpirableCache[T any]() types.Cache[T] { return ristretto.Cache[T]() }
-
-// WithTracing wraps a cache with distributed tracing capabilities
-func WithTracing[T any](cache types.Cache[T], cacheType string) *tracing.TracingWrapper[T] {
-	return tracing.NewTracingWrapper(cache, cacheType)
-}
-
-// CacheWithTracing returns a default cache with tracing enabled
-func CacheWithTracing[T any](ctx context.Context) types.Cache[T] {
-	return Cache[T]().WithContext(ctx)
-}
-
-// ExpirableCacheWithTracing returns an expirable cache with tracing enabled
-func ExpirableCacheWithTracing[T any](ctx context.Context) types.Cache[T] {
-	return ExpirableCache[T]().WithContext(ctx)
-}
