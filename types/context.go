@@ -61,9 +61,17 @@ type DatabaseContext struct {
 }
 
 // NewDatabaseContext creates a DatabaseContext from gin.Context
-func NewDatabaseContext(c *gin.Context) *DatabaseContext {
+//
+// You can pass the custom context.Context to propagate span tracing,
+// otherwise use the c.Request.Context().
+func NewDatabaseContext(c *gin.Context, ctxs ...context.Context) *DatabaseContext {
 	if c == nil {
 		return new(DatabaseContext)
+	}
+
+	ctx := c.Request.Context()
+	if len(ctxs) > 0 && ctxs[0] != nil {
+		ctx = ctxs[0]
 	}
 
 	params := make(map[string]string)
@@ -72,7 +80,7 @@ func NewDatabaseContext(c *gin.Context) *DatabaseContext {
 	}
 
 	return &DatabaseContext{
-		context:   c.Request.Context(),
+		context:   ctx,
 		Route:     c.GetString(consts.CTX_ROUTE),
 		Username:  c.GetString(consts.CTX_USERNAME),
 		UserID:    c.GetString(consts.CTX_USER_ID),
@@ -151,7 +159,10 @@ type ServiceContext struct {
 
 // NewServiceContext creates ServiceContext from gin.Context.
 // Including request details, headers and user information.
-func NewServiceContext(c *gin.Context) *ServiceContext {
+//
+// You can pass the custom context.Context to propagate span tracing,
+// otherwise use the c.Request.Context().
+func NewServiceContext(c *gin.Context, ctxs ...context.Context) *ServiceContext {
 	if c == nil {
 		return new(ServiceContext)
 	}
@@ -159,6 +170,11 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 	params := make(map[string]string)
 	for _, key := range c.GetStringSlice(consts.PARAMS) {
 		params[key] = c.Param(key)
+	}
+
+	ctx := c.Request.Context()
+	if len(ctxs) > 0 && ctxs[0] != nil {
+		ctx = ctxs[0]
 	}
 
 	return &ServiceContext{
@@ -182,7 +198,7 @@ func NewServiceContext(c *gin.Context) *ServiceContext {
 		TraceID:   c.GetString(consts.TRACE_ID),
 
 		ginCtx:  c,
-		context: c.Request.Context(),
+		context: ctx,
 		Writer:  c.Writer,
 	}
 }
@@ -212,7 +228,7 @@ func (sc *ServiceContext) Context() context.Context {
 }
 
 func (sc *ServiceContext) DatabaseContext() *DatabaseContext {
-	return NewDatabaseContext(sc.ginCtx)
+	return NewDatabaseContext(sc.ginCtx, sc.context)
 }
 
 func (sc *ServiceContext) Data(code int, contentType string, data []byte) {

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -181,29 +182,53 @@ func startControllerSpan[M types.Model](c *gin.Context, phase consts.Phase) trac
 	return span
 }
 
+// startControllerSpan starts a span for controller operations
+func startControllerSpanXXX[M types.Model](c *gin.Context, phase consts.Phase) (context.Context, trace.Span) {
+	// Get the model name(struct name).
+	modelName := reflect.TypeOf(*new(M)).Elem().Name()
+
+	// Create child span for controller operation
+	spanName := fmt.Sprintf("Controller.%s %s", phase.MethodName(), modelName)
+	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+
+	// Update request context with new span context
+	c.Request = c.Request.WithContext(spanCtx)
+
+	// Add controller-specific attributes
+	jaeger.AddSpanTags(span, map[string]any{
+		"component":            "controller",
+		"controller.operation": phase.MethodName(),
+		"controller.model":     modelName,
+		"controller.method":    c.Request.Method,
+		"controller.path":      c.FullPath(),
+	})
+
+	return spanCtx, span
+}
+
 // traceServiceHook traces the service hook execution.
-func traceServiceHook[M types.Model](c *gin.Context, phase consts.Phase, fn func() error) error {
+func traceServiceHook[M types.Model](parentCtx context.Context, phase consts.Phase, fn func(context.Context) error) error {
 	// Get the model name(struct name).
 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(parentCtx, spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
-	// Get caller information
-	file, line := getCallerInfo(2)
+	// // Get caller information
+	// file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
-		"code.file":         file,
-		"code.line":         line,
+		// "code.file":         file,
+		// "code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -222,33 +247,33 @@ func traceServiceHook[M types.Model](c *gin.Context, phase consts.Phase, fn func
 		}
 	}()
 
-	err = fn()
+	err = fn(spanCtx)
 	return err
 }
 
 // traceServiceOperation traces the service operation.
-func traceServiceOperation[M types.Model, RSP types.Response](c *gin.Context, phase consts.Phase, fn func() (RSP, error)) (RSP, error) {
+func traceServiceOperation[M types.Model, RSP types.Response](parentCtx context.Context, phase consts.Phase, fn func(context.Context) (RSP, error)) (RSP, error) {
 	// Get the model name(struct name).
 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
 
 	// Create children span for service operation
 	spanName := fmt.Sprintf("Service.%s %s", phase.MethodName(), modelName)
-	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+	spanCtx, span := jaeger.StartSpan(parentCtx, spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
-	// Get caller information
-	file, line := getCallerInfo(2)
+	// // Get caller information
+	// file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
-		"code.file":         file,
-		"code.line":         line,
+		// "code.file":         file,
+		// "code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -268,12 +293,12 @@ func traceServiceOperation[M types.Model, RSP types.Response](c *gin.Context, ph
 		}
 	}()
 
-	rsp, err = fn()
+	rsp, err = fn(spanCtx)
 	return rsp, err
 }
 
 // traceServiceExport traces the service export operation.
-func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Phase, fn func() (T, error)) (T, error) {
+func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Phase, fn func(context.Context) (T, error)) (T, error) {
 	// Get the model name(struct name).
 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
 
@@ -282,19 +307,19 @@ func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Ph
 	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
-	// Get caller information
-	file, line := getCallerInfo(2)
+	// // Get caller information
+	// file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
-		"code.file":         file,
-		"code.line":         line,
+		// "code.file":         file,
+		// "code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -314,12 +339,12 @@ func traceServiceExport[M types.Model, T []byte](c *gin.Context, phase consts.Ph
 		}
 	}()
 
-	data, err = fn()
+	data, err = fn(spanCtx)
 	return data, err
 }
 
 // traceServiceImport traces the service import operation.
-func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn func() ([]M, error)) ([]M, error) {
+func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn func(context.Context) ([]M, error)) ([]M, error) {
 	// Get the model name(struct name).
 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
 
@@ -328,19 +353,19 @@ func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn fu
 	spanCtx, span := jaeger.StartSpan(c.Request.Context(), spanName)
 	defer span.End()
 
-	// Update request context
-	c.Request = c.Request.WithContext(spanCtx)
+	// // Update request context
+	// c.Request = c.Request.WithContext(spanCtx)
 
-	// Get caller information
-	file, line := getCallerInfo(2)
+	// // Get caller information
+	// file, line := getCallerInfo(2)
 
 	// Add service-specific attributes
 	jaeger.AddSpanTags(span, map[string]any{
 		"component":         "service",
 		"service.operation": phase.MethodName(),
 		"service.model":     modelName,
-		"code.file":         file,
-		"code.line":         line,
+		// "code.file":         file,
+		// "code.line":         line,
 	})
 
 	// Declare error variable for use in defer
@@ -360,6 +385,6 @@ func traceServiceImport[M types.Model](c *gin.Context, phase consts.Phase, fn fu
 		}
 	}()
 
-	ml, err = fn()
+	ml, err = fn(spanCtx)
 	return ml, err
 }
