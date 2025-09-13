@@ -10,9 +10,8 @@ import (
 	"demo/model/setting"
 
 	"github.com/forbearing/golib/router"
-	"github.com/forbearing/golib/types/consts"
-
 	"github.com/forbearing/golib/types"
+	"github.com/forbearing/golib/types/consts"
 )
 
 func Init() error {
