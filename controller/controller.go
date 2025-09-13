@@ -170,7 +170,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_CREATE)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_CREATE)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_CREATE)
@@ -188,7 +188,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_CREATE, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE, func(spanCtx context.Context) (RSP, error) {
 				return svc.Create(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE), req)
 			}); err != nil {
 				log.Error(err)
@@ -217,7 +217,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// 1.Perform business logic processing before create resource.
-		if err = traceServiceHook[M](c, consts.PHASE_CREATE_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_BEFORE, func(spanCtx context.Context) error {
 			return svc.CreateBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_BEFORE), req)
 		}); err != nil {
 			log.Error(err)
@@ -239,7 +239,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}
 		}
 		// 3.Perform business logic processing after create resource
-		if err = traceServiceHook[M](c, consts.PHASE_CREATE_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_AFTER, func(spanCtx context.Context) error {
 			return svc.CreateAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_AFTER), req)
 		}); err != nil {
 			log.Error(err)
@@ -343,7 +343,7 @@ func Delete[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		span := startControllerSpan[M](c, consts.PHASE_DELETE)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_DELETE)
 		defer span.End()
 
 		cctx := types.NewControllerContext(c)
@@ -360,7 +360,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				jaeger.RecordError(span, err)
 				return
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_DELETE, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE, func(spanCtx context.Context) (RSP, error) {
 				return svc.Delete(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE), req)
 			}); err != nil {
 				log.Error(err)
@@ -417,7 +417,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 1.Perform business logic processing before delete resources.
 		// TODO: Should there be one service hook(DeleteBefore), or multiple?
 		for _, m := range ml {
-			if err := traceServiceHook[M](c, consts.PHASE_DELETE_BEFORE, func(spanCtx context.Context) error {
+			if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_BEFORE, func(spanCtx context.Context) error {
 				return svc.DeleteBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_BEFORE), m)
 			}); err != nil {
 				log.Error(err)
@@ -449,7 +449,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 3.Perform business logic processing after delete resources.
 		// TODO: Should there be one service hook(DeleteAfter), or multiple?
 		for _, m := range ml {
-			if err := traceServiceHook[M](c, consts.PHASE_DELETE_AFTER, func(spanCtx context.Context) error {
+			if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_AFTER, func(spanCtx context.Context) error {
 				return svc.DeleteAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_AFTER), m)
 			}); err != nil {
 				log.Error(err)
@@ -558,7 +558,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_UPDATE)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_UPDATE)
 		defer span.End()
 
 		cctx := types.NewControllerContext(c)
@@ -577,7 +577,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_UPDATE, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE, func(spanCtx context.Context) (RSP, error) {
 				return svc.Update(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE), req)
 			}); err != nil {
 				log.Error(err)
@@ -647,7 +647,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 
 		// 1.Perform business logic processing before update resource.
-		if err := traceServiceHook[M](c, consts.PHASE_UPDATE_BEFORE, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_BEFORE, func(spanCtx context.Context) error {
 			return svc.UpdateBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_BEFORE), req)
 		}); err != nil {
 			log.Error(err)
@@ -664,7 +664,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			return
 		}
 		// 3.Perform business logic processing after update resource.
-		if err := traceServiceHook[M](c, consts.PHASE_UPDATE_AFTER, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_AFTER, func(spanCtx context.Context) error {
 			return svc.UpdateAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_AFTER), req)
 		}); err != nil {
 			log.Error(err)
@@ -782,7 +782,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 	return func(c *gin.Context) {
 		var id string
 
-		span := startControllerSpan[M](c, consts.PHASE_PATCH)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_PATCH)
 		defer span.End()
 
 		cctx := types.NewControllerContext(c)
@@ -803,7 +803,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_PATCH, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH, func(spanCtx context.Context) (RSP, error) {
 				return svc.Patch(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH), req)
 			}); err != nil {
 				log.Error(err)
@@ -865,7 +865,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		cur := oldVal.Addr().Interface().(M)
 
 		// 1.Perform business logic processing before partial update resource.
-		if err := traceServiceHook[M](c, consts.PHASE_PATCH_BEFORE, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_BEFORE, func(spanCtx context.Context) error {
 			return svc.PatchBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_BEFORE), cur)
 		}); err != nil {
 			log.Error(err)
@@ -881,7 +881,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			return
 		}
 		// 3.Perform business logic processing after partial update resource.
-		if err := traceServiceHook[M](c, consts.PHASE_PATCH_AFTER, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_AFTER, func(spanCtx context.Context) error {
 			return svc.PatchAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_AFTER), cur)
 		}); err != nil {
 			log.Error(err)
@@ -1044,7 +1044,7 @@ func List[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) 
 func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		ctrlContext, span := startControllerSpanXXX[M](c, consts.PHASE_LIST)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_LIST)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_LIST)
@@ -1061,7 +1061,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				jaeger.RecordError(span, err)
 				return
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_LIST, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_LIST, func(spanCtx context.Context) (RSP, error) {
 				return svc.List(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST), req)
 			}); err != nil {
 				log.Error(err)
@@ -1179,7 +1179,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}
 
 		// 1.Perform business logic processing before list resources.
-		if err = traceServiceHook[M](ctrlContext, consts.PHASE_LIST_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_BEFORE, func(spanCtx context.Context) error {
 			return svc.ListBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_BEFORE), &data)
 		}); err != nil {
 			log.Error(err)
@@ -1214,7 +1214,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			cached = true
 		}
 		// 3.Perform business logic processing after list resources.
-		if err := traceServiceHook[M](ctrlContext, consts.PHASE_LIST_AFTER, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_AFTER, func(spanCtx context.Context) error {
 			return svc.ListAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_AFTER), &data)
 		}); err != nil {
 			log.Error(err)
@@ -1380,7 +1380,7 @@ func Get[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context) {
 func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		span := startControllerSpan[M](c, consts.PHASE_GET)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_GET)
 		defer span.End()
 
 		cctx := types.NewControllerContext(c)
@@ -1397,7 +1397,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 				jaeger.RecordError(span, err)
 				return
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_GET, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_GET, func(spanCtx context.Context) (RSP, error) {
 				return svc.Get(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET), req)
 			}); err != nil {
 				log.Error(err)
@@ -1490,7 +1490,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		log.Infoz("", zap.Object(typ.Name(), m))
 
 		// 1.Perform business logic processing before get resource.
-		if err = traceServiceHook[M](c, consts.PHASE_GET_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_BEFORE, func(spanCtx context.Context) error {
 			return svc.GetBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_BEFORE), m)
 		}); err != nil {
 			log.Error(err)
@@ -1516,7 +1516,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			cached = true
 		}
 		// 3.Perform business logic processing after get resource.
-		if err := traceServiceHook[M](c, consts.PHASE_GET_AFTER, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_AFTER, func(spanCtx context.Context) error {
 			return svc.GetAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_AFTER), m)
 		}); err != nil {
 			log.Error(err)
@@ -1739,7 +1739,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_CREATE_MANY)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_CREATE_MANY)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_CREATE_MANY)
@@ -1757,7 +1757,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_CREATE_MANY, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE_MANY, func(spanCtx context.Context) (RSP, error) {
 				return svc.CreateMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY), req)
 			}); err != nil {
 				log.Error(err)
@@ -1792,7 +1792,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 1.Perform business logic processing before batch create resource.
-		if err = traceServiceHook[M](c, consts.PHASE_CREATE_MANY_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_MANY_BEFORE, func(spanCtx context.Context) error {
 			return svc.CreateManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_BEFORE), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -1811,7 +1811,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch create resource
-		if err = traceServiceHook[M](c, consts.PHASE_CREATE_MANY_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_MANY_AFTER, func(spanCtx context.Context) error {
 			return svc.CreateManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_AFTER), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -1927,7 +1927,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_DELETE_MANY)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_DELETE_MANY)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_DELETE_MANY)
@@ -1945,7 +1945,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_DELETE_MANY, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE_MANY, func(spanCtx context.Context) (RSP, error) {
 				return svc.DeleteMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY), req)
 			}); err != nil {
 				log.Error(err)
@@ -1976,7 +1976,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
-		if err = traceServiceHook[M](c, consts.PHASE_DELETE_MANY_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_MANY_BEFORE, func(spanCtx context.Context) error {
 			return svc.DeleteManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_BEFORE), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -1997,7 +1997,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch delete resources.
-		if err = traceServiceHook[M](c, consts.PHASE_DELETE_MANY_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_MANY_AFTER, func(spanCtx context.Context) error {
 			return svc.DeleteManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_AFTER), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -2092,7 +2092,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_UPDATE_MANY)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_UPDATE_MANY)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_UPDATE_MANY)
@@ -2110,7 +2110,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_UPDATE_MANY, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE_MANY, func(spanCtx context.Context) (RSP, error) {
 				return svc.UpdateMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY), req)
 			}); err != nil {
 				log.Error(err)
@@ -2134,7 +2134,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 1.Perform business logic processing before batch update resource.
-		if err = traceServiceHook[M](c, consts.PHASE_UPDATE_MANY_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_MANY_BEFORE, func(spanCtx context.Context) error {
 			return svc.UpdateManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_BEFORE), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -2152,7 +2152,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch update resource.
-		if err = traceServiceHook[M](c, consts.PHASE_UPDATE_MANY_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_MANY_AFTER, func(spanCtx context.Context) error {
 			return svc.UpdateManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_AFTER), req.Items...)
 		}); err != nil {
 			log.Error(err)
@@ -2251,7 +2251,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		var err error
 		var reqErr error
 
-		span := startControllerSpan[M](c, consts.PHASE_PATCH_MANY)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_PATCH_MANY)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_PATCH_MANY)
@@ -2269,7 +2269,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
-			if rsp, err = traceServiceOperation[M, RSP](c, consts.PHASE_PATCH_MANY, func(spanCtx context.Context) (RSP, error) {
+			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH_MANY, func(spanCtx context.Context) (RSP, error) {
 				return svc.PatchMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY), req)
 			}); err != nil {
 				log.Error(err)
@@ -2316,7 +2316,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 
 		// 1.Perform business logic processing before batch patch resource.
-		if err = traceServiceHook[M](c, consts.PHASE_PATCH_MANY_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_BEFORE, func(spanCtx context.Context) error {
 			return svc.PatchManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_BEFORE), shouldUpdates...)
 		}); err != nil {
 			log.Error(err)
@@ -2334,7 +2334,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			}
 		}
 		// 3.Perform business logic processing after batch patch resource.
-		if err := traceServiceHook[M](c, consts.PHASE_PATCH_MANY_AFTER, func(spanCtx context.Context) error {
+		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_AFTER, func(spanCtx context.Context) error {
 			return svc.PatchManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_AFTER), shouldUpdates...)
 		}); err != nil {
 			log.Error(err)
@@ -2416,7 +2416,7 @@ func Export[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		span := startControllerSpan[M](c, consts.PHASE_EXPORT)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_EXPORT)
 		defer span.End()
 
 		var page, size, limit int
@@ -2516,7 +2516,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_EXPORT)
 		svcCtx := types.NewServiceContext(c)
 		// 1.Perform business logic processing before list resources.
-		if err = traceServiceHook[M](c, consts.PHASE_EXPORT, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_EXPORT, func(spanCtx context.Context) error {
 			return svc.ListBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_EXPORT), &data)
 		}); err != nil {
 			log.Error(err)
@@ -2546,7 +2546,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			return
 		}
 		// 3.Perform business logic processing after list resources.
-		if err = traceServiceHook[M](c, consts.PHASE_EXPORT, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_EXPORT, func(spanCtx context.Context) error {
 			return svc.ListAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_EXPORT), &data)
 		}); err != nil {
 			log.Error(err)
@@ -2556,7 +2556,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		log.Info("export data length: ", len(data))
 		// 4.Export
-		exported, err := traceServiceExport[M](c, consts.PHASE_EXPORT, func(spanCtx context.Context) ([]byte, error) {
+		exported, err := traceServiceExport[M](ctrlSpanCtx, consts.PHASE_EXPORT, func(spanCtx context.Context) ([]byte, error) {
 			return svc.Export(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_EXPORT), data...)
 		})
 		if err != nil {
@@ -2601,7 +2601,7 @@ func Import[M types.Model, REQ types.Request, RSP types.Response](c *gin.Context
 func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*types.ControllerConfig[M]) gin.HandlerFunc {
 	handler, _ := extractConfig(cfg...)
 	return func(c *gin.Context) {
-		span := startControllerSpan[M](c, consts.PHASE_IMPORT)
+		ctrlSpanCtx, span := startControllerSpan[M](c, consts.PHASE_IMPORT)
 		defer span.End()
 
 		log := logger.Controller.WithControllerContext(types.NewControllerContext(c), consts.PHASE_IMPORT)
@@ -2642,7 +2642,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		// check filetype
 
-		ml, err := traceServiceImport(c, consts.PHASE_IMPORT, func(spanCtx context.Context) ([]M, error) {
+		ml, err := traceServiceImport(ctrlSpanCtx, consts.PHASE_IMPORT, func(spanCtx context.Context) ([]M, error) {
 			return service.Factory[M, REQ, RSP]().Service(consts.PHASE_IMPORT).
 				Import(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_IMPORT), buf)
 		})
