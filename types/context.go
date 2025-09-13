@@ -115,10 +115,6 @@ func (dc *DatabaseContext) Context() context.Context {
 	return c
 }
 
-func (dc *DatabaseContext) ModelContext() *ModelContext {
-	return &ModelContext{dbctx: dc}
-}
-
 type ServiceContext struct {
 	Method       string        // http method
 	Request      *http.Request // http request
@@ -260,6 +256,29 @@ func (sc *ServiceContext) WithPhase(phase consts.Phase) *ServiceContext {
 
 type ModelContext struct {
 	dbctx *DatabaseContext
+}
+
+func NewModelContext(dbctx *DatabaseContext, ctx context.Context) *ModelContext {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	return &ModelContext{
+		dbctx: &DatabaseContext{
+			context:  ctx,
+			Username: dbctx.Username,
+			UserID:   dbctx.UserID,
+			Route:    dbctx.Route,
+			Params:   dbctx.Params,
+			Query:    dbctx.Query,
+
+			RequestID: dbctx.RequestID,
+			TraceID:   dbctx.TraceID,
+			PSpanID:   dbctx.PSpanID,
+			SpanID:    dbctx.SpanID,
+			Seq:       dbctx.Seq,
+		},
+	}
 }
 
 func (mc *ModelContext) Context() context.Context {

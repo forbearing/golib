@@ -219,16 +219,16 @@ func boolToInt(b bool) int {
 //	err := traceModelHook(db.ctx, "CreateBefore", "User", func() error {
 //		return obj.CreateBefore()
 //	})
-func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phase, parentSpan trace.Span, fn func() error) error {
+func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phase, parentSpan trace.Span, fn func(ctx context.Context) error) error {
 	if !jaeger.IsEnabled() || ctx == nil || parentSpan == nil {
-		return fn()
+		return fn(context.Background())
 	}
 
 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
 	// Create child span under database span for hook execution
 	spanName := "Model." + phase.MethodName() + " " + modelName
 	parentCtx := trace.ContextWithSpan(context.Background(), parentSpan)
-	_, span := jaeger.StartSpan(parentCtx, spanName)
+	childCtx, span := jaeger.StartSpan(parentCtx, spanName)
 	defer span.End()
 
 	// Add hook-specific attributes
@@ -242,7 +242,7 @@ func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phas
 	start := time.Now()
 
 	// Execute hook function
-	err := fn()
+	err := fn(childCtx)
 
 	// Record execution results
 	duration := time.Since(start)
@@ -261,6 +261,49 @@ func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phas
 
 	return err
 }
+
+// func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phase, parentSpan trace.Span, fn func() error) error {
+// 	if !jaeger.IsEnabled() || ctx == nil || parentSpan == nil {
+// 		return fn()
+// 	}
+//
+// 	modelName := reflect.TypeOf(*new(M)).Elem().Name()
+// 	// Create child span under database span for hook execution
+// 	spanName := "Model." + phase.MethodName() + " " + modelName
+// 	parentCtx := trace.ContextWithSpan(context.Background(), parentSpan)
+// 	_, span := jaeger.StartSpan(parentCtx, spanName)
+// 	defer span.End()
+//
+// 	// Add hook-specific attributes
+// 	span.SetAttributes(
+// 		attribute.String("component", "model"),
+// 		attribute.String("model.model", modelName),
+// 		attribute.String("model.phase", phase.MethodName()),
+// 	)
+//
+// 	// Record start time
+// 	start := time.Now()
+//
+// 	// Execute hook function
+// 	err := fn()
+//
+// 	// Record execution results
+// 	duration := time.Since(start)
+// 	span.SetAttributes(
+// 		attribute.Int64("model.duration_ms", duration.Milliseconds()),
+// 		attribute.Bool("model.success", err == nil),
+// 	)
+//
+// 	if err != nil {
+// 		span.SetStatus(codes.Error, err.Error())
+// 		jaeger.RecordError(span, err)
+// 		span.SetAttributes(attribute.Bool("error", true))
+// 	} else {
+// 		span.SetStatus(codes.Ok, "")
+// 	}
+//
+// 	return err
+// }
 
 func contains(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
