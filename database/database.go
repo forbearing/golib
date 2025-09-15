@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	glogger "gorm.io/gorm/logger"
 	"gorm.io/hints"
 )
 
@@ -1823,7 +1824,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
 	if _dest, err := cache.Cache[[]M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2005,10 +2006,11 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
+	var table string
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	_, table, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
 	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2110,9 +2112,15 @@ QUERY:
 	// where db.Find(dest) without Where(...) would scan the whole table.
 	// To be safe across versions, db.First(dest, id) is explicit.
 	//
-	// if err = db.db.Table(tableName).Where("id = ?", id).Find(dest).Error; err != nil {
-	dest.SetID(id)
-	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
+	// dest.SetID(id)
+	// if err = db.db.Table(tableName).Find(dest).Error; err != nil {
+	// 	return err
+	// }
+	if len(table) == 0 {
+		_, table, _ = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	}
+	dest.ClearID()
+	if err = db.db.Table(tableName).Where(fmt.Sprintf("`%s`.`id` = ?", table), id).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
@@ -2174,7 +2182,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
 	if _cache, err := cache.Cache[int64]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2280,7 +2288,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
 	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2436,7 +2444,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
 	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2592,7 +2600,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
 	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY

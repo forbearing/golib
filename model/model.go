@@ -176,6 +176,7 @@ func (b *Base) SetCreatedAt(t time.Time)   { b.CreatedAt = &t }
 func (b *Base) SetUpdatedAt(t time.Time)   { b.UpdatedAt = &t }
 func (b *Base) GetID() string              { return b.ID }
 func (b *Base) SetID(id ...string)         { setID(b, id...) }
+func (b *Base) ClearID()                   { clearID(b) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -217,6 +218,12 @@ func setID(m types.Model, id ...string) {
 	}
 }
 
+func clearID(m types.Model) {
+	val := reflect.ValueOf(m).Elem()
+	idField := val.FieldByName(consts.FIELD_ID)
+	idField.SetString("")
+}
+
 // Empty is a special model implementation that provides a no-op implementation of the types.Model interface.
 // It serves as a marker type for structs that should be excluded from database operations and service hooks.
 //
@@ -247,6 +254,7 @@ func (Empty) SetCreatedAt(t time.Time)   {}
 func (Empty) SetUpdatedAt(t time.Time)   {}
 func (Empty) GetID() string              { return "" }
 func (Empty) SetID(id ...string)         {}
+func (Empty) ClearID()                   {}
 func (Empty) Expands() []string          { return nil }
 func (Empty) Excludes() map[string][]any { return nil }
 func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {

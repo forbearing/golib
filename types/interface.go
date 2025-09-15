@@ -346,6 +346,7 @@ type Model interface {
 	GetTableName() string // GetTableName returns the table name.
 	GetID() string
 	SetID(id ...string) // SetID method will automatically set the id if id is empty.
+	ClearID()           // ClearID always set the id to empty.
 	GetCreatedBy() string
 	GetUpdatedBy() string
 	GetCreatedAt() time.Time

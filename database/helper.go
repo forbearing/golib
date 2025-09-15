@@ -160,7 +160,7 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), context.Cont
 //   - action: Operation type ("get", "list", "count", etc.)
 //   - id: Optional ID for get operations to create simpler keys
 //
-// Returns prefix and full cache key for Redis operations.
+// Returns prefix, table name and full cache key for Redis operations.
 //
 // Key Structure:
 //   - Prefix: namespace:table_name
@@ -175,8 +175,9 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), context.Cont
 //   - SQL statement-based cache invalidation
 //
 // Reference: https://gorm.io/docs/sql_builder.html
-func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
+func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, table, key string) {
 	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
+	table = stmt.Table
 	switch strings.ToLower(action) {
 	case "get":
 		if len(id) > 0 {
@@ -187,7 +188,7 @@ func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, k
 	default:
 		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
 	}
-	return prefix, key
+	return prefix, table, key
 }
 
 func boolToInt(b bool) int {
