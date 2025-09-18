@@ -697,6 +697,7 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 //
 // Parameters:
 //   - columns: Field names to select (defaultsColumns will be automatically added)
+//     If no columns are provided, only defaultsColumns will be selected
 //
 // Returns the same instance if no valid columns are provided after filtering.
 //
@@ -706,6 +707,7 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if len(columns) == 0 {
+		db.db = db.db.Select(defaultsColumns)
 		return db
 	}
 	_columns := make([]string, 0)
