@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -32,13 +34,14 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 	begin := time.Now()
 	// create table automatically in default database.
 	for _, m := range model.Tables {
+		typ := reflect.TypeOf(m).Elem()
 		if len(m.GetTableName()) > 0 {
 			if err = db.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return errors.Wrap(err, "failed to create table")
+				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 			}
 		} else {
 			if err = db.AutoMigrate(m); err != nil {
-				return errors.Wrap(err, "failed to create table")
+				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 			}
 		}
 	}
@@ -49,13 +52,14 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 			handler = val
 		}
 		m := v.Table
+		typ := reflect.TypeOf(m).Elem()
 		if len(m.GetTableName()) > 0 {
 			if err = handler.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return errors.Wrap(err, "failed to create table")
+				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 			}
 		} else {
 			if err = handler.AutoMigrate(m); err != nil {
-				return errors.Wrap(err, "failed to create table")
+				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 			}
 		}
 	}
