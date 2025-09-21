@@ -1,10 +1,62 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- update CHANGELOG.md
+- update CHANGELOG.md
+- **deps:** upgrade dependencies to latest version
+
+### Docs
+- **types:** correct interface Cache method `WithContext` comment
+
+### Enh
+- **database:** make AuthMigrate error message more descriptive
+
+### Fix
+- **controller:** correct propagate controller span context into service layer
+- **database:** custom table name has more priority than default table name in database.Get
+- **database:** remove the redundant id query in database.Get
+- **database:** fix span context propagation to model hooks
+- **dsl:** parse custom Import and Export operation in Route keyword domain
+
+### Refactor
+- **database:** change WithSelect default behavior: no columns provides will use defaultColumns
+- **task:** upgrade github.com/shirou/gopsutil from v3 to v4
+
+
+<a name="v0.8.0-beta.1"></a>
+## [v0.8.0-beta.1] - 2025-09-13
+### Chore
+- update examples/demo
+- **deps:** upgrade dependencies to latest version
+
+### Enh
+- **controller:** controller span add "file" and "line"
+
+### Feat
+- **cache:** refactor tracing architecture and fix span context propagation
+- **controller:** fix span context propagation and enhance tracing architecture
+- **database:** add tracing for model lifecycle hooks
+- **middleware:** add automatic tracing for registered middlewares
+- **tracing:** integrate Jaeger distributed tracing across framework
+
+### Fix
+- **controller:** correct span relation of "Service XXXBefore hook", "Database", "Service XXXAfter hook" to sibling
+- **database:** propagate trace context from database into cache operations
+
+### Refactor
+- **cache:** unify cache error handling + add tracing context support
+- **types:** extrace context types into dedicated file "types/context.go"
+- **types:** encapsulate context in ServiceContext and add method Context() to returns the internal context
+
+
+<a name="v0.7.5"></a>
+## [v0.7.5] - 2025-09-09
 ### Chg
 - **database:** switch to idiomatic DatabaseContext.Context()
 
 ### Chore
+- update CHANGELOG.md
 - update examples/demo
 
 ### Docs
@@ -29,6 +81,9 @@
 
 ### Test
 - **database:** add comprehensive test suite with unit and benchmark tests
+
+### Pull Requests
+- Merge pull request [#15](https://github.com/forbearing/golib/issues/15) from forbearing/dev
 
 
 <a name="v0.7.4"></a>
@@ -1813,7 +1868,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/golib/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/forbearing/golib/compare/v0.8.0-beta.1...HEAD
+[v0.8.0-beta.1]: https://github.com/forbearing/golib/compare/v0.7.5...v0.8.0-beta.1
+[v0.7.5]: https://github.com/forbearing/golib/compare/v0.7.4...v0.7.5
 [v0.7.4]: https://github.com/forbearing/golib/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/golib/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/golib/compare/v0.7.1...v0.7.2
