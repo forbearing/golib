@@ -19,6 +19,7 @@ import (
 	"github.com/forbearing/golib/types/consts"
 	"github.com/forbearing/golib/util"
 	"github.com/gin-gonic/gin"
+	"github.com/mssola/useragent"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/time/rate"
@@ -77,7 +78,7 @@ func (*user) Login(c *gin.Context) {
 		return
 	}
 	// TODO: 把以前的 token 失效掉
-	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name, CreateSession(c))
+	aToken, rToken, err := jwt.GenTokens(u.ID, req.Name, createSession(c))
 	if err != nil {
 		ResponseJSON(c, CodeFailure)
 		return
@@ -313,4 +314,20 @@ func validateUsername(username string) error {
 		return fmt.Errorf("username can only contain letters, numbers, underscores and hyphens")
 	}
 	return nil
+}
+
+func createSession(c *gin.Context) *model.Session {
+	ua := useragent.New(c.Request.UserAgent())
+	engineName, engineVersion := ua.Engine()
+	browserName, browserVersion := ua.Browser()
+	return &model.Session{
+		UserId:         c.GetString(consts.CTX_USER_ID),
+		Username:       c.GetString(consts.CTX_USERNAME),
+		Platform:       ua.Platform(),
+		OS:             ua.OS(),
+		EngineName:     engineName,
+		EngineVersion:  engineVersion,
+		BrowserName:    browserName,
+		BrowserVersion: browserVersion,
+	}
 }

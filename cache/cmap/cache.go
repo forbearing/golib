@@ -1,10 +1,12 @@
 package cmap
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
@@ -19,7 +21,8 @@ func Init() error {
 }
 
 type cache[T any] struct {
-	c cmap.ConcurrentMap[string, T]
+	c   cmap.ConcurrentMap[string, T]
+	ctx context.Context
 }
 
 func Cache[T any]() types.Cache[T] {
@@ -27,7 +30,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
-		return val.(*cache[T])
+		return val.(types.Cache[T])
 	}
 
 	mu.Lock()
@@ -35,16 +38,48 @@ func Cache[T any]() types.Cache[T] {
 
 	val, exists = cacheMap.Get(key)
 	if !exists {
-		val = &cache[T]{c: cmap.New[T]()}
+		val = tracing.NewTracingWrapper(&cache[T]{c: cmap.New[T](), ctx: context.Background()}, "cmap")
 		cacheMap.Set(key, val)
 	}
-	return val.(*cache[T])
+	return val.(types.Cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T, _ time.Duration) { c.c.Set(key, value) }
-func (c *cache[T]) Get(key string) (T, bool)                 { return c.c.Get(key) }
-func (c *cache[T]) Peek(key string) (T, bool)                { return c.c.Get(key) }
-func (c *cache[T]) Delete(key string)                        { c.c.Remove(key) }
-func (c *cache[T]) Exists(key string) bool                   { return c.c.Has(key) }
-func (c *cache[T]) Len() int                                 { return c.c.Count() }
-func (c *cache[T]) Clear()                                   { c.c.Clear() }
+func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
+	c.c.Set(key, value)
+	return nil
+}
+
+func (c *cache[T]) Get(key string) (T, error) {
+	value, exists := c.c.Get(key)
+	if !exists {
+		var zero T
+		return zero, types.ErrEntryNotFound
+	}
+	return value, nil
+}
+
+func (c *cache[T]) Peek(key string) (T, error) {
+	return c.Get(key)
+}
+
+func (c *cache[T]) Delete(key string) error {
+	c.c.Remove(key)
+	return nil
+}
+
+func (c *cache[T]) Exists(key string) bool {
+	return c.c.Has(key)
+}
+
+func (c *cache[T]) Len() int {
+	return c.c.Count()
+}
+
+func (c *cache[T]) Clear() {
+	c.c.Clear()
+}
+
+func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
+	c.ctx = ctx
+	return c
+}

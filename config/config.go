@@ -56,6 +56,7 @@ type Config struct {
 	SQLServer     `json:"sqlserver" mapstructure:"sqlserver" ini:"sqlserver" yaml:"sqlserver"`
 	Clickhouse    `json:"clickhouse" mapstructure:"clickhouse" ini:"clickhouse" yaml:"clickhouse"`
 	Redis         `json:"redis" mapstructure:"redis" ini:"redis" yaml:"redis"`
+	Jaeger        `json:"jaeger" mapstructure:"jaeger" ini:"jaeger" yaml:"jaeger"`
 	Elasticsearch `json:"elasticsearch" mapstructure:"elasticsearch" ini:"elasticsearch" yaml:"elasticsearch"`
 	Mongo         `json:"mongo" mapstructure:"mongo" ini:"mongo" yaml:"mongo"`
 	Kafka         `json:"kafka" mapstructure:"kafka" ini:"kafka" yaml:"kafka"`
@@ -91,6 +92,7 @@ func (c *Config) setDefault() {
 	c.Clickhouse.setDefault()
 	c.SQLServer.setDefault()
 	c.Redis.setDefault()
+	c.Jaeger.setDefault()
 	c.Elasticsearch.setDefault()
 	c.Mongo.setDefault()
 	c.Kafka.setDefault()

@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
@@ -21,7 +22,7 @@ type Role struct {
 	model.Base
 }
 
-func (r *Role) CreateBefore() error {
+func (r *Role) CreateBefore(*types.ModelContext) error {
 	if len(strings.TrimSpace(r.Name)) == 0 {
 		return errors.New("name is required")
 	}
@@ -31,12 +32,12 @@ func (r *Role) CreateBefore() error {
 
 	return nil
 }
-func (r *Role) UpdateBefore() error { return r.CreateAfter() }
+func (r *Role) UpdateBefore(ctx *types.ModelContext) error { return r.CreateAfter(ctx) }
 
-func (r *Role) CreateAfter() error { return rbac.RBAC().AddRole(r.Name) }
-func (r *Role) DeleteBefore() error {
+func (r *Role) CreateAfter(*types.ModelContext) error { return rbac.RBAC().AddRole(r.Name) }
+func (r *Role) DeleteBefore(ctx *types.ModelContext) error {
 	// The delete request always don't have role id, so we should get the role from database.
-	if err := database.Database[*Role](nil).Get(r, r.ID); err != nil {
+	if err := database.Database[*Role](ctx.DatabaseContext()).Get(r, r.ID); err != nil {
 		return err
 	}
 	if len(r.Name) > 0 {
@@ -44,7 +45,10 @@ func (r *Role) DeleteBefore() error {
 	}
 	return nil
 }
-func (r *Role) DeleteAfter() error { return database.Database[*Role](nil).Cleanup() }
+
+func (r *Role) DeleteAfter(ctx *types.ModelContext) error {
+	return database.Database[*Role](ctx.DatabaseContext()).Cleanup()
+}
 
 func (r *Role) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {

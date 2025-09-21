@@ -31,6 +31,7 @@ import (
 	"github.com/forbearing/golib/provider/etcd"
 	"github.com/forbearing/golib/provider/feishu"
 	"github.com/forbearing/golib/provider/influxdb"
+	"github.com/forbearing/golib/provider/jaeger"
 	"github.com/forbearing/golib/provider/kafka"
 	"github.com/forbearing/golib/provider/ldap"
 	"github.com/forbearing/golib/provider/memcached"
@@ -82,6 +83,7 @@ func Bootstrap() error {
 
 		// provider
 		redis.Init,
+		jaeger.Init,
 		elastic.Init,
 		mongo.Init,
 		minio.Init,

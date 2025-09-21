@@ -1,10 +1,12 @@
 package ccache
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/config"
 	"github.com/forbearing/golib/types"
 	"github.com/karlseguin/ccache/v3"
@@ -21,7 +23,8 @@ func Init() (err error) {
 }
 
 type cache[T any] struct {
-	c *ccache.Cache[T]
+	c   *ccache.Cache[T]
+	ctx context.Context
 }
 
 func Cache[T any]() types.Cache[T] {
@@ -29,7 +32,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
-		return val.(*cache[T])
+		return val.(types.Cache[T])
 	}
 
 	mu.Lock()
@@ -37,29 +40,33 @@ func Cache[T any]() types.Cache[T] {
 
 	val, exists = cacheMap.Get(key)
 	if !exists {
-		val = &cache[T]{c: ccache.New(ccache.Configure[T]().MaxSize(int64(config.App.Cache.Capacity)))}
+		val = tracing.NewTracingWrapper(&cache[T]{
+			c:   ccache.New(ccache.Configure[T]().MaxSize(int64(config.App.Cache.Capacity))),
+			ctx: context.Background(),
+		}, "ccache")
 		cacheMap.Set(key, val)
 	}
-	return val.(*cache[T])
+	return val.(types.Cache[T])
 }
 
-func (c *cache[T]) Set(key string, value T, ttl time.Duration) {
+func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
 	c.c.Set(key, value, ttl)
+	return nil
 }
 
-func (c *cache[T]) Get(key string) (T, bool) {
+func (c *cache[T]) Get(key string) (T, error) {
 	var zero T
 	val := c.c.Get(key)
 	if val == nil {
-		return zero, false
+		return zero, types.ErrEntryNotFound
 	}
 	if val.Expired() {
-		return zero, false
+		return zero, types.ErrEntryNotFound
 	}
-	return val.Value(), true
+	return val.Value(), nil
 }
 
-func (c *cache[T]) Peek(key string) (T, bool) {
+func (c *cache[T]) Peek(key string) (T, error) {
 	return c.Get(key)
 }
 
@@ -74,8 +81,9 @@ func (c *cache[T]) Exists(key string) bool {
 	return true
 }
 
-func (c *cache[T]) Delete(key string) {
+func (c *cache[T]) Delete(key string) error {
 	c.c.Delete(key)
+	return nil
 }
 
 func (c *cache[T]) Len() int {
@@ -84,4 +92,9 @@ func (c *cache[T]) Len() int {
 
 func (c *cache[T]) Clear() {
 	c.c.Clear()
+}
+
+func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {
+	c.ctx = ctx
+	return c
 }

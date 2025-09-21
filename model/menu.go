@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/forbearing/golib/database"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
@@ -54,33 +55,33 @@ func (m *Menu) Excludes() map[string][]any {
 	return map[string][]any{KeyId: {RootId, UnknownId, NoneId}}
 }
 
-func (m *Menu) CreateBefore() (err error) {
+func (m *Menu) CreateBefore(ctx *types.ModelContext) (err error) {
 	return multierr.Combine(m.initDefaultValue(), m.checkPathAndApi())
 }
 
-func (m *Menu) UpdateBefore() error {
+func (m *Menu) UpdateBefore(ctx *types.ModelContext) error {
 	return multierr.Combine(m.initDefaultValue(), m.checkPathAndApi())
 }
 
 // ListAfter 可能是只查询最顶层的 Menu,并不能拿到最顶层的 Menu
-func (m *Menu) ListAfter() (err error) {
+func (m *Menu) ListAfter(ctx *types.ModelContext) (err error) {
 	oldPath, oldApi := m.Path, m.Api
 	if err = m.checkPathAndApi(); err != nil {
 		return err
 	}
 	if m.Path != oldPath || m.Api != oldApi {
-		return database.Database[*Menu](nil).WithoutHook().Update(m)
+		return database.Database[*Menu](ctx.DatabaseContext()).WithoutHook().Update(m)
 	}
 	return nil
 }
 
-func (m *Menu) GetAfter() (err error) {
+func (m *Menu) GetAfter(ctx *types.ModelContext) (err error) {
 	oldPath, oldApi := m.Path, m.Api
 	if err = m.checkPathAndApi(); err != nil {
 		return err
 	}
 	if m.Path != oldPath || m.Api != oldApi {
-		return database.Database[*Menu](nil).WithoutHook().Update(m)
+		return database.Database[*Menu](ctx.DatabaseContext()).WithoutHook().Update(m)
 	}
 	return nil
 }

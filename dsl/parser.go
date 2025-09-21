@@ -388,6 +388,12 @@ func parseDesign(fn *ast.FuncDecl) *Design {
 						if act, e := parseAction(consts.PHASE_PATCH_MANY, funName_, call_.Args[0]); e {
 							defaults.routes[route] = append(defaults.routes[route], act)
 						}
+						if act, e := parseAction(consts.PHASE_IMPORT, funName_, call_.Args[0]); e {
+							defaults.routes[route] = append(defaults.routes[route], act)
+						}
+						if act, e := parseAction(consts.PHASE_EXPORT, funName_, call_.Args[0]); e {
+							defaults.routes[route] = append(defaults.routes[route], act)
+						}
 					}
 				}
 			}

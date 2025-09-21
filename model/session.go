@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"strings"
+
+	"github.com/forbearing/golib/types"
 )
 
 func init() {
@@ -33,9 +35,9 @@ func (s *Session) initDefault() error {
 	return nil
 }
 
-func (s *Session) CreateBefore() error { return s.initDefault() }
-func (s *Session) UpdateBefore() error { return s.initDefault() }
-func (s *Session) DeleteBefore() error {
+func (s *Session) CreateBefore(*types.ModelContext) error { return s.initDefault() }
+func (s *Session) UpdateBefore(*types.ModelContext) error { return s.initDefault() }
+func (s *Session) DeleteBefore(*types.ModelContext) error {
 	s.ID = s.id()
 	return nil
 }

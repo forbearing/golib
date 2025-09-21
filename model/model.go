@@ -176,6 +176,7 @@ func (b *Base) SetCreatedAt(t time.Time)   { b.CreatedAt = &t }
 func (b *Base) SetUpdatedAt(t time.Time)   { b.UpdatedAt = &t }
 func (b *Base) GetID() string              { return b.ID }
 func (b *Base) SetID(id ...string)         { setID(b, id...) }
+func (b *Base) ClearID()                   { clearID(b) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -187,16 +188,16 @@ func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (*Base) CreateBefore() error { return nil }
-func (*Base) CreateAfter() error  { return nil }
-func (*Base) DeleteBefore() error { return nil }
-func (*Base) DeleteAfter() error  { return nil }
-func (*Base) UpdateBefore() error { return nil }
-func (*Base) UpdateAfter() error  { return nil }
-func (*Base) ListBefore() error   { return nil }
-func (*Base) ListAfter() error    { return nil }
-func (*Base) GetBefore() error    { return nil }
-func (*Base) GetAfter() error     { return nil }
+func (*Base) CreateBefore(*types.ModelContext) error { return nil }
+func (*Base) CreateAfter(*types.ModelContext) error  { return nil }
+func (*Base) DeleteBefore(*types.ModelContext) error { return nil }
+func (*Base) DeleteAfter(*types.ModelContext) error  { return nil }
+func (*Base) UpdateBefore(*types.ModelContext) error { return nil }
+func (*Base) UpdateAfter(*types.ModelContext) error  { return nil }
+func (*Base) ListBefore(*types.ModelContext) error   { return nil }
+func (*Base) ListAfter(*types.ModelContext) error    { return nil }
+func (*Base) GetBefore(*types.ModelContext) error    { return nil }
+func (*Base) GetAfter(*types.ModelContext) error     { return nil }
 
 func setID(m types.Model, id ...string) {
 	val := reflect.ValueOf(m).Elem()
@@ -215,6 +216,12 @@ func setID(m types.Model, id ...string) {
 	} else {
 		idField.SetString(id[0])
 	}
+}
+
+func clearID(m types.Model) {
+	val := reflect.ValueOf(m).Elem()
+	idField := val.FieldByName(consts.FIELD_ID)
+	idField.SetString("")
 }
 
 // Empty is a special model implementation that provides a no-op implementation of the types.Model interface.
@@ -247,18 +254,20 @@ func (Empty) SetCreatedAt(t time.Time)   {}
 func (Empty) SetUpdatedAt(t time.Time)   {}
 func (Empty) GetID() string              { return "" }
 func (Empty) SetID(id ...string)         {}
+func (Empty) ClearID()                   {}
 func (Empty) Expands() []string          { return nil }
 func (Empty) Excludes() map[string][]any { return nil }
-func (Empty) CreateBefore() error        { return nil }
-func (Empty) CreateAfter() error         { return nil }
-func (Empty) DeleteBefore() error        { return nil }
-func (Empty) DeleteAfter() error         { return nil }
-func (Empty) UpdateBefore() error        { return nil }
-func (Empty) UpdateAfter() error         { return nil }
-func (Empty) ListBefore() error          { return nil }
-func (Empty) ListAfter() error           { return nil }
-func (Empty) GetBefore() error           { return nil }
-func (Empty) GetAfter() error            { return nil }
 func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
+
+func (Empty) CreateBefore(*types.ModelContext) error { return nil }
+func (Empty) CreateAfter(*types.ModelContext) error  { return nil }
+func (Empty) DeleteBefore(*types.ModelContext) error { return nil }
+func (Empty) DeleteAfter(*types.ModelContext) error  { return nil }
+func (Empty) UpdateBefore(*types.ModelContext) error { return nil }
+func (Empty) UpdateAfter(*types.ModelContext) error  { return nil }
+func (Empty) ListBefore(*types.ModelContext) error   { return nil }
+func (Empty) ListAfter(*types.ModelContext) error    { return nil }
+func (Empty) GetBefore(*types.ModelContext) error    { return nil }
+func (Empty) GetAfter(*types.ModelContext) error     { return nil }

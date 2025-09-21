@@ -7,6 +7,7 @@ import (
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
@@ -25,7 +26,7 @@ type UserRole struct {
 	model.Base
 }
 
-func (r *UserRole) CreateBefore() error {
+func (r *UserRole) CreateBefore(ctx *types.ModelContext) error {
 	if len(r.UserId) == 0 {
 		return errors.New("user_id is required")
 	}
@@ -34,10 +35,10 @@ func (r *UserRole) CreateBefore() error {
 	}
 	// expands field: user and role
 	user, role := new(model.User), new(Role)
-	if err := database.Database[*model.User](nil).Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserId); err != nil {
 		return err
 	}
-	if err := database.Database[*Role](nil).Get(role, r.RoleId); err != nil {
+	if err := database.Database[*Role](ctx.DatabaseContext()).Get(role, r.RoleId); err != nil {
 		return err
 	}
 	r.User, r.Role = user.Name, role.Name
@@ -48,8 +49,8 @@ func (r *UserRole) CreateBefore() error {
 	return nil
 }
 
-func (r *UserRole) CreateAfter() error {
-	if err := database.Database[*UserRole](nil).Update(r); err != nil {
+func (r *UserRole) CreateAfter(ctx *types.ModelContext) error {
+	if err := database.Database[*UserRole](ctx.DatabaseContext()).Update(r); err != nil {
 		return err
 	}
 	// NOTE: must be role name not role id.
@@ -59,32 +60,34 @@ func (r *UserRole) CreateAfter() error {
 
 	// update casbin_rule field: `user`, `role`, `remark`
 	user := new(model.User)
-	if err := database.Database[*model.User](nil).Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserId); err != nil {
 		return err
 	}
 	casbinRules := make([]*CasbinRule, 0)
-	if err := database.Database[*CasbinRule](nil).WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
+	if err := database.Database[*CasbinRule](ctx.DatabaseContext()).WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
 		return err
 	}
 	if len(casbinRules) > 0 {
 		casbinRules[0].User = user.Name
 		casbinRules[0].Role = r.Role
 		casbinRules[0].Remark = util.ValueOf(fmt.Sprintf("%s -> %s", r.User, r.Role))
-		return database.Database[*CasbinRule](nil).Update(casbinRules[0])
+		return database.Database[*CasbinRule](ctx.DatabaseContext()).Update(casbinRules[0])
 	}
 	return nil
 }
 
-func (r *UserRole) DeleteBefore() error {
+func (r *UserRole) DeleteBefore(ctx *types.ModelContext) error {
 	// The delete request always don't have user_id and role_id, so we should get the role from database.
-	if err := database.Database[*UserRole](nil).Get(r, r.ID); err != nil {
+	if err := database.Database[*UserRole](ctx.DatabaseContext()).Get(r, r.ID); err != nil {
 		return err
 	}
 	// NOTE: must be role name not role id.
 	return rbac.RBAC().UnassignRole(r.UserId, r.Role)
 }
 
-func (r *UserRole) DeleteAfter() error { return database.Database[*UserRole](nil).Cleanup() }
+func (r *UserRole) DeleteAfter(ctx *types.ModelContext) error {
+	return database.Database[*UserRole](ctx.DatabaseContext()).Cleanup()
+}
 
 func (r *UserRole) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {

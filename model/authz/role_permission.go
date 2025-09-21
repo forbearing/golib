@@ -5,6 +5,7 @@ import (
 	"github.com/forbearing/golib/authz/rbac"
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/model"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"go.uber.org/zap/zapcore"
 )
@@ -31,7 +32,7 @@ type RolePermission struct {
 	model.Base
 }
 
-func (r *RolePermission) CreateBefore() error {
+func (r *RolePermission) CreateBefore(*types.ModelContext) error {
 	if len(r.Role) == 0 {
 		return errors.New("role_id is required")
 	}
@@ -54,22 +55,22 @@ func (r *RolePermission) CreateBefore() error {
 	return nil
 }
 
-func (r *RolePermission) CreateAfter() error {
+func (r *RolePermission) CreateAfter(*types.ModelContext) error {
 	// grant the permission: (role, resource, action)
 	return rbac.RBAC().GrantPermission(r.Role, r.Resource, r.Action)
 }
 
-func (r *RolePermission) DeleteBefore() error {
+func (r *RolePermission) DeleteBefore(ctx *types.ModelContext) error {
 	// The request always only contains id, so we should get the RolePermission from database.
-	if err := database.Database[*RolePermission](nil).Get(r, r.ID); err != nil {
+	if err := database.Database[*RolePermission](ctx.DatabaseContext()).Get(r, r.ID); err != nil {
 		return err
 	}
 	// revoke the role's permission
 	return rbac.RBAC().RevokePermission(r.Role, r.Resource, r.Action)
 }
 
-func (r *RolePermission) DeleteAfter() error {
-	return database.Database[*RolePermission](nil).Cleanup()
+func (r *RolePermission) DeleteAfter(ctx *types.ModelContext) error {
+	return database.Database[*RolePermission](ctx.DatabaseContext()).Cleanup()
 }
 
 func (r *RolePermission) MarshalLogObject(enc zapcore.ObjectEncoder) error {

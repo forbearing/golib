@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	glogger "gorm.io/gorm/logger"
 	"gorm.io/hints"
 )
 
@@ -105,7 +105,7 @@ func (db *database[M]) reset() {
 	db.cursorNext = true
 	db.enableCursor = false
 
-	db.db = DB.WithContext(context.Background())
+	// db.db = DB.WithContext(context.Background())
 }
 
 // prepare prepares the database instance for query execution by applying all configured
@@ -145,11 +145,19 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	ctx := db.db.Statement.Context
+	if ctx == nil {
+		ctx = context.Background()
+		if db.ctx != nil {
+			ctx = db.ctx.Context()
+		}
+	}
 	// db.shouldAutoMigrate = true
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		db.db = _db.WithContext(context.TODO()).Debug().Limit(defaultLimit)
+		db.db = _db.WithContext(ctx).Debug().Limit(defaultLimit)
 	} else {
-		db.db = _db.WithContext(context.TODO()).Limit(defaultLimit)
+		db.db = _db.WithContext(ctx).Limit(defaultLimit)
 	}
 	return db
 }
@@ -689,6 +697,7 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 //
 // Parameters:
 //   - columns: Field names to select (defaultsColumns will be automatically added)
+//     If no columns are provided, only defaultsColumns will be selected
 //
 // Returns the same instance if no valid columns are provided after filtering.
 //
@@ -698,6 +707,7 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if len(columns) == 0 {
+		db.db = db.db.Select(defaultsColumns)
 		return db
 	}
 	_columns := make([]string, 0)
@@ -1276,8 +1286,7 @@ func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
 //
 // Example:
 //
-//	WithCache(5 * time.Minute).List(&users)  // Cache results for 5 minutes
-//	WithCache(time.Hour).Get(&config, "app_settings")  // Cache for 1 hour
+//	WithCache().List(&users)
 //
 // WithCache will make query resource count from cache.
 // If cache not found or expired. query from database directly.
@@ -1369,14 +1378,14 @@ func (db *database[M]) Create(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Create", len(objs))
+	done, ctx, span := db.trace("Create", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(ctx).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1392,12 +1401,19 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// }
 
 	var empty M // call nil value M will cause panic.
-	// Invoke model hook: CreateBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].CreateBefore(); err != nil {
-				return err
+	// Invoke model hook: CreateBefore for the entire batch.
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_CREATE_BEFORE, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].CreateBefore(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	for i := range objs {
@@ -1434,7 +1450,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 	if db.enableCache {
 		for i := range objs {
-			cache.Cache[M]().Delete(objs[i].GetID())
+			_ = cache.Cache[M]().WithContext(ctx).Delete(objs[i].GetID())
 		}
 	}
 
@@ -1463,12 +1479,19 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// 	}
 	// }
 
-	// Invoke model hook: CreateAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].CreateAfter(); err != nil {
-				return err
+	// Invoke model hook: CreateAfter for the entire batch.
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_CREATE_AFTER, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].CreateAfter(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1497,14 +1520,14 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Delete", len(objs))
+	done, ctx, span := db.trace("Delete", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(ctx).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1522,11 +1545,18 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: DeleteBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].DeleteBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_DELETE_BEFORE, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].DeleteBefore(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	typ := reflect.TypeOf(*new(M)).Elem()
@@ -1551,7 +1581,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				cache.Cache[M]().Delete(objs[i].GetID())
+				_ = cache.Cache[M]().WithContext(ctx).Delete(objs[i].GetID())
 			}
 		}
 	} else {
@@ -1572,16 +1602,23 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 				return err
 			}
 			if db.enableCache {
-				cache.Cache[M]().Delete(objs[i].GetID())
+				_ = cache.Cache[M]().WithContext(ctx).Delete(objs[i].GetID())
 			}
 		}
 	}
 	// Invoke model hook: DeleteAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].DeleteAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_DELETE_AFTER, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].DeleteAfter(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1611,14 +1648,14 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Update", len(objs))
+	done, ctx, span := db.trace("Update", len(objs))
 	defer done(err)
 	if len(objs) == 0 {
 		return nil
 	}
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(ctx).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1635,11 +1672,18 @@ func (db *database[M]) Update(objs ...M) (err error) {
 
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: UpdateBefore.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].UpdateBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_UPDATE_BEFORE, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].UpdateBefore(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	for i := range objs {
@@ -1669,16 +1713,23 @@ func (db *database[M]) Update(objs ...M) (err error) {
 		}
 		if db.enableCache {
 			for j := range objs[i:end] {
-				cache.Cache[M]().Delete(objs[j].GetID())
+				_ = cache.Cache[M]().WithContext(ctx).Delete(objs[j].GetID())
 			}
 		}
 	}
 	// Invoke model hook: UpdateAfter.
-	for i := range objs {
-		if !reflect.DeepEqual(empty, objs[i]) && !db.noHook {
-			if err = objs[i].UpdateAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_UPDATE_AFTER, span, func(spanCtx context.Context) error {
+			for i := range objs {
+				if !reflect.DeepEqual(empty, objs[i]) {
+					if err = objs[i].UpdateAfter(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1704,11 +1755,11 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("UpdateById")
+	done, ctx, _ := db.trace("UpdateById")
 	defer done(err)
 
 	if db.enableCache {
-		defer cache.Cache[[]M]().Clear()
+		defer cache.Cache[[]M]().WithContext(ctx).Clear()
 	}
 	// if config.App.RedisConfig.Enable {
 	// 	defer func() {
@@ -1733,7 +1784,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 		return err
 	}
 	if db.enableCache {
-		cache.Cache[M]().Delete(id)
+		_ = cache.Cache[M]().WithContext(ctx).Delete(id)
 	}
 	return nil
 }
@@ -1764,7 +1815,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("List")
+	done, ctx, span := db.trace("List")
 	defer done(err)
 	if dest == nil {
 		return nil
@@ -1772,13 +1823,11 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 
 	begin := time.Now()
 	var key string
-	var _dest []M
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Find(dest).Statement, "list")
-	if _dest, exists = cache.Cache[[]M]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
+	if _dest, err := cache.Cache[[]M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1855,11 +1904,18 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: ListBefore.
-	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
-			if err = (*dest)[i].ListBefore(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_LIST_BEFORE, span, func(spanCtx context.Context) error {
+			for i := range *dest {
+				if !reflect.DeepEqual(empty, (*dest)[i]) {
+					if err = (*dest)[i].ListBefore(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	// if err = db.db.Find(dest).Error; err != nil {
@@ -1880,11 +1936,18 @@ QUERY:
 	}
 
 	// Invoke model hook: ListAfter()
-	for i := range *dest {
-		if !reflect.DeepEqual(empty, (*dest)[i]) && !db.noHook {
-			if err = (*dest)[i].ListAfter(); err != nil {
-				return err
+	if !db.noHook {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_LIST_AFTER, span, func(spanCtx context.Context) error {
+			for i := range *dest {
+				if !reflect.DeepEqual(empty, (*dest)[i]) {
+					if err = (*dest)[i].ListAfter(types.NewModelContext(db.ctx, spanCtx)); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 	// Cache the result.
@@ -1898,7 +1961,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("list from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[[]M]().Set(key, *dest, config.App.Cache.Expiration)
+		_ = cache.Cache[[]M]().WithContext(ctx).Set(key, *dest, config.App.Cache.Expiration)
 	}
 
 	return nil
@@ -1940,18 +2003,16 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Get")
+	done, ctx, span := db.trace("Get")
 	defer done(err)
 
 	begin := time.Now()
 	var key string
-	var _dest M
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2032,8 +2093,10 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func(spanCtx context.Context) error {
+			return dest.GetBefore(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2050,14 +2113,22 @@ QUERY:
 	// where db.Find(dest) without Where(...) would scan the whole table.
 	// To be safe across versions, db.First(dest, id) is explicit.
 	//
-	// if err = db.db.Table(tableName).Where("id = ?", id).Find(dest).Error; err != nil {
-	dest.SetID(id)
-	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
+	// dest.SetID(id)
+	// if err = db.db.Table(tableName).Find(dest).Error; err != nil {
+	// 	return err
+	// }
+	if len(tableName) == 0 {
+		_, tableName, _ = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	}
+	dest.ClearID()
+	if err = db.db.Table(tableName).Where(fmt.Sprintf("`%s`.`id` = ?", tableName), id).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func(spanCtx context.Context) error {
+			return dest.GetAfter(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2072,7 +2143,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("get from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		_ = cache.Cache[M]().WithContext(ctx).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2104,18 +2175,16 @@ func (db *database[M]) Count(count *int64) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Count")
+	done, ctx, _ := db.trace("Count")
 	defer done(err)
 
 	begin := time.Now()
 	var key string
-	var _cache int64
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, exists = cache.Cache[int64]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
+	if _cache, err := cache.Cache[int64]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2178,7 +2247,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("count from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[int64]().Set(key, *count, config.App.Cache.Expiration)
+		_ = cache.Cache[int64]().WithContext(ctx).Set(key, *count, config.App.Cache.Expiration)
 
 	}
 	return nil
@@ -2212,18 +2281,16 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("First")
+	done, ctx, span := db.trace("First")
 	defer done(err)
 
 	begin := time.Now()
 	var key string
-	var _dest M
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "first")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
+	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2301,8 +2368,10 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func(spanCtx context.Context) error {
+			return dest.GetBefore(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2316,8 +2385,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func(spanCtx context.Context) error {
+			return dest.GetAfter(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2332,7 +2403,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("first from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		_ = cache.Cache[M]().WithContext(ctx).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2366,18 +2437,16 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Last")
+	done, ctx, span := db.trace("Last")
 	defer done(err)
 
 	begin := time.Now()
 	var key string
-	var _dest M
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "last")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
+	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2455,8 +2524,10 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func(spanCtx context.Context) error {
+			return dest.GetBefore(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2470,8 +2541,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func(spanCtx context.Context) error {
+			return dest.GetAfter(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2486,7 +2559,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("last from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		_ = cache.Cache[M]().WithContext(ctx).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2520,18 +2593,16 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Take")
+	done, ctx, span := db.trace("Take")
 	defer done(err)
 
 	begin := time.Now()
 	var key string
-	var _dest M
-	var exists bool
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true}).First(dest).Statement, "take")
-	if _dest, exists = cache.Cache[M]().Get(key); !exists {
+	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
+	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2609,8 +2680,10 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 QUERY:
 	var empty M // call nil value M will cause panic.
 	// Invoke model hook: GetBefore.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetBefore(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_BEFORE, span, func(spanCtx context.Context) error {
+			return dest.GetBefore(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2624,8 +2697,10 @@ QUERY:
 		return err
 	}
 	// Invoke model hook: GetAfter.
-	if !reflect.DeepEqual(empty, dest) && !db.noHook {
-		if err = dest.GetAfter(); err != nil {
+	if !db.noHook && !reflect.DeepEqual(empty, dest) {
+		if err = traceModelHook[M](db.ctx, consts.PHASE_GET_AFTER, span, func(spanCtx context.Context) error {
+			return dest.GetAfter(types.NewModelContext(db.ctx, spanCtx))
+		}); err != nil {
 			return err
 		}
 	}
@@ -2642,7 +2717,7 @@ QUERY:
 	// }
 	if db.enableCache {
 		logger.Cache.Infow("take from database", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
-		cache.Cache[M]().Set(key, dest, config.App.Cache.Expiration)
+		_ = cache.Cache[M]().WithContext(ctx).Set(key, dest, config.App.Cache.Expiration)
 	}
 	return nil
 }
@@ -2670,7 +2745,7 @@ func (db *database[M]) Cleanup() (err error) {
 		return err
 	}
 	defer db.reset()
-	done := db.trace("Cleanup")
+	done, _, _ := db.trace("Cleanup")
 	defer done(err)
 
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
@@ -2801,142 +2876,16 @@ func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
 		dbctx = ctx
 		gctx = dbctx.Context()
 	}
+
+	var ins *gorm.DB
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		return &database[M]{db: DB.Debug().WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
-	}
-	return &database[M]{db: DB.WithContext(gctx).Limit(defaultLimit), ctx: dbctx}
-}
-
-// trace returns a timing function for database operations that logs performance metrics.
-// The returned function should be called with the operation result to log timing and status.
-// Provides detailed logging including operation name, table name, batch size, and execution time.
-//
-// Parameters:
-//   - op: Operation name for logging identification
-//   - batch: Optional batch size for batch operations
-//
-// Returns a function that accepts an error and logs the operation result.
-//
-// Features:
-//   - Automatic timing measurement from call to completion
-//   - Error-aware logging with different levels
-//   - Batch operation support with size tracking
-//   - Cache and try-run mode status logging
-//   - Smart duration formatting for readability
-//
-// Usage Pattern:
-//
-//	done := db.trace("Create", len(models))
-//	defer done(err)
-//
-// Note: Must be called after `defer db.reset()` to ensure proper cleanup order.
-func (db *database[M]) trace(op string, batch ...int) func(error) {
-	begin := time.Now()
-	var _batch int
-	if len(batch) > 0 {
-		_batch = batch[0]
-	}
-	return func(err error) {
-		if err != nil {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Errorz("",
-				zap.Error(err),
-				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
-				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
-				zap.Bool("cache_enabled", db.enableCache),
-				zap.Bool("try_run", db.tryRun),
-			)
-		} else {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase(op)).Infoz("",
-				zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
-				zap.String("batch", strconv.Itoa(_batch)),
-				zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
-				zap.Bool("cache_enabled", db.enableCache),
-				zap.Bool("try_run", db.tryRun),
-			)
-		}
-	}
-}
-
-// // User returns a generic database manipulator with the `curd` capabilities
-// // for *model.User to create/delete/update/list/get in database.
-// // The database type deponds on the value of config.Server.DBType.
-// func User(ctx ...context.Context) types.Database[*model.User] {
-// 	c := context.TODO()
-// 	if len(ctx) > 0 {
-// 		if ctx[0] != nil {
-// 			c = ctx[0]
-// 		}
-// 	}
-// 	if strings.ToLower(config.App.LogLevel) == "debug" {
-// 		return &database[*model.User]{db: DB.WithContext(c).Debug().Limit(defaultLimit)}
-// 	}
-// 	return &database[*model.User]{db: DB.WithContext(c).Limit(defaultLimit)}
-// }
-
-// buildCacheKey constructs Redis cache keys for database operations.
-// Generates both prefix and full key based on GORM statement and operation type.
-// Uses consistent naming convention for cache key organization and collision avoidance.
-//
-// Parameters:
-//   - stmt: GORM statement containing SQL and table information
-//   - action: Operation type ("get", "list", "count", etc.)
-//   - id: Optional ID for get operations to create simpler keys
-//
-// Returns prefix and full cache key for Redis operations.
-//
-// Key Structure:
-//   - Prefix: namespace:table_name
-//   - Full Key: namespace:table_name:action:identifier
-//   - Get operations with ID: namespace:table_name:get:id_value
-//   - Other operations: namespace:table_name:action:sql_statement
-//
-// Features:
-//   - Namespace isolation for multi-tenant applications
-//   - Table-based key organization
-//   - Operation-specific key generation
-//   - SQL statement-based cache invalidation
-//
-// Reference: https://gorm.io/docs/sql_builder.html
-func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, key string) {
-	prefix = strings.Join([]string{config.App.Redis.Namespace, stmt.Table}, ":")
-	switch strings.ToLower(action) {
-	case "get":
-		if len(id) > 0 {
-			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, id[0]}, ":")
-		} else {
-			key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
-		}
-	default:
-		key = strings.Join([]string{config.App.Redis.Namespace, stmt.Table, action, stmt.SQL.String()}, ":")
-	}
-	return prefix, key
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
+		ins = DB.Debug().WithContext(gctx).Limit(defaultLimit)
 	} else {
-		return 0
+		ins = DB.WithContext(gctx).Limit(defaultLimit)
 	}
-}
 
-func contains(slice []string, item string) bool {
-	set := make(map[string]struct{}, len(slice))
-	for _, s := range slice {
-		set[s] = struct{}{}
+	return &database[M]{
+		db:  ins,
+		ctx: dbctx,
 	}
-	_, ok := set[item]
-	return ok
-}
-
-func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
-	for t.Kind() == reflect.Pointer {
-		if v.IsNil() {
-			return t, v, false
-		}
-		t = t.Elem()
-		v = v.Elem()
-	}
-	return t, v, true
 }
