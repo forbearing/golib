@@ -9,7 +9,7 @@ import (
 
 	"github.com/forbearing/golib/logger"
 	"github.com/forbearing/golib/util"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // getProcessStats gets process statistics using Unix-specific syscalls
