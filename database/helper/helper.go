@@ -35,14 +35,8 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 	// create table automatically in default database.
 	for _, m := range model.Tables {
 		typ := reflect.TypeOf(m).Elem()
-		if len(m.GetTableName()) > 0 {
-			if err = db.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
-			}
-		} else {
-			if err = db.AutoMigrate(m); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
-			}
+		if err = db.Table(m.GetTableName()).AutoMigrate(m); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 		}
 	}
 	// create table automatically with custom database.
@@ -53,14 +47,8 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 		}
 		m := v.Table
 		typ := reflect.TypeOf(m).Elem()
-		if len(m.GetTableName()) > 0 {
-			if err = handler.Table(m.GetTableName()).AutoMigrate(m); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
-			}
-		} else {
-			if err = handler.AutoMigrate(m); err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
-			}
+		if err = handler.Table(m.GetTableName()).AutoMigrate(m); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed to create table(%s)", typ.String()))
 		}
 	}
 	zap.S().Infow("database create table", "cost", util.FormatDurationSmart(time.Since(begin)))
@@ -72,14 +60,8 @@ func InitDatabase(db *gorm.DB, dbmap map[string]*gorm.DB) (err error) {
 		if val, exists := dbmap[strings.ToLower(r.DBName)]; exists {
 			handler = val
 		}
-		if len((r.Table.GetTableName())) > 0 {
-			if err = handler.Table(r.Table.GetTableName()).Save(r.Rows).Error; err != nil {
-				return errors.Wrap(err, "failed to create table records")
-			}
-		} else {
-			if err = handler.Model(r.Table).Save(r.Rows).Error; err != nil {
-				return errors.Wrap(err, "failed to create table records")
-			}
+		if err = handler.Table(r.Table.GetTableName()).Save(r.Rows).Error; err != nil {
+			return errors.Wrap(err, "failed to create table records")
 		}
 	}
 	zap.S().Infow("database create table records", "cost", util.FormatDurationSmart(time.Since(begin)))
