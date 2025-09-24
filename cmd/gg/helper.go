@@ -61,6 +61,10 @@ func logError(msg string) {
 	fmt.Printf("  %s %s\n", red("✘ ERROR"), msg)
 }
 
+func logSuccess(msg string) {
+	fmt.Printf("  %s %s\n", green("✔"), msg)
+}
+
 func writeFileWithLog(filename string, content string) {
 	if fileExists(filename) {
 		oldData, err := os.ReadFile(filename)
