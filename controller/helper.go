@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/forbearing/golib/database"
 	"github.com/forbearing/golib/provider/jaeger"
+	. "github.com/forbearing/golib/response"
 	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/types/consts"
 	"github.com/gin-gonic/gin"
@@ -363,4 +365,17 @@ func traceServiceImport[M types.Model](parentCtx context.Context, phase consts.P
 
 	ml, err = fn(spanCtx)
 	return ml, err
+}
+
+// handleServiceError handles ServiceError
+func handleServiceError(c *gin.Context, ctx *types.ServiceContext, err error) {
+	// Check if it's a ServiceError
+	var serviceErr *types.ServiceError
+	if errors.As(err, &serviceErr) {
+		ResponseJSON(c, CodeFailure.WithStatus(serviceErr.StatusCode).WithErr(err))
+		return
+	}
+
+	// Default error handling
+	ResponseJSON(c, CodeFailure.WithErr(err))
 }

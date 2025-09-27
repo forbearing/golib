@@ -188,11 +188,13 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE, func(spanCtx context.Context) (RSP, error) {
-				return svc.Create(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE)
+				return svc.Create(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -217,11 +219,13 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// 1.Perform business logic processing before create resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_BEFORE, func(spanCtx context.Context) error {
-			return svc.CreateBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_BEFORE), req)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_BEFORE)
+			return svc.CreateBefore(serviceCtxBefore, req)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -239,11 +243,13 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}
 		}
 		// 3.Perform business logic processing after create resource
+		var serviceCtxAfter *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_AFTER, func(spanCtx context.Context) error {
-			return svc.CreateAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_AFTER), req)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_AFTER)
+			return svc.CreateAfter(serviceCtxAfter, req)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -360,11 +366,13 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				jaeger.RecordError(span, err)
 				return
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE, func(spanCtx context.Context) (RSP, error) {
-				return svc.Delete(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE)
+				return svc.Delete(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -417,11 +425,13 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 1.Perform business logic processing before delete resources.
 		// TODO: Should there be one service hook(DeleteBefore), or multiple?
 		for _, m := range ml {
+			var serviceCtxBefore *types.ServiceContext
 			if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_BEFORE, func(spanCtx context.Context) error {
-				return svc.DeleteBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_BEFORE), m)
+				serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_BEFORE)
+				return svc.DeleteBefore(serviceCtxBefore, m)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtxBefore, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -449,11 +459,13 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 3.Perform business logic processing after delete resources.
 		// TODO: Should there be one service hook(DeleteAfter), or multiple?
 		for _, m := range ml {
+			var serviceCtxAfter *types.ServiceContext
 			if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_AFTER, func(spanCtx context.Context) error {
-				return svc.DeleteAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_AFTER), m)
+				serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_AFTER)
+				return svc.DeleteAfter(serviceCtxAfter, m)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtxAfter, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -577,11 +589,13 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE, func(spanCtx context.Context) (RSP, error) {
-				return svc.Update(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE)
+				return svc.Update(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -647,11 +661,13 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME)) // set updated_by to current user”
 
 		// 1.Perform business logic processing before update resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_BEFORE, func(spanCtx context.Context) error {
-			return svc.UpdateBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_BEFORE), req)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_BEFORE)
+			return svc.UpdateBefore(serviceCtxBefore, req)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -664,11 +680,13 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			return
 		}
 		// 3.Perform business logic processing after update resource.
+		var serviceCtxAfter *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_AFTER, func(spanCtx context.Context) error {
-			return svc.UpdateAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_AFTER), req)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_AFTER)
+			return svc.UpdateAfter(serviceCtxAfter, req)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -803,11 +821,13 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH, func(spanCtx context.Context) (RSP, error) {
-				return svc.Patch(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH)
+				return svc.Patch(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -865,11 +885,13 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		cur := oldVal.Addr().Interface().(M)
 
 		// 1.Perform business logic processing before partial update resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_BEFORE, func(spanCtx context.Context) error {
-			return svc.PatchBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_BEFORE), cur)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_BEFORE)
+			return svc.PatchBefore(serviceCtxBefore, cur)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -881,11 +903,13 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			return
 		}
 		// 3.Perform business logic processing after partial update resource.
+		var serviceCtxAfter *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_AFTER, func(spanCtx context.Context) error {
-			return svc.PatchAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_AFTER), cur)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_AFTER)
+			return svc.PatchAfter(serviceCtxAfter, cur)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1061,11 +1085,13 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				jaeger.RecordError(span, err)
 				return
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_LIST, func(spanCtx context.Context) (RSP, error) {
-				return svc.List(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST)
+				return svc.List(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -1179,11 +1205,13 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}
 
 		// 1.Perform business logic processing before list resources.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_BEFORE, func(spanCtx context.Context) error {
-			return svc.ListBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_BEFORE), &data)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_BEFORE)
+			return svc.ListBefore(serviceCtxBefore, &data)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1214,11 +1242,13 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			cached = true
 		}
 		// 3.Perform business logic processing after list resources.
+		var serviceCtxAfter *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_AFTER, func(spanCtx context.Context) error {
-			return svc.ListAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_AFTER), &data)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_AFTER)
+			return svc.ListAfter(serviceCtxAfter, &data)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1397,11 +1427,13 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 				jaeger.RecordError(span, err)
 				return
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_GET, func(spanCtx context.Context) (RSP, error) {
-				return svc.Get(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET)
+				return svc.Get(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -1490,11 +1522,13 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		log.Infoz("", zap.Object(typ.Name(), m))
 
 		// 1.Perform business logic processing before get resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_BEFORE, func(spanCtx context.Context) error {
-			return svc.GetBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_BEFORE), m)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_BEFORE)
+			return svc.GetBefore(serviceCtxBefore, m)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1516,11 +1550,13 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			cached = true
 		}
 		// 3.Perform business logic processing after get resource.
+		var serviceCtxAfter *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_AFTER, func(spanCtx context.Context) error {
-			return svc.GetAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_AFTER), m)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_AFTER)
+			return svc.GetAfter(serviceCtxAfter, m)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1757,11 +1793,13 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE_MANY, func(spanCtx context.Context) (RSP, error) {
-				return svc.CreateMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY)
+				return svc.CreateMany(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -1792,11 +1830,13 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 1.Perform business logic processing before batch create resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_MANY_BEFORE, func(spanCtx context.Context) error {
-			return svc.CreateManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_BEFORE), req.Items...)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_BEFORE)
+			return svc.CreateManyBefore(serviceCtxBefore, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1811,11 +1851,13 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch create resource
+		var serviceCtxAfter *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_CREATE_MANY_AFTER, func(spanCtx context.Context) error {
-			return svc.CreateManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_AFTER), req.Items...)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY_AFTER)
+			return svc.CreateManyAfter(serviceCtxAfter, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1945,11 +1987,13 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE_MANY, func(spanCtx context.Context) (RSP, error) {
-				return svc.DeleteMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY)
+				return svc.DeleteMany(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -1976,11 +2020,13 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_MANY_BEFORE, func(spanCtx context.Context) error {
-			return svc.DeleteManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_BEFORE), req.Items...)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_BEFORE)
+			return svc.DeleteManyBefore(serviceCtxBefore, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -1997,11 +2043,13 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch delete resources.
+		var serviceCtxAfter *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_DELETE_MANY_AFTER, func(spanCtx context.Context) error {
-			return svc.DeleteManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_AFTER), req.Items...)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY_AFTER)
+			return svc.DeleteManyAfter(serviceCtxBefore, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -2110,11 +2158,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE_MANY, func(spanCtx context.Context) (RSP, error) {
-				return svc.UpdateMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY)
+				return svc.UpdateMany(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -2134,11 +2184,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 1.Perform business logic processing before batch update resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_MANY_BEFORE, func(spanCtx context.Context) error {
-			return svc.UpdateManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_BEFORE), req.Items...)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_BEFORE)
+			return svc.UpdateManyBefore(serviceCtxBefore, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -2152,11 +2204,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}
 		}
 		// 3.Perform business logic processing after batch update resource.
+		var serviceCtxAfter *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_MANY_AFTER, func(spanCtx context.Context) error {
-			return svc.UpdateManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_AFTER), req.Items...)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY_AFTER)
+			return svc.UpdateManyAfter(serviceCtxAfter, req.Items...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -2269,11 +2323,13 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if reqErr == io.EOF {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH_MANY, func(spanCtx context.Context) (RSP, error) {
-				return svc.PatchMany(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY), req)
+				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY)
+				return svc.PatchMany(serviceCtx, req)
 			}); err != nil {
 				log.Error(err)
-				ResponseJSON(c, CodeFailure.WithErr(err))
+				handleServiceError(c, serviceCtx, err)
 				jaeger.RecordError(span, err)
 				return
 			}
@@ -2316,11 +2372,13 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 
 		// 1.Perform business logic processing before batch patch resource.
+		var serviceCtxBefore *types.ServiceContext
 		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_BEFORE, func(spanCtx context.Context) error {
-			return svc.PatchManyBefore(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_BEFORE), shouldUpdates...)
+			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_BEFORE)
+			return svc.PatchManyBefore(serviceCtxBefore, shouldUpdates...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxBefore, err)
 			jaeger.RecordError(span, err)
 			return
 		}
@@ -2334,11 +2392,13 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			}
 		}
 		// 3.Perform business logic processing after batch patch resource.
+		var serviceCtxAfter *types.ServiceContext
 		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_AFTER, func(spanCtx context.Context) error {
-			return svc.PatchManyAfter(types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_AFTER), shouldUpdates...)
+			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_AFTER)
+			return svc.PatchManyAfter(serviceCtxAfter, shouldUpdates...)
 		}); err != nil {
 			log.Error(err)
-			ResponseJSON(c, CodeFailure.WithErr(err))
+			handleServiceError(c, serviceCtxAfter, err)
 			jaeger.RecordError(span, err)
 			return
 		}
