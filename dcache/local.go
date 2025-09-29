@@ -7,6 +7,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/forbearing/golib/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.uber.org/zap/zapcore"
 )
@@ -19,7 +20,11 @@ var (
 	localCacheMu  sync.Mutex
 	localMaxItems = 1 << 24
 )
-var _ cacheMetricsProvider = (*localCache[any])(nil)
+
+var (
+	_ CacheMetricsProvider = (*localCache[any])(nil)
+	_ Cache[any]           = (*localCache[any])(nil)
+)
 
 // localCache implements interface Cache use *ristretto as the backend memory localCache.
 type localCache[T any] struct {
@@ -30,27 +35,21 @@ type localCache[T any] struct {
 func NewLocalCache[T any]() (Cache[T], error) {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
-
-	// Fast path: check if cache already exists
 	val, exists := localCacheMap.Get(key)
 	if exists {
-		return val.(*localCache[T]), nil
+		return val.(Cache[T]), nil
 	}
 
 	localCacheMu.Lock()
 	defer localCacheMu.Unlock()
 
-	// Double-check after acquiring lock
 	val, exists = localCacheMap.Get(key)
 	if !exists {
-		c, err := ristretto.NewCache(buildConf[T]())
-		if err != nil {
-			return nil, err
-		}
+		c, _ := ristretto.NewCache(buildConf[T]())
 		val = &localCache[T]{c: c}
 		localCacheMap.Set(key, val)
 	}
-	return val.(*localCache[T]), nil
+	return val.(Cache[T]), nil
 }
 
 func (c *localCache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -66,7 +65,7 @@ func (c *localCache[T]) Get(key string) (T, error) {
 	val, ok := c.c.Get(key)
 	if !ok {
 		var zero T
-		return zero, ErrEntryNotFound
+		return zero, types.ErrEntryNotFound
 	}
 	return val, nil
 }

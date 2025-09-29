@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/forbearing/golib/types"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -65,12 +66,12 @@ func (rc *redisCache[T]) Get(key string) (T, error) {
 	data, err := rc.cli.Get(rc.ctx, rc.prefix+key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return zero, ErrEntryNotFound
+			return zero, types.ErrEntryNotFound
 		}
 		return zero, err
 	}
 	if len(data) == 0 {
-		return zero, ErrEntryNotFound
+		return zero, types.ErrEntryNotFound
 	}
 	var result T
 	if err = json.Unmarshal(data, &result); err != nil {
@@ -82,7 +83,7 @@ func (rc *redisCache[T]) Get(key string) (T, error) {
 func (rc *redisCache[T]) Delete(key string) error {
 	err := rc.cli.Del(rc.ctx, rc.prefix+key).Err()
 	if errors.Is(err, redis.Nil) {
-		return ErrEntryNotFound
+		return types.ErrEntryNotFound
 	}
 	return err
 }

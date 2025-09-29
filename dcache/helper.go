@@ -5,31 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap/zapcore"
 )
-
-type mapMarshaler map[string]int64
-
-func (m mapMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	if m == nil {
-		return nil
-	}
-
-	for k, v := range m {
-		enc.AddInt64(k, v)
-	}
-
-	return nil
-}
-
-func calculateHitRatio(hits, misses int64) int64 {
-	if hits+misses == 0 {
-		return 0
-	}
-	return hits * 100 / (hits + misses)
-}
 
 func newProducer(brokers []string, topic string) (*kgo.Client, error) {
 	hostname, err := os.Hostname()
@@ -88,36 +66,23 @@ func newConsumer(brokers []string, topic string, group string) (*kgo.Client, err
 	)
 }
 
-// newRedis 仅在 benchmark 中使用
-func newRedis() (redis.UniversalClient, error) {
-	var client *redis.Client
-	// TODO: 优先读取 redis 配置 ClusterUrl
-	host := os.Getenv("LOCAL_REDIS_HOST")
-	port := os.Getenv("LOCAL_REDIS_PORT")
-	if host == "" {
-		host = "localhost"
-	}
-	if port == "" {
-		port = "6379"
-	}
-	redisUrl := fmt.Sprintf("redis://%s:%s/0", host, port)
+type mapMarshaler map[string]int64
 
-	opt, err := redis.ParseURL(redisUrl)
-	if err != nil {
-		return nil, err
+func (m mapMarshaler) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	if m == nil {
+		return nil
 	}
-	opt.PoolSize = redisPoolSize
-	opt.MaxIdleConns = redisMaxIdleConns
-	client = redis.NewClient(opt)
 
-	return client, nil
+	for k, v := range m {
+		enc.AddInt64(k, v)
+	}
+
+	return nil
 }
 
-// newRedisOrDie 仅在 benchmark 中使用
-func newRedisOrDie() redis.UniversalClient {
-	client, err := newRedis()
-	if err != nil {
-		panic(err)
+func calculateHitRatio(hits, misses int64) int64 {
+	if hits+misses == 0 {
+		return 0
 	}
-	return client
+	return hits * 100 / (hits + misses)
 }

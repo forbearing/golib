@@ -1,16 +1,18 @@
-package dcache
+package dcache_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/forbearing/golib/dcache"
+	"github.com/forbearing/golib/types"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestLocalCacheBasicOperations 测试基本的缓存操作
 func TestLocalCacheBasicOperations(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 	assert.NotNil(t, cache)
 
@@ -34,12 +36,12 @@ func TestLocalCacheBasicOperations(t *testing.T) {
 	// 测试获取已删除的键
 	_, err = cache.Get("key1")
 	assert.Error(t, err)
-	assert.Equal(t, ErrEntryNotFound, err)
+	assert.Equal(t, types.ErrEntryNotFound, err)
 }
 
 // TestLocalCacheTTL 测试TTL功能
 func TestLocalCacheTTL(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 设置短TTL
@@ -58,12 +60,12 @@ func TestLocalCacheTTL(t *testing.T) {
 	// TTL过期后检查应该不存在
 	assert.False(t, cache.Exists("ttl-key"))
 	_, err = cache.Get("ttl-key")
-	assert.Equal(t, ErrEntryNotFound, err)
+	assert.Equal(t, types.ErrEntryNotFound, err)
 }
 
 // TestLocalCacheZeroTTL 测试零TTL（永不过期）
 func TestLocalCacheZeroTTL(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 设置零TTL
@@ -80,7 +82,7 @@ func TestLocalCacheZeroTTL(t *testing.T) {
 
 // TestLocalCacheNegativeTTL 测试负TTL（应该被拒绝）
 func TestLocalCacheNegativeTTL(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 设置负TTL
@@ -98,23 +100,19 @@ func TestLocalCacheNegativeTTL(t *testing.T) {
 // TestLocalCacheDifferentTypes 测试不同类型
 func TestLocalCacheDifferentTypes(t *testing.T) {
 	// 字符串缓存
-	strCache, err := NewLocalCache[string]()
+	strCache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 	err = strCache.Set("str", "string-value", 1*time.Hour)
 	assert.NoError(t, err)
 
 	// 整数缓存
-	intCache, err := NewLocalCache[int]()
+	intCache, err := dcache.NewLocalCache[int]()
 	assert.NoError(t, err)
 	err = intCache.Set("int", 42, 1*time.Hour)
 	assert.NoError(t, err)
 
-	// 结构体缓存
-	type Person struct {
-		Name string
-		Age  int
-	}
-	personCache, err := NewLocalCache[Person]()
+	// 结构体缓存 - 使用包级别的 Person 类型
+	personCache, err := dcache.NewLocalCache[Person]()
 	assert.NoError(t, err)
 	err = personCache.Set("person", Person{Name: "Alice", Age: 30}, 1*time.Hour)
 	assert.NoError(t, err)
@@ -135,7 +133,7 @@ func TestLocalCacheDifferentTypes(t *testing.T) {
 
 // TestLocalCacheOverwrite 测试覆盖已有键
 func TestLocalCacheOverwrite(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 首次设置
@@ -153,7 +151,7 @@ func TestLocalCacheOverwrite(t *testing.T) {
 
 // TestLocalCacheConcurrency 测试并发操作
 func TestLocalCacheConcurrency(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 同时进行多个Set和Get操作
@@ -184,7 +182,7 @@ func TestLocalCacheConcurrency(t *testing.T) {
 
 // TestLocalCacheLargeValues 测试大型值
 func TestLocalCacheLargeValues(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 创建一个大字符串
@@ -207,7 +205,7 @@ func TestLocalCacheLargeValues(t *testing.T) {
 // TestLocalCacheKeyCollision 测试哈希冲突处理
 func TestLocalCacheKeyCollision(t *testing.T) {
 	// 注意：这个测试主要是概念性的，因为很难在实际中制造哈希冲突
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 设置大量随机键以增加冲突可能性
@@ -233,11 +231,11 @@ func TestLocalCacheKeyCollision(t *testing.T) {
 
 // TestLocalCacheMetrics 测试指标收集
 func TestLocalCacheMetrics(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 类型断言为指标提供者
-	metricsProvider, ok := cache.(cacheMetricsProvider)
+	metricsProvider, ok := cache.(dcache.CacheMetricsProvider)
 	assert.True(t, ok, "缓存应该实现cacheMetricsProvider接口")
 
 	// 执行一些操作以生成指标
@@ -271,9 +269,9 @@ func TestLocalCacheMetrics(t *testing.T) {
 // TestLocalCacheSingletonBehavior 测试缓存单例行为
 func TestLocalCacheSingletonBehavior(t *testing.T) {
 	// 创建两个相同类型的缓存
-	cache1, err := NewLocalCache[string]()
+	cache1, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
-	cache2, err := NewLocalCache[string]()
+	cache2, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 它们应该是同一个实例
@@ -289,7 +287,7 @@ func TestLocalCacheSingletonBehavior(t *testing.T) {
 	assert.Equal(t, "value", val)
 
 	// 创建不同类型的缓存
-	intCache, err := NewLocalCache[int]()
+	intCache, err := dcache.NewLocalCache[int]()
 	assert.NoError(t, err)
 
 	// 应该是不同的实例
@@ -321,7 +319,7 @@ func TestLocalCacheSingletonBehavior(t *testing.T) {
 
 // TestLocalCacheNilValue 测试nil值处理
 func TestLocalCacheNilValue(t *testing.T) {
-	cache, err := NewLocalCache[*string]()
+	cache, err := dcache.NewLocalCache[*string]()
 	assert.NoError(t, err)
 
 	// 设置nil值
@@ -336,7 +334,7 @@ func TestLocalCacheNilValue(t *testing.T) {
 
 // TestLocalCacheEmptyKey 测试空键
 func TestLocalCacheEmptyKey(t *testing.T) {
-	cache, err := NewLocalCache[string]()
+	cache, err := dcache.NewLocalCache[string]()
 	assert.NoError(t, err)
 
 	// 设置空键

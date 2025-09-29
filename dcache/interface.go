@@ -44,6 +44,6 @@ type DistributedCache[T any] interface {
 	Cache[T]
 }
 
-type cacheMetricsProvider interface {
+type CacheMetricsProvider interface {
 	Metrics() *localMetrics
 }

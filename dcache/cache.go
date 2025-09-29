@@ -6,11 +6,13 @@ import (
 	"os"
 	"runtime"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/provider/redis"
 	"github.com/forbearing/golib/util"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/panjf2000/ants/v2"
@@ -20,61 +22,83 @@ import (
 
 var once sync.Once
 
-// Init 负责 Set/Delete redis key, 完成后再向 kafka 中推送消息
-// 告诉多个分布式 core 节点删除本地二级缓存
+// Init initializes the distributed cache system as a state node that manages Redis operations
+// and coordinates cache synchronization across multiple distributed core nodes.
 //
-// 关键规则实现:
-//  1. 已记录事件的最大时间戳, 新收到的事件时间戳如果小于记录的最大时间戳, 则丢弃
-//  2. 按时间戳去重：只保留每个键的最新操作
-//     例如: 如果 Set(11:14) Delete(11:10), 则 Delete 并不会执行, 只会执行 Set(11:14)
-//  3. 对不同的 key 进行时间戳排序, 严格按照时间戳顺序执行 redis 缓存操作 Set/Delete.
-//  4. 记录当前批次事件中的最大时间戳
-func Init() {
+// This function serves as the central coordinator for distributed cache operations by:
+//   - Consuming cache operation events (Set/Delete) from Kafka
+//   - Executing Redis operations in a consistent, ordered manner
+//   - Publishing completion events to notify other nodes to update their local caches
+//   - Maintaining data consistency through timestamp-based ordering and deduplication
+//
+// Architecture Overview:
+//
+//	The distributed cache system consists of:
+//	1. State Node (this Init function): Manages Redis and coordinates operations
+//	2. Core Nodes: Maintain local secondary caches and send operation requests
+//	3. Kafka: Message broker for event communication between nodes
+//	4. Redis: Centralized cache storage for distributed data
+//
+// Key Implementation Rules:
+//  1. Timestamp-based event filtering: Events with timestamps older than the recorded
+//     maximum timestamp are discarded to prevent out-of-order operations
+//  2. Per-key deduplication: Only the latest operation for each key is retained within
+//     a batch, ensuring consistency (e.g., if Set(11:14) and Delete(11:10) exist,
+//     only Set(11:14) will be executed)
+//  3. Ordered execution: Operations are sorted by timestamp and executed sequentially
+//     to maintain strict ordering of Redis cache operations
+//  4. Batch processing: Events are processed in batches with maximum timestamp tracking
+//     for efficient throughput and consistency guarantees
+//
+// Error Handling:
+//   - Uses sync.Once to ensure single initialization
+//   - Validates Redis client availability before starting
+//   - Implements comprehensive error logging and metrics collection
+//   - Gracefully handles Kafka connection issues and message processing failures
+//
+// Performance Optimizations:
+//   - Utilizes goroutine pools to control Kafka consumer concurrency
+//   - Implements batch processing to reduce Redis round trips
+//   - Uses concurrent maps for thread-safe timestamp tracking per key
+func Init() error {
+	var gerr error
 	once.Do(func() {
 		const compKey = "comp"
-		const compVal = "[DistributedCache.Setup]"
+		const compVal = "[DistributedCache.Init]"
 
 		hostname, err := os.Hostname()
 		if err != nil {
-			panic(err)
+			gerr = err
 		}
-		zlog := zap.Must(zap.NewProduction())
-		logger := zlog.With(zap.String("hostname", hostname), zap.String(compKey, compVal))
-		logger.Info("distributed cache setup")
+		log := logger.Dcache.With("hostname", hostname, compKey, compVal)
+		log.Info("distributed cache setup")
 
-		redisCli := DistributedRedisCli
-		if redisCli == nil {
-			panic("DistributedRedisCli is nil")
+		redisCli, err := redis.New(config.App.Redis)
+		if err != nil {
+			gerr = err
+			return
 		}
-
-		var wg sync.WaitGroup
 
 		// 手动通过线程池控制 kafka 并发量
 		gopool, err := ants.NewPool(runtime.NumCPU()*2000, ants.WithPreAlloc(false))
 		if err != nil {
-			panic(err)
-		}
-
-		// 获取 Kafka 集群配置
-		seeds := os.Getenv("KAFKA_BROKERS")
-		var seedsArr []string
-		for seed := range strings.SplitSeq(seeds, ",") {
-			seed = strings.TrimSpace(seed)
-			if len(seed) > 0 {
-				seedsArr = append(seedsArr, seed)
-			}
+			gerr = err
+			return
 		}
 
 		// 初始化 Kafka 消费者和生产者
-		consumer, err := newConsumer(seedsArr, TOPIC_REDIS_SET_DEL, GROUP_REDIS_SET_DEL)
+		consumer, err := newConsumer(config.App.Kafka.Brokers, TOPIC_REDIS_SET_DEL, GROUP_REDIS_SET_DEL)
 		if err != nil {
-			panic(err)
+			gerr = err
+			return
 		}
-		producer, err := newProducer(seedsArr, TOPIC_REDIS_DONE)
+		producer, err := newProducer(config.App.Kafka.Brokers, TOPIC_REDIS_DONE)
 		if err != nil {
-			panic(err)
+			gerr = err
+			return
 		}
 
+		var wg sync.WaitGroup
 		// 为每个 key 维护独立的最大时间戳
 		keyMaxTimestamps := cmap.New[int64]()
 
@@ -84,11 +108,11 @@ func Init() {
 				baseCtx := context.Background()
 				fetches := consumer.PollFetches(context.Background())
 				if fetches.IsClientClosed() {
-					logger.Error("fetches.IsClientClosed", zap.Error(err))
+					log.Error("fetches.IsClientClosed", zap.Error(err))
 					continue
 				}
 				fetches.EachError(func(s string, i int32, err error) {
-					logger.Error("failed to fetch from kafka",
+					log.Error("failed to fetch from kafka",
 						zap.Error(err),
 						zap.String("topic", TOPIC_REDIS_SET_DEL),
 						zap.String("s", s),
@@ -133,7 +157,7 @@ func Init() {
 						// 解析事件
 						event := new(event)
 						if err := json.Unmarshal(record.Value, event); err != nil {
-							logger.Error("failed to unmarshal event from kafka record",
+							log.Error("failed to unmarshal event from kafka record",
 								zap.Error(err),
 								zap.Int64("offset", record.Offset),
 							)
@@ -146,7 +170,7 @@ func Init() {
 
 						// 规则一：过滤掉时间戳小于该 key 历史最大时间戳的事件
 						if event.TS <= keyMaxTs {
-							logger.Warn("skipping outdated event for key",
+							log.Warn("skipping outdated event for key",
 								zap.String("key", event.Key),
 								zap.Int64("event_ts", event.TS),
 								zap.Int64("key_max_ts", keyMaxTs),
@@ -175,7 +199,7 @@ func Init() {
 
 				// 如果没有消息需要处理，则继续等待下一批
 				if len(keyEvents) == 0 {
-					logger.Debug("no events to process in this batch",
+					log.Debug("no events to process in this batch",
 						zap.Int("total_records", totalRecords),
 						zap.Int("skipped_records", skippedRecords),
 						zap.Int64("failed_records", failedRecords),
@@ -211,7 +235,7 @@ func Init() {
 					}
 
 					// TODO: 生产环境设置成 Debug 级别
-					logger.Info("process event", zap.Object("event", evt))
+					log.Info("process event", zap.Object("event", evt))
 
 					gopool.Submit(func() {
 						defer wg.Done()
@@ -221,7 +245,7 @@ func Init() {
 								// logger.Info("redis set", zap.Int64("event_ts", evt.TS), zap.String("key", evt.Key), zap.Any("value", evt.Val), zap.Duration("redis_ttl", evt.RedisTTL))
 								if err := redisCli.Set(baseCtx, evt.Key, []byte(evt.Val), evt.RedisTTL).Err(); err != nil {
 									atomic.AddInt64(&failedRecords, 1)
-									logger.Error("failed to set redis key",
+									log.Error("failed to set redis key",
 										zap.Error(err),
 										zap.String("key", evt.Key),
 										zap.Object("event", evt),
@@ -244,7 +268,7 @@ func Init() {
 							}
 							data, err := json.Marshal(evtDone)
 							if err != nil {
-								logger.Error("failed to marshal event in redis set",
+								log.Error("failed to marshal event in redis set",
 									zap.Error(err),
 									zap.Object("event", evtDone),
 								)
@@ -254,7 +278,7 @@ func Init() {
 								// 同步推送 kafka 消息
 								produceRecord := &kgo.Record{Topic: TOPIC_REDIS_DONE, Value: data}
 								if err := producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
-									logger.Error("failed to produce redis set done event",
+									log.Error("failed to produce redis set done event",
 										zap.Error(err),
 										zap.Object("event", evtDone),
 									)
@@ -263,7 +287,7 @@ func Init() {
 						case opDel:
 							if evt.SyncToRedis {
 								if err := redisCli.Del(baseCtx, evt.Key).Err(); err != nil {
-									logger.Error("failed to del redis key",
+									log.Error("failed to del redis key",
 										zap.Error(err),
 										zap.String("key", evt.Key),
 										zap.Object("event", evt),
@@ -285,7 +309,7 @@ func Init() {
 							}
 							data, err := json.Marshal(evtDone)
 							if err != nil {
-								logger.Error("failed to marshal event in redis del",
+								log.Error("failed to marshal event in redis del",
 									zap.Error(err),
 									zap.Object("event", evtDone),
 								)
@@ -295,14 +319,14 @@ func Init() {
 								// 同步推送 kafka 消息
 								produceRecord := &kgo.Record{Topic: TOPIC_REDIS_DONE, Value: data}
 								if err := producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
-									logger.Error("failed to produce redis del done event",
+									log.Error("failed to produce redis del done event",
 										zap.Error(err),
 										zap.Object("event", evtDone),
 									)
 								}
 							}
 						default:
-							logger.Warn("unknown operation type", zap.String("op", evt.Op.String()))
+							log.Warn("unknown operation type", zap.String("op", evt.Op.String()))
 						}
 					})
 				}
@@ -315,7 +339,7 @@ func Init() {
 
 				// 记录处理统计信息
 				if totalRecords > 0 {
-					logger.Info("successfully consumed events",
+					log.Info("successfully consumed events",
 						zap.Int("total", totalRecords),
 						zap.Int("deduplicated", len(eventSlice)),
 						zap.Int64("success", successRecords),
@@ -345,4 +369,6 @@ func Init() {
 			}
 		}, "DistributedCache.Init")
 	})
+
+	return gerr
 }

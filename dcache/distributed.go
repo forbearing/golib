@@ -8,12 +8,15 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/forbearing/golib/config"
+	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/golib/provider/redis"
+	"github.com/forbearing/golib/types"
 	"github.com/forbearing/golib/util"
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -81,13 +84,19 @@ func (e *event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return nil
 	}
 
+	var val []byte
+	if len(e.Val) > 1024 {
+		val = e.Val[:1024]
+	} else {
+		val = e.Val
+	}
 	enc.AddString("ts", time.Unix(0, e.TS).Format("2006-01-02 15:04:05"))
 	enc.AddString("cache_id", e.CacheId)
 	enc.AddString("hostname", e.Hostname)
 	enc.AddString("typ", e.Typ)
 	enc.AddString("op", e.Op.String())
 	enc.AddString("key", e.Key)
-	enc.AddReflected("value", e.Val)
+	enc.AddReflected("value", val)
 	enc.AddString("local_ttl", util.FormatDurationSmart(e.TTL, 2))
 	enc.AddString("redis_ttl", util.FormatDurationSmart(e.RedisTTL, 2))
 	enc.AddBool("sync_to_redis", e.SyncToRedis)
@@ -177,7 +186,7 @@ type distributedCache[T any] struct {
 	subDone *kgo.Client
 
 	// logger is the cache internal logger, call "WithLogger" to replace it.
-	logger *zap.Logger
+	logger types.Logger
 
 	// "gopool" is the goroutines pool, the pool capacity is determined by "gocap".
 	// call "WithMaxGoroutines" to set the goroutines pool capacity.
@@ -196,13 +205,6 @@ type distributedCache[T any] struct {
 //   - brokers: kafka brokers addresses for event publishing and consuming.
 //   - opts: Optional configuration options.
 func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], error) {
-	localCache, err := NewLocalCache[T]()
-	if err != nil {
-		return nil, err
-	}
-	if localCache == nil {
-		return nil, errors.New("local cache is nil")
-	}
 	cacheId, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
@@ -210,16 +212,6 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], er
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
-	}
-
-	// get kafka brokers
-	brokers := os.Getenv("KAFKA_BROKERS")
-	var seedsArr []string
-	for seed := range strings.SplitSeq(brokers, ",") {
-		seed = strings.TrimSpace(seed)
-		if len(seed) > 0 {
-			seedsArr = append(seedsArr, seed)
-		}
 	}
 
 	// 为什么这里要加上 prefix?
@@ -238,14 +230,11 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], er
 	}
 
 	dc := &distributedCache[T]{
-		localCache:   localCache,
-		redisCache:   DistributedRedisCache,
-		cacheId:      cacheId.String(),
-		prefix:       prefix,
-		typ:          typStr,
-		comp:         fmt.Sprintf("[%s:DistributedCache:%s]", hostname, typ.Name()),
-		hostname:     hostname,
-		kafkaBrokers: seedsArr,
+		cacheId:  cacheId.String(),
+		prefix:   prefix,
+		typ:      typStr,
+		comp:     fmt.Sprintf("[%s:DistributedCache:%s]", hostname, typ.Name()),
+		hostname: hostname,
 	}
 
 	for _, opt := range opts {
@@ -257,16 +246,38 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], er
 		}
 	}
 
-	// setup redis
-	if dc.redisCache == nil {
-		if dc.redisCache, err = NewRedisCache[any](context.Background(), newRedisOrDie()); err != nil {
+	// setup logger
+	if dc.logger == nil {
+		dc.logger = logger.Dcache.With("hostname", hostname, compKey, dc.comp)
+	}
+
+	// setup local cache.
+	if dc.localCache == nil {
+		if dc.localCache, err = NewLocalCache[T](); err != nil {
 			return nil, err
+		}
+		if dc.localCache == nil {
+			return nil, errors.New("local cache is nil")
+		}
+	}
+
+	// setup redis cache
+	if dc.redisCache == nil {
+		redisCli, e := redis.New(config.App.Redis)
+		if err != nil {
+			return nil, e
+		}
+		if dc.redisCache, e = NewRedisCache[any](context.Background(), redisCli); e != nil {
+			return nil, e
+		}
+		if dc.redisCache == nil {
+			return nil, errors.New("redis cache is nil")
 		}
 	}
 
 	// setup kafka
 	if len(dc.kafkaBrokers) == 0 {
-		return nil, errors.New("kafka brokers is empty")
+		dc.kafkaBrokers = config.App.Kafka.Brokers
 	}
 	if dc.pubSetDel, err = newProducer(dc.kafkaBrokers, TOPIC_REDIS_SET_DEL); err != nil {
 		return nil, err
@@ -274,16 +285,6 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], er
 	if dc.subDone, err = newConsumer(dc.kafkaBrokers, TOPIC_REDIS_DONE, GROUP_REDIS_DONE); err != nil {
 		return nil, err
 	}
-
-	// setup logger.
-	if dc.logger == nil {
-		var logger *zap.Logger
-		if logger, err = zap.NewProduction(); err != nil {
-			return nil, err
-		}
-		dc.logger = logger
-	}
-	dc.logger = dc.logger.With(zap.String("hostname", hostname), zap.String(compKey, dc.comp))
 
 	// setup goroutines pool.
 	if dc.gocap < MIN_GOROUTINES {
@@ -366,10 +367,10 @@ func (dc *distributedCache[T]) Get(key string) (value T, err error) {
 		return value, nil
 	}
 	var zero T
-	if errors.Is(err, ErrEntryNotFound) {
+	if errors.Is(err, types.ErrEntryNotFound) {
 		// local cache miss.
 		atomic.AddInt64(&dc.localMisses, 1)
-		return zero, ErrEntryNotFound
+		return zero, types.ErrEntryNotFound
 	}
 
 	dc.logger.Warn("failed to get from local cache", zap.Error(err))
@@ -389,7 +390,7 @@ func (dc *distributedCache[T]) GetWithSync(key string, localTTL time.Duration) (
 		atomic.AddInt64(&dc.localHits, 1)
 		return value, nil
 	}
-	if errors.Is(err, ErrEntryNotFound) {
+	if errors.Is(err, types.ErrEntryNotFound) {
 		// local cache miss.
 		atomic.AddInt64(&dc.localMisses, 1)
 	} else {
@@ -406,7 +407,7 @@ func (dc *distributedCache[T]) GetWithSync(key string, localTTL time.Duration) (
 	if result, err = dc.redisCache.Get(prefixedKey); err == nil {
 		if redisVal, ok = result.(T); !ok {
 			dc.logger.Warn(fmt.Sprintf("type assertion failed for key %s: expected %T, got %T", prefixedKey, *new(T), result))
-			return zero, ErrEntryNotFound
+			return zero, types.ErrEntryNotFound
 		}
 		// redis cache hit.
 		atomic.AddInt64(&dc.redisHits, 1)
@@ -416,10 +417,10 @@ func (dc *distributedCache[T]) GetWithSync(key string, localTTL time.Duration) (
 		}
 		return redisVal, nil
 	}
-	if errors.Is(err, ErrEntryNotFound) {
+	if errors.Is(err, types.ErrEntryNotFound) {
 		// redis cache miss.
 		atomic.AddInt64(&dc.redisMisses, 1)
-		return zero, ErrEntryNotFound
+		return zero, types.ErrEntryNotFound
 	}
 	dc.logger.Warn("failed to get from redis cache", zap.Error(err))
 	return zero, err
@@ -433,7 +434,7 @@ func (dc *distributedCache[T]) Delete(key string) (err error) {
 	prefixedKey := dc.prefix + key
 
 	// NOTE: After recive kafka "delete" event, we will delete the entry from local cache again, it is a no-op.
-	if err = dc.localCache.Delete(prefixedKey); err != nil && !errors.Is(err, ErrEntryNotFound) {
+	if err = dc.localCache.Delete(prefixedKey); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 		dc.logger.Warn("failed to delete from local cache", zap.Error(err))
 	}
 
@@ -454,7 +455,7 @@ func (dc *distributedCache[T]) DeleteWithSync(key string) (err error) {
 	prefixedKey := dc.prefix + key
 
 	// NOTE: After recive kafka "delete" event, we will delete the entry from local cache again, it is a no-op.
-	if err = dc.localCache.Delete(prefixedKey); err != nil && !errors.Is(err, ErrEntryNotFound) {
+	if err = dc.localCache.Delete(prefixedKey); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 		dc.logger.Warn("failed to delete from local cache", zap.Error(err))
 	}
 
@@ -556,7 +557,7 @@ func (dc *distributedCache[T]) listenEvents() {
 					atomic.AddInt64(&dc.distributedDelete, 1)
 					// 这里不需要使用 prefix + key, 状态节点传过来的 key, 已经是 prefix+key 了.
 					// 但凡收到 opDelDone 事件, 都需要从本地缓存中删除, 我们无法得知这个 key 是不是属于我们当前缓存的
-					if err := dc.localCache.Delete(evt.Key); err != nil && !errors.Is(err, ErrEntryNotFound) {
+					if err := dc.localCache.Delete(evt.Key); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 						dc.logger.Warn("failed to delete from local cache", zap.Error(err))
 					}
 				default:
@@ -614,7 +615,7 @@ func (dc *distributedCache[T]) startMonitor() {
 	util.SafeGo(func() {
 		for range ticker.C {
 			if flag.Lookup("test.v") == nil {
-				if local, ok := dc.localCache.(cacheMetricsProvider); ok {
+				if local, ok := dc.localCache.(CacheMetricsProvider); ok {
 					dc.logger.Info("cache metrics", zap.Object("distributed", dc.Metrics()), zap.Object("local", local.Metrics()))
 				} else {
 					dc.logger.Info("cache metrics", zap.Object("distributed", dc.Metrics()))
@@ -702,7 +703,14 @@ func WithRedisCache[T any](redisCache Cache[any]) DistributedCacheOption[T] {
 	}
 }
 
-func WithLogger[T any](logger *zap.Logger) DistributedCacheOption[T] {
+func WithLocalCache[T any](localCache Cache[T]) DistributedCacheOption[T] {
+	return func(dc *distributedCache[T]) error {
+		dc.localCache = localCache
+		return nil
+	}
+}
+
+func WithLogger[T any](logger types.Logger) DistributedCacheOption[T] {
 	return func(dc *distributedCache[T]) error {
 		if logger == nil {
 			return errors.New("logger is nil")
