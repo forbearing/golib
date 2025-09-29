@@ -343,43 +343,6 @@ func Init() {
 				// }
 
 			}
-		}, "DistributedCache.Setup")
-
-		// Output
-		// 2:47PM INF successfully consumed records costed=977.84ms deduplicated=10000 failed=0 last_max_ts=1747810035544255000 new_max_ts=1747810035684441000 success=10000 total=56139
-		// 2:48PM INF successfully consumed records costed=991.52ms deduplicated=10000 failed=0 last_max_ts=1747810035684441000 new_max_ts=1747810035790642000 success=10000 total=56846
-		// 2:48PM INF successfully consumed records costed=1.03s deduplicated=10000 failed=0 last_max_ts=1747810035790642000 new_max_ts=1747810035948520000 success=10000 total=58564
-		// 2:48PM INF successfully consumed records costed=1.03s deduplicated=10000 failed=0 last_max_ts=1747810035948520000 new_max_ts=1747810036242784000 success=10000 total=47102
-		// 2:48PM INF successfully consumed records costed=1.07s deduplicated=10000 failed=0 last_max_ts=1747810036242784000 new_max_ts=1747810036628210000 success=10000 total=48791
-		// 2:48PM INF successfully consumed records costed=1.02s deduplicated=9995 failed=0 last_max_ts=1747810036628210000 new_max_ts=1747810036808622000 success=9995 total=47263
-		// 2:48PM INF successfully consumed records costed=1.03s deduplicated=9998 failed=0 last_max_ts=1747810036808622000 new_max_ts=1747810036995573000 success=9998 total=56503
-		// 2:48PM INF successfully consumed records costed=1.03s deduplicated=9997 failed=0 last_max_ts=1747810036995573000 new_max_ts=1747810036995580000 success=9997 total=52768
-		// 2:48PM INF successfully consumed records costed=305.42ms deduplicated=2827 failed=0 last_max_ts=1747810036995580000 new_max_ts=1747810055606577000 success=2827 total=40809
-		// 2:48PM INF successfully consumed records costed=340.00ms deduplicated=3210 failed=0 last_max_ts=1747810055606577000 new_max_ts=1747810055715589000 success=3210 total=42127
-		// 2:48PM INF successfully consumed records costed=346.26ms deduplicated=3245 failed=0 last_max_ts=1747810055715589000 new_max_ts=1747810055839879000 success=3245 total=40058
-		// 2:48PM INF successfully consumed records costed=332.77ms deduplicated=3222 failed=0 last_max_ts=1747810055839879000 new_max_ts=1747810055941536000 success=3222 total=39228
-		// 2:48PM INF successfully consumed records costed=342.09ms deduplicated=3146 failed=0 last_max_ts=1747810055941536000 new_max_ts=1747810056061429000 success=3146 total=39506
-		// 2:48PM INF successfully consumed records costed=362.84ms deduplicated=3404 failed=0 last_max_ts=1747810056061429000 new_max_ts=1747810056170084000 success=3404 total=42165
-		// 2:48PM INF successfully consumed records costed=353.88ms deduplicated=3348 failed=0 last_max_ts=1747810056170084000 new_max_ts=1747810056288620000 success=3348 total=38961
-		// 2:48PM INF successfully consumed records costed=356.25ms deduplicated=3296 failed=0 last_max_ts=1747810056288620000 new_max_ts=1747810056388999000 success=3296 total=38570
-		// 2:48PM INF successfully consumed records costed=371.59ms deduplicated=3321 failed=0 last_max_ts=1747810056388999000 new_max_ts=1747810056510415000 success=3321 total=40051
-		// 2:48PM INF successfully consumed records costed=387.33ms deduplicated=3620 failed=0 last_max_ts=1747810056510415000 new_max_ts=1747810056629931000 success=3620 total=40695
-		// 2:48PM INF successfully consumed records costed=392.28ms deduplicated=3648 failed=0 last_max_ts=1747810056629931000 new_max_ts=1747810056735707000 success=3648 total=39888
-		// 2:48PM INF successfully consumed records costed=994.08ms deduplicated=10000 failed=0 last_max_ts=1747810056735707000 new_max_ts=1747810056882385000 success=10000 total=42071
-		// 2:48PM INF successfully consumed records costed=990.28ms deduplicated=10000 failed=0 last_max_ts=1747810056882385000 new_max_ts=1747810058456780000 success=10000 total=47014
-		// 2:48PM INF successfully consumed records costed=516.79ms deduplicated=5000 failed=0 last_max_ts=1747810058456780000 new_max_ts=1747810058568688000 success=5000 total=38861
-		// 2:48PM INF successfully consumed records costed=332.00ms deduplicated=2873 failed=0 last_max_ts=1747810058568688000 new_max_ts=1747810058678092000 success=2873 total=37761
-		// 2:48PM INF successfully consumed records costed=319.91ms deduplicated=2839 failed=0 last_max_ts=1747810058678092000 new_max_ts=1747810058766316000 success=2839 total=36631
-		// 2:48PM INF successfully consumed records costed=315.16ms deduplicated=2967 failed=0 last_max_ts=1747810058766316000 new_max_ts=1747810058856516000 success=2967 total=36839
-		// 2:48PM INF successfully consumed records costed=315.48ms deduplicated=2952 failed=0 last_max_ts=1747810058856516000 new_max_ts=1747810058964285000 success=2952 total=37050
-		// 2:48PM INF successfully consumed records costed=339.21ms deduplicated=3100 failed=0 last_max_ts=1747810058964285000 new_max_ts=1747810059058019000 success=3100 total=37925
-		// 2:48PM INF successfully consumed records costed=331.08ms deduplicated=3040 failed=0 last_max_ts=1747810059058019000 new_max_ts=1747810059170378000 success=3040 total=37750
-		// 2:48PM INF successfully consumed records costed=336.70ms deduplicated=3132 failed=0 last_max_ts=1747810059170378000 new_max_ts=1747810059283774000 success=3132 total=38984
-		// 2:48PM INF successfully consumed records costed=326.25ms deduplicated=3069 failed=0 last_max_ts=1747810059283774000 new_max_ts=1747810059377478000 success=3069 total=39299
-		// 2:48PM INF successfully consumed records costed=289.65ms deduplicated=2737 failed=0 last_max_ts=1747810059377478000 new_max_ts=1747810059479912000 success=2737 total=35135
-		// 2:48PM INF successfully consumed records costed=316.64ms deduplicated=2886 failed=0 last_max_ts=1747810059479912000 new_max_ts=1747810059572082000 success=2886 total=36912
-
-		// 总结: 经过优化, 分布式缓存并发量极高的情况下也不会对 redis 造成太大的压力, 并且确保了分布式缓存的最终一致性
-		// 更多测试结果请看 common/cache/ benchmark 结果
+		}, "DistributedCache.Init")
 	})
 }

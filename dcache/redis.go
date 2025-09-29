@@ -95,9 +95,6 @@ func (rc *redisCache[T]) Exists(key string) bool {
 	return res > 0
 }
 
-// Range is not recommended for Redis implementation as it would require scanning all keys
-func (rc *redisCache[T]) Range(f func(key string, value T) bool) {}
-
 // RedisCacheOption is used to configure RedisCache.
 type RedisCacheOption[T any] func(*redisCache[T]) error
 
