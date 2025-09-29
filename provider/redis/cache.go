@@ -31,7 +31,10 @@ func (c *cache[T]) Set(key string, data T, ttl time.Duration) error {
 		zap.S().Error(err)
 		return err
 	}
-	if err := cli.Set(c.ctx, key, val, ttl).Err(); err != nil {
+	if len(val) == 0 {
+		return errors.New("cannot store empty value in redis")
+	}
+	if err = cli.Set(c.ctx, key, val, ttl).Err(); err != nil {
 		zap.S().Error(err)
 		return err
 	}
@@ -44,18 +47,19 @@ func (c *cache[T]) Get(key string) (T, error) {
 		zap.S().Warn("redis not initialized")
 		return zero, errors.New("redis not initialized")
 	}
-	val, err := cli.Get(c.ctx, key).Result()
+	data, err := cli.Get(c.ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return zero, types.ErrEntryNotFound
-		} else {
-			zap.S().Error(err)
 		}
+		zap.S().Error(err)
 		return zero, err
 	}
+	if len(data) == 0 {
+		return zero, types.ErrEntryNotFound
+	}
 	var result T
-	err = json.Unmarshal([]byte(val), &result)
-	if err != nil {
+	if err = json.Unmarshal(data, &result); err != nil {
 		zap.S().Error(err)
 		return zero, err
 	}
@@ -75,7 +79,7 @@ func (c *cache[T]) Delete(key string) error {
 		zap.S().Warn("redis not initialized")
 		return errors.New("redis not initialized")
 	}
-	if _, err := cli.Del(c.ctx, key).Result(); err != nil {
+	if err := cli.Del(c.ctx, key).Err(); err != nil {
 		zap.S().Error(err)
 		return err
 	}
