@@ -3,10 +3,10 @@ package dcache
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/redis/go-redis/v9"
 )
 

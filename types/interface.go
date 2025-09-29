@@ -2,10 +2,10 @@ package types
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/types/consts"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

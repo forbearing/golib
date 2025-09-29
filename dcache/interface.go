@@ -12,27 +12,33 @@ type Cache[T any] interface {
 }
 
 type DistributedCache[T any] interface {
-	// SetWithSync 原理
-	//	1.设置本地缓存, 过期时间为 localTTL
-	//	2.发送 `Set` 事件到状态节点
-	//	3.状态节点设置 redis 缓存, 过期时间为 remoteTTL (Cache.Set 方法不会设置 redis 缓存)
-	//	4.状态节点发送 `SetDone` 事件
-	// 	5.当前节点更新本地缓存
+	// SetWithSync stores a value in both local and distributed cache with synchronization.
+	//
+	// Operation flow:
+	//	1. Set value in local cache with localTTL expiration
+	//	2. Send 'Set' event to state node
+	//	3. State node sets Redis cache with remoteTTL expiration (Cache.Set method does not set Redis cache)
+	//	4. State node sends 'SetDone' event
+	//	5. Current node updates local cache
 	SetWithSync(key string, value T, localTTL time.Duration, remoteTTL time.Duration) error
 
-	// GetWithSync 原理
-	//	1.从本地缓存获取
-	//	2.如果本地缓存不存在, 则从 redis 中获取
-	//	3.如果从 redis 中获取到了则回填到本地缓存,过期时间为 localTTL.
-	//	  回填本地缓存并不会发送 `Set` 事件到状态节点
+	// GetWithSync retrieves a value from local cache first, then from distributed cache if not found.
+	//
+	// Operation flow:
+	//	1. Retrieve from local cache
+	//	2. If not found in local cache, retrieve from Redis
+	//	3. If found in Redis, backfill to local cache with localTTL expiration
+	//	   Note: Backfilling local cache does not send 'Set' event to state node
 	GetWithSync(key string, localTTL time.Duration) (T, error)
 
-	// DeleteWithSync 原理
-	//	1.从本地缓存删除
-	//	2.发送 `Del` 事件到状态节点
-	//	3.状态节点删除 redis 缓存 (Cache.Delete 方法不会删除 redis 缓存)
-	//	4.状态节点发送 `DelDone` 事件
-	//	5.当前节点删除本地缓存
+	// DeleteWithSync removes a value from both local and distributed cache with synchronization.
+	//
+	// Operation flow:
+	//	1. Delete from local cache
+	//	2. Send 'Del' event to state node
+	//	3. State node deletes Redis cache (Cache.Delete method does not delete Redis cache)
+	//	4. State node sends 'DelDone' event
+	//	5. Current node deletes from local cache
 	DeleteWithSync(key string) error
 
 	Cache[T]

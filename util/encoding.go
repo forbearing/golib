@@ -1,10 +1,10 @@
 package util
 
 import (
-	"errors"
 	"reflect"
 	"strconv"
 
+	"github.com/cockroachdb/errors"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -51,7 +51,7 @@ func Unmarshal(data []byte, value any) error {
 		return errors.New("Unmarshal: value is nil")
 	}
 	v := reflect.ValueOf(value)
-	if v.Kind() != reflect.Ptr || v.IsNil() {
+	if v.Kind() != reflect.Pointer || v.IsNil() {
 		return errors.New("Unmarshal: value must be a non-nil pointer")
 	}
 

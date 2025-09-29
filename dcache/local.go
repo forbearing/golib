@@ -1,11 +1,11 @@
 package dcache
 
 import (
-	"errors"
 	"reflect"
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/dgraph-io/ristretto/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.uber.org/zap/zapcore"

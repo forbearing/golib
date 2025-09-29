@@ -1,8 +1,7 @@
 package dcache
 
 import (
-	"errors"
-
+	"github.com/cockroachdb/errors"
 	"github.com/redis/go-redis/v9"
 )
 

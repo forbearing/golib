@@ -1,7 +1,6 @@
 package client_test
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/bootstrap"
 	"github.com/forbearing/golib/client"
 	"github.com/forbearing/golib/config"

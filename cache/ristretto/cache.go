@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/config"
@@ -53,7 +54,9 @@ func Cache[T any]() types.Cache[T] {
 }
 
 func (c *cache[T]) Set(key string, value T, ttl time.Duration) error {
-	c.c.SetWithTTL(key, value, 1, ttl)
+	if success := c.c.SetWithTTL(key, value, 1, ttl); !success {
+		return errors.New("cache rejected the set operation")
+	}
 	c.c.Wait()
 	return nil
 }

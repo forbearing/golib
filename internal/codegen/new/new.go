@@ -1,13 +1,13 @@
 package new
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/cockroachdb/errors"
 	"github.com/fatih/color"
 	"github.com/forbearing/golib/config"
 )

@@ -3,7 +3,6 @@ package dcache
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/util"
 	"github.com/google/uuid"
 	cmap "github.com/orcaman/concurrent-map/v2"

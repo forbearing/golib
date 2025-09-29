@@ -2,10 +2,10 @@ package tracing
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/provider/jaeger"
 	"github.com/forbearing/golib/types"
 	"go.opentelemetry.io/otel/attribute"
