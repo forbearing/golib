@@ -56,6 +56,7 @@ func Init() error {
 	logger.Service = New("service.log")
 	logger.Database = New("database.log")
 	logger.Cache = New("cache.log")
+	logger.Dcache = New("dcache.log")
 	logger.Redis = New("redis.log")
 
 	logger.Authz = New("authz.log")

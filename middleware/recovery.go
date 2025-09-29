@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	pkgzap "github.com/forbearing/golib/logger/zap"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"

@@ -2,10 +2,10 @@ package memcached
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/golib/cache/tracing"
 	"github.com/forbearing/golib/types"
 	jsoniter "github.com/json-iterator/go"

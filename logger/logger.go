@@ -17,6 +17,7 @@ var (
 	Service    types.Logger
 	Database   types.Logger
 	Cache      types.Logger
+	Dcache     types.Logger
 	Redis      types.Logger
 
 	Authz     types.Logger
