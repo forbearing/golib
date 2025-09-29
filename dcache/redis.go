@@ -21,7 +21,7 @@ type redisCache[T any] struct {
 
 // NewRedisCache creates CacheManager implementation that uses Redis as backend.
 // It is your responsibility to ensure the redis client is valid.
-func NewRedisCache[T any](ctx context.Context, cli redis.UniversalClient, opts ...RedisCacheOption[T]) (Cache[T], error) {
+func NewRedisCache[T any](ctx context.Context, cli redis.UniversalClient, opts ...RedisCacheOption[T]) (types.Cache[T], error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -95,6 +95,10 @@ func (rc *redisCache[T]) Exists(key string) bool {
 	}
 	return res > 0
 }
+func (rc *redisCache[T]) Len() int                                   { return -1 }
+func (rc *redisCache[T]) Peek(string) (T, error)                     { var t T; return t, nil }
+func (rc *redisCache[T]) Clear()                                     {}
+func (rc *redisCache[T]) WithContext(context.Context) types.Cache[T] { return rc }
 
 // RedisCacheOption is used to configure RedisCache.
 type RedisCacheOption[T any] func(*redisCache[T]) error

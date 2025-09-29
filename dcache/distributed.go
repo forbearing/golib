@@ -43,6 +43,8 @@ var (
 	//  2. cmap v2 比 sync.Map 性能要高很多
 	distributedCacheMap = cmap.New[any]()
 	distributedCacheMu  sync.Mutex
+
+	_ types.DistributedCache[any] = (*distributedCache[any])(nil)
 )
 
 type op int
@@ -116,7 +118,7 @@ func (e *event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 //
 //	kafka 在单节点上的消费者数量: 服务进程个数 * DistributedCache个数, 一般都是跑一个服务进程的.
 //	kafka 监听者总数量: 但节点上消费者个数 * 节点个数
-func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (DistributedCache[T], error) {
+func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.DistributedCache[T], error) {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 
@@ -150,8 +152,8 @@ func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (DistributedC
 //
 // Performance metrics are tracked (hits/misses) and a controlled goroutine pool handles
 type distributedCache[T any] struct {
-	localCache Cache[T]
-	redisCache Cache[any]
+	localCache types.Cache[T]
+	redisCache types.Cache[any]
 
 	// 用来在 redis 缓存中区分不同的类型
 	prefix string
@@ -204,7 +206,7 @@ type distributedCache[T any] struct {
 //   - localCache: In-Memory cache implementation for fast access.
 //   - brokers: kafka brokers addresses for event publishing and consuming.
 //   - opts: Optional configuration options.
-func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (Cache[T], error) {
+func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Cache[T], error) {
 	cacheId, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
@@ -473,6 +475,10 @@ func (dc *distributedCache[T]) DeleteWithSync(key string) (err error) {
 func (dc *distributedCache[T]) Exists(key string) bool {
 	return dc.localCache.Exists(dc.prefix + key)
 }
+func (dc *distributedCache[T]) Len() int                                   { return -1 }
+func (dc *distributedCache[T]) Peek(string) (T, error)                     { var t T; return t, nil }
+func (dc *distributedCache[T]) Clear()                                     {}
+func (dc *distributedCache[T]) WithContext(context.Context) types.Cache[T] { return dc }
 
 // listenEvents listen kafka for cache update/delete event and synchronously update the local cache.
 func (dc *distributedCache[T]) listenEvents() {
@@ -696,14 +702,14 @@ func (dc *distributedCache[T]) trace(op string) func(error) {
 
 type DistributedCacheOption[T any] func(*distributedCache[T]) error
 
-func WithRedisCache[T any](redisCache Cache[any]) DistributedCacheOption[T] {
+func WithRedisCache[T any](redisCache types.Cache[any]) DistributedCacheOption[T] {
 	return func(dc *distributedCache[T]) error {
 		dc.redisCache = redisCache
 		return nil
 	}
 }
 
-func WithLocalCache[T any](localCache Cache[T]) DistributedCacheOption[T] {
+func WithLocalCache[T any](localCache types.Cache[T]) DistributedCacheOption[T] {
 	return func(dc *distributedCache[T]) error {
 		dc.localCache = localCache
 		return nil

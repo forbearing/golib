@@ -513,6 +513,70 @@ type Cache[T any] interface {
 	WithContext(ctx context.Context) Cache[T]
 }
 
+// DistributedCache defines a two-level distributed caching system that combines local memory cache
+// with Redis backend for high-performance, synchronized caching across multiple nodes.
+//
+// Architecture:
+//   - Local Cache: High-speed in-memory cache for immediate access
+//   - Redis Cache: Distributed persistent storage for cross-node data sharing
+//   - Kafka Events: Real-time cache synchronization and invalidation across nodes
+//   - State Node: Coordinates cache operations and ensures consistency
+//
+// Key Features:
+//   - Automatic cache synchronization across multiple application instances
+//   - Configurable TTL for both local and distributed cache layers
+//   - Event-driven cache invalidation using Kafka messaging
+//   - Performance metrics tracking (hits, misses, operations)
+//   - Goroutine pool for efficient concurrent operations
+//   - Type-safe generic implementation
+//
+// Usage Patterns:
+//   - Use SetWithSync/GetWithSync/DeleteWithSync for data that needs cross-node synchronization
+//   - Use regular Cache[T] methods (Set/Get/Delete) for local-only operations
+//   - Configure appropriate TTL values: localTTL <= remoteTTL for optimal performance
+//
+// Thread Safety:
+//   - All operations are thread-safe and can be called concurrently
+//   - Internal synchronization handles concurrent access to cache maps
+//
+// Performance Considerations:
+//   - Local cache provides sub-microsecond access times
+//   - Redis operations add network latency but ensure data consistency
+//   - Kafka events enable near real-time cache synchronization
+//   - Goroutine pool prevents resource exhaustion under high load
+type DistributedCache[T any] interface {
+	Cache[T]
+
+	// SetWithSync stores a value in both local and distributed cache with synchronization.
+	//
+	// Operation flow:
+	//	1. Set value in local cache with localTTL expiration
+	//	2. Send 'Set' event to state node
+	//	3. State node sets Redis cache with remoteTTL expiration (Cache.Set method does not set Redis cache)
+	//	4. State node sends 'SetDone' event
+	//	5. Current node updates local cache
+	SetWithSync(key string, value T, localTTL time.Duration, remoteTTL time.Duration) error
+
+	// GetWithSync retrieves a value from local cache first, then from distributed cache if not found.
+	//
+	// Operation flow:
+	//	1. Retrieve from local cache
+	//	2. If not found in local cache, retrieve from Redis
+	//	3. If found in Redis, backfill to local cache with localTTL expiration
+	//	   Note: Backfilling local cache does not send 'Set' event to state node
+	GetWithSync(key string, localTTL time.Duration) (T, error)
+
+	// DeleteWithSync removes a value from both local and distributed cache with synchronization.
+	//
+	// Operation flow:
+	//	1. Delete from local cache
+	//	2. Send 'Del' event to state node
+	//	3. State node deletes Redis cache (Cache.Delete method does not delete Redis cache)
+	//	4. State node sends 'DelDone' event
+	//	5. Current node deletes from local cache
+	DeleteWithSync(key string) error
+}
+
 // RBAC interface defines comprehensive role-based access control operations.
 // This interface provides a complete RBAC system supporting roles, permissions,
 // and subject assignments with flexible resource and action management.

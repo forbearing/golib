@@ -1,6 +1,7 @@
 package dcache
 
 import (
+	"context"
 	"reflect"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ var (
 
 var (
 	_ CacheMetricsProvider = (*localCache[any])(nil)
-	_ Cache[any]           = (*localCache[any])(nil)
+	_ types.Cache[any]     = (*localCache[any])(nil)
 )
 
 // localCache implements interface Cache use *ristretto as the backend memory localCache.
@@ -32,12 +33,12 @@ type localCache[T any] struct {
 }
 
 // NewLocalCache 创建的缓存不具备分布式的能力, 需要分布式缓存请使用 NewDistributedCache
-func NewLocalCache[T any]() (Cache[T], error) {
+func NewLocalCache[T any]() (types.Cache[T], error) {
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := localCacheMap.Get(key)
 	if exists {
-		return val.(Cache[T]), nil
+		return val.(types.Cache[T]), nil
 	}
 
 	localCacheMu.Lock()
@@ -49,7 +50,7 @@ func NewLocalCache[T any]() (Cache[T], error) {
 		val = &localCache[T]{c: c}
 		localCacheMap.Set(key, val)
 	}
-	return val.(Cache[T]), nil
+	return val.(types.Cache[T]), nil
 }
 
 func (c *localCache[T]) Set(key string, value T, ttl time.Duration) error {
@@ -82,6 +83,10 @@ func (c *localCache[T]) Exists(key string) bool {
 	_, exists := c.c.Get(key)
 	return exists
 }
+func (c *localCache[T]) Len() int                                   { return -1 }
+func (c *localCache[T]) Peek(string) (T, error)                     { var t T; return t, nil }
+func (c *localCache[T]) Clear()                                     {}
+func (c *localCache[T]) WithContext(context.Context) types.Cache[T] { return c }
 
 func (c *localCache[T]) Metrics() *localMetrics {
 	m := c.c.Metrics

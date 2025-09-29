@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-func setupTestDistributedCache[T any](t *testing.T) dcache.DistributedCache[T] {
+func setupTestDistributedCache[T any](t *testing.T) types.DistributedCache[T] {
 	// redisCli, err := redis.New(config.App.Redis)
 	// if err != nil {
 	// 	t.Fatal(err)
