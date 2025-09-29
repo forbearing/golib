@@ -29,7 +29,7 @@ const scalarTemplate = `
         // The URL of the OpenAPI/Swagger document
         url: '/openapi.json',
         // Avoid CORS issues
-        proxyUrl: 'https://proxy.scalar.com',
+        // proxyUrl: 'https://proxy.scalar.com',
       })
     </script>
   </body>

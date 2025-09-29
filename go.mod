@@ -55,13 +55,13 @@ require (
 	github.com/larksuite/oapi-sdk-go/v3 v3.4.25
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/mssola/useragent v1.0.0
-	github.com/nats-io/nats.go v1.45.0
+	github.com/nats-io/nats.go v1.46.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/sftp v1.13.9
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/extra/redisotel/v9 v9.14.0
-	github.com/redis/go-redis/v9 v9.14.0
+	github.com/redis/go-redis/v9 v9.15.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.51.0
