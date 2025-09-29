@@ -13,6 +13,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
@@ -23,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"github.com/segmentio/ksuid"
+	"github.com/spf13/cast"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -416,57 +418,25 @@ func FormatDurationSmart(d time.Duration, precisions ...int) string {
 	}
 }
 
-// Keys creates an array of the map keys.
-// Play: https://go.dev/play/p/Uu11fHASqrU
-func Keys[K comparable, V any](in ...map[K]V) []K {
-	size := 0
-	for i := range in {
-		size += len(in[i])
-	}
-	result := make([]K, 0, size)
-
-	for i := range in {
-		for k := range in[i] {
-			result = append(result, k)
+func SafeGo(fn func(), names ...any) {
+	go func() {
+		var name string
+		if len(names) <= 0 {
+			name = "unnamed goroutine"
 		}
-	}
+		for _, v := range names {
+			name += ":" + cast.ToString(v)
+		}
 
-	return result
+		defer func() { Recovery(name) }()
+
+		fn()
+	}()
 }
 
-// Values creates an array of the map values.
-// Play: https://go.dev/play/p/nnRTQkzQfF6
-func Values[K comparable, V any](in ...map[K]V) []V {
-	size := 0
-	for i := range in {
-		size += len(in[i])
+// Recovery global Recovery recover panic
+func Recovery(name string) {
+	if err := recover(); err != nil {
+		fmt.Fprintf(os.Stdout, "%s recover: %+v\n%s", name, err, debug.Stack())
 	}
-	result := make([]V, 0, size)
-
-	for i := range in {
-		for k := range in[i] {
-			result = append(result, in[i][k])
-		}
-	}
-
-	return result
-}
-
-// Uniq returns a duplicate-free version of an array, in which only the first occurrence of each element is kept.
-// The order of result values is determined by the order they occur in the array.
-// Play: https://go.dev/play/p/DTzbeXZ6iEN
-func Uniq[T comparable, Slice ~[]T](collection Slice) Slice {
-	result := make(Slice, 0, len(collection))
-	seen := make(map[T]struct{}, len(collection))
-
-	for i := range collection {
-		if _, ok := seen[collection[i]]; ok {
-			continue
-		}
-
-		seen[collection[i]] = struct{}{}
-		result = append(result, collection[i])
-	}
-
-	return result
 }
