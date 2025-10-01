@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/cache/tracing"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/cache/tracing"
+	"github.com/forbearing/gst/types"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )

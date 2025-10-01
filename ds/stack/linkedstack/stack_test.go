@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/forbearing/golib/ds/stack/linkedstack"
+	"github.com/forbearing/gst/ds/stack/linkedstack"
 	"github.com/stretchr/testify/assert"
 )
 

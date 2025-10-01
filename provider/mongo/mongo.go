@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/util"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"

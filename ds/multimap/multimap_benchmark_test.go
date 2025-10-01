@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/multimap"
+	"github.com/forbearing/gst/ds/multimap"
 )
 
 func BenchmarkMultiMap_Get(b *testing.B) {

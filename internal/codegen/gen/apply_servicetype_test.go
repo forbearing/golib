@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/gst/dsl"
 )
 
 func TestApplyServiceTypePointerConversion(t *testing.T) {
@@ -23,7 +23,7 @@ func TestApplyServiceTypePointerConversion(t *testing.T) {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/service"
+	"github.com/forbearing/gst/service"
 )
 
 type user struct {
@@ -42,7 +42,7 @@ type user struct {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/service"
+	"github.com/forbearing/gst/service"
 )
 
 type user struct {
@@ -61,7 +61,7 @@ type user struct {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/service"
+	"github.com/forbearing/gst/service"
 )
 
 type user struct {
@@ -80,7 +80,7 @@ type user struct {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/service"
+	"github.com/forbearing/gst/service"
 )
 
 type user struct {
@@ -99,7 +99,7 @@ type user struct {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/service"
+	"github.com/forbearing/gst/service"
 )
 
 type user struct {

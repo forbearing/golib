@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/provider/jaeger"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/provider/jaeger"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"

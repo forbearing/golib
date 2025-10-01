@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/mapset"
+	"github.com/forbearing/gst/ds/mapset"
 )
 
 func createSet(b *testing.B, size int, safe bool) *mapset.Set[int] {

@@ -1,6 +1,6 @@
 package model_authz
 
-import "github.com/forbearing/golib/model"
+import "github.com/forbearing/gst/model"
 
 // CasbinRule
 // RBAC 包中会通过 gormadapter.NewAdapterByDBWithCustomTable(database.DB, &model.CasbinRule{})

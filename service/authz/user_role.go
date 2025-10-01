@@ -1,12 +1,12 @@
 package service_authz
 
 import (
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/logger"
-	model_authz "github.com/forbearing/golib/model/authz"
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/logger"
+	model_authz "github.com/forbearing/gst/model/authz"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"go.uber.org/zap"
 )
 

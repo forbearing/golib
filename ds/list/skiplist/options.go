@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Option is a function type that can be used to configure skiplist.

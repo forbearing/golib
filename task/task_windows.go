@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 	"github.com/shirou/gopsutil/v4/process"
 )
 

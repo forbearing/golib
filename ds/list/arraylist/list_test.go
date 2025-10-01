@@ -3,7 +3,7 @@ package arraylist_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/ds/list/arraylist"
+	"github.com/forbearing/gst/ds/list/arraylist"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/forbearing/golib/internal/reflectmeta"
+	"github.com/forbearing/gst/internal/reflectmeta"
 )
 
 type User2 struct {

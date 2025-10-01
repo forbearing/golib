@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	pkgast "github.com/forbearing/golib/internal/codegen/ast"
+	pkgast "github.com/forbearing/gst/internal/codegen/ast"
 	"github.com/kr/pretty"
 	"github.com/spf13/cobra"
 )

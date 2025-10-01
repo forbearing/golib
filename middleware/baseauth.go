@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"github.com/gin-gonic/gin"
 )
 

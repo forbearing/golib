@@ -15,8 +15,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:     "gg",
-	Short:   "golib code generator",
-	Long:    "golib code generator",
+	Short:   "gst code generator",
+	Long:    "gst code generator",
 	Version: "1.0.0",
 }
 

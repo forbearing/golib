@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/client"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/router"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/client"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/router"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/stretchr/testify/require"
 )
 

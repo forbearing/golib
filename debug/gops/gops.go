@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"github.com/google/gops/agent"
 	"go.uber.org/zap"
 )

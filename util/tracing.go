@@ -3,7 +3,7 @@ package util
 import (
 	"context"
 
-	"github.com/forbearing/golib/provider/jaeger"
+	"github.com/forbearing/gst/provider/jaeger"
 	"go.opentelemetry.io/otel/codes"
 )
 

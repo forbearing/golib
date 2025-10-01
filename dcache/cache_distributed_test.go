@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/dcache"
-	"github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/dcache"
+	"github.com/forbearing/gst/logger/zap"
+	"github.com/forbearing/gst/types"
 	"github.com/stretchr/testify/require"
 )
 

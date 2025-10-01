@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/provider/mongo"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/provider/mongo"
+	"github.com/forbearing/gst/util"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )

@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 )

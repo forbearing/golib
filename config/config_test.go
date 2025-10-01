@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"github.com/stretchr/testify/assert"
 )
 

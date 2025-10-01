@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache"
-	"github.com/forbearing/golib/cache/tracing"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/cache/tracing"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 

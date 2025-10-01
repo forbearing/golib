@@ -820,7 +820,7 @@ type User struct {
 >   `SQL equivalent`
 >
 >   ```sql
->   SELECT * FROM `golib_users` USE INDEX (`idx_composite_name_email_createdat`) WHERE `golib_users`.`deleted_at` IS NULL LIMIT 1000
+>   SELECT * FROM `gst_users` USE INDEX (`idx_composite_name_email_createdat`) WHERE `gst_users`.`deleted_at` IS NULL LIMIT 1000
 >   ```
 
 #### `_select=xxx`

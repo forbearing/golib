@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/gst/dsl"
 )
 
 // ApplyServiceFile will apply the dsl.Action to the ast.File.

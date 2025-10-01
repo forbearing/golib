@@ -1,8 +1,8 @@
 package jwt
 
 import (
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/model"
 )
 
 // func setToken(accessToken, refreshToken string, s *model.Session) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker"
 	"go.uber.org/zap"

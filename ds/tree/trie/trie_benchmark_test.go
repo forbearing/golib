@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/tree/trie"
+	"github.com/forbearing/gst/ds/tree/trie"
 )
 
 var stringKeys [1000]string // random string keys

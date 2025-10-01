@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap"
 	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
 )

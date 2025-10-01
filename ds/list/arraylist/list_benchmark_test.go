@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/list/arraylist"
+	"github.com/forbearing/gst/ds/list/arraylist"
 )
 
 func createList(b *testing.B, size int, safe bool) *arraylist.List[int] {

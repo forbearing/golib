@@ -8,7 +8,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/dgraph-io/ristretto/v2"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.uber.org/zap/zapcore"
 )

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 // A simple logger adapter that uses zap logger

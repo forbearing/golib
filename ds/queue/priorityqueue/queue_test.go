@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	pq "github.com/forbearing/golib/ds/queue/priorityqueue"
+	pq "github.com/forbearing/gst/ds/queue/priorityqueue"
 	"github.com/stretchr/testify/assert"
 )
 

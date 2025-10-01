@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/heap/binaryheap"
+	"github.com/forbearing/gst/ds/heap/binaryheap"
 	"github.com/stretchr/testify/assert"
 )
 

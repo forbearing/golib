@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/provider/mqtt"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/provider/mqtt"
+	"github.com/forbearing/gst/util"
 	"github.com/stretchr/testify/assert"
 )
 

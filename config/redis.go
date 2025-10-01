@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/queue/linkedqueue"
+	"github.com/forbearing/gst/ds/queue/linkedqueue"
 )
 
 func createQueue(b *testing.B, size int, safe bool) *linkedqueue.Queue[int] {

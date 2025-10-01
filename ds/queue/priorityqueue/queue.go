@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/forbearing/golib/ds/heap/binaryheap"
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/heap/binaryheap"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Queue represents a priority queue.

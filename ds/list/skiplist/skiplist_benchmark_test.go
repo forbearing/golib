@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/list/skiplist"
+	"github.com/forbearing/gst/ds/list/skiplist"
 )
 
 func createSkipList(b *testing.B, size int, safe bool) *skiplist.SkipList[int64, int64] {

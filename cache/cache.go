@@ -1,18 +1,18 @@
 package cache
 
 import (
-	"github.com/forbearing/golib/cache/bigcache"
-	"github.com/forbearing/golib/cache/ccache"
-	"github.com/forbearing/golib/cache/cmap"
-	"github.com/forbearing/golib/cache/fastcache"
-	"github.com/forbearing/golib/cache/freecache"
-	"github.com/forbearing/golib/cache/gocache"
-	"github.com/forbearing/golib/cache/lru"
-	"github.com/forbearing/golib/cache/lrue"
-	"github.com/forbearing/golib/cache/ristretto"
-	"github.com/forbearing/golib/cache/smap"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/cache/bigcache"
+	"github.com/forbearing/gst/cache/ccache"
+	"github.com/forbearing/gst/cache/cmap"
+	"github.com/forbearing/gst/cache/fastcache"
+	"github.com/forbearing/gst/cache/freecache"
+	"github.com/forbearing/gst/cache/gocache"
+	"github.com/forbearing/gst/cache/lru"
+	"github.com/forbearing/gst/cache/lrue"
+	"github.com/forbearing/gst/cache/ristretto"
+	"github.com/forbearing/gst/cache/smap"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 )
 
 // Init initialize all cache implementations.

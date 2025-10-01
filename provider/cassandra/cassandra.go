@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/util"
 	"github.com/gocql/gocql"
 	"go.uber.org/zap"
 )

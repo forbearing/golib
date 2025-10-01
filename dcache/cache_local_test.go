@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/dcache"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/dcache"
+	"github.com/forbearing/gst/types"
 	"github.com/stretchr/testify/assert"
 )
 

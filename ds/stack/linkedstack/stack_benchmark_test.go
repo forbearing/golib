@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/stack/linkedstack"
+	"github.com/forbearing/gst/ds/stack/linkedstack"
 )
 
 func createStack(b *testing.B, size int, safe bool) *linkedstack.Stack[int] {

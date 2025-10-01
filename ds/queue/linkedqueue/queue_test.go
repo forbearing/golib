@@ -3,7 +3,7 @@ package linkedqueue_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/ds/queue/linkedqueue"
+	"github.com/forbearing/gst/ds/queue/linkedqueue"
 	"github.com/stretchr/testify/assert"
 )
 

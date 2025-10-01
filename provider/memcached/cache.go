@@ -6,8 +6,8 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/cache/tracing"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/cache/tracing"
+	"github.com/forbearing/gst/types"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/kr/pretty"
 )
 

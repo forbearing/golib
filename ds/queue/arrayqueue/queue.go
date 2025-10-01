@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/forbearing/golib/ds/list/arraylist"
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/list/arraylist"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Queue represents a queue based on an array-backed list.

@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 // StmtLogInfo create *ast.ExprStmt represents `log.Info(str)`

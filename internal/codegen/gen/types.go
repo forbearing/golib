@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/stoewer/go-strcase"
 )
 

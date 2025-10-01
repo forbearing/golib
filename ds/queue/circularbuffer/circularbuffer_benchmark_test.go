@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	cb "github.com/forbearing/golib/ds/queue/circularbuffer"
+	cb "github.com/forbearing/gst/ds/queue/circularbuffer"
 )
 
 func createCircularBuffer(b *testing.B, size int, safe bool, drop bool) *cb.CircularBuffer[int] {

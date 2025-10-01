@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 type Set[E comparable] struct {

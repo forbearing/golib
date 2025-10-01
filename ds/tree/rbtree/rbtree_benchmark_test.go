@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/tree/rbtree"
+	"github.com/forbearing/gst/ds/tree/rbtree"
 )
 
 func createTree(b *testing.B, size int, safe bool) *rbtree.Tree[float64, float64] {

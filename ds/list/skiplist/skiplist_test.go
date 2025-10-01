@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/list/skiplist"
+	"github.com/forbearing/gst/ds/list/skiplist"
 	"github.com/stretchr/testify/assert"
 )
 

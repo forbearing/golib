@@ -1,6 +1,6 @@
 package model_log
 
-import "github.com/forbearing/golib/model"
+import "github.com/forbearing/gst/model"
 
 type OperationType string
 

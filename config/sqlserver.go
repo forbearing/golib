@@ -1,5 +1,7 @@
 package config
 
+import "github.com/forbearing/gst/types/consts"
+
 const (
 	SQLSERVER_HOST         = "SQLSERVER_HOST"
 	SQLSERVER_PORT         = "SQLSERVER_PORT"
@@ -32,6 +34,6 @@ func (*SQLServer) setDefault() {
 	cv.SetDefault("sqlserver.password", "")
 	cv.SetDefault("sqlserver.encrypt", false)
 	cv.SetDefault("sqlserver.trust_server", true)
-	cv.SetDefault("sqlserver.app_name", "golib")
+	cv.SetDefault("sqlserver.app_name", consts.FrameworkName)
 	cv.SetDefault("sqlserver.enable", false)
 }

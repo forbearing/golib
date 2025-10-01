@@ -9,7 +9,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/fatih/color"
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 )
 
 // ============================================================

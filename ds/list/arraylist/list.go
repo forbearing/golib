@@ -6,7 +6,7 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 const (

@@ -3,8 +3,8 @@ package linkedlist_test
 import (
 	"fmt"
 
-	"github.com/forbearing/golib/ds/list/linkedlist"
-	"github.com/forbearing/golib/ds/util"
+	"github.com/forbearing/gst/ds/list/linkedlist"
+	"github.com/forbearing/gst/ds/util"
 )
 
 func ExampleList_add() {

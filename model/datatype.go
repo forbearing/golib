@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 type GormTime time.Time

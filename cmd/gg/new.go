@@ -1,7 +1,7 @@
 package main
 
 import (
-	pkgnew "github.com/forbearing/golib/internal/codegen/new"
+	pkgnew "github.com/forbearing/gst/internal/codegen/new"
 	"github.com/spf13/cobra"
 )
 

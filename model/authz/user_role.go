@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/authz/rbac"
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/authz/rbac"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap/zapcore"
 )
 

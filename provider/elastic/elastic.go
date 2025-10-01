@@ -16,9 +16,9 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap"
 )
 

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	NAMESPACE = "golib_"
+	NAMESPACE = "gst_"
 	SUBSYSTEM = "backend_"
 )
 

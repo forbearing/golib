@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/forbearing/golib/ds/tree/trie"
-	"github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/internal/codegen"
-	"github.com/forbearing/golib/internal/codegen/gen"
-	pkgnew "github.com/forbearing/golib/internal/codegen/new"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/ds/tree/trie"
+	"github.com/forbearing/gst/dsl"
+	"github.com/forbearing/gst/internal/codegen"
+	"github.com/forbearing/gst/internal/codegen/gen"
+	pkgnew "github.com/forbearing/gst/internal/codegen/new"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )
@@ -230,8 +230,8 @@ func genRun() {
 	writeFileWithLog(filepath.Join(serviceDir, "service.go"), serviceCode)
 
 	// generate router/router.go
-	// router always imports "github.com/forbearing/golib/types"
-	routerImportMap["github.com/forbearing/golib/types"] = struct{}{}
+	// router always imports "github.com/forbearing/gst/types"
+	routerImportMap["github.com/forbearing/gst/types"] = struct{}{}
 	routerCode, err := gen.BuildRouterFile("router", lo.Keys(routerImportMap), routerStmts...)
 	checkErr(err)
 	writeFileWithLog(filepath.Join(routerDir, "router.go"), routerCode)

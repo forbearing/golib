@@ -3,7 +3,7 @@ package linkedlist
 import (
 	"sync"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 type Option[V any] func(*List[V]) error

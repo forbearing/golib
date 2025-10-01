@@ -3,7 +3,7 @@ package arrayqueue_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/ds/queue/arrayqueue"
+	"github.com/forbearing/gst/ds/queue/arrayqueue"
 	"github.com/stretchr/testify/assert"
 )
 

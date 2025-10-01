@@ -16,7 +16,7 @@ style: github
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://github.com/forbearing/golib
+  repository_url: https://github.com/forbearing/gst
 options:
   commits:
     # filters:

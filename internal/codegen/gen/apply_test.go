@@ -5,7 +5,7 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/gst/dsl"
 	"github.com/kr/pretty"
 )
 
@@ -30,8 +30,8 @@ func TestApplyServiceFile(t *testing.T) {
 import (
 	"helloworld/model"
 
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )
 
 type user struct {
@@ -70,8 +70,8 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 import (
 	"helloworld/model"
 
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )
 
 type user struct {

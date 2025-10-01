@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	"github.com/gertd/go-pluralize"
 	"github.com/stoewer/go-strcase"
 )

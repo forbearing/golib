@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 	"golang.org/x/time/rate"
 )
 

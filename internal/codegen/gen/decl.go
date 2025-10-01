@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gertd/go-pluralize"
 )
 
@@ -17,8 +17,8 @@ var pluralizeCli = pluralize.NewClient()
 /*
 import (
 	"codegen/model"
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )
 */
 func imports(modulePath, modelFileDir, modelPkgName string, otherPkg ...string) *ast.GenDecl {
@@ -44,13 +44,13 @@ func imports(modulePath, modelFileDir, modelPkgName string, otherPkg ...string) 
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/service"`,
+					Value: `"github.com/forbearing/gst/service"`,
 				},
 			},
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/types"`,
+					Value: `"github.com/forbearing/gst/types"`,
 				},
 			},
 		},

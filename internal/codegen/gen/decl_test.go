@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/kr/pretty"
 )
 
@@ -28,8 +28,8 @@ func TestImports(t *testing.T) {
 			modelPkgName: "model",
 			want: `import (
 	"codegen/model"
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )`,
 		},
 	}

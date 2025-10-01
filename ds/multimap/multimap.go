@@ -3,7 +3,7 @@ package multimap
 import (
 	"slices"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // MultiMap represents a map that can store multiple values for each key.

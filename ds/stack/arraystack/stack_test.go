@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/forbearing/golib/ds/stack/arraystack"
+	"github.com/forbearing/gst/ds/stack/arraystack"
 	"github.com/stretchr/testify/assert"
 )
 

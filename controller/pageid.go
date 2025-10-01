@@ -3,7 +3,7 @@ package controller
 import (
 	"time"
 
-	. "github.com/forbearing/golib/response"
+	. "github.com/forbearing/gst/response"
 
 	"github.com/gin-gonic/gin"
 )

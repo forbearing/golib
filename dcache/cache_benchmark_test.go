@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/dcache"
-	"github.com/forbearing/golib/provider/redis"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/dcache"
+	"github.com/forbearing/gst/provider/redis"
+	"github.com/forbearing/gst/types"
 )
 
 var (

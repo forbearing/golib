@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	pkgzap "github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/util"
+	pkgzap "github.com/forbearing/gst/logger/zap"
+	"github.com/forbearing/gst/util"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )

@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/types/consts"
+	"github.com/forbearing/gst/util"
 	"github.com/gorilla/websocket"
 	"github.com/vmihailenco/msgpack/v5"
 	"go.uber.org/zap"

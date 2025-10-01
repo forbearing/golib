@@ -5,14 +5,14 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 // BuildModelFile generates a model.go file, the content like below:
 /*
 package model
 
-import "github.com/forbearing/golib/model"
+import "github.com/forbearing/gst/model"
 
 func init() {
 	model.Register[*Group]()
@@ -43,7 +43,7 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/model"`,
+					Value: `"github.com/forbearing/gst/model"`,
 				},
 			},
 		},
@@ -94,7 +94,7 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 /*
 package service
 
-import "github.com/forbearing/golib/service"
+import "github.com/forbearing/gst/service"
 
 func Init() error {
 	service.Register[*group]()
@@ -134,13 +134,13 @@ func BuildServiceFile(pkgName string, modelImports []string, stmts ...ast.Stmt) 
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/service"`,
+					Value: `"github.com/forbearing/gst/service"`,
 				},
 			},
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/types/consts"`,
+					Value: `"github.com/forbearing/gst/types/consts"`,
 				},
 			},
 		},
@@ -201,7 +201,7 @@ package router
 import (
 	"helloworld/model"
 
-	"github.com/forbearing/golib/router"
+	"github.com/forbearing/gst/router"
 )
 
 func Init() error {
@@ -242,13 +242,13 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/router"`,
+					Value: `"github.com/forbearing/gst/router"`,
 				},
 			},
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/golib/types/consts"`,
+					Value: `"github.com/forbearing/gst/types/consts"`,
 				},
 			},
 		},
@@ -305,8 +305,8 @@ import (
 	"helloworld/router"
 	"helloworld/service"
 
-	"github.com/forbearing/golib/bootstrap"
-	. "github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	. "github.com/forbearing/gst/util"
 )
 
 func main() {
@@ -331,9 +331,9 @@ func BuildMainFile(projectName string) (string, error) {
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
 					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/golib/bootstrap")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/gst/bootstrap")}},
 					&ast.ImportSpec{
-						Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/golib/util")},
+						Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/gst/util")},
 						Name: ast.NewIdent("."),
 					},
 				},

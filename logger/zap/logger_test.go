@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger/zap"
+	"github.com/forbearing/gst/types"
 )
 
 var (
@@ -34,7 +34,7 @@ func init() {
 
 func createLogger(b *testing.B, filename string) types.Logger {
 	os.Setenv(config.LOGGER_FILE, filename)
-	os.Setenv(config.LOGGER_DIR, "/tmp/golib")
+	os.Setenv(config.LOGGER_DIR, "/tmp/gst")
 	if err := config.Init(); err != nil {
 		b.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func createLogger(b *testing.B, filename string) types.Logger {
 
 func TestLogger(b *testing.T) {
 	os.Setenv(config.LOGGER_FILE, "")
-	os.Setenv(config.LOGGER_DIR, "/tmp/golib")
+	os.Setenv(config.LOGGER_DIR, "/tmp/gst")
 	if err := config.Init(); err != nil {
 		b.Fatal(err)
 	}

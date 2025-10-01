@@ -1,6 +1,6 @@
 package linkedlist
 
-import "github.com/forbearing/golib/ds/types"
+import "github.com/forbearing/gst/ds/types"
 
 var _ types.MutableBidIterator[any] = (*iterator[any])(nil)
 

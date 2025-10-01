@@ -4,9 +4,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 )

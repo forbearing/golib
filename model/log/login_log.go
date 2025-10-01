@@ -1,7 +1,7 @@
 package model_log
 
 import (
-	"github.com/forbearing/golib/model"
+	"github.com/forbearing/gst/model"
 )
 
 type LoginStatus string

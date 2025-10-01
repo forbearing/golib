@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/tree/splaytree"
+	"github.com/forbearing/gst/ds/tree/splaytree"
 )
 
 func createTree(b *testing.B, size int, safe bool) *splaytree.Tree[float64, float64] {

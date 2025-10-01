@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/forbearing/golib/ds/list/linkedlist"
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/list/linkedlist"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Stack represents a stack based on linkedlist..

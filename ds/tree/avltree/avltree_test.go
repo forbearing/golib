@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/tree/avltree"
+	"github.com/forbearing/gst/ds/tree/avltree"
 	"github.com/stretchr/testify/assert"
 )
 

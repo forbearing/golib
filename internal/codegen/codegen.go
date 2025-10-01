@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/forbearing/golib/internal/codegen/gen"
+	"github.com/forbearing/gst/internal/codegen/gen"
 )
 
 // FindModels finds all model infos in a directory

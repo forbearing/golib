@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 )
 
 type GetRequest struct {

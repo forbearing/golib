@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/dsl"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/kr/pretty"
 	_ "github.com/sergi/go-diff/diffmatchpatch"
 )
@@ -18,7 +18,7 @@ import (
 var src1 = `
 package model
 
-import "github.com/forbearing/golib/model"
+import "github.com/forbearing/gst/model"
 
 type User struct {
 	Name  string
@@ -44,7 +44,7 @@ type GroupUser struct {
 var src2 = `
 package model
 
-import model_auth "github.com/forbearing/golib/model"
+import model_auth "github.com/forbearing/gst/model"
 
 type User struct {
 	Name  string
@@ -79,7 +79,7 @@ func init() {
 }
 
 func TestGetModulePath(t *testing.T) {
-	content := []byte("module github.com/forbearing/golib")
+	content := []byte("module github.com/forbearing/gst")
 	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestGetModulePath(t *testing.T) {
 	}{
 		{
 			name:    "test1",
-			want:    "github.com/forbearing/golib",
+			want:    "github.com/forbearing/gst",
 			wantErr: false,
 		},
 	}
@@ -155,7 +155,7 @@ func TestFindModelPackageName(t *testing.T) {
 }
 
 func TestFindModels(t *testing.T) {
-	content := []byte("module github.com/forbearing/golib")
+	content := []byte("module github.com/forbearing/gst")
 	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func TestFindModels(t *testing.T) {
 			filename:   filename1,
 			want: []*ModelInfo{
 				{
-					ModulePath:    "github.com/forbearing/golib",
+					ModulePath:    "github.com/forbearing/gst",
 					ModelFileDir:  tmpdir,
 					ModelFilePath: filename1,
 					ModelPkgName:  "model",
@@ -221,7 +221,7 @@ func TestFindModels(t *testing.T) {
 					},
 				},
 				{
-					ModulePath:    "github.com/forbearing/golib",
+					ModulePath:    "github.com/forbearing/gst",
 					ModelFileDir:  tmpdir,
 					ModelFilePath: filename1,
 					ModelPkgName:  "model",
@@ -255,7 +255,7 @@ func TestFindModels(t *testing.T) {
 			filename:   filename2,
 			want: []*ModelInfo{
 				{
-					ModulePath:    "github.com/forbearing/golib",
+					ModulePath:    "github.com/forbearing/gst",
 					ModelFileDir:  tmpdir,
 					ModelFilePath: filename2,
 					ModelPkgName:  "model",
@@ -280,7 +280,7 @@ func TestFindModels(t *testing.T) {
 					},
 				},
 				{
-					ModulePath:    "github.com/forbearing/golib",
+					ModulePath:    "github.com/forbearing/gst",
 					ModelFileDir:  tmpdir,
 					ModelFilePath: filename2,
 					ModelPkgName:  "model",

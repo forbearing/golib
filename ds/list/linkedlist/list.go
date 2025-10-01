@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 var ErrNilCmp = fmt.Errorf("nil comparator")

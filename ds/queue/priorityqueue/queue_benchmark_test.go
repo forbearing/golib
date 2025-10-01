@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	pq "github.com/forbearing/golib/ds/queue/priorityqueue"
+	pq "github.com/forbearing/gst/ds/queue/priorityqueue"
 )
 
 func createQueue(b *testing.B, size int, safe bool) *pq.Queue[int] {

@@ -4,9 +4,9 @@ import (
 	"database/sql"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database/helper"
-	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/database/helper"
+	"github.com/forbearing/gst/logger"
 	"go.uber.org/zap"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

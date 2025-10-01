@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/heap/binaryheap"
+	"github.com/forbearing/gst/ds/heap/binaryheap"
 )
 
 func createSafeHeap(t *testing.B, size int, safe bool) *binaryheap.Heap[int] {

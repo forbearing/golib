@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )

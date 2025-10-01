@@ -3,7 +3,7 @@ package consts_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 func TestPhase_MethodName(t *testing.T) {

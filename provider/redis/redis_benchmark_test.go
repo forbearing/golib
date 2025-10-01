@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/provider/redis"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/provider/redis"
+	"github.com/forbearing/gst/util"
 )
 
 func BenchmarkRedis(b *testing.B) {

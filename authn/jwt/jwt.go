@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/mssola/useragent"
@@ -30,7 +31,7 @@ var (
 
 var (
 	secret = []byte("defaultSecret")
-	issuer = "golib"
+	issuer = consts.FrameworkName
 )
 
 var sessionCache *expirable.LRU[string, *model.Session]

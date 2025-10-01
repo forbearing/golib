@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/types/consts"
+	"github.com/forbearing/gst/util"
 	"github.com/gin-gonic/gin"
 )
 

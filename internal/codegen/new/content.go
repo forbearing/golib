@@ -1,7 +1,7 @@
 package new
 
 import (
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 var modelContent = consts.CodeGeneratedComment() + `
@@ -37,8 +37,8 @@ import (
 	"%s/router"
 	_ "%s/service"
 
-	"github.com/forbearing/golib/bootstrap"
-	. "github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	. "github.com/forbearing/gst/util"
 )
 
 func main() {

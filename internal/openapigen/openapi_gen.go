@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 

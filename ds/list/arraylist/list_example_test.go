@@ -3,7 +3,7 @@ package arraylist_test
 import (
 	"fmt"
 
-	"github.com/forbearing/golib/ds/list/arraylist"
+	"github.com/forbearing/gst/ds/list/arraylist"
 )
 
 func ExampleList() {

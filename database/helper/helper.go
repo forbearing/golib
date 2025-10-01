@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/util"
 	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

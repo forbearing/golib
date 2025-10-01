@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/forbearing/golib/database"
-	. "github.com/forbearing/golib/response"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/database"
+	. "github.com/forbearing/gst/response"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

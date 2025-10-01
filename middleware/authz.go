@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"github.com/forbearing/golib/authz/rbac"
-	"github.com/forbearing/golib/logger"
-	. "github.com/forbearing/golib/response"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/authz/rbac"
+	"github.com/forbearing/gst/logger"
+	. "github.com/forbearing/gst/response"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

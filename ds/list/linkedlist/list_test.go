@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/list/linkedlist"
+	"github.com/forbearing/gst/ds/list/linkedlist"
 	"github.com/stretchr/testify/assert"
 )
 

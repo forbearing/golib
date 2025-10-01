@@ -3,7 +3,7 @@ package rbtree
 import (
 	"sync"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Option is a functional option type for configuring a red-black tree.

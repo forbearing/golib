@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap/zapcore"
 )
 

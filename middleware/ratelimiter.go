@@ -3,7 +3,7 @@ package middleware
 import (
 	"time"
 
-	. "github.com/forbearing/golib/response"
+	. "github.com/forbearing/gst/response"
 	"github.com/gin-gonic/gin"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"golang.org/x/time/rate"

@@ -3,7 +3,7 @@ package multimap_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/ds/multimap"
+	"github.com/forbearing/gst/ds/multimap"
 	"github.com/stretchr/testify/assert"
 )
 

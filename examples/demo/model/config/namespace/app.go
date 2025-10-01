@@ -1,8 +1,8 @@
 package namespace
 
 import (
-	. "github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/model"
+	. "github.com/forbearing/gst/dsl"
+	"github.com/forbearing/gst/model"
 )
 
 type App struct {

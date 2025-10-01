@@ -14,9 +14,10 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/logger/zap"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/google/go-querystring/query"
 	"golang.org/x/time/rate"
 )
@@ -85,7 +86,7 @@ func New(addr string, opts ...Option) (*Client, error) {
 		ctx:        context.Background(),
 		Logger:     zap.New(),
 	}
-	client.header.Set("User-Agent", "golib")
+	client.header.Set("User-Agent", consts.FrameworkName)
 	client.header.Set("Content-Type", "application/json")
 
 	for _, opt := range opts {

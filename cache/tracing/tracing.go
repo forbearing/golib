@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/provider/jaeger"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

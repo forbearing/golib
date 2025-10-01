@@ -9,8 +9,8 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/types"
 )
 
 func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ESDocumenter) error {

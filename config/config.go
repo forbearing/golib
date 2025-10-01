@@ -121,7 +121,7 @@ func (c *Config) setDefault() {
 func Init() (err error) {
 	// Create temp directory if not in test.
 	if flag.Lookup("test.v") == nil {
-		if tempdir, err = os.MkdirTemp("", "golib_"); err != nil {
+		if tempdir, err = os.MkdirTemp("", "gst_"); err != nil {
 			return errors.Wrap(err, "failed to create temp dir")
 		}
 		// logger not initialized using fmt.Println instead.

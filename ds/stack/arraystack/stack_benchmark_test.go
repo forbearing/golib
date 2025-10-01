@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/stack/arraystack"
+	"github.com/forbearing/gst/ds/stack/arraystack"
 )
 
 func createStack(b *testing.B, size int, safe bool) *arraystack.Stack[int] {

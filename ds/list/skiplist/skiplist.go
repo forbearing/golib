@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 const (

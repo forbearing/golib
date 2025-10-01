@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/tree/trie"
+	"github.com/forbearing/gst/ds/tree/trie"
 	"github.com/stretchr/testify/assert"
 )
 

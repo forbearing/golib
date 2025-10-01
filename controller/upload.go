@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/provider/minio"
-	. "github.com/forbearing/golib/response"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/provider/minio"
+	. "github.com/forbearing/gst/response"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types"
 	"github.com/stretchr/testify/suite"
 )
 

@@ -3,7 +3,7 @@ package trie
 import (
 	"sync"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Option is a function option type for configuring a trie.

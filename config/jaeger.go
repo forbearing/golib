@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 const (

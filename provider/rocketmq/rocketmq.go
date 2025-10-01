@@ -12,8 +12,8 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/apache/rocketmq-client-go/v2/rlog"
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger"
 	"go.uber.org/zap"
 )
 

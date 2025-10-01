@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 )
 

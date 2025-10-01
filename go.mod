@@ -1,4 +1,4 @@
-module github.com/forbearing/golib
+module github.com/forbearing/gst
 
 go 1.24.0
 

@@ -3,9 +3,9 @@ package model_authz
 import (
 	"fmt"
 
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/util"
 	"go.uber.org/zap/zapcore"
 )
 

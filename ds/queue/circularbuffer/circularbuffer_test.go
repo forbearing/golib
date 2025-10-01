@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/forbearing/golib/ds/queue/circularbuffer"
+	"github.com/forbearing/gst/ds/queue/circularbuffer"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -60,7 +60,7 @@
 package dsl
 
 import (
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 // Enabled controls whether API generation is enabled for the model.

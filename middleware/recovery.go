@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	pkgzap "github.com/forbearing/golib/logger/zap"
+	pkgzap "github.com/forbearing/gst/logger/zap"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

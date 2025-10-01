@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"go.uber.org/zap"
 )
 

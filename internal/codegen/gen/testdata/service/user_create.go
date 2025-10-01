@@ -3,8 +3,8 @@ package service
 import (
 	"helloworld/model"
 
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )
 
 type user struct {

@@ -7,11 +7,11 @@ import (
 	"github.com/casbin/casbin/v2"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/authz/rbac"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/logger"
-	model_authz "github.com/forbearing/golib/model/authz"
+	"github.com/forbearing/gst/authz/rbac"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/logger"
+	model_authz "github.com/forbearing/gst/model/authz"
 )
 
 const (

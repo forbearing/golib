@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 func init() {

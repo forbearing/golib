@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/gst/dsl"
 	"github.com/gertd/go-pluralize"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +26,7 @@ var checkCmd = &cobra.Command{
 5. Model file names should not contain hyphens (use underscores instead)
 6. Model struct json tags should use snake_case naming
 7. Model package names must match their directory names
-8. Only allowed directories are enforced for golib framework projects`,
+8. Only allowed directories are enforced for gst framework projects`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkRun()
 	},
@@ -328,17 +328,17 @@ func containsServiceImport(importPath, layerType string) bool {
 		if part == "service" {
 			// For service layer, check if it's importing other service packages
 			if layerType == "service" {
-				// Allow importing the base golib service package only
-				if strings.Contains(importPath, "github.com/forbearing/golib/service") {
+				// Allow importing the base gst service package only
+				if strings.Contains(importPath, "github.com/forbearing/gst/service") {
 					return false
 				}
 				// Forbid importing any other service implementations
 				return true
 			}
-			// For dao and model layers, any service import is forbidden except golib service
+			// For dao and model layers, any service import is forbidden except gst service
 			if layerType == "dao" || layerType == "model" {
-				// Allow importing the base golib service package for interfaces
-				if strings.Contains(importPath, "github.com/forbearing/golib/service") {
+				// Allow importing the base gst service package for interfaces
+				if strings.Contains(importPath, "github.com/forbearing/gst/service") {
 					return false
 				}
 				// Forbid importing service implementations
@@ -601,19 +601,19 @@ func CheckAllowedDirectories() int {
 	projectDir := "."
 	var violations []string
 
-	// Check if this is a golib framework project by reading go.mod
-	if isGolibFrameworkProject(projectDir) {
-		// Skip directory restriction check for golib framework itself
+	// Check if this is a gst framework project by reading go.mod
+	if isGstFrameworkProject(projectDir) {
+		// Skip directory restriction check for gst framework itself
 		return 0
 	}
 
-	// Check if this project uses golib framework
-	if !usesGolibFramework(projectDir) {
-		// Skip directory restriction check for projects not using golib framework
+	// Check if this project uses gst framework
+	if !usesGstFramework(projectDir) {
+		// Skip directory restriction check for projects not using gst framework
 		return 0
 	}
 
-	// Define allowed directories for golib framework projects
+	// Define allowed directories for gst framework projects
 	allowedDirs := map[string]bool{
 		"model":      true,
 		"service":    true,
@@ -681,34 +681,34 @@ func CheckAllowedDirectories() int {
 	return len(violations)
 }
 
-// isGolibFrameworkProject checks if this is the golib framework project itself
-func isGolibFrameworkProject(projectDir string) bool {
+// isGstFrameworkProject checks if this is the gst framework project itself
+func isGstFrameworkProject(projectDir string) bool {
 	goModPath := filepath.Join(projectDir, "go.mod")
 	content, err := os.ReadFile(goModPath)
 	if err != nil {
 		return false
 	}
 
-	// Check if module name is github.com/forbearing/golib
+	// Check if module name is github.com/forbearing/gst
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "module ") {
 			moduleName := strings.TrimSpace(strings.TrimPrefix(line, "module"))
-			return moduleName == "github.com/forbearing/golib"
+			return moduleName == "github.com/forbearing/gst"
 		}
 	}
 	return false
 }
 
-// usesGolibFramework checks if the project uses golib framework as a dependency
-func usesGolibFramework(projectDir string) bool {
+// usesGstFramework checks if the project uses gst framework as a dependency
+func usesGstFramework(projectDir string) bool {
 	goModPath := filepath.Join(projectDir, "go.mod")
 	content, err := os.ReadFile(goModPath)
 	if err != nil {
 		return false
 	}
 
-	// Check if github.com/forbearing/golib is in dependencies
-	return strings.Contains(string(content), "github.com/forbearing/golib")
+	// Check if github.com/forbearing/gst is in dependencies
+	return strings.Contains(string(content), "github.com/forbearing/gst")
 }

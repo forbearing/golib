@@ -4,9 +4,9 @@ import (
 	"net"
 	"testing"
 
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/pkg/tunnel"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/pkg/tunnel"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/stretchr/testify/assert"
 )
 

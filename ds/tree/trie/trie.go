@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Node represents a node in the trie.

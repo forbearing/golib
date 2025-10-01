@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"go.uber.org/zap"
 )
 

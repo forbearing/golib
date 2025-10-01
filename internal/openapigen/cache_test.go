@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 // CacheTestUser represents a user with comments for testing
@@ -47,7 +47,7 @@ func TestParseStructCommentCache(t *testing.T) {
 
 	// Check cache contains the result
 	structCommentMutex.RLock()
-	cacheKey := "github.com/forbearing/golib/internal/openapigen.CacheTestUser"
+	cacheKey := "github.com/forbearing/gst/internal/openapigen.CacheTestUser"
 	cachedValue, exists := structCommentCache[cacheKey]
 	structCommentMutex.RUnlock()
 

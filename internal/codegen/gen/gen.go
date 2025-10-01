@@ -11,18 +11,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/forbearing/golib/dsl"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/dsl"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/stoewer/go-strcase"
 )
 
 // ModelInfo stores model information
 //
 // Examples:
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
-// {ModulePath:"github.com/forbearing/golib", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/gst", ModelPkgName:"model", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/gst", ModelPkgName:"model", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/gst", ModelPkgName:"model_auth", ModelName:"User", ModelVarName:"u", ModelFileDir:"/tmp/model"},
+// {ModulePath:"github.com/forbearing/gst", ModelPkgName:"model_auth", ModelName:"Group", ModelVarName:"g", ModelFileDir:"/tmp/model"},
 type ModelInfo struct {
 	// module related fields
 	ModulePath string // module path parsed from go.mod
@@ -31,8 +31,8 @@ type ModelInfo struct {
 	ModelPkgName  string // model package name, e.g.: model, model_authz, model_log
 	ModelName     string // model name, e.g.: User, Group
 	ModelVarName  string // lowercase model variable name, e.g.: u, g
-	ModelFileDir  string // relative path of model file directory, e.g.: github.com/forbearing/golib/model
-	ModelFilePath string // relative path of model file, e.g.: github.com/forbearing/golib/model/user.go
+	ModelFileDir  string // relative path of model file directory, e.g.: github.com/forbearing/gst/model
+	ModelFilePath string // relative path of model file, e.g.: github.com/forbearing/gst/model/user.go
 
 	// custom request and response related fields
 	Design *dsl.Design
@@ -90,8 +90,8 @@ func GetModulePath() (string, error) {
 }
 
 // findModelPackageName finds the actual name of the imported model package
-// import "github.com/forbearing/golib/model" returns "model"
-// import model_auth "github.com/forbearing/golib/model" returns model_auth
+// import "github.com/forbearing/gst/model" returns "model"
+// import model_auth "github.com/forbearing/gst/model" returns model_auth
 func findModelPackageName(file *ast.File) string {
 	return file.Name.Name
 }
@@ -106,7 +106,7 @@ func findModelPackageName(file *ast.File) string {
 //		getAliasName := func(file *ast.File) string {
 //			for _, imp := range file.Imports {
 //				path := strings.Trim(imp.Path.Value, `"`)
-//				if strings.HasSuffix(path, "github.com/forbearing/golib/model") {
+//				if strings.HasSuffix(path, "github.com/forbearing/gst/model") {
 //					if imp.Name != nil {
 //						return imp.Name.Name // 使用重命名的包名
 //					}
@@ -140,7 +140,7 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 		if imp.Path == nil {
 			continue
 		}
-		if imp.Path.Value == `"github.com/forbearing/golib/model"` {
+		if imp.Path.Value == `"github.com/forbearing/gst/model"` {
 			if imp.Name != nil {
 				aliasName = imp.Name.Name
 			}
@@ -171,7 +171,7 @@ func isModelEmpty(file *ast.File, field *ast.Field) bool {
 		if imp.Path == nil {
 			continue
 		}
-		if imp.Path.Value == `"github.com/forbearing/golib/model"` {
+		if imp.Path.Value == `"github.com/forbearing/gst/model"` {
 			if imp.Name != nil {
 				aliasName = imp.Name.Name
 			}

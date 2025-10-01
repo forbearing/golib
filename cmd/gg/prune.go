@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/forbearing/golib/internal/codegen"
-	"github.com/forbearing/golib/internal/codegen/gen"
+	"github.com/forbearing/gst/internal/codegen"
+	"github.com/forbearing/gst/internal/codegen/gen"
 	"github.com/spf13/cobra"
 )
 

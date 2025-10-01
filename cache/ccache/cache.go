@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/forbearing/golib/cache/tracing"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/cache/tracing"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/types"
 	"github.com/karlseguin/ccache/v3"
 	cmap "github.com/orcaman/concurrent-map/v2"
 )

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/list/linkedlist"
+	"github.com/forbearing/gst/ds/list/linkedlist"
 )
 
 func createLinkedList(b *testing.B, size int, safe bool) *linkedlist.List[int] {

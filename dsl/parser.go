@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 // Parse analyzes a Go source file and extracts DSL design information from models.
@@ -727,9 +727,9 @@ func FindAllModelEmpty(file *ast.File) []string {
 //   - bool: true if the field is an anonymous model.Base embedding
 //
 // Supported import patterns:
-//   - import "github.com/forbearing/golib/model"
-//   - import pkgmodel "github.com/forbearing/golib/model"
-//   - import . "github.com/forbearing/golib/model"
+//   - import "github.com/forbearing/gst/model"
+//   - import pkgmodel "github.com/forbearing/gst/model"
+//   - import . "github.com/forbearing/gst/model"
 //
 // Example field patterns that return true:
 //   - model.Base (with standard import)
@@ -779,9 +779,9 @@ func IsModelBase(file *ast.File, field *ast.Field) bool {
 //   - bool: true if the field is an anonymous model.Empty embedding
 //
 // Supported import patterns:
-//   - import "github.com/forbearing/golib/model"
-//   - import pkgmodel "github.com/forbearing/golib/model"
-//   - import . "github.com/forbearing/golib/model"
+//   - import "github.com/forbearing/gst/model"
+//   - import pkgmodel "github.com/forbearing/gst/model"
+//   - import . "github.com/forbearing/gst/model"
 //
 // Example field patterns that return true:
 //   - model.Empty (with standard import)

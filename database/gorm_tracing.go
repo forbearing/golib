@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/forbearing/golib/provider/jaeger"
+	"github.com/forbearing/gst/provider/jaeger"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"

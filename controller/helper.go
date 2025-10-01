@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/forbearing/golib/database"
-	"github.com/forbearing/golib/provider/jaeger"
-	. "github.com/forbearing/golib/response"
-	"github.com/forbearing/golib/types"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/database"
+	"github.com/forbearing/gst/provider/jaeger"
+	. "github.com/forbearing/gst/response"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
 )

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/util"
 	"github.com/stretchr/testify/assert"
 )
 

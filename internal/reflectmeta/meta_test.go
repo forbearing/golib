@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/internal/reflectmeta"
+	"github.com/forbearing/gst/internal/reflectmeta"
 )
 
 type Base struct {

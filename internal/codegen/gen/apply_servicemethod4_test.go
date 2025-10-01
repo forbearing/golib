@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/forbearing/golib/dsl"
+	"github.com/forbearing/gst/dsl"
 )
 
 func TestApplyServiceMethod4PointerConversion(t *testing.T) {
@@ -23,7 +23,7 @@ func TestApplyServiceMethod4PointerConversion(t *testing.T) {
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
@@ -42,7 +42,7 @@ func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 func (u *Creator) Create(ctx *types.ServiceContext, req model.User) (rsp model.User, err error) {
@@ -61,7 +61,7 @@ func (u *Creator) Create(ctx *types.ServiceContext, req model.User) (rsp model.U
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
@@ -80,7 +80,7 @@ func (u *Creator) Create(ctx *types.ServiceContext, req *model.User) (rsp *model
 
 import (
 	"helloworld/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/types"
 )
 
 func (u *Creator) Create(ctx *types.ServiceContext, req model.User) (rsp model.User, err error) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/tree/avltree"
+	"github.com/forbearing/gst/ds/tree/avltree"
 )
 
 func createTree(b *testing.B, size int, safe bool) *avltree.Tree[float64, float64] {

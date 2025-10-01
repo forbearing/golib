@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types/consts"
 )
 
 func WithQuery(_keyValues ...any) Option {

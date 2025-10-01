@@ -7,7 +7,7 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/forbearing/golib/types/consts"
+	"github.com/forbearing/gst/types/consts"
 )
 
 func TestStmtLogInfo(t *testing.T) {

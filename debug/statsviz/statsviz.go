@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/arl/statsviz"
-	"github.com/forbearing/golib/config"
+	"github.com/forbearing/gst/config"
 	"go.uber.org/zap"
 )
 

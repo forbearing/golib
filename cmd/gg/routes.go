@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/forbearing/golib/ds/tree/trie"
+	"github.com/forbearing/gst/ds/tree/trie"
 	"github.com/spf13/cobra"
 )
 

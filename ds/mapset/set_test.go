@@ -3,7 +3,7 @@ package mapset_test
 import (
 	"testing"
 
-	"github.com/forbearing/golib/ds/mapset"
+	"github.com/forbearing/gst/ds/mapset"
 	"github.com/stretchr/testify/assert"
 )
 

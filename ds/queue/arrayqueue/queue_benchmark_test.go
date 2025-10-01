@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/forbearing/golib/ds/queue/arrayqueue"
+	"github.com/forbearing/gst/ds/queue/arrayqueue"
 )
 
 func createQueue(b *testing.B, size int, safe bool) *arrayqueue.Queue[int] {

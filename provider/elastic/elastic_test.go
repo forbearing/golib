@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/araddon/dateparse"
-	"github.com/forbearing/golib/bootstrap"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger/zap"
-	"github.com/forbearing/golib/provider/elastic"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/bootstrap"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger/zap"
+	"github.com/forbearing/gst/provider/elastic"
+	"github.com/forbearing/gst/util"
 	"github.com/stretchr/testify/assert"
 )
 

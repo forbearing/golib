@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/provider/jaeger"
-	"github.com/forbearing/golib/types/consts"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/types/consts"
+	"github.com/forbearing/gst/util"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -115,7 +115,7 @@ func Tracing() gin.HandlerFunc {
 		// Set X-Trace-ID header for frontend
 		c.Header("X-Trace-ID", traceId)
 
-		// Add golib trace IDs as span attributes if Jaeger is enabled
+		// Add gst trace IDs as span attributes if Jaeger is enabled
 		if jaeger.IsEnabled() && span != nil {
 			span.SetAttributes(
 				attribute.String(fmt.Sprintf("%s.trace_id", config.App.Jaeger.ServiceName), traceId),

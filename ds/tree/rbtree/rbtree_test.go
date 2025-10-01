@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/forbearing/golib/ds/tree/rbtree"
+	"github.com/forbearing/gst/ds/tree/rbtree"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ import (
 // 	"testing"
 // 	"time"
 //
-// 	"github.com/forbearing/golib/ds/tree/rbtree"
+// 	"github.com/forbearing/gst/ds/tree/rbtree"
 // 	"github.com/stretchr/testify/assert"
 // )
 //

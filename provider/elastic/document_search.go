@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 )
 
 // SearchRequest represents an Elasticsearch search query.

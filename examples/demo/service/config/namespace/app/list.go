@@ -3,8 +3,8 @@ package app
 import (
 	"demo/model/config/namespace"
 
-	"github.com/forbearing/golib/service"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
 )
 
 type Lister struct {

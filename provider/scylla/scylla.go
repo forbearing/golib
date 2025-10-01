@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/golib/config"
-	"github.com/forbearing/golib/logger"
-	"github.com/forbearing/golib/util"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/logger"
+	"github.com/forbearing/gst/util"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3"
 	"go.uber.org/zap"

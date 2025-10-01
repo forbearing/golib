@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/forbearing/golib/model"
-	"github.com/forbearing/golib/types"
+	"github.com/forbearing/gst/model"
+	"github.com/forbearing/gst/types"
 )
 
 // User is a user struct for testing

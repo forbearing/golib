@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/forbearing/golib/ds/list/linkedlist"
-	"github.com/forbearing/golib/ds/types"
+	"github.com/forbearing/gst/ds/list/linkedlist"
+	"github.com/forbearing/gst/ds/types"
 )
 
 // Queue represents a queue based on an linkedlist-backed list.
