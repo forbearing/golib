@@ -171,13 +171,14 @@ type DatabaseOption[M Model] interface {
 }
 ```
 
-### Modal,Service
+### Modal
 
 ```go
 type Model interface {
-	GetTableName() string
+	GetTableName() string // GetTableName returns the table name.
 	GetID() string
-	SetID(id ...string)
+	SetID(id ...string) // SetID method will automatically set the id if id is empty.
+	ClearID()           // ClearID always set the id to empty.
 	GetCreatedBy() string
 	GetUpdatedBy() string
 	GetCreatedAt() time.Time
@@ -186,24 +187,20 @@ type Model interface {
 	SetUpdatedBy(string)
 	SetCreatedAt(time.Time)
 	SetUpdatedAt(time.Time)
-	Expands() []string
+	Expands() []string // Expands returns the foreign keys should preload.
 	Excludes() map[string][]any
-	MarshalLogObject(zapcore.ObjectEncoder) error
+	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
 
-	Hooker
-}
-
-type Hooker interface {
-	CreateBefore() error
-	CreateAfter() error
-	DeleteBefore() error
-	DeleteAfter() error
-	UpdateBefore() error
-	UpdateAfter() error
-	ListBefore() error
-	ListAfter() error
-	GetBefore() error
-	GetAfter() error
+	CreateBefore(*ModelContext) error
+	CreateAfter(*ModelContext) error
+	DeleteBefore(*ModelContext) error
+	DeleteAfter(*ModelContext) error
+	UpdateBefore(*ModelContext) error
+	UpdateAfter(*ModelContext) error
+	ListBefore(*ModelContext) error
+	ListAfter(*ModelContext) error
+	GetBefore(*ModelContext) error
+	GetAfter(*ModelContext) error
 }
 ```
 
@@ -274,13 +271,21 @@ type RBAC interface {
 
 ```go
 type Cache[T any] interface {
-	Set(key string, values T, ttl time.Duration)
-	Get(key string) (T, bool)
-	Peek(key string) (T, bool)
-	Delete(key string)
+	Get(key string) (T, error)
+	Peek(key string) (T, error)
+	Set(key string, value T, ttl time.Duration) error
+	Delete(key string) error
 	Exists(key string) bool
 	Len() int
 	Clear()
+	WithContext(ctx context.Context) Cache[T]
+}
+
+type DistributedCache[T any] interface {
+	Cache[T]
+	SetWithSync(key string, value T, localTTL time.Duration, remoteTTL time.Duration) error
+	GetWithSync(key string, localTTL time.Duration) (T, error)
+	DeleteWithSync(key string) error
 }
 ```
 
