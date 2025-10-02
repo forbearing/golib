@@ -70,6 +70,8 @@ import (
 
 const ErrRequestBodyEmpty = "request body is empty"
 
+const defaultLimit = 1000
+
 var (
 	pluralizeCli = pluralize.NewClient()
 
@@ -1219,6 +1221,9 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// 2.List resources from database.
 		cache := make([]byte, 0)
 		cached := false
+		if size == 0 {
+			size = defaultLimit
+		}
 		if err = handler(types.NewDatabaseContext(c)).
 			WithScope(page, size).
 			WithOr(or).
