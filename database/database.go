@@ -42,7 +42,7 @@ var (
 var (
 	DB *gorm.DB
 
-	defaultLimit           = 1000
+	defaultLimit           = -1
 	defaultBatchSize       = 1000
 	defaultDeleteBatchSize = 10000
 	defaultsColumns        = []string{
