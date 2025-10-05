@@ -1,6 +1,20 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Refactor
+- **controller:** set the default query size to 1000 in ListFactory
+- **database:** remove the query limit, previous is 1000
+
+
+<a name="v0.9.1"></a>
+## [v0.9.1] - 2025-10-05
+### Chore
+- generate CHANGELOG.md
+- update README.md
+
+
+<a name="v0.9.0"></a>
+## [v0.9.0] - 2025-10-01
 ### Chore
 - **dcache:** remove redis.Range
 - **deps:** upgrade dependencies to latest version
@@ -16,10 +30,19 @@
 - replace package "error" to "github.com/cockroachdb/errors"
 
 ### Refactor
+- rename framework name from golib to gst
 - **database:** simplify table creation logic in InitDatabase
 - **database:** simplify table creation logic in InitDatabase
 - **dcache:** move Cache and DistributedCache interfaces to types package
 - **dcache:** integrate config/logger and improve error handling
+
+### Reverts
+- Merge pull request [#18](https://github.com/forbearing/gst/issues/18) from forbearing/dbmigrate
+
+### Pull Requests
+- Merge pull request [#22](https://github.com/forbearing/gst/issues/22) from forbearing/distributed-cache
+- Merge pull request [#21](https://github.com/forbearing/gst/issues/21) from forbearing/dev
+- Merge pull request [#18](https://github.com/forbearing/gst/issues/18) from forbearing/dbmigrate
 
 
 <a name="v0.8.0"></a>
@@ -302,11 +325,11 @@
 - Merge pull request [#5](https://github.com/forbearing/gst/issues/5) from forbearing/dev
 
 
-<a name="v0.7.0-beta.3"></a>
-## [v0.7.0-beta.3] - 2025-08-20
-
 <a name="v0.7.0"></a>
 ## [v0.7.0] - 2025-08-20
+
+<a name="v0.7.0-beta.3"></a>
+## [v0.7.0-beta.3] - 2025-08-20
 ### Chore
 - update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
@@ -1897,16 +1920,18 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.1...HEAD
+[v0.9.1]: https://github.com/forbearing/gst/compare/v0.9.0...v0.9.1
+[v0.9.0]: https://github.com/forbearing/gst/compare/v0.8.0...v0.9.0
 [v0.8.0]: https://github.com/forbearing/gst/compare/v0.8.0-beta.1...v0.8.0
 [v0.8.0-beta.1]: https://github.com/forbearing/gst/compare/v0.7.5...v0.8.0-beta.1
 [v0.7.5]: https://github.com/forbearing/gst/compare/v0.7.4...v0.7.5
 [v0.7.4]: https://github.com/forbearing/gst/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/gst/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/gst/compare/v0.7.1...v0.7.2
-[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.1
-[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.0-beta.3
-[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0
+[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.1
+[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.0
+[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0-beta.3
 [v0.7.0-beta.2]: https://github.com/forbearing/gst/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/gst/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/gst/compare/v0.6.1...v0.6.2
