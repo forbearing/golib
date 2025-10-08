@@ -20,7 +20,7 @@ import (
 	"github.com/forbearing/gst/model"
 	model_log "github.com/forbearing/gst/model/log"
 	"github.com/forbearing/gst/pkg/filetype"
-	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/provider/otel"
 	. "github.com/forbearing/gst/response"
 	"github.com/forbearing/gst/service"
 	"github.com/forbearing/gst/types"
@@ -184,7 +184,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -197,7 +197,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -209,7 +209,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if reqErr == io.EOF {
@@ -228,7 +228,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Create resource in database.
@@ -240,7 +240,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if err = handler(types.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -252,7 +252,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -365,7 +365,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			var serviceCtx *types.ServiceContext
@@ -375,7 +375,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -434,7 +434,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtxBefore, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -446,7 +446,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			m.SetID(ml[i].GetID())
 			if err := handler(types.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 				log.Error(err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 			}
 			copied[i] = m
 		}
@@ -455,7 +455,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err := handler(types.NewDatabaseContext(c)).Delete(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 3.Perform business logic processing after delete resources.
@@ -468,7 +468,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtxAfter, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -585,7 +585,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -598,7 +598,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -610,7 +610,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if reqErr := c.ShouldBindJSON(&req); reqErr != nil {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -635,7 +635,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		} else {
 			log.Error("id missing")
 			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -649,7 +649,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if len(data) != 1 {
@@ -670,7 +670,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Update resource in database.
@@ -678,7 +678,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err := handler(types.NewDatabaseContext(c)).Update(req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 3.Perform business logic processing after update resource.
@@ -689,7 +689,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -817,7 +817,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -830,7 +830,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -845,7 +845,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		if err := c.ShouldBindJSON(&req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if len(id) == 0 {
@@ -854,7 +854,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		if len(id) == 0 {
 			log.Error(CodeNotFoundRouteParam)
 			ResponseJSON(c, CodeNotFoundRouteParam)
-			jaeger.RecordError(span, errors.New(CodeNotFoundRouteParam.Msg()))
+			otel.RecordError(span, errors.New(CodeNotFoundRouteParam.Msg()))
 			return
 		}
 		data := make([]M, 0)
@@ -868,7 +868,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if len(data) != 1 {
@@ -894,14 +894,14 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Partial update resource in database.
 		if err := handler(types.NewDatabaseContext(c)).Update(cur); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 3.Perform business logic processing after partial update resource.
@@ -912,7 +912,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -1084,7 +1084,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			var serviceCtx *types.ServiceContext
@@ -1094,7 +1094,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -1214,7 +1214,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		sortBy, _ := c.GetQuery(consts.QUERY_SORTBY)
@@ -1240,7 +1240,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			List(&data, &cache); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if len(cache) > 0 {
@@ -1254,7 +1254,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		total := new(int64)
@@ -1275,7 +1275,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				Count(total); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -1429,7 +1429,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			var serviceCtx *types.ServiceContext
@@ -1439,7 +1439,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -1453,7 +1453,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if len(param) == 0 {
 			log.Error(CodeNotFoundRouteParam)
 			ResponseJSON(c, CodeNotFoundRouteParam)
-			jaeger.RecordError(span, errors.New(CodeNotFoundRouteParam.Msg()))
+			otel.RecordError(span, errors.New(CodeNotFoundRouteParam.Msg()))
 			return
 		}
 		index, _ := c.GetQuery(consts.QUERY_INDEX)
@@ -1534,7 +1534,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Get resource from database.
@@ -1548,7 +1548,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			Get(m, param, &cache); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if len(cache) > 0 {
@@ -1562,7 +1562,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// It will returns a empty types.Model if found nothing from database,
@@ -1571,7 +1571,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 			if len(m.GetID()) == 0 || (m.GetCreatedAt().Equal(time.Time{})) {
 				log.Error(CodeNotFound)
 				ResponseJSON(c, CodeNotFound)
-				jaeger.RecordError(span, errors.New(CodeNotFound.Msg()))
+				otel.RecordError(span, errors.New(CodeNotFound.Msg()))
 				return
 			}
 		}
@@ -1792,7 +1792,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -1805,7 +1805,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -1818,7 +1818,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if reqErr == io.EOF {
@@ -1842,7 +1842,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -1851,7 +1851,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if err = handler(types.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -1863,7 +1863,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -1986,7 +1986,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -1999,7 +1999,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -2010,7 +2010,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if reqErr == io.EOF {
@@ -2032,7 +2032,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if req.Options == nil {
@@ -2043,7 +2043,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if err = handler(types.NewDatabaseContext(c)).WithPurge(req.Options.Purge).Delete(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -2055,7 +2055,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -2157,7 +2157,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -2170,7 +2170,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -2181,7 +2181,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(reqErr))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if reqErr == io.EOF {
@@ -2196,7 +2196,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Batch update resource in database.
@@ -2204,7 +2204,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if err = handler(types.NewDatabaseContext(c)).Update(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -2216,7 +2216,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -2322,7 +2322,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			if reqErr == io.EOF {
@@ -2335,7 +2335,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			}); err != nil {
 				log.Error(err)
 				handleServiceError(c, serviceCtx, err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 			ResponseJSON(c, CodeSuccess, rsp)
@@ -2348,7 +2348,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(reqErr))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		if reqErr == io.EOF {
@@ -2360,7 +2360,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			v.SetID(m.GetID())
 			if err = handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
 				log.Error(err)
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				continue
 			}
 			if len(results) != 1 {
@@ -2384,7 +2384,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxBefore, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 2.Batch partial update resource in database.
@@ -2392,7 +2392,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if err = handler(types.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
-				jaeger.RecordError(span, err)
+				otel.RecordError(span, err)
 				return
 			}
 		}
@@ -2404,7 +2404,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}); err != nil {
 			log.Error(err)
 			handleServiceError(c, serviceCtxAfter, err)
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -2586,7 +2586,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		sortBy, _ := c.GetQuery(consts.QUERY_SORTBY)
@@ -2607,7 +2607,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// 3.Perform business logic processing after list resources.
@@ -2616,7 +2616,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		log.Info("export data length: ", len(data))
@@ -2627,7 +2627,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// // 5.record operation log to database.
@@ -2675,21 +2675,21 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// check file size.
 		if file.Size > int64(MAX_IMPORT_SIZE) {
 			log.Error(CodeTooLargeFile)
 			ResponseJSON(c, CodeTooLargeFile)
-			jaeger.RecordError(span, errors.New(CodeTooLargeFile.Msg()))
+			otel.RecordError(span, errors.New(CodeTooLargeFile.Msg()))
 			return
 		}
 		fd, err := file.Open()
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		defer fd.Close()
@@ -2698,7 +2698,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if _, err = io.Copy(buf, fd); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// filetype must be png or jpg.
@@ -2714,7 +2714,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 
@@ -2726,7 +2726,7 @@ func ImportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if err := handler(types.NewDatabaseContext(c)).Update(ml...); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
-			jaeger.RecordError(span, err)
+			otel.RecordError(span, err)
 			return
 		}
 		// // record operation log to database.

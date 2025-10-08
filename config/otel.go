@@ -7,19 +7,19 @@ import (
 )
 
 const (
-	JAEGER_ENABLE                  = "JAEGER_ENABLE"
-	JAEGER_SERVICE_NAME            = "JAEGER_SERVICE_NAME"
-	JAEGER_EXPORTER_TYPE           = "JAEGER_EXPORTER_TYPE"
-	JAEGER_OTLP_ENDPOINT           = "JAEGER_OTLP_ENDPOINT"
-	JAEGER_OTLP_HEADERS            = "JAEGER_OTLP_HEADERS"
-	JAEGER_OTLP_INSECURE           = "JAEGER_OTLP_INSECURE"
-	JAEGER_SAMPLER_TYPE            = "JAEGER_SAMPLER_TYPE"
-	JAEGER_SAMPLER_PARAM           = "JAEGER_SAMPLER_PARAM"
-	JAEGER_LOG_SPANS               = "JAEGER_LOG_SPANS"
-	JAEGER_MAX_TAG_VALUE_LEN       = "JAEGER_MAX_TAG_VALUE_LEN"
-	JAEGER_BUFFER_FLUSH_INTERVAL   = "JAEGER_BUFFER_FLUSH_INTERVAL"
-	JAEGER_REPORTER_QUEUE_SIZE     = "JAEGER_REPORTER_QUEUE_SIZE"
-	JAEGER_REPORTER_FLUSH_INTERVAL = "JAEGER_REPORTER_FLUSH_INTERVAL"
+	OTEL_ENABLE                  = "OTEL_ENABLE"
+	OTEL_SERVICE_NAME            = "OTEL_SERVICE_NAME"
+	OTEL_EXPORTER_TYPE           = "OTEL_EXPORTER_TYPE"
+	OTEL_OTLP_ENDPOINT           = "OTEL_OTLP_ENDPOINT"
+	OTEL_OTLP_HEADERS            = "OTEL_OTLP_HEADERS"
+	OTEL_OTLP_INSECURE           = "OTEL_OTLP_INSECURE"
+	OTEL_SAMPLER_TYPE            = "OTEL_SAMPLER_TYPE"
+	OTEL_SAMPLER_PARAM           = "OTEL_SAMPLER_PARAM"
+	OTEL_LOG_SPANS               = "OTEL_LOG_SPANS"
+	OTEL_MAX_TAG_VALUE_LEN       = "OTEL_MAX_TAG_VALUE_LEN"
+	OTEL_BUFFER_FLUSH_INTERVAL   = "OTEL_BUFFER_FLUSH_INTERVAL"
+	OTEL_REPORTER_QUEUE_SIZE     = "OTEL_REPORTER_QUEUE_SIZE"
+	OTEL_REPORTER_FLUSH_INTERVAL = "OTEL_REPORTER_FLUSH_INTERVAL"
 )
 
 type ExportType string
@@ -37,8 +37,10 @@ const (
 	SamplerTypeRateLimiting  SamplerType = "ratelimiting"
 )
 
-type Jaeger struct {
-	// Enable controls whether Jaeger tracing is enabled
+// OTEL represents OpenTelemetry tracing configuration using OTLP exporters.
+// This configuration supports sending traces to Jaeger, Uptrace, or other OTLP-compatible backends.
+type OTEL struct {
+	// Enable controls whether OpenTelemetry tracing is enabled
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 
 	// ServiceName is the name of the service for tracing
@@ -49,22 +51,22 @@ type Jaeger struct {
 	// Jaeger officially accepts and recommends using OTLP instead
 	ExporterType ExportType `json:"exporter_type" mapstructure:"exporter_type" ini:"exporter_type" yaml:"exporter_type"`
 
-	// OTLPEndpoint is the OTLP endpoint for HTTP/gRPC
+	// OTLPEndpoint is the OTLP endpoint URL (e.g., http://localhost:4318/v1/traces for HTTP, localhost:4317 for gRPC)
 	OTLPEndpoint string `json:"otlp_endpoint" mapstructure:"otlp_endpoint" ini:"otlp_endpoint" yaml:"otlp_endpoint"`
 
-	// OTLPHeaders are the headers to send with OTLP requests
+	// OTLPHeaders are additional headers to send with OTLP requests
 	OTLPHeaders map[string]string `json:"otlp_headers" mapstructure:"otlp_headers" ini:"otlp_headers" yaml:"otlp_headers"`
 
 	// OTLPInsecure controls whether to use insecure connection for OTLP
 	OTLPInsecure bool `json:"otlp_insecure" mapstructure:"otlp_insecure" ini:"otlp_insecure" yaml:"otlp_insecure"`
 
-	// SamplerType defines the sampling strategy (const, probabilistic, ratelimiting, remote)
+	// SamplerType defines the sampling strategy
 	SamplerType SamplerType `json:"sampler_type" mapstructure:"sampler_type" ini:"sampler_type" yaml:"sampler_type"`
 
-	// SamplerParam is the parameter for the sampling strategy
+	// SamplerParam is the parameter for the sampler (e.g., sampling rate for probabilistic)
 	SamplerParam float64 `json:"sampler_param" mapstructure:"sampler_param" ini:"sampler_param" yaml:"sampler_param"`
 
-	// LogSpans controls whether to log spans to the logger
+	// LogSpans controls whether to log spans
 	LogSpans bool `json:"log_spans" mapstructure:"log_spans" ini:"log_spans" yaml:"log_spans"`
 
 	// MaxTagValueLen is the maximum length of tag values
@@ -80,18 +82,20 @@ type Jaeger struct {
 	ReporterFlushInterval time.Duration `json:"reporter_flush_interval" mapstructure:"reporter_flush_interval" ini:"reporter_flush_interval" yaml:"reporter_flush_interval"`
 }
 
-func (j *Jaeger) setDefault() {
-	cv.SetDefault("jaeger.enable", false)
-	cv.SetDefault("jaeger.service_name", consts.FrameworkName)
-	cv.SetDefault("jaeger.exporter_type", ExportTypeOtlpHttp)
-	cv.SetDefault("jaeger.otlp_endpoint", "localhost:4318") // Default OTLP HTTP endpoint
-	cv.SetDefault("jaeger.otlp_headers", map[string]string{})
-	cv.SetDefault("jaeger.otlp_insecure", true) // Default to insecure for local development
-	cv.SetDefault("jaeger.sampler_type", SamplerTypeConst)
-	cv.SetDefault("jaeger.sampler_param", 1.0)
-	cv.SetDefault("jaeger.log_spans", false)
-	cv.SetDefault("jaeger.max_tag_value_len", 256)
-	cv.SetDefault("jaeger.buffer_flush_interval", time.Second)
-	cv.SetDefault("jaeger.reporter_queue_size", 100)
-	cv.SetDefault("jaeger.reporter_flush_interval", time.Second)
+func (o *OTEL) setDefault() {
+	if o.ServiceName == "" {
+		o.ServiceName = consts.FrameworkName
+	}
+	if o.ExporterType == "" {
+		o.ExporterType = ExportTypeOtlpHttp
+	}
+	if o.OTLPEndpoint == "" {
+		o.OTLPEndpoint = "http://localhost:4318/v1/traces"
+	}
+	if o.SamplerType == "" {
+		o.SamplerType = SamplerTypeConst
+	}
+	if o.SamplerParam == 0 {
+		o.SamplerParam = 1
+	}
 }

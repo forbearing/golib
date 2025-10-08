@@ -1,4 +1,4 @@
-// Package jaeger provides OpenTelemetry tracing integration using OTLP exporters.
+// Package otel provides OpenTelemetry tracing integration using OTLP exporters.
 //
 // Note: This package was originally designed for Jaeger integration, but since
 // OpenTelemetry dropped support for the Jaeger exporter in July 2023, it now
@@ -12,7 +12,7 @@
 // The package maintains backward compatibility by keeping the same configuration
 // structure and API, but internally uses OTLP exporters to send traces to
 // Jaeger or other OTLP-compatible backends like Uptrace.
-package jaeger
+package otel
 
 import (
 	"context"
@@ -44,16 +44,16 @@ var (
 	mu             sync.Mutex
 	initialized    bool
 
-	ErrJaegerIsDisabled = errors.New("jaeger is disabled")
+	ErrOTELIsDisabled = errors.New("otel is disabled")
 )
 
 // Init initializes the OpenTelemetry tracer with OTLP exporters.
 // This function replaces the deprecated Jaeger exporter with OTLP exporters
 // that are compatible with Jaeger and other tracing backends.
 func Init() error {
-	cfg := config.App.Jaeger
+	cfg := config.App.OTEL
 	if !cfg.Enable {
-		logger.Jaeger.Info("jaeger tracing is disabled")
+		logger.OTEL.Info("otel tracing is disabled")
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func Init() error {
 	tracerProvider = tp
 
 	initialized = true
-	logger.Jaeger.Info("jaeger tracing initialized",
+	logger.OTEL.Info("otel tracing initialized",
 		zap.String("service_name", cfg.ServiceName),
 		zap.String("exporter_type", string(cfg.ExporterType)),
 		zap.String("sampler_type", string(cfg.SamplerType)),
@@ -136,7 +136,7 @@ func Close() error {
 	}
 
 	initialized = false
-	logger.Jaeger.Info("jaeger tracer closed")
+	logger.OTEL.Info("otel tracer closed")
 	return nil
 }
 
@@ -150,7 +150,7 @@ func GetTracer() trace.Tracer {
 
 // IsEnabled returns whether Jaeger tracing is enabled
 func IsEnabled() bool {
-	return config.App.Jaeger.Enable && initialized
+	return config.App.OTEL.Enable && initialized
 }
 
 // StartSpan starts a new span with the given name and options
@@ -167,7 +167,7 @@ func SpanFromContext(ctx context.Context) trace.Span {
 }
 
 // createExporter creates an exporter based on configuration
-func createExporter(cfg config.Jaeger) (sdktrace.SpanExporter, error) {
+func createExporter(cfg config.OTEL) (sdktrace.SpanExporter, error) {
 	switch cfg.ExporterType {
 	case config.ExportTypeOtlpHttp:
 		// Create OTLP HTTP exporter
@@ -233,14 +233,14 @@ func createExporter(cfg config.Jaeger) (sdktrace.SpanExporter, error) {
 	// 	// Use Jaeger exporter (default behavior)
 	// 	if cfg.CollectorURL != "" {
 	// 		// Use HTTP collector
-	// 		return jaeger.New(jaeger.WithCollectorEndpoint(
-	// 			jaeger.WithEndpoint(cfg.CollectorURL),
+	// 		return otel.New(otel.WithCollectorEndpoint(
+	// 			otel.WithEndpoint(cfg.CollectorURL),
 	// 		))
 	// 	}
 	//
 	// 	// Use UDP agent
-	// 	return jaeger.New(jaeger.WithAgentEndpoint(
-	// 		jaeger.WithAgentHost(cfg.AgentEndpoint),
+	// 	return otel.New(otel.WithAgentEndpoint(
+	// 		otel.WithAgentHost(cfg.AgentEndpoint),
 	// 	))
 
 	default:
@@ -249,7 +249,7 @@ func createExporter(cfg config.Jaeger) (sdktrace.SpanExporter, error) {
 }
 
 // createSampler creates a sampler based on configuration
-func createSampler(cfg config.Jaeger) sdktrace.Sampler {
+func createSampler(cfg config.OTEL) sdktrace.Sampler {
 	switch cfg.SamplerType {
 	case config.SamplerTypeConst:
 		if cfg.SamplerParam >= 1.0 {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/forbearing/gst/config"
-	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/provider/otel"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/forbearing/gst/util"
 	"github.com/gin-gonic/gin"
@@ -24,8 +24,8 @@ func Tracing() gin.HandlerFunc {
 		var span trace.Span
 		var ctx context.Context
 
-		// If Jaeger is enabled, create OpenTelemetry span and use its trace ID
-		if jaeger.IsEnabled() {
+		// If OTEL is enabled, create OpenTelemetry span and use its trace ID
+		if otel.IsEnabled() {
 			// Create span name from HTTP method and route
 			spanName := c.Request.Method + " " + c.FullPath()
 			if c.FullPath() == "" {
@@ -33,9 +33,9 @@ func Tracing() gin.HandlerFunc {
 			}
 
 			// Start new span
-			ctx, span = jaeger.StartSpan(c.Request.Context(), spanName)
+			ctx, span = otel.StartSpan(c.Request.Context(), spanName)
 
-			// Extract Jaeger trace ID and span ID
+			// Extract OTEL trace ID and span ID
 			spanContext := span.SpanContext()
 			if spanContext.HasTraceID() {
 				traceId = spanContext.TraceID().String()
@@ -96,7 +96,7 @@ func Tracing() gin.HandlerFunc {
 				span.End()
 			}()
 		} else {
-			// Fallback to custom ID generation if Jaeger is not enabled
+			// Fallback to custom ID generation if OTEL is not enabled
 			customTraceId := c.Request.Header.Get(consts.TRACE_ID)
 			customSpanId := util.SpanID()
 			if len(customTraceId) == 0 {
@@ -115,12 +115,12 @@ func Tracing() gin.HandlerFunc {
 		// Set X-Trace-ID header for frontend
 		c.Header("X-Trace-ID", traceId)
 
-		// Add gst trace IDs as span attributes if Jaeger is enabled
-		if jaeger.IsEnabled() && span != nil {
+		// Add gst trace IDs as span attributes if OTEL is enabled
+		if otel.IsEnabled() && span != nil {
 			span.SetAttributes(
-				attribute.String(fmt.Sprintf("%s.trace_id", config.App.Jaeger.ServiceName), traceId),
-				attribute.String(fmt.Sprintf("%s.span_id", config.App.Jaeger.ServiceName), spanId),
-				attribute.String(fmt.Sprintf("%s.request_id", config.App.Jaeger.ServiceName), traceId),
+				attribute.String(fmt.Sprintf("%s.trace_id", config.App.OTEL.ServiceName), traceId),
+				attribute.String(fmt.Sprintf("%s.span_id", config.App.OTEL.ServiceName), spanId),
+				attribute.String(fmt.Sprintf("%s.request_id", config.App.OTEL.ServiceName), traceId),
 			)
 
 			// Record start time for duration calculation
@@ -154,7 +154,7 @@ func GetSpanFromContext(c *gin.Context) trace.Span {
 func AddSpanTags(c *gin.Context, tags map[string]any) {
 	span := GetSpanFromContext(c)
 	if span != nil && span.IsRecording() {
-		jaeger.AddSpanTags(span, tags)
+		otel.AddSpanTags(span, tags)
 	}
 }
 
@@ -162,7 +162,7 @@ func AddSpanTags(c *gin.Context, tags map[string]any) {
 func AddSpanEvent(c *gin.Context, name string, attrs ...attribute.KeyValue) {
 	span := GetSpanFromContext(c)
 	if span != nil && span.IsRecording() {
-		jaeger.AddSpanEvent(span, name, attrs...)
+		otel.AddSpanEvent(span, name, attrs...)
 	}
 }
 
@@ -170,6 +170,6 @@ func AddSpanEvent(c *gin.Context, name string, attrs ...attribute.KeyValue) {
 func RecordError(c *gin.Context, err error) {
 	span := GetSpanFromContext(c)
 	if span != nil && span.IsRecording() {
-		jaeger.RecordError(span, err)
+		otel.RecordError(span, err)
 	}
 }
