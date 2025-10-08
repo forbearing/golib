@@ -1,9 +1,17 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- add jaeger and uptrace docker-compose.yml
+- update examples/demo
+- **jaeger:** update jaeger logging
+
+### Fix
+- **jaeger:** replace deprecated race.NewNoopTracerProvider with noop.NewTracerProvider
+
 ### Refactor
-- **controller:** set the default query size to 1000 in ListFactory
-- **database:** remove the query limit, previous is 1000
+- migrate from Jaeger to OpenTelemetry (OTEL) tracing
+- **jaeger:** support stand otlp-http and otlp-grpc and unsupport jaeger endpoint
 
 
 <a name="v0.9.1"></a>
@@ -11,6 +19,13 @@
 ### Chore
 - generate CHANGELOG.md
 - update README.md
+
+### Refactor
+- **controller:** set the default query size to 1000 in ListFactory
+- **database:** remove the query limit, previous is 1000
+
+### Pull Requests
+- Merge pull request [#24](https://github.com/forbearing/gst/issues/24) from forbearing/dev
 
 
 <a name="v0.9.0"></a>
