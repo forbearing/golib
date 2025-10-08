@@ -75,6 +75,7 @@ type Config struct {
 	RocketMQ      `json:"rocketmq" mapstructure:"rocketmq" ini:"rocketmq" yaml:"rocketmq"`
 	Feishu        `json:"feishu" mapstructure:"feishu" ini:"feishu" yaml:"feishu"`
 	Debug         `json:"debug" mapstructure:"debug" ini:"debug" yaml:"debug"`
+	Audit         `json:"audit" mapstructure:"audit" ini:"audit" yaml:"audit"`
 }
 
 // setDefault will set config default value
@@ -110,6 +111,7 @@ func (c *Config) setDefault() {
 	c.RocketMQ.setDefault()
 	c.Feishu.setDefault()
 	c.Debug.setDefault()
+	c.Audit.setDefault()
 }
 
 // Init initializes the application configuration
