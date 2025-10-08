@@ -9,8 +9,10 @@ import (
 const (
 	JAEGER_ENABLE                  = "JAEGER_ENABLE"
 	JAEGER_SERVICE_NAME            = "JAEGER_SERVICE_NAME"
-	JAEGER_AGENT_ENDPOINT          = "JAEGER_AGENT_ENDPOINT"
-	JAEGER_COLLECTOR_URL           = "JAEGER_COLLECTOR_URL"
+	JAEGER_EXPORTER_TYPE           = "JAEGER_EXPORTER_TYPE"
+	JAEGER_OTLP_ENDPOINT           = "JAEGER_OTLP_ENDPOINT"
+	JAEGER_OTLP_HEADERS            = "JAEGER_OTLP_HEADERS"
+	JAEGER_OTLP_INSECURE           = "JAEGER_OTLP_INSECURE"
 	JAEGER_SAMPLER_TYPE            = "JAEGER_SAMPLER_TYPE"
 	JAEGER_SAMPLER_PARAM           = "JAEGER_SAMPLER_PARAM"
 	JAEGER_LOG_SPANS               = "JAEGER_LOG_SPANS"
@@ -20,6 +22,21 @@ const (
 	JAEGER_REPORTER_FLUSH_INTERVAL = "JAEGER_REPORTER_FLUSH_INTERVAL"
 )
 
+type ExportType string
+
+const (
+	ExportTypeOtlpHttp ExportType = "otlp-http"
+	ExportTypeOtlpGrpc ExportType = "otlp-grpc"
+)
+
+type SamplerType string
+
+const (
+	SamplerTypeConst         SamplerType = "const"
+	SamplerTypeProbabilistic SamplerType = "probabilistic"
+	SamplerTypeRateLimiting  SamplerType = "ratelimiting"
+)
+
 type Jaeger struct {
 	// Enable controls whether Jaeger tracing is enabled
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
@@ -27,14 +44,22 @@ type Jaeger struct {
 	// ServiceName is the name of the service for tracing
 	ServiceName string `json:"service_name" mapstructure:"service_name" ini:"service_name" yaml:"service_name"`
 
-	// AgentEndpoint is the Jaeger agent endpoint (UDP)
-	AgentEndpoint string `json:"agent_endpoint" mapstructure:"agent_endpoint" ini:"agent_endpoint" yaml:"agent_endpoint"`
+	// ExporterType defines the exporter type (otlp-http, otlp-grpc)
+	// Note: "jaeger" exporter is deprecated since OpenTelemetry dropped support in July 2023
+	// Jaeger officially accepts and recommends using OTLP instead
+	ExporterType ExportType `json:"exporter_type" mapstructure:"exporter_type" ini:"exporter_type" yaml:"exporter_type"`
 
-	// CollectorURL is the Jaeger collector URL (HTTP)
-	CollectorURL string `json:"collector_url" mapstructure:"collector_url" ini:"collector_url" yaml:"collector_url"`
+	// OTLPEndpoint is the OTLP endpoint for HTTP/gRPC
+	OTLPEndpoint string `json:"otlp_endpoint" mapstructure:"otlp_endpoint" ini:"otlp_endpoint" yaml:"otlp_endpoint"`
+
+	// OTLPHeaders are the headers to send with OTLP requests
+	OTLPHeaders map[string]string `json:"otlp_headers" mapstructure:"otlp_headers" ini:"otlp_headers" yaml:"otlp_headers"`
+
+	// OTLPInsecure controls whether to use insecure connection for OTLP
+	OTLPInsecure bool `json:"otlp_insecure" mapstructure:"otlp_insecure" ini:"otlp_insecure" yaml:"otlp_insecure"`
 
 	// SamplerType defines the sampling strategy (const, probabilistic, ratelimiting, remote)
-	SamplerType string `json:"sampler_type" mapstructure:"sampler_type" ini:"sampler_type" yaml:"sampler_type"`
+	SamplerType SamplerType `json:"sampler_type" mapstructure:"sampler_type" ini:"sampler_type" yaml:"sampler_type"`
 
 	// SamplerParam is the parameter for the sampling strategy
 	SamplerParam float64 `json:"sampler_param" mapstructure:"sampler_param" ini:"sampler_param" yaml:"sampler_param"`
@@ -55,12 +80,14 @@ type Jaeger struct {
 	ReporterFlushInterval time.Duration `json:"reporter_flush_interval" mapstructure:"reporter_flush_interval" ini:"reporter_flush_interval" yaml:"reporter_flush_interval"`
 }
 
-func (*Jaeger) setDefault() {
+func (j *Jaeger) setDefault() {
 	cv.SetDefault("jaeger.enable", false)
 	cv.SetDefault("jaeger.service_name", consts.FrameworkName)
-	cv.SetDefault("jaeger.agent_endpoint", "localhost:6831")
-	cv.SetDefault("jaeger.collector_url", "http://localhost:14268/api/traces")
-	cv.SetDefault("jaeger.sampler_type", "const")
+	cv.SetDefault("jaeger.exporter_type", ExportTypeOtlpHttp)
+	cv.SetDefault("jaeger.otlp_endpoint", "localhost:4318") // Default OTLP HTTP endpoint
+	cv.SetDefault("jaeger.otlp_headers", map[string]string{})
+	cv.SetDefault("jaeger.otlp_insecure", true) // Default to insecure for local development
+	cv.SetDefault("jaeger.sampler_type", SamplerTypeConst)
 	cv.SetDefault("jaeger.sampler_param", 1.0)
 	cv.SetDefault("jaeger.log_spans", false)
 	cv.SetDefault("jaeger.max_tag_value_len", 256)

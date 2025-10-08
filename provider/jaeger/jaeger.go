@@ -1,7 +1,22 @@
+// Package jaeger provides OpenTelemetry tracing integration using OTLP exporters.
+//
+// Note: This package was originally designed for Jaeger integration, but since
+// OpenTelemetry dropped support for the Jaeger exporter in July 2023, it now
+// uses OTLP (OpenTelemetry Protocol) exporters instead. Jaeger officially
+// accepts and recommends using OTLP for sending traces.
+//
+// Supported exporter types:
+//   - otlp-http: OTLP over HTTP (recommended for most use cases)
+//   - otlp-grpc: OTLP over gRPC (for high-performance scenarios)
+//
+// The package maintains backward compatibility by keeping the same configuration
+// structure and API, but internally uses OTLP exporters to send traces to
+// Jaeger or other OTLP-compatible backends like Uptrace.
 package jaeger
 
 import (
 	"context"
+	"maps"
 	"sync"
 	"time"
 
@@ -11,11 +26,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+
+	// "go.opentelemetry.io/otel/exporters/jaeger" // Deprecated: Jaeger exporter is no longer supported
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -29,7 +47,9 @@ var (
 	ErrJaegerIsDisabled = errors.New("jaeger is disabled")
 )
 
-// Init initializes the Jaeger tracer
+// Init initializes the OpenTelemetry tracer with OTLP exporters.
+// This function replaces the deprecated Jaeger exporter with OTLP exporters
+// that are compatible with Jaeger and other tracing backends.
 func Init() error {
 	cfg := config.App.Jaeger
 	if !cfg.Enable {
@@ -43,10 +63,10 @@ func Init() error {
 		return nil
 	}
 
-	// Create Jaeger exporter
-	exporter, err := createJaegerExporter(cfg)
+	// Create exporter
+	exporter, err := createExporter(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to create jaeger exporter")
+		return errors.Wrap(err, "failed to create exporter")
 	}
 
 	// Create resource
@@ -92,8 +112,6 @@ func Init() error {
 	initialized = true
 	logger.Jaeger.Info("jaeger tracing initialized",
 		zap.String("service_name", cfg.ServiceName),
-		zap.String("agent_endpoint", cfg.AgentEndpoint),
-		zap.String("collector_url", cfg.CollectorURL),
 		zap.String("sampler_type", cfg.SamplerType),
 		zap.Float64("sampler_param", cfg.SamplerParam),
 	)
@@ -148,32 +166,99 @@ func SpanFromContext(ctx context.Context) trace.Span {
 	return trace.SpanFromContext(ctx)
 }
 
-// createJaegerExporter creates a Jaeger exporter based on configuration
-func createJaegerExporter(cfg config.Jaeger) (sdktrace.SpanExporter, error) {
-	if cfg.CollectorURL != "" {
-		// Use HTTP collector
-		return jaeger.New(jaeger.WithCollectorEndpoint(
-			jaeger.WithEndpoint(cfg.CollectorURL),
-		))
-	}
+// createExporter creates an exporter based on configuration
+func createExporter(cfg config.Jaeger) (sdktrace.SpanExporter, error) {
+	switch cfg.ExporterType {
+	case config.ExportTypeOtlpHttp:
+		// Create OTLP HTTP exporter
+		opts := []otlptracehttp.Option{
+			otlptracehttp.WithEndpoint(cfg.OTLPEndpoint),
+		}
 
-	// Use UDP agent
-	return jaeger.New(jaeger.WithAgentEndpoint(
-		jaeger.WithAgentHost(cfg.AgentEndpoint),
-	))
+		if cfg.OTLPInsecure {
+			opts = append(opts, otlptracehttp.WithInsecure())
+		}
+
+		// Prepare headers with Uptrace DSN support
+		headers := make(map[string]string)
+
+		// Copy existing headers
+		maps.Copy(headers, cfg.OTLPHeaders)
+
+		// Add Uptrace DSN header if present in headers
+		// This allows users to set uptrace-dsn in the OTLPHeaders configuration
+		if len(headers) > 0 {
+			opts = append(opts, otlptracehttp.WithHeaders(headers))
+		}
+
+		// Enable compression for better performance (recommended by Uptrace)
+		opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.GzipCompression))
+
+		return otlptracehttp.New(context.Background(), opts...)
+
+	case config.ExportTypeOtlpGrpc:
+		// Create OTLP gRPC exporter
+		opts := []otlptracegrpc.Option{
+			otlptracegrpc.WithEndpoint(cfg.OTLPEndpoint),
+		}
+
+		if cfg.OTLPInsecure {
+			opts = append(opts, otlptracegrpc.WithInsecure())
+		}
+
+		// Prepare headers with Uptrace DSN support
+		headers := make(map[string]string)
+
+		// Copy existing headers
+		maps.Copy(headers, cfg.OTLPHeaders)
+
+		// Add Uptrace DSN header if present in headers
+		// This allows users to set uptrace-dsn in the OTLPHeaders configuration
+		if len(headers) > 0 {
+			opts = append(opts, otlptracegrpc.WithHeaders(headers))
+		}
+
+		// Enable compression for better performance (recommended by Uptrace)
+		opts = append(opts, otlptracegrpc.WithCompressor("gzip"))
+
+		return otlptracegrpc.New(context.Background(), opts...)
+
+	// NOTE: Jaeger exporter is deprecated since OpenTelemetry dropped support in July 2023
+	// Jaeger officially accepts and recommends using OTLP instead
+	// Use otlp-http or otlp-grpc exporter types instead
+	//
+	// case "jaeger":
+	// 	fallthrough
+	// default:
+	// 	// Use Jaeger exporter (default behavior)
+	// 	if cfg.CollectorURL != "" {
+	// 		// Use HTTP collector
+	// 		return jaeger.New(jaeger.WithCollectorEndpoint(
+	// 			jaeger.WithEndpoint(cfg.CollectorURL),
+	// 		))
+	// 	}
+	//
+	// 	// Use UDP agent
+	// 	return jaeger.New(jaeger.WithAgentEndpoint(
+	// 		jaeger.WithAgentHost(cfg.AgentEndpoint),
+	// 	))
+
+	default:
+		return nil, errors.Errorf("unsupported exporter type: %s. Use 'otlp-http' or 'otlp-grpc' instead", cfg.ExporterType)
+	}
 }
 
 // createSampler creates a sampler based on configuration
 func createSampler(cfg config.Jaeger) sdktrace.Sampler {
 	switch cfg.SamplerType {
-	case "const":
+	case config.SamplerTypeConst:
 		if cfg.SamplerParam >= 1.0 {
 			return sdktrace.AlwaysSample()
 		}
 		return sdktrace.NeverSample()
-	case "probabilistic":
+	case config.SamplerTypeProbabilistic:
 		return sdktrace.TraceIDRatioBased(cfg.SamplerParam)
-	case "ratelimiting":
+	case config.SamplerTypeRateLimiting:
 		// Note: OpenTelemetry doesn't have built-in rate limiting sampler
 		// This would need to be implemented separately
 		return sdktrace.TraceIDRatioBased(cfg.SamplerParam)
@@ -183,7 +268,7 @@ func createSampler(cfg config.Jaeger) sdktrace.Sampler {
 }
 
 // AddSpanTags adds tags to the current span
-func AddSpanTags(span trace.Span, tags map[string]interface{}) {
+func AddSpanTags(span trace.Span, tags map[string]any) {
 	if span == nil || !span.IsRecording() {
 		return
 	}
