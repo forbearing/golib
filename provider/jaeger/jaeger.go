@@ -112,8 +112,8 @@ func Init() error {
 	initialized = true
 	logger.Jaeger.Info("jaeger tracing initialized",
 		zap.String("service_name", cfg.ServiceName),
-		zap.String("sampler_type", cfg.SamplerType),
-		zap.Float64("sampler_param", cfg.SamplerParam),
+		zap.String("exporter_type", string(cfg.ExporterType)),
+		zap.String("sampler_type", string(cfg.SamplerType)),
 	)
 
 	return nil
