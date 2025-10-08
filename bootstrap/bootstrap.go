@@ -31,7 +31,6 @@ import (
 	"github.com/forbearing/gst/provider/etcd"
 	"github.com/forbearing/gst/provider/feishu"
 	"github.com/forbearing/gst/provider/influxdb"
-	"github.com/forbearing/gst/provider/jaeger"
 	"github.com/forbearing/gst/provider/kafka"
 	"github.com/forbearing/gst/provider/ldap"
 	"github.com/forbearing/gst/provider/memcached"
@@ -39,6 +38,7 @@ import (
 	"github.com/forbearing/gst/provider/mongo"
 	"github.com/forbearing/gst/provider/mqtt"
 	"github.com/forbearing/gst/provider/nats"
+	"github.com/forbearing/gst/provider/otel"
 	"github.com/forbearing/gst/provider/redis"
 	"github.com/forbearing/gst/provider/rethinkdb"
 	"github.com/forbearing/gst/provider/rocketmq"
@@ -83,7 +83,7 @@ func Bootstrap() error {
 
 		// provider
 		redis.Init,
-		jaeger.Init,
+		otel.Init,
 		elastic.Init,
 		mongo.Init,
 		minio.Init,

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/provider/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
@@ -152,7 +152,7 @@ func (p *GormTracingPlugin) startSpan(db *gorm.DB, operation string) {
 	newCtx, span := startDatabaseSpan(ctx, operation, db.Statement.Table)
 
 	// Add GORM-specific attributes
-	jaeger.AddSpanTags(span, map[string]any{
+	otel.AddSpanTags(span, map[string]any{
 		"gorm.operation": operation,
 		"gorm.table":     db.Statement.Table,
 	})
@@ -183,7 +183,7 @@ func (p *GormTracingPlugin) finishSpan(db *gorm.DB) {
 	if exists {
 		if startTime, ok := startTimeValue.(time.Time); ok {
 			duration := time.Since(startTime)
-			jaeger.AddSpanTags(span, map[string]any{
+			otel.AddSpanTags(span, map[string]any{
 				"gorm.duration_ms": duration.Milliseconds(),
 			})
 		}
@@ -191,29 +191,29 @@ func (p *GormTracingPlugin) finishSpan(db *gorm.DB) {
 
 	// Add SQL information if available
 	if db.Statement.SQL.String() != "" {
-		jaeger.AddSpanTags(span, map[string]any{
+		otel.AddSpanTags(span, map[string]any{
 			"gorm.sql": db.Statement.SQL.String(),
 		})
 	}
 
 	// Add affected rows count
 	if db.Statement.RowsAffected >= 0 {
-		jaeger.AddSpanTags(span, map[string]any{
+		otel.AddSpanTags(span, map[string]any{
 			"gorm.rows_affected": db.Statement.RowsAffected,
 		})
 	}
 
 	// Record error if any
 	if db.Error != nil {
-		jaeger.RecordError(span, db.Error)
-		jaeger.AddSpanTags(span, map[string]any{
+		otel.RecordError(span, db.Error)
+		otel.AddSpanTags(span, map[string]any{
 			"gorm.error": db.Error.Error(),
 		})
 	}
 
 	// Add database connection info
 	if db.Statement.ConnPool != nil {
-		jaeger.AddSpanTags(span, map[string]any{
+		otel.AddSpanTags(span, map[string]any{
 			"gorm.connection_pool": fmt.Sprintf("%T", db.Statement.ConnPool),
 		})
 	}
@@ -228,7 +228,7 @@ func InstallGormTracingPlugin(db *gorm.DB) error {
 // startDatabaseSpan starts a span for database operations
 func startDatabaseSpan(ctx context.Context, operation, table string) (context.Context, trace.Span) {
 	spanName := fmt.Sprintf("db.%s %s", operation, table)
-	ctx, span := jaeger.StartSpan(ctx, spanName)
+	ctx, span := otel.StartSpan(ctx, spanName)
 
 	// Add database-specific attributes
 	span.SetAttributes(

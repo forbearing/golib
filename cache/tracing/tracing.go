@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/provider/otel"
 	"github.com/forbearing/gst/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -286,7 +286,7 @@ func (tw *TracingWrapper[T]) Clear() {
 
 // startSpan creates a new span for the given operation
 func (tw *TracingWrapper[T]) startSpan(operationName string) (context.Context, trace.Span) {
-	tracer := jaeger.GetTracer()
+	tracer := otel.GetTracer()
 	ctx, span := tracer.Start(tw.ctx, operationName)
 	return ctx, span
 }

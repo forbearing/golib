@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/forbearing/gst/config"
-	"github.com/forbearing/gst/provider/jaeger"
+	"github.com/forbearing/gst/provider/otel"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
 
-// middlewareWrapper wraps any gin middleware with jaeger tracing capabilities.
+// middlewareWrapper wraps any gin middleware with OTEL tracing capabilities.
 // It creates a span for the middleware execution and records performance metrics.
 //
 // Parameters:
@@ -28,8 +28,8 @@ import (
 //	router.Use(wrappedLogger, wrappedAuth)
 func middlewareWrapper(name string, middleware gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip tracing if Jaeger is not enabled
-		if !jaeger.IsEnabled() {
+		// Skip tracing if OTEL is not enabled
+		if !otel.IsEnabled() {
 			middleware(c)
 			return
 		}
@@ -38,7 +38,7 @@ func middlewareWrapper(name string, middleware gin.HandlerFunc) gin.HandlerFunc 
 		spanName := fmt.Sprintf("middleware.%s", name)
 
 		// Start new span for middleware execution
-		ctx, span := jaeger.StartSpan(c.Request.Context(), spanName)
+		ctx, span := otel.StartSpan(c.Request.Context(), spanName)
 		defer span.End()
 
 		// Update request context with the new span context
@@ -81,9 +81,9 @@ func middlewareWrapper(name string, middleware gin.HandlerFunc) gin.HandlerFunc 
 		}
 
 		// Add service name as attribute
-		if config.App.Jaeger.ServiceName != "" {
+		if config.App.OTEL.ServiceName != "" {
 			span.SetAttributes(
-				attribute.String("service.name", config.App.Jaeger.ServiceName),
+				attribute.String("service.name", config.App.OTEL.ServiceName),
 			)
 		}
 	}
