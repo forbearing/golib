@@ -3,7 +3,6 @@ package controller
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -65,7 +64,7 @@ import (
 	Export 逻辑类似于 List 逻辑, 只是比 Update 逻辑多了 Export 步骤
 
 其他:
-	1.记录操作日志也在 controller 层
+	1.记录操作日志也在 controller 层，现在使用 AuditManager.RecordOperation 统一管理操作日志记录
 */
 
 const ErrRequestBodyEmpty = "request body is empty"
@@ -75,13 +74,21 @@ const defaultLimit = 1000
 var (
 	pluralizeCli = pluralize.NewClient()
 
+	// Global circular buffer for controller logger
 	cb *circularbuffer.CircularBuffer[*model_log.OperationLog]
+
+	// Global audit manager instance
+	auditManager *AuditManager
 )
 
 func Init() (err error) {
+	// Initialize circular buffer
 	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
 		return err
 	}
+
+	// Initialize audit manager
+	auditManager = NewAuditManager(&config.App.Audit, cb)
 
 	// Consume operation log.
 	go func() {
@@ -94,7 +101,7 @@ func Init() (err error) {
 				operationLogs = append(operationLogs, ol)
 			}
 			if len(operationLogs) > 0 {
-				if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
+				if err := database.Database[*model_log.OperationLog](nil).WithBatchSize(1000).Create(operationLogs...); err != nil {
 					zap.S().Error(err)
 				}
 			}
@@ -262,24 +269,18 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
-		})
+
+		if err := auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_CREATE,
+			Table:    tableName,
+			Model:    typ.Name(),
+			RecordID: req.GetID(),
+			Record:   req,
+			Request:  req,
+			Response: req,
+		}); err != nil {
+			log.Warnf("failed to record audit log: %v", err)
+		}
 
 		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 	}
@@ -480,19 +481,12 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		for i := range ml {
-			record, _ := json.Marshal(copied[i])
-			cb.Enqueue(&model_log.OperationLog{
-				Op:        model_log.OperationTypeDelete,
-				Model:     typ.Name(),
-				Table:     tableName,
-				RecordId:  ml[i].GetID(),
-				Record:    util.BytesToString(record),
-				IP:        c.ClientIP(),
-				User:      c.GetString(consts.CTX_USERNAME),
-				RequestId: c.GetString(consts.REQUEST_ID),
-				URI:       c.Request.RequestURI,
-				Method:    c.Request.Method,
-				UserAgent: c.Request.UserAgent(),
+			auditManager.RecordOperation(c, &AuditParams{
+				OP:       consts.OP_DELETE,
+				Table:    tableName,
+				Model:    typ.Name(),
+				RecordID: ml[i].GetID(),
+				Record:   copied[i],
 			})
 		}
 
@@ -699,23 +693,14 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdate,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_UPDATE,
+			Table:    tableName,
+			Model:    typ.Name(),
+			RecordID: req.GetID(),
+			Record:   req,
+			Request:  req,
+			Response: req,
 		})
 
 		ResponseJSON(c, CodeSuccess, req)
@@ -923,23 +908,14 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(cur)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatch,
-			Model:     typ.Name(),
-			Table:     tableName,
-			RecordId:  req.GetID(),
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_PATCH,
+			Table:    tableName,
+			Model:    typ.Name(),
+			RecordID: req.GetID(),
+			Record:   req,
+			Request:  req,
+			Response: cur,
 		})
 
 		// NOTE: You should response `oldVal` instead of `req`.
@@ -1286,16 +1262,10 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeList,
-			Model:     typ.Name(),
-			Table:     tableName,
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:    consts.OP_LIST,
+			Table: tableName,
+			Model: typ.Name(),
 		})
 
 		log.Infoz(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total), zap.Object(typ.Name(), m))
@@ -1582,16 +1552,10 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeGet,
-			Model:     typ.Name(),
-			Table:     tableName,
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:    consts.OP_GET,
+			Table: tableName,
+			Model: typ.Name(),
 		})
 		if cached {
 			ResponseBytes(c, CodeSuccess, cache)
@@ -1873,22 +1837,13 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreateMany,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_CREATE_MANY,
+			Table:    tableName,
+			Model:    typ.Name(),
+			Record:   req,
+			Request:  req,
+			Response: req,
 		})
 
 		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
@@ -2065,18 +2020,11 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		record, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeDeleteMany,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:     consts.OP_DELETE_MANY,
+			Table:  tableName,
+			Model:  typ.Name(),
+			Record: req,
 		})
 
 		if reqErr != io.EOF {
@@ -2227,22 +2175,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdateMany,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_UPDATE_MANY,
+			Table:    tableName,
+			Model:    typ.Name(),
+			Record:   req,
+			Request:  req,
+			Response: req,
 		})
 
 		if reqErr != io.EOF {
@@ -2415,22 +2354,13 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
-		record, _ := json.Marshal(req)
-		reqData, _ := json.Marshal(req)
-		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatchMany,
-			Model:     typ.Name(),
-			Table:     tableName,
-			Record:    util.BytesToString(record),
-			Request:   util.BytesToString(reqData),
-			Response:  util.BytesToString(respData),
-			IP:        c.ClientIP(),
-			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
-			URI:       c.Request.RequestURI,
-			Method:    c.Request.Method,
-			UserAgent: c.Request.UserAgent(),
+		auditManager.RecordOperation(c, &AuditParams{
+			OP:       consts.OP_PATCH_MANY,
+			Table:    tableName,
+			Model:    typ.Name(),
+			Record:   req,
+			Request:  req,
+			Response: req,
 		})
 
 		if reqErr != io.EOF {
