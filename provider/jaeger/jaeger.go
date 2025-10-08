@@ -26,8 +26,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-
-	// "go.opentelemetry.io/otel/exporters/jaeger" // Deprecated: Jaeger exporter is no longer supported
+	// "go.opentelemetry.io/otel/exporters/jaeger" // deprecated: use OTLP exporters instead
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -35,6 +34,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -143,7 +143,7 @@ func Close() error {
 // GetTracer returns the global tracer
 func GetTracer() trace.Tracer {
 	if !initialized {
-		return trace.NewNoopTracerProvider().Tracer("noop")
+		return noop.NewTracerProvider().Tracer("noop")
 	}
 	return tracer
 }
