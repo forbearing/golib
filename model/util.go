@@ -63,9 +63,9 @@ func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool 
 	if IsModelEmpty[M]() {
 		return false
 	}
-	typ1 := reflect.TypeOf((*M)(nil)).Elem()
-	typ2 := reflect.TypeOf((*REQ)(nil)).Elem()
-	typ3 := reflect.TypeOf((*RSP)(nil)).Elem()
+	typ1 := reflect.TypeFor[M]()
+	typ2 := reflect.TypeFor[REQ]()
+	typ3 := reflect.TypeFor[RSP]()
 	return typ1 == typ2 && typ2 == typ3
 }
 
@@ -78,7 +78,7 @@ func AreTypesEqual[M types.Model, REQ types.Request, RSP types.Response]() bool 
 //	type Logout struct{
 //	}
 func IsModelEmpty[T any]() bool {
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
@@ -92,7 +92,7 @@ func IsModelEmpty[T any]() bool {
 	}
 	if typ.NumField() == 1 {
 		field := typ.Field(0)
-		target := reflect.TypeOf(Empty{})
+		target := reflect.TypeFor[Empty]()
 		return field.Anonymous && field.Type == target
 	}
 
