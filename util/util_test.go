@@ -17,19 +17,19 @@ func TestUtil(t *testing.T) {
 }
 
 func BenchmarkUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		UUID()
 	}
 }
 
 func BenchmarkIndexedUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		IndexedUUID()
 	}
 }
 
 func BenchmarkLightUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		RequestID()
 	}
 }

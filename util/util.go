@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 	"unsafe"
@@ -247,12 +248,7 @@ func NoError(fn func() error) error {
 
 // Contains check T in slice.
 func Contains[T comparable](slice []T, elem T) bool {
-	for i := range slice {
-		if slice[i] == elem {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, elem)
 }
 
 // CombineError combine error from fns.
