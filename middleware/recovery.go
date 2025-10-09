@@ -28,12 +28,12 @@ func Recovery(filename ...string) gin.HandlerFunc {
 // stack means whether output the stack info.
 // The stack info is easy to find where the error occurs but the stack info is too large.
 func RecoveryWithTracing(logger *zap.Logger, stack bool) gin.HandlerFunc {
-	return gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, recovered interface{}) {
+	return gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, recovered any) {
 		// Record panic in tracing span
 		span := GetSpanFromContext(c)
 		if span != nil && span.IsRecording() {
 			RecordError(c, fmt.Errorf("panic recovered: %v", recovered))
-			AddSpanTags(c, map[string]interface{}{
+			AddSpanTags(c, map[string]any{
 				"error.panic":     true,
 				"error.recovered": fmt.Sprintf("%v", recovered),
 			})

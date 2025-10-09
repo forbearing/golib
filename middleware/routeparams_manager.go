@@ -48,8 +48,8 @@ func (rpm *routeParamsManager) parsePath(path string) []string {
 	var params []string
 
 	for _, part := range parts {
-		if strings.HasPrefix(part, ":") {
-			param := strings.TrimPrefix(part, ":")
+		if after, ok := strings.CutPrefix(part, ":"); ok {
+			param := after
 			if len(param) > 0 {
 				params = append(params, param)
 			}
