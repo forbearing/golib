@@ -120,7 +120,7 @@ func queryColumnsWithQuery(table string, columns []string, query map[string][]st
 			items := make([]string, 0)
 			for _, item := range v {
 				if len(item) > 0 && strings.TrimSpace(item) != "," {
-					for _, _item := range strings.Split(item, ",") {
+					for _item := range strings.SplitSeq(item, ",") {
 						if len(strings.TrimSpace(_item)) > 0 {
 							items = append(items, strings.TrimSpace(_item))
 						}
