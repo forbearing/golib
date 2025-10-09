@@ -32,6 +32,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T])
 	}
 
@@ -46,6 +47,7 @@ func Cache[T any]() types.Cache[T] {
 		}, "gocache")
 		cacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T])
 }
 
@@ -63,6 +65,7 @@ func (c *cache[T]) Get(key string) (T, error) {
 	if val == nil {
 		return zero, types.ErrEntryNotFound
 	}
+	//nolint:errcheck
 	return val.(T), nil
 }
 

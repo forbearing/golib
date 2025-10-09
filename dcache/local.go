@@ -38,6 +38,7 @@ func NewLocalCache[T any]() (types.Cache[T], error) {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := localCacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T]), nil
 	}
 
@@ -50,6 +51,7 @@ func NewLocalCache[T any]() (types.Cache[T], error) {
 		val = &localCache[T]{c: c}
 		localCacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T]), nil
 }
 

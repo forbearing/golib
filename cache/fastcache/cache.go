@@ -33,6 +33,7 @@ func Cache[T any]() types.Cache[T] {
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T])
 	}
 
@@ -44,6 +45,7 @@ func Cache[T any]() types.Cache[T] {
 		val = tracing.NewTracingWrapper(&cache[T]{c: fastcache.New(config.App.Cache.Capacity), ctx: context.Background()}, "fastcache")
 		cacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T])
 }
 
