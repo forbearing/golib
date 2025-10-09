@@ -447,7 +447,7 @@ func removeEmptyDirectories(rootDir string) {
 
 	// Run multiple passes to handle nested empty directories
 	// After removing a directory, its parent might become empty
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		emptyDirsFound := false
 		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || path == rootDir || !info.IsDir() {
@@ -546,7 +546,7 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 		pathParts := strings.Split(modelDir, "/")
 
 		// For each directory level, use mapped endpoint or directory name
-		for i := 0; i < len(pathParts); i++ {
+		for i := range pathParts {
 			currentPath := strings.Join(pathParts[:i+1], "/")
 			if mappedEndpoint, exists := dirEndpointMap[currentPath]; exists {
 				// Use the mapped endpoint for this directory
@@ -650,7 +650,7 @@ func buildHierarchicalEndpointsV2(allModels []*gen.ModelInfo) {
 		pathParts := strings.Split(modelDir, "/")
 
 		// For each directory level, use trie to lookup mapped endpoint or directory name
-		for i := 0; i < len(pathParts); i++ {
+		for i := range pathParts {
 			currentPath := strings.Join(pathParts[:i+1], "/")
 			// Use trie to lookup the mapped endpoint for this directory
 			if mappedEndpoint, exists := dirEndpointTrie.Get([]rune(currentPath)); exists {

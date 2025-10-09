@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/forbearing/gst/dsl"
@@ -322,9 +323,9 @@ func CheckModelSingularNaming() int {
 // containsServiceImport checks if an import path contains service code
 func containsServiceImport(importPath, layerType string) bool {
 	// Split import path by '/'
-	parts := strings.Split(importPath, "/")
+	parts := strings.SplitSeq(importPath, "/")
 
-	for _, part := range parts {
+	for part := range parts {
 		if part == "service" {
 			// For service layer, check if it's importing other service packages
 			if layerType == "service" {
@@ -429,13 +430,7 @@ func checkFileJSONTagNaming(filePath string) []string {
 				continue
 			}
 			// Check if this struct is a model
-			isModel := false
-			for _, modelName := range allModelNames {
-				if typeSpec.Name.Name == modelName {
-					isModel = true
-					break
-				}
-			}
+			isModel := slices.Contains(allModelNames, typeSpec.Name.Name)
 			if !isModel {
 				continue
 			}
@@ -690,8 +685,8 @@ func isGstFrameworkProject(projectDir string) bool {
 	}
 
 	// Check if module name is github.com/forbearing/gst
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(content), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "module ") {
 			moduleName := strings.TrimSpace(strings.TrimPrefix(line, "module"))

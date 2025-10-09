@@ -53,7 +53,7 @@ func getAvailableConfigs() map[string]reflect.Type {
 	configs := make(map[string]reflect.Type)
 
 	// Get the Config struct type
-	configType := reflect.TypeOf(config.Config{})
+	configType := reflect.TypeFor[config.Config]()
 
 	// Iterate through all fields in the Config struct
 	for i := 0; i < configType.NumField(); i++ {
@@ -113,9 +113,9 @@ func runDump(cmd *cobra.Command, args []string) error {
 
 		// Get the specific configuration value using reflection
 		configValue := reflect.ValueOf(config.App).Elem()
-		configType := reflect.TypeOf(config.App).Elem()
+		configType := reflect.TypeFor[config.Config]()
 
-		var specificConfig interface{}
+		var specificConfig any
 		for i := 0; i < configType.NumField(); i++ {
 			field := configType.Field(i)
 			jsonTag := field.Tag.Get("json")
@@ -133,7 +133,7 @@ func runDump(cmd *cobra.Command, args []string) error {
 		}
 
 		// Create a map with the specific config for consistent output format
-		configMap := map[string]interface{}{
+		configMap := map[string]any{
 			configName: specificConfig,
 		}
 
@@ -227,7 +227,7 @@ func runDump(cmd *cobra.Command, args []string) error {
 }
 
 // convertStructToINI converts a struct to INI key-value pairs
-func convertStructToINI(section *ini.Section, value interface{}) error {
+func convertStructToINI(section *ini.Section, value any) error {
 	val := reflect.ValueOf(value)
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
