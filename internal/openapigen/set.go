@@ -2064,36 +2064,36 @@ func summary(path string, op consts.HTTPVerb, typ reflect.Type) string {
 	path = strings.Join(filtered, `/`)
 	return strings.ReplaceAll(path, `/`, `_`) + "_" + string(op)
 
-	// Try to get struct comment first
-	var modelInstance any
-	var elementType reflect.Type
-	if typ.Kind() == reflect.Slice {
-		// For slice types, create an instance of the element type
-		elementType = typ.Elem()
-		modelInstance = reflect.New(elementType).Interface()
-	} else {
-		// For other types, create an instance directly
-		elementType = typ
-		modelInstance = reflect.New(typ).Interface()
-	}
-
-	structComment := parseStructComment(modelInstance)
-	if structComment != "" {
-		return structComment
-	}
-
-	// Dereference pointer types to get the actual struct type name
-	actualType := elementType
-	for actualType.Kind() == reflect.Pointer {
-		actualType = actualType.Elem()
-	}
-
-	// Fallback to original logic if no struct comment found
-	switch op {
-	case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
-		return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(actualType.Name()))
-	}
-	return fmt.Sprintf("%s %s", op, actualType.Name())
+	// // Try to get struct comment first
+	// var modelInstance any
+	// var elementType reflect.Type
+	// if typ.Kind() == reflect.Slice {
+	// 	// For slice types, create an instance of the element type
+	// 	elementType = typ.Elem()
+	// 	modelInstance = reflect.New(elementType).Interface()
+	// } else {
+	// 	// For other types, create an instance directly
+	// 	elementType = typ
+	// 	modelInstance = reflect.New(typ).Interface()
+	// }
+	//
+	// structComment := parseStructComment(modelInstance)
+	// if structComment != "" {
+	// 	return structComment
+	// }
+	//
+	// // Dereference pointer types to get the actual struct type name
+	// actualType := elementType
+	// for actualType.Kind() == reflect.Pointer {
+	// 	actualType = actualType.Elem()
+	// }
+	//
+	// // Fallback to original logic if no struct comment found
+	// switch op {
+	// case consts.List, consts.CreateMany, consts.DeleteMany, consts.UpdateMany, consts.PatchMany:
+	// 	return fmt.Sprintf("%s %s", op, pluralizeCli.Plural(actualType.Name()))
+	// }
+	// return fmt.Sprintf("%s %s", op, actualType.Name())
 }
 
 func description(op consts.HTTPVerb, typ reflect.Type) string {
