@@ -37,7 +37,7 @@ var (
 var sessionCache *expirable.LRU[string, *model.Session]
 
 type Claims struct {
-	UserId            string `json:"user_id,omitempty"`
+	UserID            string `json:"user_id,omitempty"`
 	Username          string `json:"username,omitempty"`
 	PreferredUsername string `json:"preferred_username,omitempty"`
 	GivenName         string `json:"given_name,omitempty"`
@@ -58,7 +58,9 @@ type Claims struct {
 }
 
 func Init() error {
-	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) { database.Database[*model.Session](nil).WithPurge().Delete(s) }, config.App.Auth.RefreshTokenExpireDuration)
+	sessionCache = expirable.NewLRU(0, func(_ string, s *model.Session) {
+		_ = database.Database[*model.Session](nil).WithPurge().Delete(s)
+	}, config.App.Auth.RefreshTokenExpireDuration)
 	sessions := make([]*model.Session, 0)
 	if err := database.Database[*model.Session](nil).WithLimit(-1).List(&sessions); err != nil {
 		return errors.Wrap(err, "failed to list sessions")
@@ -71,18 +73,18 @@ func Init() error {
 }
 
 // GenTokens 生成 access token 和 refresh token
-func GenTokens(userId string, username string, session *model.Session) (aToken, rToken string, err error) {
-	if len(userId) < MinUserIDLength || len(username) < MinUsernameLength {
+func GenTokens(userID string, username string, session *model.Session) (aToken, rToken string, err error) {
+	if len(userID) < MinUserIDLength || len(username) < MinUsernameLength {
 		return "", "", errors.New("invalid user id or username")
 	}
 
 	if username == config.App.Auth.NoneExpireUsername {
 		return config.App.Auth.NoneExpireToken, "", nil
 	}
-	if aToken, err = genAccessToken(userId, username); err != nil {
+	if aToken, err = genAccessToken(userID, username); err != nil {
 		return "", "", err
 	}
-	if rToken, err = genRefreshToken(userId); err != nil {
+	if rToken, err = genRefreshToken(userID); err != nil {
 		return "", "", err
 	}
 
@@ -91,29 +93,29 @@ func GenTokens(userId string, username string, session *model.Session) (aToken, 
 	}
 	session.AccessToken = aToken
 	session.RefreshToken = rToken
-	session.UserId = userId
+	session.UserId = userID
 	session.Username = username
 	// setToken(aToken, rToken, session)
-	setSession(userId, session)
+	setSession(userID, session)
 
 	return aToken, rToken, nil
 }
 
-func RevokeTokens(userId string) {
-	removeSession(userId)
+func RevokeTokens(userID string) {
+	removeSession(userID)
 }
 
-func genAccessToken(userId string, username string) (token string, err error) {
+func genAccessToken(userID string, username string) (token string, err error) {
 	now := time.Now()
 	claims := Claims{
-		UserId:   userId,
+		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(config.App.Auth.AccessTokenExpireDuration)), // 过期时间
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Issuer:    issuer, // 签发人
-			Subject:   userId,
+			Subject:   userID,
 		},
 	}
 	// NewWithClaims 使用指定的签名方法创建签名对象
@@ -124,7 +126,7 @@ func genAccessToken(userId string, username string) (token string, err error) {
 	return token, nil
 }
 
-func genRefreshToken(userId string) (rToken string, err error) {
+func genRefreshToken(userID string) (rToken string, err error) {
 	now := time.Now()
 	// refresh token 不需要任何自定义数据
 	// 使用指定的 secret 签名并获得完整的编码后的字符串 token
@@ -133,7 +135,7 @@ func genRefreshToken(userId string) (rToken string, err error) {
 		IssuedAt:  jwt.NewNumericDate(now),                                                 // 签发时间
 		NotBefore: jwt.NewNumericDate(now),                                                 // 生效时间
 		Issuer:    issuer,                                                                  // 签发人
-		Subject:   userId,
+		Subject:   userID,
 	}).SignedString(secret); err != nil {
 		return "", errors.Wrap(err, "failed to generate refresh token")
 	}
@@ -144,7 +146,7 @@ func genRefreshToken(userId string) (rToken string, err error) {
 func RefreshTokens(accessToken, refreshToken string, session *model.Session) (newAccessToken, newRefreshToken string, err error) {
 	// verify refresh token
 	refreshClaims := new(Claims)
-	token := new(jwt.Token)
+	var token *jwt.Token
 	if token, err = jwt.ParseWithClaims(refreshToken, refreshClaims, keyFunc); err != nil {
 		return "", "", errors.Wrap(err, ErrInvalidRefreshToken.Error())
 	}
@@ -169,7 +171,7 @@ func RefreshTokens(accessToken, refreshToken string, session *model.Session) (ne
 		return "", "", ErrTokenMalformed
 	}
 
-	return GenTokens(accessClaims.UserId, accessClaims.Username, session)
+	return GenTokens(accessClaims.UserID, accessClaims.Username, session)
 }
 
 // ParseToken parse token
@@ -179,7 +181,7 @@ func ParseToken(tokenStr string) (*Claims, error) {
 	}
 	if tokenStr == config.App.Auth.NoneExpireToken {
 		return &Claims{
-			UserId: "root",
+			UserID: "root",
 			// 这里必须写成 root 或者 admin, 但是 admin 需要作为普通管理使用,所以这里使用 root
 			// 配合 casbin 使用.
 			Username:         "root",
@@ -218,7 +220,7 @@ func Verify(claims *Claims, accessToken, userAgent string) error {
 		return nil
 	}
 
-	session, found := GetSession(claims.UserId)
+	session, found := GetSession(claims.UserID)
 	if !found {
 		return errors.New("session not found")
 	}

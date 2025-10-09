@@ -29,7 +29,7 @@ func JwtAuth() gin.HandlerFunc {
 		// 将当前请求的 username 信息保存到请求的上线 *gin.Context 中
 		// 后续的处理函数可以通过 c.Get("username") 来获取当前请求的用户信息
 		// TODO: 将 user id 和 username 定义成变量/常量
-		c.Set(consts.CTX_USER_ID, claims.UserId)
+		c.Set(consts.CTX_USER_ID, claims.UserID)
 		c.Set(consts.CTX_USERNAME, claims.Username)
 		c.Set(consts.CTX_SESSION_ID, c.GetHeader("X-Session-Id"))
 		c.Next()
