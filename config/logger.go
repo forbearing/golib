@@ -1,15 +1,15 @@
 package config
 
 const (
-	LOGGER_DIR         = "LOGGER_DIR"
-	LOGGER_PREFIX      = "LOGGER_PREFIX"
-	LOGGER_FILE        = "LOGGER_FILE"
-	LOGGER_LEVEL       = "LOGGER_LEVEL"
-	LOGGER_FORMAT      = "LOGGER_FORMAT"
-	LOGGER_ENCODER     = "LOGGER_ENCODER"
-	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"
-	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"
-	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS"
+	LOGGER_DIR         = "LOGGER_DIR"         //nolint:staticcheck
+	LOGGER_PREFIX      = "LOGGER_PREFIX"      //nolint:staticcheck
+	LOGGER_FILE        = "LOGGER_FILE"        //nolint:staticcheck
+	LOGGER_LEVEL       = "LOGGER_LEVEL"       //nolint:staticcheck
+	LOGGER_FORMAT      = "LOGGER_FORMAT"      //nolint:staticcheck
+	LOGGER_ENCODER     = "LOGGER_ENCODER"     //nolint:staticcheck
+	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"     //nolint:staticcheck
+	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"    //nolint:staticcheck
+	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS" //nolint:staticcheck
 )
 
 // Logger represents section "logger" for client-side or server-side configuration,

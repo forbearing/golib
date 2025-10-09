@@ -3,11 +3,11 @@ package config
 import "time"
 
 const (
-	MEMCACHED_SERVERS        = "MEMCACHED_SERVERS"
-	MEMCACHED_MAX_IDLE_CONNS = "MEMCACHED_MAX_IDLE_CONNS"
-	MEMCACHED_TIMEOUT        = "MEMCACHED_TIMEOUT"
-	MEMCACHED_MAX_CACHE_SIZE = "MEMCACHED_MAX_CACHE_SIZE"
-	MEMCACHED_ENABLE         = "MEMCACHED_ENABLE"
+	MEMCACHED_SERVERS        = "MEMCACHED_SERVERS"        //nolint:staticcheck
+	MEMCACHED_MAX_IDLE_CONNS = "MEMCACHED_MAX_IDLE_CONNS" //nolint:staticcheck
+	MEMCACHED_TIMEOUT        = "MEMCACHED_TIMEOUT"        //nolint:staticcheck
+	MEMCACHED_MAX_CACHE_SIZE = "MEMCACHED_MAX_CACHE_SIZE" //nolint:staticcheck
+	MEMCACHED_ENABLE         = "MEMCACHED_ENABLE"         //nolint:staticcheck
 )
 
 type Memcached struct {

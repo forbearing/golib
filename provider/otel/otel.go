@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+
 	// "go.opentelemetry.io/otel/exporters/jaeger" // deprecated: use OTLP exporters instead
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -169,7 +170,7 @@ func SpanFromContext(ctx context.Context) trace.Span {
 // createExporter creates an exporter based on configuration
 func createExporter(cfg config.OTEL) (sdktrace.SpanExporter, error) {
 	switch cfg.ExporterType {
-	case config.ExportTypeOtlpHttp:
+	case config.ExportTypeOtlpHTTP:
 		// Create OTLP HTTP exporter
 		opts := []otlptracehttp.Option{
 			otlptracehttp.WithEndpoint(cfg.OTLPEndpoint),
@@ -196,7 +197,7 @@ func createExporter(cfg config.OTEL) (sdktrace.SpanExporter, error) {
 
 		return otlptracehttp.New(context.Background(), opts...)
 
-	case config.ExportTypeOtlpGrpc:
+	case config.ExportTypeOtlpGRPC:
 		// Create OTLP gRPC exporter
 		opts := []otlptracegrpc.Option{
 			otlptracegrpc.WithEndpoint(cfg.OTLPEndpoint),

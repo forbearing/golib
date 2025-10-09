@@ -12,14 +12,14 @@ const (
 )
 
 const (
-	CACHE_TYPE         = "CACHE_TYPE"
-	CACHE_SIZE_MB      = "CACHE_SIZE_MB"
-	CACHE_MAX_ENTRIES  = "CACHE_MAX_ENTRIES"
-	CACHE_SHARDS       = "CACHE_SHARDS"
-	CACHE_LIFE_WINDOW  = "CACHE_LIFE_WINDOW"
-	CACHE_CLEAN_WINDOW = "CACHE_CLEAN_WINDOW"
-	CACHE_EXPIRATION   = "CACHE_EXPIRATION"
-	CACHE_CAPACITY     = "CACHE_CAPACITY"
+	CACHE_TYPE         = "CACHE_TYPE"         //nolint:staticcheck
+	CACHE_SIZE_MB      = "CACHE_SIZE_MB"      //nolint:staticcheck
+	CACHE_MAX_ENTRIES  = "CACHE_MAX_ENTRIES"  //nolint:staticcheck
+	CACHE_SHARDS       = "CACHE_SHARDS"       //nolint:staticcheck
+	CACHE_LIFE_WINDOW  = "CACHE_LIFE_WINDOW"  //nolint:staticcheck
+	CACHE_CLEAN_WINDOW = "CACHE_CLEAN_WINDOW" //nolint:staticcheck
+	CACHE_EXPIRATION   = "CACHE_EXPIRATION"   //nolint:staticcheck
+	CACHE_CAPACITY     = "CACHE_CAPACITY"     //nolint:staticcheck
 )
 
 type Cache struct {

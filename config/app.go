@@ -11,17 +11,17 @@ import (
 
 const (
 	// App related environment variables
-	APP_NAME        = "APP_NAME"
-	APP_VERSION     = "APP_VERSION"
-	APP_DESCRIPTION = "APP_DESCRIPTION"
-	APP_AUTHOR      = "APP_AUTHOR"
-	APP_EMAIL       = "APP_EMAIL"
-	APP_HOMEPAGE    = "APP_HOMEPAGE"
-	APP_LICENSE     = "APP_LICENSE"
-	APP_BUILD_TIME  = "APP_BUILD_TIME"
-	APP_GIT_COMMIT  = "APP_GIT_COMMIT"
-	APP_GIT_BRANCH  = "APP_GIT_BRANCH"
-	APP_GO_VERSION  = "APP_GO_VERSION"
+	APP_NAME        = "APP_NAME"        //nolint:staticcheck
+	APP_VERSION     = "APP_VERSION"     //nolint:staticcheck
+	APP_DESCRIPTION = "APP_DESCRIPTION" //nolint:staticcheck
+	APP_AUTHOR      = "APP_AUTHOR"      //nolint:staticcheck
+	APP_EMAIL       = "APP_EMAIL"       //nolint:staticcheck
+	APP_HOMEPAGE    = "APP_HOMEPAGE"    //nolint:staticcheck
+	APP_LICENSE     = "APP_LICENSE"     //nolint:staticcheck
+	APP_BUILD_TIME  = "APP_BUILD_TIME"  //nolint:staticcheck
+	APP_GIT_COMMIT  = "APP_GIT_COMMIT"  //nolint:staticcheck
+	APP_GIT_BRANCH  = "APP_GIT_BRANCH"  //nolint:staticcheck
+	APP_GO_VERSION  = "APP_GO_VERSION"  //nolint:staticcheck
 )
 
 // AppInfo represents application metadata and build information

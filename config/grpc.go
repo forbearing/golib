@@ -3,27 +3,27 @@ package config
 import "time"
 
 const (
-	GRPC_LISTEN                   = "GRPC_LISTEN"
-	GRPC_PORT                     = "GRPC_PORT"
-	GRPC_MAX_RECV_MSG_SIZE        = "GRPC_MAX_RECV_MSG_SIZE"
-	GRPC_MAX_SEND_MSG_SIZE        = "GRPC_MAX_SEND_MSG_SIZE"
-	GRPC_INITIAL_WINDOW_SIZE      = "GRPC_INITIAL_WINDOW_SIZE"
-	GRPC_INITIAL_CONN_WINDOW_SIZE = "GRPC_INITIAL_CONN_WINDOW_SIZE"
+	GRPC_LISTEN                   = "GRPC_LISTEN"                   //nolint:staticcheck
+	GRPC_PORT                     = "GRPC_PORT"                     //nolint:staticcheck
+	GRPC_MAX_RECV_MSG_SIZE        = "GRPC_MAX_RECV_MSG_SIZE"        //nolint:staticcheck
+	GRPC_MAX_SEND_MSG_SIZE        = "GRPC_MAX_SEND_MSG_SIZE"        //nolint:staticcheck
+	GRPC_INITIAL_WINDOW_SIZE      = "GRPC_INITIAL_WINDOW_SIZE"      //nolint:staticcheck
+	GRPC_INITIAL_CONN_WINDOW_SIZE = "GRPC_INITIAL_CONN_WINDOW_SIZE" //nolint:staticcheck
 
-	GRPC_KEEPALIVE_TIME           = "GRPC_KEEPALIVE_TIME"
-	GRPC_KEEPALIVE_TIMEOUT        = "GRPC_KEEPALIVE_TIMEOUT"
-	GRPC_MAX_CONNECTION_IDLE      = "GRPC_MAX_CONNECTION_IDLE"
-	GRPC_MAX_CONNECTION_AGE       = "GRPC_MAX_CONNECTION_AGE"
-	GRPC_MAX_CONNECTION_AGE_GRACE = "GRPC_MAX_CONNECTION_AGE_GRACE"
+	GRPC_KEEPALIVE_TIME           = "GRPC_KEEPALIVE_TIME"           //nolint:staticcheck
+	GRPC_KEEPALIVE_TIMEOUT        = "GRPC_KEEPALIVE_TIMEOUT"        //nolint:staticcheck
+	GRPC_MAX_CONNECTION_IDLE      = "GRPC_MAX_CONNECTION_IDLE"      //nolint:staticcheck
+	GRPC_MAX_CONNECTION_AGE       = "GRPC_MAX_CONNECTION_AGE"       //nolint:staticcheck
+	GRPC_MAX_CONNECTION_AGE_GRACE = "GRPC_MAX_CONNECTION_AGE_GRACE" //nolint:staticcheck
 
-	GRPC_ENABLE_TLS          = "GRPC_ENABLE_TLS"
-	GRPC_CERT_FILE           = "GRPC_CERT_FILE"
-	GRPC_KEY_FILE            = "GRPC_KEY_FILE"
-	GRPC_CA_FILE             = "GRPC_CA_FILE"
-	GRPC_ENABLE_REFLECTION   = "GRPC_ENABLE_REFLECTION"
-	GRPC_ENABLE_HEALTH_CHECK = "GRPC_ENABLE_HEALTH_CHECK"
+	GRPC_ENABLE_TLS          = "GRPC_ENABLE_TLS"          //nolint:staticcheck
+	GRPC_CERT_FILE           = "GRPC_CERT_FILE"           //nolint:staticcheck
+	GRPC_KEY_FILE            = "GRPC_KEY_FILE"            //nolint:staticcheck
+	GRPC_CA_FILE             = "GRPC_CA_FILE"             //nolint:staticcheck
+	GRPC_ENABLE_REFLECTION   = "GRPC_ENABLE_REFLECTION"   //nolint:staticcheck
+	GRPC_ENABLE_HEALTH_CHECK = "GRPC_ENABLE_HEALTH_CHECK" //nolint:staticcheck
 
-	GRPC_ENABLE = "GRPC_ENABLE"
+	GRPC_ENABLE = "GRPC_ENABLE" //nolint:staticcheck
 )
 
 type Grpc struct {

@@ -132,7 +132,9 @@ func Init() (err error) {
 	// Breaking change:
 	// https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-hcl-java-properties-ini-removed-from-core
 	codecRegistry := viper.NewCodecRegistry()
-	codecRegistry.RegisterCodec("ini", ini.Codec{})
+	if err := codecRegistry.RegisterCodec("ini", ini.Codec{}); err != nil {
+		return err
+	}
 	cv = viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry))
 	cv.AutomaticEnv()
 	cv.AllowEmptyEnv(true)
@@ -155,10 +157,11 @@ func Init() (err error) {
 	}
 
 	if err = cv.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
 			// Only create config file if not in test.
 			if flag.Lookup("test.v") == nil {
-				if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o644); err != nil {
+				if err = os.WriteFile(filepath.Join(tempdir, fmt.Sprintf("%s.%s", configName, configType)), nil, 0o600); err != nil {
 					return errors.Wrap(err, "failed to create config file")
 				}
 			}
@@ -342,7 +345,7 @@ func setDefaultDurationFields(typ reflect.Type, val reflect.Value) {
 		// Handle time.Duration field
 		if fieldTyp.Type == reflect.TypeFor[time.Duration]() {
 			// Check if the field has a default tag and its current value is zero
-			if defaultValue, ok := fieldTyp.Tag.Lookup("default"); ok && fieldVal.Interface().(time.Duration) == 0 {
+			if defaultValue, ok := fieldTyp.Tag.Lookup("default"); ok && fieldVal.Interface().(time.Duration) == 0 { //nolint:errcheck
 				// Parse the duration string
 				if duration, err := time.ParseDuration(defaultValue); err == nil {
 					fieldVal.Set(reflect.ValueOf(duration))
@@ -442,11 +445,11 @@ func Get[T any]() (t T) {
 	destTyp := reflect.TypeOf(t)
 
 	if storedTyp == destTyp {
-		return storedVal.Elem().Interface().(T)
+		return storedVal.Elem().Interface().(T) //nolint:errcheck
 	}
 	if destTyp.Kind() == reflect.Pointer {
 		if storedTyp == destTyp.Elem() {
-			return storedVal.Interface().(T)
+			return storedVal.Interface().(T) //nolint:errcheck
 		}
 	}
 
@@ -455,7 +458,7 @@ func Get[T any]() (t T) {
 }
 
 // SetConfigFile set the config file path.
-// You should always call this funtion before `Init`.
+// You should always call this function before `Init`.
 func SetConfigFile(file string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -464,7 +467,7 @@ func SetConfigFile(file string) {
 
 // SetConfigName set the config file name, default to 'config'.
 // NOTE: any suffix will be ignored and the default file type is ini.
-// You should always call this funtion before `Init`.
+// You should always call this function before `Init`.
 func SetConfigName(name string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -472,7 +475,7 @@ func SetConfigName(name string) {
 }
 
 // SetConfigType set the config file type, default to 'ini'.
-// You should always call this funtion before `Init`.
+// You should always call this function before `Init`.
 func SetConfigType(typ string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -480,7 +483,7 @@ func SetConfigType(typ string) {
 }
 
 // AddPath add custom config path. default: ./config, /etc
-// You should always call this funtion before `Init`.
+// You should always call this function before `Init`.
 func AddPath(paths ...string) {
 	mu.Lock()
 	defer mu.Unlock()
