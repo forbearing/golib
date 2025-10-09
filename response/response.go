@@ -249,7 +249,7 @@ func ResponseBytes(c *gin.Context, responder Responder, data ...[]byte) {
 	c.Writer.Write(util.StringToBytes(dataStr))
 }
 
-func ResponseBytesList(c *gin.Context, responder Responder, total uint64, data ...[]byte) {
+func ResponseBytesList(c *gin.Context, responder Responder, total int64, data ...[]byte) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	var dataStr string
 	if len(data) > 0 {

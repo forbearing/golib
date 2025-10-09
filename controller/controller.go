@@ -180,7 +180,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -205,7 +205,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -361,7 +361,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -396,7 +396,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				return
 			}
 			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(id)
 			ml = append(ml, m)
 			idsSet[id] = struct{}{}
@@ -442,7 +442,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// find out the records and record to operation log.
 		copied := make([]M, len(ml))
 		for i := range ml {
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(ml[i].GetID())
 			if err := handler(types.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 				log.Error(err)
@@ -581,7 +581,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -606,7 +606,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if reqErr := c.ShouldBindJSON(&req); reqErr != nil {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -643,7 +643,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 		m.SetID(id)
 		// Make sure the record must be already exists.
 		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
@@ -813,7 +813,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			var err error
 			var reqErr error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -838,7 +838,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if len(cfg) > 0 {
 			id = cctx.Params[util.Deref(cfg[0]).ParamName]
 		}
@@ -861,7 +861,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 		m.SetID(id)
 
 		// Make sure the record must be already exists.
@@ -884,7 +884,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		newVal := reflect.ValueOf(req).Elem()
 		oldVal := reflect.ValueOf(data[0]).Elem()
 		patchValue(log, typ, oldVal, newVal)
-		cur := oldVal.Addr().Interface().(M)
+		cur := oldVal.Addr().Interface().(M) //nolint:errcheck
 
 		// 1.Perform business logic processing before partial update resource.
 		var serviceCtxBefore *types.ServiceContext
@@ -1080,7 +1080,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
@@ -1123,7 +1123,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 
 		// FIXME: failed to convert value when size value is -1.
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
@@ -1300,7 +1300,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 
 		log.Infoz(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total), zap.Object(typ.Name(), m))
 		if cached {
-			ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
+			ResponseBytesList(c, CodeSuccess, *total, cache)
 		} else {
 			if !nototal {
 				ResponseJSON(c, CodeSuccess, gin.H{
@@ -1425,7 +1425,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
@@ -1463,8 +1463,8 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(param) // `GetBefore` hook need id.
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
+		m.SetID(param)                        // `GetBefore` hook need id.
 
 		var err error
 		var expands []string
@@ -1788,7 +1788,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -1814,7 +1814,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		var req requestData[M]
 		typ := reflect.TypeOf(*new(M)).Elem()
-		val := reflect.New(typ).Interface().(M)
+		val := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -1982,7 +1982,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -2021,7 +2021,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req.Items = make([]M, 0, len(req.Ids))
 		for _, id := range req.Ids {
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
@@ -2153,7 +2153,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
@@ -2318,7 +2318,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
@@ -2356,7 +2356,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 		for _, m := range req.Items {
 			var results []M
-			v := reflect.New(typ).Interface().(M)
+			v := reflect.New(typ).Interface().(M) //nolint:errcheck
 			v.SetID(m.GetID())
 			if err = handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
 				log.Error(err)
@@ -2373,7 +2373,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			}
 			oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
 			patchValue(log, typ, oldVal, newVal)
-			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M)) //nolint:errcheck
 		}
 
 		// 1.Perform business logic processing before batch patch resource.
@@ -2510,7 +2510,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
 			log.Warn("failed to parse uri query parameter into model: ", err)
@@ -2520,7 +2520,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		var err error
 		var or bool
 		var fuzzy bool
-		var depth = 1
+		depth := 1
 		var expands []string
 		data := make([]M, 0)
 		if orStr, ok := c.GetQuery(consts.QUERY_OR); ok {

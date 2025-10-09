@@ -123,6 +123,7 @@ func SliderCaptchaVerify(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码不存在或已过期"})
 		return
 	}
+	//nolint:errcheck
 	info := val.(sliderInfo)
 	if time.Now().After(info.ExpiredAt) {
 		captchaStore.Delete(req.ID)

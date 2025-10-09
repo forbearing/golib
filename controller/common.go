@@ -166,7 +166,7 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
-	database.Database[*model_log.LoginLog](types.NewDatabaseContext(c)).Create(&model_log.LoginLog{
+	err = database.Database[*model_log.LoginLog](types.NewDatabaseContext(c)).Create(&model_log.LoginLog{
 		UserID:   userInfo.UserId,
 		Username: userInfo.Name,
 		Token:    aToken,
@@ -179,6 +179,9 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 			Browser:  fmt.Sprintf("%s %s", browserName, browserVersion),
 		},
 	})
+	if err != nil {
+		zap.S().Error(err)
+	}
 	domain := config.App.Domain
 	if len(util.ParseScheme(c.Request)) > 0 && len(c.Request.Host) > 0 {
 		domain = fmt.Sprintf("%s://%s", util.ParseScheme(c.Request), c.Request.Host)
