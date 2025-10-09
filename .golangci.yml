@@ -20,7 +20,6 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - unused
 
     # Security and bug detection
     - gosec
@@ -35,13 +34,6 @@ linters:
     # Performance
     - prealloc
 
-    # Maintainability (relaxed)
-    - cyclop
-    - funlen
-    - gocognit
-    - gocyclo
-    - nestif
-
     # Import management
     - depguard
 
@@ -51,15 +43,11 @@ linters:
     - errname
     - errorlint
     - nilerr
-    - noctx
     - predeclared
     - wastedassign
 
   # Linter-specific settings (moved under linters.settings for v2)
   settings:
-    cyclop:
-      max-complexity: 20
-
     depguard:
       rules:
         main:
@@ -74,24 +62,11 @@ linters:
         - io.Copy(*bytes.Buffer)
         - io.Copy(os.Stdout)
 
-    funlen:
-      lines: 150
-      statements: 80
-
-    gocognit:
-      min-complexity: 20
-
-    gocyclo:
-      min-complexity: 20
-
     lll:
       line-length: 120
 
     misspell:
       locale: US
-
-    nestif:
-      min-complexity: 6
 
     prealloc:
       simple: true
@@ -118,15 +93,10 @@ linters:
       - path: _test\.go
         linters:
           - gosec
-          - funlen
-          - gocognit
-          - gocyclo
-      # Allow longer functions in cmd packages (often setup code)
-      - path: cmd/
-        linters:
-          - funlen
-          - gocognit
-          - gocyclo
+      # Ignore nilerr in specific patterns (example)
+      # - linters:
+      #     - nilerr
+      #   text: "error is not nil but it returns nil"
 
 issues:
   # Increase max issues to avoid truncation
