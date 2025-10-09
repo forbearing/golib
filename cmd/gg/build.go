@@ -138,8 +138,8 @@ func getBuildInfo() (*BuildInfo, error) {
 	if buildVersion != "" {
 		info.Version = buildVersion
 	} else {
-		version, err := getGitVersion()
-		if err != nil {
+		var version string
+		if version, err = getGitVersion(); err != nil {
 			fmt.Printf("%s Failed to get git version, using 'dev': %v\n", yellow("⚠"), err)
 			info.Version = "dev"
 		} else {

@@ -501,9 +501,9 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Get the filename without extension
@@ -512,10 +512,10 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 		// Determine the directory path that this model defines endpoint for
 		// The rule is: model file defines endpoint for the directory path formed by modelDir + fileName
 		var targetDir string
-		if modelDir == "" {
+		if modelDir_ == "" {
 			targetDir = fileName
 		} else {
-			targetDir = filepath.Join(modelDir, fileName)
+			targetDir = filepath.Join(modelDir_, fileName)
 		}
 
 		// Store the endpoint mapping for the target directory

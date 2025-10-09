@@ -194,7 +194,7 @@ func runDump(cmd *cobra.Command, args []string) error {
 	os.Stdout = w
 
 	// Initialize config
-	if err := config.Init(); err != nil {
+	if err = config.Init(); err != nil {
 		return fmt.Errorf("failed to initialize config: %w", err)
 	}
 	defer config.Clean()
@@ -208,7 +208,7 @@ func runDump(cmd *cobra.Command, args []string) error {
 	defer os.Remove(tempFile.Name())
 
 	// Save config to temporary file
-	if err := config.Save(tempFile); err != nil {
+	if err = config.Save(tempFile); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 

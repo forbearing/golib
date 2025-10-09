@@ -34,17 +34,17 @@ func Detect(filename string) (Filetype, Mime) {
 			return FiletypeUnknow, MimeUnknow
 		}
 	} else {
+		var fd *os.File
 		buf = make([]byte, MAX_READ_FILESIZE)
-		fd, err := os.Open(filename)
-		if err != nil {
+		if fd, err = os.Open(filename); err != nil {
 			zap.S().Error(err)
 			return FiletypeUnknow, MimeUnknow
 		}
-		if _, err := fd.Read(buf); err != nil && err != io.EOF {
+		if _, err = fd.Read(buf); err != nil && err != io.EOF {
 			zap.S().Error(err)
 			return FiletypeUnknow, MimeUnknow
 		}
-		if err := fd.Close(); err != nil {
+		if err = fd.Close(); err != nil {
 			zap.S().Error(err)
 			return FiletypeUnknow, MimeUnknow
 		}

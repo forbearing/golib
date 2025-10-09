@@ -69,19 +69,19 @@ func NewSFTPServer() {
 		return
 	}
 
-	if err := syscall.Chdir(home); err != nil {
+	if err = syscall.Chdir(home); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 
 		return
 	}
 
-	if err := syscall.Setgid(gid); err != nil {
+	if err = syscall.Setgid(gid); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 
 		return
 	}
 
-	if err := syscall.Setuid(uid); err != nil {
+	if err = syscall.Setuid(uid); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 
 		return

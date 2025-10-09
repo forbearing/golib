@@ -132,7 +132,7 @@ func Init() (err error) {
 	// Breaking change:
 	// https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-hcl-java-properties-ini-removed-from-core
 	codecRegistry := viper.NewCodecRegistry()
-	if err := codecRegistry.RegisterCodec("ini", ini.Codec{}); err != nil {
+	if err = codecRegistry.RegisterCodec("ini", ini.Codec{}); err != nil {
 		return err
 	}
 	cv = viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry))

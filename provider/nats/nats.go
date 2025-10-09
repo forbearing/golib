@@ -70,7 +70,7 @@ func New(cfg config.Nats) (*nats.Conn, error) {
 		opts = append(opts, nats.UserCredentials(cfg.CredentialsFile))
 	}
 	if len(cfg.NKeyFile) > 0 {
-		if opt, err := nats.NkeyOptionFromSeed(cfg.NKeyFile); err != nil {
+		if opt, e := nats.NkeyOptionFromSeed(cfg.NKeyFile); e != nil {
 			return nil, errors.Wrap(err, "failed to load nkey from seed file")
 		} else {
 			opts = append(opts, opt)

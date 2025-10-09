@@ -1827,7 +1827,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
-	if _dest, err := cache.Cache[[]M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[[]M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2012,7 +2012,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2184,7 +2184,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, err := cache.Cache[int64]().WithContext(ctx).Get(key); err != nil {
+	if _cache, e := cache.Cache[int64]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2290,7 +2290,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2446,7 +2446,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2602,7 +2602,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
