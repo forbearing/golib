@@ -298,7 +298,7 @@ func registerType(name string, typ reflect.Type) {
 					fieldVal.SetBool(boolVal)
 				}
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				if field.Type == reflect.TypeOf(time.Duration(0)) {
+				if field.Type == reflect.TypeFor[time.Duration]() {
 					// handle time.Duration
 					if duration, err := time.ParseDuration(envVal); err == nil {
 						fieldVal.SetInt(int64(duration))
@@ -340,7 +340,7 @@ func setDefaultDurationFields(typ reflect.Type, val reflect.Value) {
 		}
 
 		// Handle time.Duration field
-		if fieldTyp.Type == reflect.TypeOf(time.Duration(0)) {
+		if fieldTyp.Type == reflect.TypeFor[time.Duration]() {
 			// Check if the field has a default tag and its current value is zero
 			if defaultValue, ok := fieldTyp.Tag.Lookup("default"); ok && fieldVal.Interface().(time.Duration) == 0 {
 				// Parse the duration string
