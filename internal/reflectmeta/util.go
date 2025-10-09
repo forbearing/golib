@@ -134,7 +134,7 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 				// execute statement `slice.Interface().([]string)` directly will case panic.
 				// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
 				// We should make the slice of []string again.
-				slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
+				slice = reflect.MakeSlice(reflect.TypeFor[[]string](), _len, _len)
 				reflect.Copy(slice, fieldVal)
 				_v = strings.Join(slice.Interface().([]string), ",")
 			default:
@@ -278,7 +278,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 				// execute statement `slice.Interface().([]string)` directly will case panic.
 				// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
 				// We should make the slice of []string again.
-				slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
+				slice = reflect.MakeSlice(reflect.TypeFor[[]string](), _len, _len)
 				reflect.Copy(slice, fieldVal)
 				_v = strings.Join(slice.Interface().([]string), ",")
 			default:

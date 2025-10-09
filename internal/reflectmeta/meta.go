@@ -189,7 +189,7 @@ func GetCachedMethodParamType(typ reflect.Type, methodName string, idx int) (ref
 }
 
 func GetTypeOfModel[M any]() reflect.Type {
-	typ := reflect.TypeOf((*M)(nil)).Elem()
+	typ := reflect.TypeFor[M]()
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}

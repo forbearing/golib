@@ -60,12 +60,12 @@ type User struct {
 // }
 
 func TestUserGetStructMeta(t *testing.T) {
-	meta := reflectmeta.GetStructMeta(reflect.TypeOf(User{}))
-	typ := reflect.TypeOf(User{})
+	meta := reflectmeta.GetStructMeta(reflect.TypeFor[User]())
+	typ := reflect.TypeFor[User]()
 	test(t, meta, typ)
 
-	meta2 := reflectmeta.GetStructMeta(reflect.TypeOf(&User{}))
-	typ2 := reflect.TypeOf(&User{})
+	meta2 := reflectmeta.GetStructMeta(reflect.TypeFor[*User]())
+	typ2 := reflect.TypeFor[*User]()
 	test(t, meta2, typ2)
 }
 

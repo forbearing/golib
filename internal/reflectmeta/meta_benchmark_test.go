@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkReflectmeta_GetStructMeta(b *testing.B) {
-	typ := reflect.TypeOf(User{})
+	typ := reflect.TypeFor[User]()
 
 	for b.Loop() {
 		meta := reflectmeta.GetStructMeta(typ)
@@ -23,7 +23,7 @@ func BenchmarkReflectmeta_GetStructMeta(b *testing.B) {
 }
 
 func BenchmarkNativeReflect(b *testing.B) {
-	typ := reflect.TypeOf(User{})
+	typ := reflect.TypeFor[User]()
 
 	for b.Loop() {
 		for i := range typ.NumField() {
