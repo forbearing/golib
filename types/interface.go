@@ -372,8 +372,8 @@ type Model interface {
 }
 
 type (
-	Request  interface{}
-	Response interface{}
+	Request  any
+	Response any
 )
 
 // Service interface provides comprehensive business logic operations for model types.
