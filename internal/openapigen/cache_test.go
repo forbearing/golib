@@ -65,7 +65,7 @@ func TestParseStructCommentCache(t *testing.T) {
 
 func TestSummaryWithStructComment(t *testing.T) {
 	// Test with a struct that has comments
-	typ := reflect.TypeOf([]*CacheTestUser{})
+	typ := reflect.TypeFor[[]*CacheTestUser]()
 	result := summary("/api/users", consts.List, typ)
 	expected := "CacheTestUser represents a user with comments for testing"
 	if result != expected {
@@ -73,7 +73,7 @@ func TestSummaryWithStructComment(t *testing.T) {
 	}
 
 	// Test with a struct without comments - should fallback to original logic
-	typ2 := reflect.TypeOf([]*CacheTestUserWithoutComment{})
+	typ2 := reflect.TypeFor[[]*CacheTestUserWithoutComment]()
 	result2 := summary("/api/users", consts.List, typ2)
 	expected2 := "list CacheTestUserWithoutComments" // pluralized
 	if result2 != expected2 {
@@ -81,7 +81,7 @@ func TestSummaryWithStructComment(t *testing.T) {
 	}
 
 	// Test with non-slice type
-	typ3 := reflect.TypeOf(CacheTestUser{})
+	typ3 := reflect.TypeFor[CacheTestUser]()
 	result3 := summary("/api/users", consts.Create, typ3)
 	expected3 := "CacheTestUser represents a user with comments for testing"
 	if result3 != expected3 {

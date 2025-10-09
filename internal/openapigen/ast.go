@@ -144,7 +144,7 @@ func findSourceFile(pkgPath, typeName string) string {
 	}
 
 	// If go/build fails, try using call stack information
-	for i := 0; i < 15; i++ {
+	for i := range 15 {
 		_, file, _, ok := runtime.Caller(i)
 		if !ok {
 			break
@@ -277,9 +277,9 @@ func extractCommentText(commentGroup *ast.CommentGroup) string {
 		text := comment.Text
 
 		// Handle different types of comments
-		if strings.HasPrefix(text, "//") {
+		if after, ok := strings.CutPrefix(text, "//"); ok {
 			// Line comment
-			text = strings.TrimPrefix(text, "//")
+			text = after
 			text = strings.TrimSpace(text)
 			if text != "" {
 				lines = append(lines, text)
@@ -290,8 +290,8 @@ func extractCommentText(commentGroup *ast.CommentGroup) string {
 			text = strings.TrimSuffix(text, "*/")
 
 			// Handle multi-line block comments, split by lines and clean each line
-			blockLines := strings.Split(text, "\n")
-			for _, line := range blockLines {
+			blockLines := strings.SplitSeq(text, "\n")
+			for line := range blockLines {
 				line = strings.TrimSpace(line)
 				if line != "" {
 					lines = append(lines, line)
