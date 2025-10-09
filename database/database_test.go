@@ -25,7 +25,7 @@ type TestUser struct {
 }
 
 // UpdateBefore sets the UpdatedAt timestamp before update operations
-func (u *TestUser) UpdateBefore() error {
+func (u *TestUser) UpdateBefore(_ *types.ModelContext) error {
 	now := time.Now()
 	u.UpdatedAt = &now
 	return nil
