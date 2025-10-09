@@ -577,7 +577,7 @@ func (suite *DatabaseTestSuite) TestCreate() {
 
 	// Test creating with batch size
 	batchUsers := make([]*TestUser, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		batchUsers[i] = &TestUser{
 			Name:  fmt.Sprintf("User%d", i),
 			Email: fmt.Sprintf("user%d@example.com", i),
@@ -933,8 +933,7 @@ func (suite *DatabaseTestSuite) TestHealth() {
 func BenchmarkCreate(b *testing.B) {
 	db := database.Database[*TestUser](nil)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		user := &TestUser{
 			Name:     fmt.Sprintf("BenchUser%d", i),
 			Email:    fmt.Sprintf("bench%d@example.com", i),
@@ -953,10 +952,9 @@ func BenchmarkCreateBatch(b *testing.B) {
 	db := database.Database[*TestUser](nil)
 	batchSize := 100
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		users := make([]*TestUser, batchSize)
-		for j := 0; j < batchSize; j++ {
+		for j := range batchSize {
 			users[j] = &TestUser{
 				Name:     fmt.Sprintf("BatchUser%d_%d", i, j),
 				Email:    fmt.Sprintf("batch%d_%d@example.com", i, j),
@@ -982,8 +980,7 @@ func BenchmarkGet(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var result TestUser
 		err := db.Get(&result, user.ID)
 		if err != nil {
@@ -998,7 +995,7 @@ func BenchmarkList(b *testing.B) {
 
 	// Create test data
 	users := make([]*TestUser, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		users[i] = &TestUser{
 			Name:     fmt.Sprintf("ListUser%d", i),
 			Email:    fmt.Sprintf("list%d@example.com", i),
@@ -1011,8 +1008,7 @@ func BenchmarkList(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var result []*TestUser
 		err := db.WithLimit(10).List(&result)
 		if err != nil {
@@ -1032,8 +1028,7 @@ func BenchmarkUpdate(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		user.Age = 25 + (i % 50)
 		err := db.Update(user)
 		if err != nil {
@@ -1048,7 +1043,7 @@ func BenchmarkCount(b *testing.B) {
 
 	// Create test data
 	users := make([]*TestUser, 50)
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		users[i] = &TestUser{
 			Name:     fmt.Sprintf("CountUser%d", i),
 			Email:    fmt.Sprintf("count%d@example.com", i),
@@ -1061,8 +1056,7 @@ func BenchmarkCount(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var count int64
 		err := db.Count(&count)
 		if err != nil {
@@ -1077,7 +1071,7 @@ func BenchmarkFirst(b *testing.B) {
 
 	// Create test data
 	users := make([]*TestUser, 20)
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		users[i] = &TestUser{
 			Name:     fmt.Sprintf("FirstUser%d", i),
 			Email:    fmt.Sprintf("first%d@example.com", i),
@@ -1090,8 +1084,7 @@ func BenchmarkFirst(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var result TestUser
 		err := db.WithOrder("age ASC").First(&result)
 		if err != nil {
@@ -1104,8 +1097,7 @@ func BenchmarkFirst(b *testing.B) {
 func BenchmarkQueryBuilder(b *testing.B) {
 	db := database.Database[*TestUser](nil)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		queryUser := &TestUser{Age: 25, IsActive: true}
 		_ = db.WithQuery(queryUser).
 			WithOrder("created_at DESC").
