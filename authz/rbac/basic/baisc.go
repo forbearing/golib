@@ -49,7 +49,7 @@ func Init() (err error) {
 	}
 
 	filename := filepath.Join(config.Tempdir(), "casbin_model.conf")
-	if err = os.WriteFile(filename, modelData, 0o644); err != nil {
+	if err = os.WriteFile(filename, modelData, 0o600); err != nil {
 		return errors.Wrapf(err, "failed to write model file %s", filename)
 	}
 	// NOTE: gormadapter.NewAdapterByDBWithCustomTable creates the Casbin policy table with an auto-incrementing primary key.
@@ -68,7 +68,7 @@ func Init() (err error) {
 	rbac.Enforcer.EnableEnforce(true)
 
 	for _, user := range defaultAdmins {
-		rbac.Enforcer.AddGroupingPolicy(user, adminRole)
+		_, _ = rbac.Enforcer.AddGroupingPolicy(user, adminRole)
 	}
 
 	return rbac.Enforcer.LoadPolicy()
