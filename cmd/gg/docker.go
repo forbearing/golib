@@ -174,7 +174,7 @@ func generateDockerfile() error {
 
 	dockerfileContent := generateDockerfileContent(binaryName)
 
-	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0o644); err != nil {
+	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0o600); err != nil {
 		fmt.Printf("%s Failed to write Dockerfile: %v\n", red("✘"), err)
 		return fmt.Errorf("failed to write Dockerfile: %w", err)
 	}

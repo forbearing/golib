@@ -416,6 +416,7 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 func removeEmptyDirectories(rootDir string) {
 	filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			//nolint:nilerr
 			return nil // Continue walking even if there's an error
 		}
 
@@ -432,6 +433,7 @@ func removeEmptyDirectories(rootDir string) {
 		// Check if directory is empty
 		entries, err := os.ReadDir(path)
 		if err != nil {
+			//nolint:nilerr
 			return nil // Continue if we can't read the directory
 		}
 
@@ -451,11 +453,13 @@ func removeEmptyDirectories(rootDir string) {
 		emptyDirsFound := false
 		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || path == rootDir || !info.IsDir() {
+				//nolint:nilerr
 				return nil
 			}
 
 			entries, err := os.ReadDir(path)
 			if err != nil {
+				//nolint:nilerr
 				return nil
 			}
 
