@@ -57,7 +57,7 @@ var (
 )
 
 func Bootstrap() error {
-	maxprocs.Set(maxprocs.Logger(pkgzap.New().Infof))
+	_, _ = maxprocs.Set(maxprocs.Logger(pkgzap.New().Infof))
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -165,7 +165,7 @@ func Run() error {
 	}()
 	select {
 	case sig := <-sigCh:
-		zap.S().Infow("cancelled by signal", "signal", sig)
+		zap.S().Infow("canceled by signal", "signal", sig)
 		return nil
 	case err := <-errCh:
 		return err
