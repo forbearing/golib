@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -486,7 +487,7 @@ func AddPath(paths ...string) {
 	configPaths = append(configPaths, paths...)
 }
 
-// Save config instance to file.
-func Save(filename string) error {
-	return cv.WriteConfigAs(filename)
+// Save config instance to destination io.Writer
+func Save(out io.Writer) error {
+	return cv.WriteConfigTo(out)
 }
