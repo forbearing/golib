@@ -164,7 +164,7 @@ func (sl *SkipList[K, V]) put(key K, value V) {
 	}
 
 	// Insert new node by updating forward pointers
-	for i := 0; i < nodeLevel; i++ {
+	for i := range nodeLevel {
 		newNode.next[i] = update[i].next[i]
 		update[i].next[i] = newNode
 	}

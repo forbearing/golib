@@ -377,10 +377,7 @@ func (l *List[E]) growBy(n int) {
 func (l *List[E]) shrink() {
 	currCap := cap(l.elements)
 	if len(l.elements) <= int(shrinkFactor*float32(currCap)) {
-		newCap := int(shrinkFactor * float32(currCap))
-		if newCap < minCap {
-			newCap = minCap
-		}
+		newCap := max(int(shrinkFactor*float32(currCap)), minCap)
 		l.resize(len(l.elements), newCap)
 	}
 }

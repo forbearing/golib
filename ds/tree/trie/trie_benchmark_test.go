@@ -16,7 +16,7 @@ const bytesPerKey = 30
 
 func init() {
 	// string keys
-	for i := 0; i < len(stringKeys); i++ {
+	for i := range len(stringKeys) {
 		key := make([]byte, bytesPerKey)
 		if _, err := rand.Read(key); err != nil {
 			panic("error generating random byte slice")
