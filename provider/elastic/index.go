@@ -66,7 +66,7 @@ type IndexOption struct {
 //	}
 func (*index) Create(indexName string, options ...*IndexOption) error {
 	// Create the index body
-	body := make(map[string]interface{})
+	body := make(map[string]any)
 	if len(options) > 0 {
 		if options[0] != nil {
 			if options[0].Settings != nil {

@@ -25,7 +25,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 
 	// 遍历消息数组
 	for i := range docs {
-		meta := []byte(fmt.Sprintf(`{ "index" : { "_id" : "%s" } }%s`, docs[i].GetID(), "\n"))
+		meta := fmt.Appendf(nil, `{ "index" : { "_id" : "%s" } }%s`, docs[i].GetID(), "\n")
 		if data, err = json.Marshal(docs[i].Document()); err != nil {
 			err = errors.New("failed to marshaling document: " + err.Error())
 			logger.Elastic.Error(err)
@@ -57,15 +57,15 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 		return err
 	}
 
-	var blk map[string]interface{}
+	var blk map[string]any
 	if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
 		err = fmt.Errorf("failed to parse response body: %v", err)
 		logger.Elastic.Error(err)
 		return err
 	}
 	if blk["errors"].(bool) {
-		for _, item := range blk["items"].([]interface{}) {
-			if idx, ok := item.(map[string]interface{})["index"].(map[string]interface{}); ok {
+		for _, item := range blk["items"].([]any) {
+			if idx, ok := item.(map[string]any)["index"].(map[string]any); ok {
 				if idx["error"] != nil {
 					err = fmt.Errorf("error in item: %v", idx["error"])
 					logger.Elastic.Error(err)

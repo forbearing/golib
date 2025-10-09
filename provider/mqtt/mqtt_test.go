@@ -22,7 +22,7 @@ func TestMqtt(t *testing.T) {
 
 	topic := "test/topic"
 	t.Run("PublishAndSubscribe", func(t *testing.T) {
-		message := map[string]interface{}{
+		message := map[string]any{
 			"name": "test",
 			"time": time.Now().Unix(),
 		}
@@ -52,7 +52,7 @@ func TestMqtt(t *testing.T) {
 		select {
 		case <-done:
 			assert.Equal(t, topic, receivedTopic)
-			var receivedMsg map[string]interface{}
+			var receivedMsg map[string]any
 			err := json.Unmarshal(received, &receivedMsg)
 			assert.NoError(t, err)
 			assert.Equal(t, message["name"], receivedMsg["name"])

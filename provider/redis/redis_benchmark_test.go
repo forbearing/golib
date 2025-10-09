@@ -28,8 +28,8 @@ func BenchmarkRedis(b *testing.B) {
 			MemberCount: i,
 		})
 	}
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		if err := redis.SetML("groups", groups); err != nil {
 			b.Fatalf("%+v\n", err)
 		}
