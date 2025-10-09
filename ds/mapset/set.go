@@ -272,7 +272,7 @@ func (s *Set[E]) ContainsAnyElement(other *Set[E]) bool {
 	return false
 }
 
-// range calls fn for each element in the set.
+// Range calls fn for each element in the set.
 // If fn returns false, "Range" stops the iteration.
 // If fn is nil, "Range" does nothing.
 func (s *Set[E]) Range(fn func(e E) bool) {
