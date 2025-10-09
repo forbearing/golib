@@ -83,7 +83,7 @@ func releaseRun(cmd *cobra.Command, args []string) error {
 		if !fileExists(configFile) {
 			fmt.Printf("%s No .goreleaser.yml found, creating default configuration\n", gray("→"))
 			if err := initGoreleaserConfig(); err != nil {
-				return fmt.Errorf("failed to generate config: %v", err)
+				return fmt.Errorf("failed to generate config: %w", err)
 			}
 			fmt.Printf("%s Configuration file created automatically\n", green("✔"))
 			configFile = ".goreleaser.yml"
@@ -121,7 +121,7 @@ func initGoreleaserConfig() error {
 	// Get module name for binary name
 	moduleName, err := getModuleName()
 	if err != nil {
-		return fmt.Errorf("failed to get module name: %v", err)
+		return fmt.Errorf("failed to get module name: %w", err)
 	}
 	binaryName := filepath.Base(moduleName)
 
@@ -207,7 +207,7 @@ changelog:
 `, binaryName, binaryName, binaryName, binaryName)
 
 	if err := os.WriteFile(".goreleaser.yml", []byte(config), 0o644); err != nil {
-		return fmt.Errorf("failed to write config file: %v", err)
+		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
 	fmt.Printf("%s Generated .goreleaser.yml configuration\n", green("✔"))
@@ -303,7 +303,7 @@ func buildRelease(snapshot bool) error {
 
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("%s Release build failed: %v\n", red("✘"), err)
-		return fmt.Errorf("goreleaser failed: %v", err)
+		return fmt.Errorf("goreleaser failed: %w", err)
 	}
 
 	if snapshot {
@@ -320,7 +320,7 @@ func buildRelease(snapshot bool) error {
 func cleanDistDirectory() error {
 	fmt.Printf("%s Cleaning dist directory\n", gray("→"))
 	if err := os.RemoveAll("./dist"); err != nil {
-		return fmt.Errorf("failed to remove dist directory: %v", err)
+		return fmt.Errorf("failed to remove dist directory: %w", err)
 	}
 	fmt.Printf("%s Dist directory cleaned\n", green("✔"))
 	return nil

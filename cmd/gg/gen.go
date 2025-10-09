@@ -136,7 +136,7 @@ func genRun() {
 		m.Design.Range(func(route string, act *dsl.Action) {
 			if act.Service {
 				if alias := serviceAliasMap[m.ServiceImportPath(modelDir, serviceDir)]; len(alias) > 0 {
-					// alias import pacakge, eg:
+					// alias import package, eg:
 					// pkg1_user "service/pkg1/user"
 					// pkg2_user "service/pkg2/user"
 					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, act.Phase.RoleName()), act.Phase))
@@ -395,7 +395,7 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 
 	response = strings.ToLower(strings.TrimSpace(response))
 	if response != "y" && response != "yes" {
-		fmt.Printf("  %s Deletion cancelled\n", gray("→"))
+		fmt.Printf("  %s Deletion canceled\n", gray("→"))
 		return
 	}
 

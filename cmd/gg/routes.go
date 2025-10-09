@@ -93,7 +93,7 @@ func parseRoutesFromFile() (map[string][]string, error) {
 	// Read and parse the router.go file
 	content, err := os.ReadFile(routerFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read router file: %v", err)
+		return nil, fmt.Errorf("failed to read router file: %w", err)
 	}
 
 	// Parse routes using regex patterns
