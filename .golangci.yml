@@ -74,7 +74,7 @@ linters:
       for-loops: false
 
     staticcheck:
-      checks: ["all"]
+      checks: ["all", "-QF1008"]
 
   # Exclusions moved under linters.exclusions for v2
   exclusions:
