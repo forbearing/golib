@@ -113,7 +113,7 @@ func benchmark(b *testing.B, cache any) {
 	keys := make([]string, count)
 	values := make([]string, count)
 	cm := cache.(types.Cache[string])
-	for i := 0; i < count; i++ {
+	for i := range count {
 		keys[i] = fmt.Sprintf("key-%d", i)
 		values[i] = fmt.Sprintf("value-%d", i)
 	}
@@ -138,7 +138,7 @@ func benchmark(b *testing.B, cache any) {
 	}
 
 	b.Run("get", func(b *testing.B) {
-		for i := 0; i < count; i++ {
+		for i := range count {
 			if err := cm.Set(keys[i], values[i], ttl); err != nil {
 				b.Fatal(err)
 			}
@@ -154,7 +154,7 @@ func benchmark(b *testing.B, cache any) {
 	})
 	if dcm, ok := cache.(types.DistributedCache[string]); ok {
 		b.Run("getwithsync", func(b *testing.B) {
-			for i := 0; i < count; i++ {
+			for i := range count {
 				if err := dcm.Set(keys[i], values[i], ttl); err != nil {
 					b.Fatal(err)
 				}
@@ -195,7 +195,7 @@ func benchmark(b *testing.B, cache any) {
 	})
 
 	b.Run("delete", func(b *testing.B) {
-		for i := 0; i < count; i++ {
+		for i := range count {
 			if err := cm.Set(keys[i], values[i], ttl); err != nil {
 				b.Fatal(err)
 			}
@@ -211,7 +211,7 @@ func benchmark(b *testing.B, cache any) {
 	})
 	if dcm, ok := cache.(types.DistributedCache[string]); ok {
 		b.Run("deletewithsync", func(b *testing.B) {
-			for i := 0; i < count; i++ {
+			for i := range count {
 				if err := dcm.SetWithSync(keys[i], values[i], ttl, ttl); err != nil {
 					b.Fatal(err)
 				}
@@ -232,7 +232,7 @@ func benchmarkParallel(b *testing.B, cm types.Cache[string]) {
 	count := 10000
 	keys := make([]string, count)
 	values := make([]string, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		keys[i] = fmt.Sprintf("parallel-key-%d", i)
 		values[i] = fmt.Sprintf("parallel-value-%d", i)
 	}
@@ -252,7 +252,7 @@ func benchmarkParallel(b *testing.B, cm types.Cache[string]) {
 	})
 
 	b.Run("parallel_get", func(b *testing.B) {
-		for i := 0; i < count; i++ {
+		for i := range count {
 			err := cm.Set(keys[i], values[i], ttl)
 			if err != nil {
 				b.Fatal(err)

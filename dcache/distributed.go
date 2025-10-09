@@ -119,7 +119,7 @@ func (e *event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 //	kafka 在单节点上的消费者数量: 服务进程个数 * DistributedCache个数, 一般都是跑一个服务进程的.
 //	kafka 监听者总数量: 但节点上消费者个数 * 节点个数
 func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.DistributedCache[T], error) {
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 	key := typ.PkgPath() + "|" + typ.String()
 
 	// Fast path: check if cache already exists
@@ -220,7 +220,7 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Cache[
 	// localCache 是支持泛型的, 每一种类型都有单独的 localCache,
 	// NewLocalCache 只是从包含多个 local cache 的 map 中返回当前类型的 lcoal cache
 	// 由于 redis 是不支持泛型的, 所以这里加上一个 prefix 来作为新的命名空间
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 	var prefix string
 	var typStr string
 	if len(typ.PkgPath()) > 0 { // 不是 golang 基本类型, 一般是结构体类型

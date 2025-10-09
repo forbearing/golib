@@ -158,7 +158,7 @@ func TestLocalCacheConcurrency(t *testing.T) {
 	const goroutines = 100
 	done := make(chan bool)
 
-	for i := 0; i < goroutines; i++ {
+	for i := range goroutines {
 		go func(idx int) {
 			key := fmt.Sprintf("key-%d", idx)
 			value := fmt.Sprintf("value-%d", idx)
@@ -175,7 +175,7 @@ func TestLocalCacheConcurrency(t *testing.T) {
 	}
 
 	// 等待所有goroutine完成
-	for i := 0; i < goroutines; i++ {
+	for range goroutines {
 		<-done
 	}
 }
@@ -210,7 +210,7 @@ func TestLocalCacheKeyCollision(t *testing.T) {
 
 	// 设置大量随机键以增加冲突可能性
 	const keyCount = 10000
-	for i := 0; i < keyCount; i++ {
+	for i := range keyCount {
 		key := fmt.Sprintf("collision-test-key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 		err := cache.Set(key, value, 1*time.Hour)
@@ -218,7 +218,7 @@ func TestLocalCacheKeyCollision(t *testing.T) {
 	}
 
 	// 随机检查一些键值对
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		idx := i * 100
 		key := fmt.Sprintf("collision-test-key-%d", idx)
 		expectedValue := fmt.Sprintf("value-%d", idx)
@@ -239,14 +239,14 @@ func TestLocalCacheMetrics(t *testing.T) {
 	assert.True(t, ok, "缓存应该实现cacheMetricsProvider接口")
 
 	// 执行一些操作以生成指标
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("metrics-key-%d", i)
 		err := cache.Set(key, fmt.Sprintf("val-%d", i), 1*time.Hour)
 		assert.NoError(t, err)
 	}
 
 	// 一些读取操作
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		key := fmt.Sprintf("metrics-key-%d", i)
 		_, err := cache.Get(key)
 		assert.NoError(t, err)
