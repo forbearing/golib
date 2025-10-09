@@ -209,7 +209,7 @@ func printTrieNode(node *trie.Node[string, *RouteInfo], prefix, childPrefix stri
 		key  string
 		node *trie.Node[string, *RouteInfo]
 	}
-	var childList []childPair
+	childList := make([]childPair, 0, len(children))
 	for k, v := range children {
 		childList = append(childList, childPair{k, v})
 	}

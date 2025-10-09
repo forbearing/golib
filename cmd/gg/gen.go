@@ -265,14 +265,14 @@ func genRun() {
 				checkErr(err)
 				logUpdate(filename)
 				checkErr(ensureParentDir(filename))
-				checkErr(os.WriteFile(filename, []byte(code), 0o644))
+				checkErr(os.WriteFile(filename, []byte(code), 0o600))
 			} else {
 				logSkip(filename)
 			}
 		} else {
 			logCreate(filename)
 			checkErr(ensureParentDir(filename))
-			checkErr(os.WriteFile(filename, []byte(code), 0o644))
+			checkErr(os.WriteFile(filename, []byte(code), 0o600))
 		}
 	}
 
@@ -391,7 +391,7 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 	// Ask user for confirmation
 	fmt.Printf("\n%s Do you want to delete these files? (y/N): ", cyan("?"))
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	response = strings.ToLower(strings.TrimSpace(response))
 	if response != "y" && response != "yes" {
@@ -414,7 +414,7 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 
 // removeEmptyDirectories recursively removes empty directories starting from the given root directory
 func removeEmptyDirectories(rootDir string) {
-	filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			//nolint:nilerr
 			return nil // Continue walking even if there's an error
@@ -451,7 +451,7 @@ func removeEmptyDirectories(rootDir string) {
 	// After removing a directory, its parent might become empty
 	for range 3 {
 		emptyDirsFound := false
-		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || path == rootDir || !info.IsDir() {
 				//nolint:nilerr
 				return nil

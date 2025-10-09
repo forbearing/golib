@@ -104,7 +104,7 @@ func dockerGenRun(cmd *cobra.Command, args []string) error {
 func dockerBuildRun(cmd *cobra.Command, args []string) error {
 	// Check if Docker is installed
 	if err := checkDockerInstalled(); err != nil {
-		return fmt.Errorf("Docker is not installed or not accessible: %w", err)
+		return fmt.Errorf("docker is not installed or not accessible: %w", err)
 	}
 
 	// Generate Dockerfile if it doesn't exist

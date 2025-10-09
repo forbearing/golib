@@ -14,6 +14,8 @@ import (
 	"github.com/forbearing/gst/dsl"
 	"github.com/gertd/go-pluralize"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var checkCmd = &cobra.Command{
@@ -195,7 +197,7 @@ func checkFileForServiceImports(filePath, layerType string) []string {
 	if err != nil {
 		// Treat parse errors as violations to prevent code generation
 		violation := fmt.Sprintf("%s file '%s' has parse error: %v",
-			strings.Title(layerType), filePath, err)
+			cases.Title(language.English).String(layerType), filePath, err)
 		violations = append(violations, violation)
 		return violations
 	}
@@ -207,7 +209,7 @@ func checkFileForServiceImports(filePath, layerType string) []string {
 		// Check for service imports
 		if containsServiceImport(importPath, layerType) {
 			violation := fmt.Sprintf("%s file '%s' imports service code: %s",
-				strings.Title(layerType), filePath, importPath)
+				cases.Title(language.English).String(layerType), filePath, importPath)
 			violations = append(violations, violation)
 		}
 	}

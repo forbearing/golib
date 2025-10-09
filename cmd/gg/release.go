@@ -206,7 +206,7 @@ changelog:
 #       - "--label=org.opencontainers.image.version={{.Version}}"
 `, binaryName, binaryName, binaryName, binaryName)
 
-	if err := os.WriteFile(".goreleaser.yml", []byte(config), 0o644); err != nil {
+	if err := os.WriteFile(".goreleaser.yml", []byte(config), 0o600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
