@@ -1,3 +1,4 @@
+//nolint:predeclared
 package new
 
 import (

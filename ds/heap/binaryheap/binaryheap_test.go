@@ -7,6 +7,7 @@ import (
 
 	"github.com/forbearing/gst/ds/heap/binaryheap"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createHeap(t *testing.T) *binaryheap.Heap[int] {
@@ -67,6 +68,7 @@ func TestBinaryHeap_MaxHeap(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3, 4, 5, 6}, h.Values())
 
 	h, err = binaryheap.NewFromOrderedSlice(slice, binaryheap.WithMaxHeap[int]())
+	require.NoError(t, err)
 	assert.Equal(t, []int{6, 5, 4, 3, 2, 1}, h.Values())
 
 	m := map[int]string{

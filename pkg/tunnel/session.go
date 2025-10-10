@@ -135,7 +135,7 @@ func (s *Session) Write(event *Event) error {
 	}
 
 	// 2.write data size
-	if err := binary.Write(s.tcpconn, binary.BigEndian, uint32(len(buf))); err != nil {
+	if err := binary.Write(s.tcpconn, binary.BigEndian, uint32(len(buf))); err != nil { //nolint:gosec
 		return err
 	}
 	logger.Binary.Infoz("Write", zap.Int("size", len(buf)), zap.ByteString("data", buf), zap.Binary("binary", buf))
@@ -201,7 +201,7 @@ func NewSession(_conn any, appSide consts.AppSide, cid ...string) (*Session, err
 		locker.connection = nd
 		locker.key = key
 		if val, ok := connMap.LoadOrStore(key, locker); ok {
-			locker = val.(*connMapVal)
+			locker = val.(*connMapVal) //nolint:errcheck
 		}
 		return &Session{tcpconn: conn, locker: locker}, nil
 	case *websocket.Conn:

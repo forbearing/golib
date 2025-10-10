@@ -26,7 +26,7 @@ func (q *Queue[E]) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []byte(fmt.Sprintf("[%s]", strings.Join(items, ","))), nil
+	return fmt.Appendf(nil, "[%s]", strings.Join(items, ",")), nil
 }
 
 // UnmarshalJSON will unmarshal a JSON-based representation byte slice into the queue.

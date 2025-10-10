@@ -47,12 +47,12 @@ func (l *elasticLogger) LogRoundTrip(
 	return nil
 }
 
-// The ResponseBodyEnabled method is required for the Logger interface
+// RequestBodyEnabled is required for the Logger interface
 func (l *elasticLogger) RequestBodyEnabled() bool {
 	return true
 }
 
-// The ResponseBodyEnabled method is required for the Logger interface
+// ResponseBodyEnabled is required for the Logger interface
 func (l *elasticLogger) ResponseBodyEnabled() bool {
 	return true
 }

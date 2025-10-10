@@ -100,16 +100,16 @@ func (dc *DatabaseContext) Context() context.Context {
 
 	c := dc.context
 	if len(dc.Username) != 0 {
-		c = context.WithValue(c, consts.CTX_USERNAME, dc.Username)
+		c = context.WithValue(c, consts.CTX_USERNAME, dc.Username) //nolint:staticcheck
 	}
 	if len(dc.UserID) != 0 {
-		c = context.WithValue(c, consts.CTX_USER_ID, dc.UserID)
+		c = context.WithValue(c, consts.CTX_USER_ID, dc.UserID) //nolint:staticcheck
 	}
 	if len(dc.RequestID) != 0 {
-		c = context.WithValue(c, consts.REQUEST_ID, dc.RequestID)
+		c = context.WithValue(c, consts.REQUEST_ID, dc.RequestID) //nolint:staticcheck
 	}
 	if len(dc.TraceID) != 0 {
-		c = context.WithValue(c, consts.TRACE_ID, dc.TraceID)
+		c = context.WithValue(c, consts.TRACE_ID, dc.TraceID) //nolint:staticcheck
 	}
 
 	return c
@@ -208,16 +208,16 @@ func (sc *ServiceContext) Context() context.Context {
 
 	c := sc.context
 	if len(sc.Username) != 0 {
-		c = context.WithValue(c, consts.CTX_USERNAME, sc.Username)
+		c = context.WithValue(c, consts.CTX_USERNAME, sc.Username) //nolint:staticcheck
 	}
 	if len(sc.UserID) != 0 {
-		c = context.WithValue(c, consts.CTX_USER_ID, sc.UserID)
+		c = context.WithValue(c, consts.CTX_USER_ID, sc.UserID) //nolint:staticcheck
 	}
 	if len(sc.RequestID) != 0 {
-		c = context.WithValue(c, consts.REQUEST_ID, sc.RequestID)
+		c = context.WithValue(c, consts.REQUEST_ID, sc.RequestID) //nolint:staticcheck
 	}
 	if len(sc.TraceID) != 0 {
-		c = context.WithValue(c, consts.TRACE_ID, sc.TraceID)
+		c = context.WithValue(c, consts.TRACE_ID, sc.TraceID) //nolint:staticcheck
 	}
 
 	return c

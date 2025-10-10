@@ -45,13 +45,13 @@ func Init() (err error) {
 		return errors.Wrap(err, "failed to create rocketmq producer")
 	}
 	if defaultConsumer, err = NewPushConsumer(cfg, cfg.GroupName); err != nil {
-		defaultProducer.Shutdown()
+		_ = defaultProducer.Shutdown()
 		defaultProducer = nil
 		return errors.Wrap(err, "failed to create rocketmq consumer")
 	}
 	if defaultAdmin, err = NewAdmin(cfg); err != nil {
-		defaultProducer.Shutdown()
-		defaultConsumer.Shutdown()
+		_ = defaultProducer.Shutdown()
+		_ = defaultConsumer.Shutdown()
 		defaultProducer = nil
 		defaultConsumer = nil
 		return errors.Wrap(err, "failed to create rocketmq admin")
@@ -117,7 +117,7 @@ func NewProducer(cfg config.RocketMQ) (rocketmq.Producer, error) {
 	return p, nil
 }
 
-// NewConsumer returns a new RocketMQ push consumer with given configuration.
+// NewPushConsumer returns a new RocketMQ push consumer with given configuration.
 // It's the caller's responsibility to start and shutdown the consumer.
 func NewPushConsumer(cfg config.RocketMQ, consumerGroup string) (rocketmq.PushConsumer, error) {
 	if consumerGroup == "" {

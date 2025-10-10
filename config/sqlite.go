@@ -1,10 +1,10 @@
 package config
 
 const (
-	SQLITE_PATH      = "SQLITE_PATH"
-	SQLITE_DATABASE  = "SQLITE_DATABASE"
-	SQLITE_IS_MEMORY = "SQLITE_IS_MEMORY"
-	SQLITE_ENABLE    = "SQLITE_ENABLE"
+	SQLITE_PATH      = "SQLITE_PATH"      //nolint:staticcheck
+	SQLITE_DATABASE  = "SQLITE_DATABASE"  //nolint:staticcheck
+	SQLITE_IS_MEMORY = "SQLITE_IS_MEMORY" //nolint:staticcheck
+	SQLITE_ENABLE    = "SQLITE_ENABLE"    //nolint:staticcheck
 )
 
 type Sqlite struct {

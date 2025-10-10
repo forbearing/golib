@@ -60,12 +60,12 @@ type User struct {
 // }
 
 func TestUserGetStructMeta(t *testing.T) {
-	meta := reflectmeta.GetStructMeta(reflect.TypeOf(User{}))
-	typ := reflect.TypeOf(User{})
+	meta := reflectmeta.GetStructMeta(reflect.TypeFor[User]())
+	typ := reflect.TypeFor[User]()
 	test(t, meta, typ)
 
-	meta2 := reflectmeta.GetStructMeta(reflect.TypeOf(&User{}))
-	typ2 := reflect.TypeOf(&User{})
+	meta2 := reflectmeta.GetStructMeta(reflect.TypeFor[*User]())
+	typ2 := reflect.TypeFor[*User]()
 	test(t, meta2, typ2)
 }
 
@@ -85,8 +85,8 @@ func test(t *testing.T, meta *reflectmeta.StructMeta, typ reflect.Type) {
 	})
 	t.Run("Tag", func(t *testing.T) {
 		for i := range typ.NumField() {
-			if typ.Field(i).Tag.Get("json") != meta.JsonTag(i) {
-				t.Errorf("JsonTag(%d) = %s, want %s", i, meta.JsonTag(i), typ.Field(i).Tag.Get("json"))
+			if typ.Field(i).Tag.Get("json") != meta.JSONTag(i) {
+				t.Errorf("JsonTag(%d) = %s, want %s", i, meta.JSONTag(i), typ.Field(i).Tag.Get("json"))
 			}
 			if typ.Field(i).Tag.Get("schema") != meta.SchemaTag(i) {
 				t.Errorf("SchemaTag(%d) = %s, want %s", i, meta.SchemaTag(i), typ.Field(i).Tag.Get("schema"))
@@ -94,8 +94,8 @@ func test(t *testing.T, meta *reflectmeta.StructMeta, typ reflect.Type) {
 			if typ.Field(i).Tag.Get("gorm") != meta.GormTag(i) {
 				t.Errorf("GormTag(%d) = %s, want %s", i, meta.GormTag(i), typ.Field(i).Tag.Get("gorm"))
 			}
-			if typ.Field(i).Tag.Get("url") != meta.UrlTag(i) {
-				t.Errorf("UrlTag(%d) = %s, want %s", i, meta.UrlTag(i), typ.Field(i).Tag.Get("url"))
+			if typ.Field(i).Tag.Get("url") != meta.URLTag(i) {
+				t.Errorf("UrlTag(%d) = %s, want %s", i, meta.URLTag(i), typ.Field(i).Tag.Get("url"))
 			}
 			if typ.Field(i).Tag.Get("query") != meta.QueryTag(i) {
 				t.Errorf("QueryTag(%d) = %s, want %s", i, meta.QueryTag(i), typ.Field(i).Tag.Get("query"))

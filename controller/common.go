@@ -10,7 +10,7 @@ import (
 	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/model"
-	model_log "github.com/forbearing/gst/model/log"
+	modellog "github.com/forbearing/gst/model/log"
 	"github.com/forbearing/gst/provider/redis"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/util"
@@ -20,7 +20,7 @@ import (
 )
 
 // writeCookie 写 cookie 并重定向
-func writeCookie(c *gin.Context, token, userId, name string, redirect ...bool) {
+func writeCookie(c *gin.Context, token, userID, name string, redirect ...bool) {
 	zap.S().Info("writeCookie")
 	zap.S().Info("'TokenExpireDuration:' ", config.App.AccessTokenExpireDuration)
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -32,7 +32,7 @@ func writeCookie(c *gin.Context, token, userId, name string, redirect ...bool) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -55,15 +55,15 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 		return
 	}
 	name := user.Name
-	userId := user.ID
-	sessionId := user.SessionId
-	zap.S().Info("user.SessionId: ", user.SessionId)
+	userID := user.ID
+	sessionID := user.SessionID
+	zap.S().Info("user.SessionId: ", user.SessionID)
 	sessionData, err := json.Marshal(user)
 	if err != nil {
 		zap.S().Error(err)
 		return
 	}
-	if err := redis.SetSession(sessionId, sessionData); err != nil {
+	if err := redis.SetSession(sessionID, sessionData); err != nil {
 		zap.S().Error(err)
 		return
 	}
@@ -90,13 +90,13 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    SESSION_ID,
-		Value:   sessionId,
+		Value:   sessionID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -114,14 +114,14 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		return
 	}
 	name := userInfo.Name
-	userId := userInfo.UserId
+	userID := userInfo.UserID
 	sessionData, err := json.Marshal(userInfo)
 	if err != nil {
 		zap.S().Error(err)
 		return
 	}
-	sessionId := util.UUID()
-	if err := redis.SetSession(sessionId, sessionData); err != nil {
+	sessionID := util.UUID()
+	if err = redis.SetSession(sessionID, sessionData); err != nil {
 		zap.S().Error(err)
 		return
 	}
@@ -148,13 +148,13 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    SESSION_ID,
-		Value:   sessionId,
+		Value:   sessionID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -166,11 +166,11 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	ua := useragent.New(c.Request.UserAgent())
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
-	database.Database[*model_log.LoginLog](types.NewDatabaseContext(c)).Create(&model_log.LoginLog{
-		UserID:   userInfo.UserId,
+	err = database.Database[*modellog.LoginLog](types.NewDatabaseContext(c)).Create(&modellog.LoginLog{
+		UserID:   userInfo.UserID,
 		Username: userInfo.Name,
 		Token:    aToken,
-		Status:   model_log.LoginStatusSuccess,
+		Status:   modellog.LoginStatusSuccess,
 		ClientIP: c.ClientIP(),
 		UserAgent: model.UserAgent{
 			Source:   c.Request.UserAgent(),
@@ -179,6 +179,9 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 			Browser:  fmt.Sprintf("%s %s", browserName, browserVersion),
 		},
 	})
+	if err != nil {
+		zap.S().Error(err)
+	}
 	domain := config.App.Domain
 	if len(util.ParseScheme(c.Request)) > 0 && len(c.Request.Host) > 0 {
 		domain = fmt.Sprintf("%s://%s", util.ParseScheme(c.Request), c.Request.Host)

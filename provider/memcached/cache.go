@@ -57,7 +57,7 @@ func (c *cache[T]) Get(key string) (T, error) {
 	}
 	item, err := client.Get(key)
 	if err != nil {
-		if err == memcache.ErrCacheMiss {
+		if errors.Is(err, memcache.ErrCacheMiss) {
 			return zero, types.ErrEntryNotFound
 		}
 		return zero, err
@@ -89,7 +89,7 @@ func (c *cache[T]) Exists(key string) bool {
 		return false
 	}
 	_, err := client.Get(key)
-	if err == memcache.ErrCacheMiss {
+	if errors.Is(err, memcache.ErrCacheMiss) {
 		return false
 	}
 	return err == nil

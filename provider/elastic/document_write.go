@@ -25,7 +25,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 
 	// 遍历消息数组
 	for i := range docs {
-		meta := []byte(fmt.Sprintf(`{ "index" : { "_id" : "%s" } }%s`, docs[i].GetID(), "\n"))
+		meta := fmt.Appendf(nil, `{ "index" : { "_id" : "%s" } }%s`, docs[i].GetID(), "\n")
 		if data, err = json.Marshal(docs[i].Document()); err != nil {
 			err = errors.New("failed to marshaling document: " + err.Error())
 			logger.Elastic.Error(err)
@@ -40,7 +40,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 	// 执行批量请求
 	res, err = client.Bulk(bytes.NewReader(buf.Bytes()), client.Bulk.WithIndex(indexName))
 	if err != nil {
-		err = fmt.Errorf("failed to execute bulk request: %v", err)
+		err = fmt.Errorf("failed to execute bulk request: %w", err)
 		logger.Elastic.Error(err)
 		return err
 	}
@@ -48,7 +48,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 
 	if res.IsError() {
 		if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
-			err = fmt.Errorf("failed to parse response body: %v", err)
+			err = fmt.Errorf("failed to parse response body: %w", err)
 			logger.Elastic.Error(err)
 			return err
 		}
@@ -57,15 +57,15 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 		return err
 	}
 
-	var blk map[string]interface{}
+	var blk map[string]any
 	if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-		err = fmt.Errorf("failed to parse response body: %v", err)
+		err = fmt.Errorf("failed to parse response body: %w", err)
 		logger.Elastic.Error(err)
 		return err
 	}
-	if blk["errors"].(bool) {
-		for _, item := range blk["items"].([]interface{}) {
-			if idx, ok := item.(map[string]interface{})["index"].(map[string]interface{}); ok {
+	if blk["errors"].(bool) { //nolint:errcheck
+		for _, item := range blk["items"].([]any) { //nolint:errcheck
+			if idx, ok := item.(map[string]any)["index"].(map[string]any); ok {
 				if idx["error"] != nil {
 					err = fmt.Errorf("error in item: %v", idx["error"])
 					logger.Elastic.Error(err)

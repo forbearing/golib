@@ -40,10 +40,11 @@ type cache[T any] struct {
 }
 
 func Cache[T any]() types.Cache[T] {
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T])
 	}
 
@@ -55,6 +56,7 @@ func Cache[T any]() types.Cache[T] {
 		val = tracing.NewTracingWrapper(&cache[T]{c: newBigCache(), ctx: context.Background()}, "bigcache")
 		cacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T])
 }
 
@@ -86,8 +88,7 @@ func (c *cache[T]) Peek(key string) (T, error) {
 }
 
 func (c *cache[T]) Delete(key string) error {
-	c.c.Delete(key)
-	return nil
+	return c.c.Delete(key)
 }
 
 func (c *cache[T]) Exists(key string) bool {
@@ -100,7 +101,7 @@ func (c *cache[T]) Len() int {
 }
 
 func (c *cache[T]) Clear() {
-	c.c.Reset()
+	_ = c.c.Reset()
 }
 
 func (c *cache[T]) WithContext(ctx context.Context) types.Cache[T] {

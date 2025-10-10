@@ -35,7 +35,9 @@ func Init() (err error) {
 		return errors.Wrap(err, "failed to get clickhouse db")
 	}
 	// It will fix error: "Cannot create column with type 'FixedString(10240)' because fixed string with size > 256 is suspicious. Set setting allow_suspicious_fixed_string_types = 1 in order to allow it"
-	db.Exec("SET allow_suspicious_fixed_string_types = 1")
+	if _, err = db.Exec("SET allow_suspicious_fixed_string_types = 1"); err != nil {
+		return err
+	}
 	db.SetMaxIdleConns(config.App.Database.MaxIdleConns)
 	db.SetMaxOpenConns(config.App.Database.MaxOpenConns)
 	db.SetConnMaxLifetime(config.App.Database.ConnMaxLifetime)

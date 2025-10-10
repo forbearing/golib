@@ -99,7 +99,7 @@ func configureKafka(config *sarama.Config, cfg config.Kafka) error {
 	}
 
 	// Producer configurations
-	config.Producer.RequiredAcks = sarama.RequiredAcks(cfg.Producer.RequiredAcks)
+	config.Producer.RequiredAcks = sarama.RequiredAcks(cfg.Producer.RequiredAcks) //nolint:gosec
 	config.Producer.Retry.Max = cfg.Producer.Retries
 	if cfg.Producer.Compression != "" {
 		switch cfg.Producer.Compression {

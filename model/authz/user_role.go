@@ -1,4 +1,4 @@
-package model_authz
+package modelauthz
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ func init() {
 }
 
 type UserRole struct {
-	UserId string `json:"user_id,omitempty" schema:"user_id"`
-	RoleId string `json:"role_id,omitempty" schema:"role_id"`
+	UserID string `json:"user_id,omitempty" schema:"user_id"`
+	RoleID string `json:"role_id,omitempty" schema:"role_id"`
 
 	User string `json:"user,omitempty" schema:"user"` // 用户名,只是为了方便查询
 	Role string `json:"role,omitempty" schema:"role"` // 角色名,只是为了方便查询
@@ -27,24 +27,24 @@ type UserRole struct {
 }
 
 func (r *UserRole) CreateBefore(ctx *types.ModelContext) error {
-	if len(r.UserId) == 0 {
+	if len(r.UserID) == 0 {
 		return errors.New("user_id is required")
 	}
-	if len(r.RoleId) == 0 {
+	if len(r.RoleID) == 0 {
 		return errors.New("role_id is required")
 	}
 	// expands field: user and role
 	user, role := new(model.User), new(Role)
-	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserID); err != nil {
 		return err
 	}
-	if err := database.Database[*Role](ctx.DatabaseContext()).Get(role, r.RoleId); err != nil {
+	if err := database.Database[*Role](ctx.DatabaseContext()).Get(role, r.RoleID); err != nil {
 		return err
 	}
 	r.User, r.Role = user.Name, role.Name
 
 	// If the user already has the role, set same id to just update it.
-	r.SetID(util.HashID(r.UserId, r.RoleId))
+	r.SetID(util.HashID(r.UserID, r.RoleID))
 
 	return nil
 }
@@ -54,17 +54,17 @@ func (r *UserRole) CreateAfter(ctx *types.ModelContext) error {
 		return err
 	}
 	// NOTE: must be role name not role id.
-	if err := rbac.RBAC().AssignRole(r.UserId, r.Role); err != nil {
+	if err := rbac.RBAC().AssignRole(r.UserID, r.Role); err != nil {
 		return err
 	}
 
 	// update casbin_rule field: `user`, `role`, `remark`
 	user := new(model.User)
-	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserId); err != nil {
+	if err := database.Database[*model.User](ctx.DatabaseContext()).Get(user, r.UserID); err != nil {
 		return err
 	}
 	casbinRules := make([]*CasbinRule, 0)
-	if err := database.Database[*CasbinRule](ctx.DatabaseContext()).WithLimit(1).WithQuery(&CasbinRule{V0: r.UserId, V1: r.Role}).List(&casbinRules); err != nil {
+	if err := database.Database[*CasbinRule](ctx.DatabaseContext()).WithLimit(1).WithQuery(&CasbinRule{V0: r.UserID, V1: r.Role}).List(&casbinRules); err != nil {
 		return err
 	}
 	if len(casbinRules) > 0 {
@@ -82,7 +82,7 @@ func (r *UserRole) DeleteBefore(ctx *types.ModelContext) error {
 		return err
 	}
 	// NOTE: must be role name not role id.
-	return rbac.RBAC().UnassignRole(r.UserId, r.Role)
+	return rbac.RBAC().UnassignRole(r.UserID, r.Role)
 }
 
 func (r *UserRole) DeleteAfter(ctx *types.ModelContext) error {
@@ -93,10 +93,10 @@ func (r *UserRole) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if r == nil {
 		return nil
 	}
-	enc.AddString("user_id", r.UserId)
-	enc.AddString("role_id", r.RoleId)
+	enc.AddString("user_id", r.UserID)
+	enc.AddString("role_id", r.RoleID)
 	enc.AddString("user", r.User)
 	enc.AddString("role", r.Role)
-	enc.AddObject("base", &r.Base)
+	_ = enc.AddObject("base", &r.Base)
 	return nil
 }

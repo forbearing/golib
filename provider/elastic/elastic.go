@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	TIMESTAMP_FILE    = "/tmp/timestamp"
+	TIMESTAMP_FILE    = "/tmp/timestamp" //nolint:staticcheck
 	defaultSearchSize = 10000
 )
 
@@ -102,7 +102,7 @@ func New(cfg config.Elasticsearch) (*elasticsearch.Client, error) {
 		if cfg.RetryBackoff {
 			esCfg.RetryBackoff = func(attempt int) time.Duration {
 				// Calculate exponential backoff with min and max bounds
-				retryDelay := min(cfg.RetryBackoffMin*time.Duration(1<<uint(attempt)), cfg.RetryBackoffMax)
+				retryDelay := min(cfg.RetryBackoffMin*time.Duration(1<<uint(attempt)), cfg.RetryBackoffMax) //nolint:gosec
 				return retryDelay
 			}
 		}
@@ -217,7 +217,7 @@ func SearchTimestamp(index string, size ...int) ([]byte, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			timestampStart = time.Date(now.Year(), now.Month(), now.Day()-1, now.Hour(), now.Minute(), now.Second(), 0, time.UTC) // 提前一天
 			fmt.Println("------------------- touch file and write time: ", timestampStart.Format(time.RFC3339))
-			if err = os.WriteFile(TIMESTAMP_FILE, []byte(timestampStart.Format(time.RFC3339)), 0o644); err != nil {
+			if err = os.WriteFile(TIMESTAMP_FILE, []byte(timestampStart.Format(time.RFC3339)), 0o600); err != nil {
 				return nil, err
 			}
 		} else {

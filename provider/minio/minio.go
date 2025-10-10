@@ -3,7 +3,9 @@ package minio
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"io"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -109,12 +111,12 @@ func New(cfg config.Minio) (cli *minio.Client, err error) {
 	}
 	// Configure transport with TLS if enabled
 	if cfg.EnableTLS {
-		tlsConfig, err := util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify)
-		if err != nil {
+		var tlsConfig *tls.Config
+		var transport *http.Transport
+		if tlsConfig, err = util.BuildTLSConfig(cfg.CertFile, cfg.KeyFile, cfg.CAFile, cfg.InsecureSkipVerify); err != nil {
 			return nil, errors.Wrap(err, "failed to build TLS config")
 		}
-		transport, err := minio.DefaultTransport(cfg.Secure)
-		if err != nil {
+		if transport, err = minio.DefaultTransport(cfg.Secure); err != nil {
 			return nil, errors.Wrap(err, "failed to create transport")
 		}
 		transport.TLSClientConfig = tlsConfig

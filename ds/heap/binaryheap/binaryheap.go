@@ -23,8 +23,8 @@ type Heap[E any] struct {
 	maxHeap bool
 }
 
-// New creates and returns a min-heap with the given comparsion function and options configurations.
-// The comparsion function cmp should return:
+// New creates and returns a min-heap with the given comparison function and options configurations.
+// The comparison function cmp should return:
 //   - zero value if a = b
 //   - negative value if a < b
 //   - positive value if a > b

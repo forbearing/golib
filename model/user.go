@@ -22,8 +22,8 @@ type User struct {
 
 	Status uint `json:"status,omitempty" gorm:"type:smallint;default:1;comment:status(0: disabled, 1: enabled)"`
 
-	RoleId       string `json:"role_id,omitempty"`
-	DepartmentId string `json:"department_id,omitempty"`
+	RoleID       string `json:"role_id,omitempty"`
+	DepartmentID string `json:"department_id,omitempty"`
 
 	LastLoginIP string `json:"last_login_ip,omitempty"`
 	LockExpire  int64  `json:"lock_expire,omitempty"`
@@ -39,7 +39,7 @@ type User struct {
 	Token        string `json:"token,omitempty" gorm:"-"`
 	AccessToken  string `json:"access_token,omitempty" gorm:"-"`
 	RefreshToken string `json:"refresh_token,omitempty" gorm:"-"`
-	SessionId    string `json:"session_id,omitempty" gorm:"-"`
+	SessionID    string `json:"session_id,omitempty" gorm:"-"`
 
 	Base
 }
@@ -61,7 +61,7 @@ func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 	enc.AddString("name", u.Name)
 	enc.AddString("email", u.Email)
-	enc.AddObject("base", &u.Base)
+	_ = enc.AddObject("base", &u.Base)
 
 	return nil
 }

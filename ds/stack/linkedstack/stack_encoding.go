@@ -24,7 +24,7 @@ func (s *Stack[E]) MarshalJSON() ([]byte, error) {
 		}
 		items = append(items, string(b))
 	}
-	return []byte(fmt.Sprintf("[%s]", strings.Join(items, ","))), nil
+	return fmt.Appendf(nil, "[%s]", strings.Join(items, ",")), nil
 }
 
 // UnmarshalJSON will unmarshal a JSON-based representation byte slice into the stack.

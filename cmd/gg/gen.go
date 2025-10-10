@@ -69,7 +69,7 @@ func genRun() {
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
-	pkgnew.EnsureFileExists()
+	_ = pkgnew.EnsureFileExists()
 
 	if !fileExists(modelDir) {
 		logError(fmt.Sprintf("model dir not found: %s", modelDir))
@@ -136,7 +136,7 @@ func genRun() {
 		m.Design.Range(func(route string, act *dsl.Action) {
 			if act.Service {
 				if alias := serviceAliasMap[m.ServiceImportPath(modelDir, serviceDir)]; len(alias) > 0 {
-					// alias import pacakge, eg:
+					// alias import package, eg:
 					// pkg1_user "service/pkg1/user"
 					// pkg2_user "service/pkg2/user"
 					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, act.Phase.RoleName()), act.Phase))
@@ -265,14 +265,14 @@ func genRun() {
 				checkErr(err)
 				logUpdate(filename)
 				checkErr(ensureParentDir(filename))
-				checkErr(os.WriteFile(filename, []byte(code), 0o644))
+				checkErr(os.WriteFile(filename, []byte(code), 0o600))
 			} else {
 				logSkip(filename)
 			}
 		} else {
 			logCreate(filename)
 			checkErr(ensureParentDir(filename))
-			checkErr(os.WriteFile(filename, []byte(code), 0o644))
+			checkErr(os.WriteFile(filename, []byte(code), 0o600))
 		}
 	}
 
@@ -391,11 +391,11 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 	// Ask user for confirmation
 	fmt.Printf("\n%s Do you want to delete these files? (y/N): ", cyan("?"))
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	response = strings.ToLower(strings.TrimSpace(response))
 	if response != "y" && response != "yes" {
-		fmt.Printf("  %s Deletion cancelled\n", gray("→"))
+		fmt.Printf("  %s Deletion canceled\n", gray("→"))
 		return
 	}
 
@@ -414,8 +414,9 @@ func pruneServiceFiles(oldServiceFiles []string, allModels []*gen.ModelInfo) {
 
 // removeEmptyDirectories recursively removes empty directories starting from the given root directory
 func removeEmptyDirectories(rootDir string) {
-	filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			//nolint:nilerr
 			return nil // Continue walking even if there's an error
 		}
 
@@ -432,6 +433,7 @@ func removeEmptyDirectories(rootDir string) {
 		// Check if directory is empty
 		entries, err := os.ReadDir(path)
 		if err != nil {
+			//nolint:nilerr
 			return nil // Continue if we can't read the directory
 		}
 
@@ -447,15 +449,17 @@ func removeEmptyDirectories(rootDir string) {
 
 	// Run multiple passes to handle nested empty directories
 	// After removing a directory, its parent might become empty
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		emptyDirsFound := false
-		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || path == rootDir || !info.IsDir() {
+				//nolint:nilerr
 				return nil
 			}
 
 			entries, err := os.ReadDir(path)
 			if err != nil {
+				//nolint:nilerr
 				return nil
 			}
 
@@ -497,9 +501,9 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Get the filename without extension
@@ -508,10 +512,10 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 		// Determine the directory path that this model defines endpoint for
 		// The rule is: model file defines endpoint for the directory path formed by modelDir + fileName
 		var targetDir string
-		if modelDir == "" {
+		if modelDir_ == "" {
 			targetDir = fileName
 		} else {
-			targetDir = filepath.Join(modelDir, fileName)
+			targetDir = filepath.Join(modelDir_, fileName)
 		}
 
 		// Store the endpoint mapping for the target directory
@@ -528,25 +532,25 @@ func buildHierarchicalEndpoints(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Store the original endpoint from DSL
 		originalEndpoint := m.Design.Endpoint
 
-		if modelDir == "" {
+		if modelDir_ == "" {
 			// Model is in root model directory, keep original endpoint
 			continue
 		}
 
 		// Build the complete endpoint path by replacing directory names with mapped endpoints
 		var endpointParts []string
-		pathParts := strings.Split(modelDir, "/")
+		pathParts := strings.Split(modelDir_, "/")
 
 		// For each directory level, use mapped endpoint or directory name
-		for i := 0; i < len(pathParts); i++ {
+		for i := range pathParts {
 			currentPath := strings.Join(pathParts[:i+1], "/")
 			if mappedEndpoint, exists := dirEndpointMap[currentPath]; exists {
 				// Use the mapped endpoint for this directory
@@ -600,9 +604,9 @@ func buildHierarchicalEndpointsV2(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Get the filename without extension
@@ -611,10 +615,10 @@ func buildHierarchicalEndpointsV2(allModels []*gen.ModelInfo) {
 		// Determine the directory path that this model defines endpoint for
 		// The rule is: model file defines endpoint for the directory path formed by modelDir + fileName
 		var targetDir string
-		if modelDir == "" {
+		if modelDir_ == "" {
 			targetDir = fileName
 		} else {
-			targetDir = filepath.Join(modelDir, fileName)
+			targetDir = filepath.Join(modelDir_, fileName)
 		}
 
 		// Store the endpoint mapping in the trie
@@ -632,25 +636,25 @@ func buildHierarchicalEndpointsV2(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Store the original endpoint from DSL
 		originalEndpoint := m.Design.Endpoint
 
-		if modelDir == "" {
+		if modelDir_ == "" {
 			// Model is in root model directory, keep original endpoint
 			continue
 		}
 
 		// Build the complete endpoint path by replacing directory names with mapped endpoints
 		var endpointParts []string
-		pathParts := strings.Split(modelDir, "/")
+		pathParts := strings.Split(modelDir_, "/")
 
 		// For each directory level, use trie to lookup mapped endpoint or directory name
-		for i := 0; i < len(pathParts); i++ {
+		for i := range pathParts {
 			currentPath := strings.Join(pathParts[:i+1], "/")
 			// Use trie to lookup the mapped endpoint for this directory
 			if mappedEndpoint, exists := dirEndpointTrie.Get([]rune(currentPath)); exists {

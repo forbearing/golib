@@ -7,26 +7,26 @@ import (
 )
 
 const (
-	OTEL_ENABLE                  = "OTEL_ENABLE"
-	OTEL_SERVICE_NAME            = "OTEL_SERVICE_NAME"
-	OTEL_EXPORTER_TYPE           = "OTEL_EXPORTER_TYPE"
-	OTEL_OTLP_ENDPOINT           = "OTEL_OTLP_ENDPOINT"
-	OTEL_OTLP_HEADERS            = "OTEL_OTLP_HEADERS"
-	OTEL_OTLP_INSECURE           = "OTEL_OTLP_INSECURE"
-	OTEL_SAMPLER_TYPE            = "OTEL_SAMPLER_TYPE"
-	OTEL_SAMPLER_PARAM           = "OTEL_SAMPLER_PARAM"
-	OTEL_LOG_SPANS               = "OTEL_LOG_SPANS"
-	OTEL_MAX_TAG_VALUE_LEN       = "OTEL_MAX_TAG_VALUE_LEN"
-	OTEL_BUFFER_FLUSH_INTERVAL   = "OTEL_BUFFER_FLUSH_INTERVAL"
-	OTEL_REPORTER_QUEUE_SIZE     = "OTEL_REPORTER_QUEUE_SIZE"
-	OTEL_REPORTER_FLUSH_INTERVAL = "OTEL_REPORTER_FLUSH_INTERVAL"
+	OTEL_ENABLE                  = "OTEL_ENABLE"                  //nolint:staticcheck
+	OTEL_SERVICE_NAME            = "OTEL_SERVICE_NAME"            //nolint:staticcheck
+	OTEL_EXPORTER_TYPE           = "OTEL_EXPORTER_TYPE"           //nolint:staticcheck
+	OTEL_OTLP_ENDPOINT           = "OTEL_OTLP_ENDPOINT"           //nolint:staticcheck
+	OTEL_OTLP_HEADERS            = "OTEL_OTLP_HEADERS"            //nolint:staticcheck
+	OTEL_OTLP_INSECURE           = "OTEL_OTLP_INSECURE"           //nolint:staticcheck
+	OTEL_SAMPLER_TYPE            = "OTEL_SAMPLER_TYPE"            //nolint:staticcheck
+	OTEL_SAMPLER_PARAM           = "OTEL_SAMPLER_PARAM"           //nolint:staticcheck
+	OTEL_LOG_SPANS               = "OTEL_LOG_SPANS"               //nolint:staticcheck
+	OTEL_MAX_TAG_VALUE_LEN       = "OTEL_MAX_TAG_VALUE_LEN"       //nolint:staticcheck
+	OTEL_BUFFER_FLUSH_INTERVAL   = "OTEL_BUFFER_FLUSH_INTERVAL"   //nolint:staticcheck
+	OTEL_REPORTER_QUEUE_SIZE     = "OTEL_REPORTER_QUEUE_SIZE"     //nolint:staticcheck
+	OTEL_REPORTER_FLUSH_INTERVAL = "OTEL_REPORTER_FLUSH_INTERVAL" //nolint:staticcheck
 )
 
 type ExportType string
 
 const (
-	ExportTypeOtlpHttp ExportType = "otlp-http"
-	ExportTypeOtlpGrpc ExportType = "otlp-grpc"
+	ExportTypeOtlpHTTP ExportType = "otlp-http"
+	ExportTypeOtlpGRPC ExportType = "otlp-grpc"
 )
 
 type SamplerType string
@@ -87,7 +87,7 @@ func (o *OTEL) setDefault() {
 		o.ServiceName = consts.FrameworkName
 	}
 	if o.ExporterType == "" {
-		o.ExporterType = ExportTypeOtlpHttp
+		o.ExporterType = ExportTypeOtlpHTTP
 	}
 	if o.OTLPEndpoint == "" {
 		o.OTLPEndpoint = "http://localhost:4318/v1/traces"

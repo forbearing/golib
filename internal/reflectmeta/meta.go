@@ -26,7 +26,7 @@ type StructMeta struct {
 	allSchemaTags []string
 	allGormTags   []string
 	allQueryTags  []string
-	allUrlTags    []string
+	allURLTags    []string
 
 	jsonTags   []string
 	schemaTags []string
@@ -43,7 +43,7 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 	}
 	key := t.PkgPath() + "|" + t.String()
 	if meta, ok := metaCache.Load(key); ok {
-		return meta.(*StructMeta)
+		return meta.(*StructMeta) // nolint:errcheck
 	}
 
 	fieldCount := t.NumField()
@@ -52,11 +52,11 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 	allFieldMap := make(map[string]int)
 	fieldMap := make(map[string]int)
 
-	allJsonTags := make([]string, 0, fieldCount)
+	allJSONTags := make([]string, 0, fieldCount)
 	allSchemaTags := make([]string, 0, fieldCount)
 	allGormTags := make([]string, 0, fieldCount)
 	allQueryTags := make([]string, 0, fieldCount)
-	allUrlTags := make([]string, 0, fieldCount)
+	allURLTags := make([]string, 0, fieldCount)
 
 	jsonTags := make([]string, 0, fieldCount)
 	schemaTags := make([]string, 0, fieldCount)
@@ -76,11 +76,11 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 			allFields = append(allFields, field)
 			allFieldMap[field.Name] = len(allFields) - 1
 			allFieldIndexes = append(allFieldIndexes, indexPath)
-			allJsonTags = append(allJsonTags, field.Tag.Get("json"))
+			allJSONTags = append(allJSONTags, field.Tag.Get("json"))
 			allSchemaTags = append(allSchemaTags, field.Tag.Get("schema"))
 			allGormTags = append(allGormTags, field.Tag.Get("gorm"))
 			allQueryTags = append(allQueryTags, field.Tag.Get("query"))
-			allUrlTags = append(allUrlTags, field.Tag.Get("url"))
+			allURLTags = append(allURLTags, field.Tag.Get("url"))
 
 			if isTopLevel {
 				fields = append(fields, field)
@@ -118,11 +118,11 @@ func GetStructMeta(t reflect.Type) *StructMeta {
 
 		FieldIndexes: allFieldIndexes,
 
-		allJSONTags:   allJsonTags,
+		allJSONTags:   allJSONTags,
 		allSchemaTags: allSchemaTags,
 		allGormTags:   allGormTags,
 		allQueryTags:  allQueryTags,
-		allUrlTags:    allUrlTags,
+		allURLTags:    allURLTags,
 
 		jsonTags:   jsonTags,
 		schemaTags: schemaTags,
@@ -140,11 +140,11 @@ func (m *StructMeta) NumField() int { return m.numField }
 // Field returns the StructField at index i
 func (m *StructMeta) Field(i int) reflect.StructField { return m.fields[i] }
 
-func (m *StructMeta) JsonTag(i int) string   { return m.jsonTags[i] }
+func (m *StructMeta) JSONTag(i int) string   { return m.jsonTags[i] }
 func (m *StructMeta) SchemaTag(i int) string { return m.schemaTags[i] }
 func (m *StructMeta) GormTag(i int) string   { return m.gormTags[i] }
 func (m *StructMeta) QueryTag(i int) string  { return m.queryTags[i] }
-func (m *StructMeta) UrlTag(i int) string    { return m.urlTags[i] }
+func (m *StructMeta) URLTag(i int) string    { return m.urlTags[i] }
 
 func (m *StructMeta) String() string { return m.represent }
 
@@ -156,7 +156,7 @@ type methodCacheKey struct {
 func GetCachedMethod(typ reflect.Type, methodName string) (reflect.Method, bool) {
 	key := methodCacheKey{TypeName: typ.PkgPath() + "|" + typ.String(), MethodName: methodName}
 	if m, ok := methodCache.Load(key); ok {
-		return m.(reflect.Method), true
+		return m.(reflect.Method), true //nolint:errcheck
 	}
 	method, ok := typ.MethodByName(methodName)
 	if ok {
@@ -174,7 +174,7 @@ type methodParamCacheKey struct {
 func GetCachedMethodParamType(typ reflect.Type, methodName string, idx int) (reflect.Type, bool) {
 	key := methodParamCacheKey{TypeName: typ.PkgPath() + "|" + typ.String(), MethodName: methodName, ParamIndex: idx}
 	if t, ok := methodParamCache.Load(key); ok {
-		return t.(reflect.Type), true
+		return t.(reflect.Type), true //nolint:errcheck
 	}
 	method, ok := GetCachedMethod(typ, methodName)
 	if !ok {
@@ -189,7 +189,7 @@ func GetCachedMethodParamType(typ reflect.Type, methodName string, idx int) (ref
 }
 
 func GetTypeOfModel[M any]() reflect.Type {
-	typ := reflect.TypeOf((*M)(nil)).Elem()
+	typ := reflect.TypeFor[M]()
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}

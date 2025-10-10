@@ -70,12 +70,12 @@ type Record struct {
 //
 // NOTE:
 //  1. Always call this function in init().
-//  2. Ensure the model pacakge is imported in main.go.
+//  2. Ensure the model package is imported in main.go.
 //     The init() function will only executed if the file is imported directly or indirectly by main.go.
 func Register[M types.Model](records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
-	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
+	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M) //nolint:errcheck
 	Tables = append(Tables, table)
 	// NOTE: it's necessary to set id before insert.
 	for i := range records {
@@ -94,7 +94,7 @@ func RegisterTo[M types.Model](dbname string, records ...M) {
 	mu.Lock()
 	defer mu.Unlock()
 	dbname = strings.ToLower(dbname)
-	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
+	table := reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M) //nolint:errcheck
 	TablesWithDB = append(TablesWithDB, struct {
 		Table  types.Model
 		DBName string

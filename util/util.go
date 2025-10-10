@@ -14,14 +14,15 @@ import (
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 	"unsafe"
 
 	tcping "github.com/cloverstd/tcping/ping"
 	"github.com/cockroachdb/errors"
-	"github.com/go-ping/ping"
 	"github.com/google/uuid"
+	probing "github.com/prometheus-community/pro-bing"
 	"github.com/rs/xid"
 	"github.com/segmentio/ksuid"
 	"github.com/spf13/cast"
@@ -113,7 +114,7 @@ func SplitByDoublePipe(data []byte, atEOF bool) (advance int, token []byte, err 
 func RunOrDie(fn func() error) {
 	if err := fn(); err != nil {
 		name := GetFunctionName(fn)
-		HandleErr(fmt.Errorf("%s error: %+v", name, err))
+		HandleErr(fmt.Errorf("%s error: %+w", name, err))
 	}
 }
 
@@ -185,7 +186,7 @@ func ParseScheme(req *http.Request) string {
 	return ""
 }
 
-// _tcping work like command `tcping`.
+// Tcping work like command `tcping`.
 func Tcping(host string, port int, timeout time.Duration) bool {
 	if timeout < 500*time.Millisecond {
 		timeout = 1 * time.Second
@@ -223,7 +224,7 @@ func Ping(ip string, timeout time.Duration) (bool, error) {
 	if timeout < 500*time.Millisecond {
 		timeout = 1 * time.Second
 	}
-	pinger, err := ping.NewPinger(ip)
+	pinger, err := probing.NewPinger(ip)
 	if err != nil {
 		return false, err
 	}
@@ -247,12 +248,7 @@ func NoError(fn func() error) error {
 
 // Contains check T in slice.
 func Contains[T comparable](slice []T, elem T) bool {
-	for i := range slice {
-		if slice[i] == elem {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, elem)
 }
 
 // CombineError combine error from fns.
@@ -331,7 +327,7 @@ func IPv6ToIPv4(ipStr string) string {
 // BuildTLSConfig creates a TLS configuration from the etcd config
 func BuildTLSConfig(certFile, keyFile, caFile string, insecureSkipVerify bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: insecureSkipVerify,
+		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec
 	}
 
 	if len(certFile) > 0 && len(keyFile) > 0 {

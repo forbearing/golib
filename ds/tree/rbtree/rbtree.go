@@ -41,7 +41,7 @@ func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*Tree[K,
 }
 
 // NewOrderedKeys creates and returns a red-black tree.
-// It use the cmp.Compare[K] as the default comparsion function.
+// It use the cmp.Compare[K] as the default comparison function.
 // This is suitable for types that implement the cmp.Ordered interface,
 // such as int, float64 and string
 func NewOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], error) {
@@ -49,7 +49,7 @@ func NewOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], err
 }
 
 // NewFromSlice creates and returns a red-black tree from a given slice.
-// It use the cmp.Compare[K] as the default comparsion function.
+// It use the cmp.Compare[K] as the default comparison function.
 func NewFromSlice[V any](slice []V, ops ...Option[int, V]) (*Tree[int, V], error) {
 	t, err := NewOrderedKeys(ops...)
 	if err != nil {
@@ -971,16 +971,16 @@ func (t *Tree[K, V]) lookup(key K) *Node[K, V] {
 	return nil
 }
 
-func (t *Tree[K, V]) replace(old *Node[K, V], new *Node[K, V]) {
+func (t *Tree[K, V]) replace(old *Node[K, V], new_ *Node[K, V]) {
 	if old.Parent == nil {
-		t.root = new
+		t.root = new_
 	} else if old == old.Parent.Left {
-		old.Parent.Left = new
+		old.Parent.Left = new_
 	} else {
-		old.Parent.Right = new
+		old.Parent.Right = new_
 	}
-	if new != nil {
-		new.Parent = old.Parent
+	if new_ != nil {
+		new_.Parent = old.Parent
 	}
 }
 

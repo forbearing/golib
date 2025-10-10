@@ -66,7 +66,7 @@ type IndexOption struct {
 //	}
 func (*index) Create(indexName string, options ...*IndexOption) error {
 	// Create the index body
-	body := make(map[string]interface{})
+	body := make(map[string]any)
 	if len(options) > 0 {
 		if options[0] != nil {
 			if options[0].Settings != nil {
@@ -87,7 +87,7 @@ func (*index) Create(indexName string, options ...*IndexOption) error {
 	// Convert the body to JSON
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("error marshalling index body: %w", err)
+		return fmt.Errorf("error marshaling index body: %w", err)
 	}
 
 	// Create the index

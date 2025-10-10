@@ -93,7 +93,7 @@ func init() {
 func dockerGenRun(cmd *cobra.Command, args []string) error {
 	// Generate Dockerfile
 	if err := generateDockerfile(); err != nil {
-		return fmt.Errorf("failed to generate Dockerfile: %v", err)
+		return fmt.Errorf("failed to generate Dockerfile: %w", err)
 	}
 
 	fmt.Printf("%s Dockerfile generated successfully at: ./Dockerfile\n", green("✔"))
@@ -104,12 +104,12 @@ func dockerGenRun(cmd *cobra.Command, args []string) error {
 func dockerBuildRun(cmd *cobra.Command, args []string) error {
 	// Check if Docker is installed
 	if err := checkDockerInstalled(); err != nil {
-		return fmt.Errorf("Docker is not installed or not accessible: %v", err)
+		return fmt.Errorf("docker is not installed or not accessible: %w", err)
 	}
 
 	// Generate Dockerfile if it doesn't exist
 	if err := generateDockerfile(); err != nil {
-		return fmt.Errorf("failed to generate Dockerfile: %v", err)
+		return fmt.Errorf("failed to generate Dockerfile: %w", err)
 	}
 
 	// Determine image tag
@@ -118,7 +118,7 @@ func dockerBuildRun(cmd *cobra.Command, args []string) error {
 		var err error
 		tag, err = getDefaultImageTag()
 		if err != nil {
-			return fmt.Errorf("failed to determine image tag: %v", err)
+			return fmt.Errorf("failed to determine image tag: %w", err)
 		}
 	}
 
@@ -132,7 +132,7 @@ func dockerBuildRun(cmd *cobra.Command, args []string) error {
 	// Push image if requested
 	if dockerPush {
 		if err := pushDockerImage(tag); err != nil {
-			return fmt.Errorf("failed to push Docker image: %v", err)
+			return fmt.Errorf("failed to push Docker image: %w", err)
 		}
 	}
 
@@ -174,7 +174,7 @@ func generateDockerfile() error {
 
 	dockerfileContent := generateDockerfileContent(binaryName)
 
-	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0o644); err != nil {
+	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0o600); err != nil {
 		fmt.Printf("%s Failed to write Dockerfile: %v\n", red("✘"), err)
 		return fmt.Errorf("failed to write Dockerfile: %w", err)
 	}
@@ -186,7 +186,7 @@ func generateDockerfile() error {
 // generateDockerfileContent generates the Dockerfile content based on best practices
 func generateDockerfileContent(binaryName string) string {
 	if dockerDev {
-		return fmt.Sprintf(`# syntax=docker/dockerfile:1
+		return `# syntax=docker/dockerfile:1
 
 # Development Dockerfile with hot reload support
 FROM golang:1.25-alpine AS base
@@ -209,7 +209,7 @@ EXPOSE 8080
 
 # Use air for hot reload
 CMD ["air"]
-`)
+`
 	}
 
 	return fmt.Sprintf(`# syntax=docker/dockerfile:1
@@ -330,11 +330,11 @@ func pushDockerImage(tag string) error {
 func getModuleName() (string, error) {
 	content, err := os.ReadFile("go.mod")
 	if err != nil {
-		return "", fmt.Errorf("failed to read go.mod: %v", err)
+		return "", fmt.Errorf("failed to read go.mod: %w", err)
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(content), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "module ") {
 			return strings.TrimSpace(strings.TrimPrefix(line, "module")), nil

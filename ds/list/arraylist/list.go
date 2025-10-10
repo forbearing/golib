@@ -51,7 +51,7 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 }
 
 // NewOrdered creates and returns a new array-backed list for ordered elements.
-// It use cmp.Compare[E] as the default comparsion function for elements.
+// It use cmp.Compare[E] as the default comparison function for elements.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func NewOrdered[E cmp.Ordered](ops ...Option[E]) (*List[E], error) {
 	return New(cmp.Compare[E], ops...)
@@ -71,7 +71,7 @@ func NewFromSlice[E any](cmp func(E, E) int, elements []E, ops ...Option[E]) (*L
 }
 
 // NewFromOrderedSlice creates a new array-backed list from the given slice.
-// It use cmp.Compare[E] as the default comparsion function for elements.
+// It use cmp.Compare[E] as the default comparison function for elements.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func NewFromOrderedSlice[E cmp.Ordered](elements []E, ops ...Option[E]) (*List[E], error) {
 	return NewFromSlice(cmp.Compare[E], elements, ops...)
@@ -346,8 +346,8 @@ func (l *List[E]) Range(fn func(e E) bool) {
 	}
 }
 
-func (l *List[E]) resize(len, cap int) {
-	newElements := make([]E, len, cap)
+func (l *List[E]) resize(len_, cap_ int) {
+	newElements := make([]E, len_, cap_)
 	copy(newElements, l.elements)
 	l.elements = newElements
 }
@@ -377,10 +377,7 @@ func (l *List[E]) growBy(n int) {
 func (l *List[E]) shrink() {
 	currCap := cap(l.elements)
 	if len(l.elements) <= int(shrinkFactor*float32(currCap)) {
-		newCap := int(shrinkFactor * float32(currCap))
-		if newCap < minCap {
-			newCap = minCap
-		}
+		newCap := max(int(shrinkFactor*float32(currCap)), minCap)
 		l.resize(len(l.elements), newCap)
 	}
 }

@@ -5,26 +5,26 @@ import (
 )
 
 const (
-	ETCD_ENDPOINTS              = "ETCD_ENDPOINTS"
-	ETCD_DIAL_TIMEOUT           = "ETCD_DIAL_TIMEOUT"
-	ETCD_USERNAME               = "ETCD_USERNAME"
-	ETCD_PASSWORD               = "ETCD_PASSWORD"
-	ETCD_AUTO_SYNC              = "ETCD_AUTO_SYNC"
-	ETCD_AUTO_SYNC_INTERVAL     = "ETCD_AUTO_SYNC_INTERVAL"
-	ETCD_KEEPALIVE_TIME         = "ETCD_KEEPALIVE_TIME"
-	ETCD_KEEPALIVE_TIMEOUT      = "ETCD_KEEPALIVE_TIMEOUT"
-	ETCD_MAX_CALL_SEND_MSG_SIZE = "ETCD_MAX_CALL_SEND_MSG_SIZE"
-	ETCD_MAX_CALL_RECV_MSG_SIZE = "ETCD_MAX_CALL_RECV_MSG_SIZE"
-	ETCD_PERMIT_WITHOUT_STREAM  = "ETCD_PERMIT_WITHOUT_STREAM"
-	ETCD_REJECT_OLD_CLUSTER     = "ETCD_REJECT_OLD_CLUSTER"
+	ETCD_ENDPOINTS              = "ETCD_ENDPOINTS"              //nolint:staticcheck
+	ETCD_DIAL_TIMEOUT           = "ETCD_DIAL_TIMEOUT"           //nolint:staticcheck
+	ETCD_USERNAME               = "ETCD_USERNAME"               //nolint:staticcheck
+	ETCD_PASSWORD               = "ETCD_PASSWORD"               //nolint:staticcheck
+	ETCD_AUTO_SYNC              = "ETCD_AUTO_SYNC"              //nolint:staticcheck
+	ETCD_AUTO_SYNC_INTERVAL     = "ETCD_AUTO_SYNC_INTERVAL"     //nolint:staticcheck
+	ETCD_KEEPALIVE_TIME         = "ETCD_KEEPALIVE_TIME"         //nolint:staticcheck
+	ETCD_KEEPALIVE_TIMEOUT      = "ETCD_KEEPALIVE_TIMEOUT"      //nolint:staticcheck
+	ETCD_MAX_CALL_SEND_MSG_SIZE = "ETCD_MAX_CALL_SEND_MSG_SIZE" //nolint:staticcheck
+	ETCD_MAX_CALL_RECV_MSG_SIZE = "ETCD_MAX_CALL_RECV_MSG_SIZE" //nolint:staticcheck
+	ETCD_PERMIT_WITHOUT_STREAM  = "ETCD_PERMIT_WITHOUT_STREAM"  //nolint:staticcheck
+	ETCD_REJECT_OLD_CLUSTER     = "ETCD_REJECT_OLD_CLUSTER"     //nolint:staticcheck
 
-	ETCD_ENABLE_TLS           = "ETCD_ENABLE_TLS"
-	ETCD_CERT_FILE            = "ETCD_CERT_FILE"
-	ETCD_KEY_FILE             = "ETCD_KEY_FILE"
-	ETCD_CA_FILE              = "ETCD_CA_FILE"
-	ETCD_INSECURE_SKIP_VERIFY = "ETCD_INSECURE_SKIP_VERIFY"
+	ETCD_ENABLE_TLS           = "ETCD_ENABLE_TLS"           //nolint:staticcheck
+	ETCD_CERT_FILE            = "ETCD_CERT_FILE"            //nolint:staticcheck
+	ETCD_KEY_FILE             = "ETCD_KEY_FILE"             //nolint:staticcheck
+	ETCD_CA_FILE              = "ETCD_CA_FILE"              //nolint:staticcheck
+	ETCD_INSECURE_SKIP_VERIFY = "ETCD_INSECURE_SKIP_VERIFY" //nolint:staticcheck
 
-	ETCD_ENABLE = "ETCD_ENABLE"
+	ETCD_ENABLE = "ETCD_ENABLE" //nolint:staticcheck
 )
 
 // Etcd 配置结构

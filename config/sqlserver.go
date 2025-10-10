@@ -3,15 +3,15 @@ package config
 import "github.com/forbearing/gst/types/consts"
 
 const (
-	SQLSERVER_HOST         = "SQLSERVER_HOST"
-	SQLSERVER_PORT         = "SQLSERVER_PORT"
-	SQLSERVER_DATABASE     = "SQLSERVER_DATABASE"
-	SQLSERVER_USERNAME     = "SQLSERVER_USERNAME"
-	SQLSERVER_PASSWORD     = "SQLSERVER_PASSWORD"
-	SQLSERVER_ENCRYPT      = "SQLSERVER_ENCRYPT"
-	SQLSERVER_TRUST_SERVER = "SQLSERVER_TRUST_SERVER"
-	SQLSERVER_APP_NAME     = "SQLSERVER_APP_NAME"
-	SQLSERVER_ENABLE       = "SQLSERVER_ENABLE"
+	SQLSERVER_HOST         = "SQLSERVER_HOST"         //nolint:staticcheck
+	SQLSERVER_PORT         = "SQLSERVER_PORT"         //nolint:staticcheck
+	SQLSERVER_DATABASE     = "SQLSERVER_DATABASE"     //nolint:staticcheck
+	SQLSERVER_USERNAME     = "SQLSERVER_USERNAME"     //nolint:staticcheck
+	SQLSERVER_PASSWORD     = "SQLSERVER_PASSWORD"     //nolint:staticcheck,gosec
+	SQLSERVER_ENCRYPT      = "SQLSERVER_ENCRYPT"      //nolint:staticcheck
+	SQLSERVER_TRUST_SERVER = "SQLSERVER_TRUST_SERVER" //nolint:staticcheck
+	SQLSERVER_APP_NAME     = "SQLSERVER_APP_NAME"     //nolint:staticcheck
+	SQLSERVER_ENABLE       = "SQLSERVER_ENABLE"       //nolint:staticcheck
 )
 
 type SQLServer struct {

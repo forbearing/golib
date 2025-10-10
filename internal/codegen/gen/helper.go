@@ -40,7 +40,7 @@ func FormatNode(node ast.Node, processImport ...bool) (string, error) {
 		return string(result), nil
 	}
 
-	return string(formattedStr), nil
+	return formattedStr, nil
 }
 
 // FormatNodeExtra use "https://github.com/mvdan/gofumpt" to format ast.Node into code.

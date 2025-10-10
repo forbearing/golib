@@ -1,13 +1,13 @@
 package config
 
 const (
-	S3_ENDPOINT          = "S3_ENDPOINT"
-	S3_REGION            = "S3_REGION"
-	S3_ACCESS_KEY_ID     = "S3_ACCESS_KEY_ID"
-	S3_SECRET_ACCESS_KEY = "S3_SECRET_ACCESS_KEY"
-	S3_BUCKET            = "S3_BUCKET"
-	S3_USE_SSL           = "S3_USE_SSL"
-	S3_ENABLE            = "S3_ENABLE"
+	S3_ENDPOINT          = "S3_ENDPOINT"          //nolint:staticcheck
+	S3_REGION            = "S3_REGION"            //nolint:staticcheck
+	S3_ACCESS_KEY_ID     = "S3_ACCESS_KEY_ID"     //nolint:staticcheck
+	S3_SECRET_ACCESS_KEY = "S3_SECRET_ACCESS_KEY" //nolint:staticcheck
+	S3_BUCKET            = "S3_BUCKET"            //nolint:staticcheck
+	S3_USE_SSL           = "S3_USE_SSL"           //nolint:staticcheck
+	S3_ENABLE            = "S3_ENABLE"            //nolint:staticcheck
 )
 
 type S3 struct {

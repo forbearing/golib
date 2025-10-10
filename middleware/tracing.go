@@ -20,7 +20,7 @@ import (
 // This middleware combines the functionality of TraceID() and Tracing() middlewares
 func Tracing() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var traceId, spanId string
+		var traceID, spanID string
 		var span trace.Span
 		var ctx context.Context
 
@@ -38,8 +38,8 @@ func Tracing() gin.HandlerFunc {
 			// Extract OTEL trace ID and span ID
 			spanContext := span.SpanContext()
 			if spanContext.HasTraceID() {
-				traceId = spanContext.TraceID().String()
-				spanId = spanContext.SpanID().String()
+				traceID = spanContext.TraceID().String()
+				spanID = spanContext.SpanID().String()
 			}
 
 			// Set span attributes
@@ -97,30 +97,30 @@ func Tracing() gin.HandlerFunc {
 			}()
 		} else {
 			// Fallback to custom ID generation if OTEL is not enabled
-			customTraceId := c.Request.Header.Get(consts.TRACE_ID)
-			customSpanId := util.SpanID()
-			if len(customTraceId) == 0 {
-				customTraceId = customSpanId
+			customTraceID := c.Request.Header.Get(consts.TRACE_ID)
+			customSpanID := util.SpanID()
+			if len(customTraceID) == 0 {
+				customTraceID = customSpanID
 			}
-			traceId = customTraceId
-			spanId = customSpanId
+			traceID = customTraceID
+			spanID = customSpanID
 		}
 
 		// Set unified trace ID and request ID in gin context
-		c.Set(consts.REQUEST_ID, traceId) // Use traceId as requestId
-		c.Set(consts.TRACE_ID, traceId)
-		c.Set(consts.SPAN_ID, spanId)
+		c.Set(consts.REQUEST_ID, traceID) // Use traceId as requestId
+		c.Set(consts.TRACE_ID, traceID)
+		c.Set(consts.SPAN_ID, spanID)
 		c.Set(consts.SEQ, 0)
 
 		// Set X-Trace-ID header for frontend
-		c.Header("X-Trace-ID", traceId)
+		c.Header("X-Trace-ID", traceID)
 
 		// Add gst trace IDs as span attributes if OTEL is enabled
 		if otel.IsEnabled() && span != nil {
 			span.SetAttributes(
-				attribute.String(fmt.Sprintf("%s.trace_id", config.App.OTEL.ServiceName), traceId),
-				attribute.String(fmt.Sprintf("%s.span_id", config.App.OTEL.ServiceName), spanId),
-				attribute.String(fmt.Sprintf("%s.request_id", config.App.OTEL.ServiceName), traceId),
+				attribute.String(fmt.Sprintf("%s.trace_id", config.App.OTEL.ServiceName), traceID),
+				attribute.String(fmt.Sprintf("%s.span_id", config.App.OTEL.ServiceName), spanID),
+				attribute.String(fmt.Sprintf("%s.request_id", config.App.OTEL.ServiceName), traceID),
 			)
 
 			// Record start time for duration calculation

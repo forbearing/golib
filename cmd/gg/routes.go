@@ -93,7 +93,7 @@ func parseRoutesFromFile() (map[string][]string, error) {
 	// Read and parse the router.go file
 	content, err := os.ReadFile(routerFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read router file: %v", err)
+		return nil, fmt.Errorf("failed to read router file: %w", err)
 	}
 
 	// Parse routes using regex patterns
@@ -209,7 +209,7 @@ func printTrieNode(node *trie.Node[string, *RouteInfo], prefix, childPrefix stri
 		key  string
 		node *trie.Node[string, *RouteInfo]
 	}
-	var childList []childPair
+	childList := make([]childPair, 0, len(children))
 	for k, v := range children {
 		childList = append(childList, childPair{k, v})
 	}

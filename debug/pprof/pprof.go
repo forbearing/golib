@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // #nosec G108 -- pprof endpoint is intentionally exposed for debugging purposes
 	"runtime"
 	"time"
 
@@ -22,8 +22,12 @@ func Run() error {
 	runtime.SetBlockProfileRate(1)
 
 	server = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.App.PprofListen, config.App.PprofPort),
-		Handler: http.DefaultServeMux,
+		Addr:              fmt.Sprintf("%s:%d", config.App.PprofListen, config.App.PprofPort),
+		Handler:           http.DefaultServeMux,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second, // Prevent Slowloris attacks
 	}
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

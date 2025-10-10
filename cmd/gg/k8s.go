@@ -127,13 +127,13 @@ func k8sGenRun(cmd *cobra.Command, args []string) error {
 	// Create k8s directory if it doesn't exist
 	k8sDir := "k8s"
 	if err := ensureParentDir(filepath.Join(k8sDir, "dummy")); err != nil {
-		return fmt.Errorf("failed to create k8s directory: %v", err)
+		return fmt.Errorf("failed to create k8s directory: %w", err)
 	}
 
 	// Get module name for app name
 	moduleName, err := getModuleName()
 	if err != nil {
-		return fmt.Errorf("failed to get module name: %v", err)
+		return fmt.Errorf("failed to get module name: %w", err)
 	}
 
 	appName := filepath.Base(moduleName)
@@ -141,23 +141,23 @@ func k8sGenRun(cmd *cobra.Command, args []string) error {
 
 	// Generate ConfigMap
 	if err := generateConfigMap(k8sDir, appName); err != nil {
-		return fmt.Errorf("failed to generate ConfigMap: %v", err)
+		return fmt.Errorf("failed to generate ConfigMap: %w", err)
 	}
 
 	// Generate Deployment
 	if err := generateDeployment(k8sDir, appName); err != nil {
-		return fmt.Errorf("failed to generate Deployment: %v", err)
+		return fmt.Errorf("failed to generate Deployment: %w", err)
 	}
 
 	// Generate Service
 	if err := generateService(k8sDir, appName); err != nil {
-		return fmt.Errorf("failed to generate Service: %v", err)
+		return fmt.Errorf("failed to generate Service: %w", err)
 	}
 
 	// Generate Ingress if requested
 	if k8sIngress {
 		if err := generateIngress(k8sDir, appName); err != nil {
-			return fmt.Errorf("failed to generate Ingress: %v", err)
+			return fmt.Errorf("failed to generate Ingress: %w", err)
 		}
 	}
 
@@ -169,7 +169,7 @@ func k8sGenRun(cmd *cobra.Command, args []string) error {
 func k8sApplyRun(cmd *cobra.Command, args []string) error {
 	// Check if kubectl is installed
 	if err := checkKubectlInstalled(); err != nil {
-		return fmt.Errorf("kubectl is not installed or not accessible: %v", err)
+		return fmt.Errorf("kubectl is not installed or not accessible: %w", err)
 	}
 
 	logSection("Apply Kubernetes Manifests")
@@ -197,7 +197,7 @@ func k8sApplyRun(cmd *cobra.Command, args []string) error {
 func k8sDeleteRun(cmd *cobra.Command, args []string) error {
 	// Check if kubectl is installed
 	if err := checkKubectlInstalled(); err != nil {
-		return fmt.Errorf("kubectl is not installed or not accessible: %v", err)
+		return fmt.Errorf("kubectl is not installed or not accessible: %w", err)
 	}
 
 	logSection("Delete Kubernetes Resources")
@@ -428,7 +428,7 @@ spec:
 func k8sDeployRun(cmd *cobra.Command, args []string) error {
 	// Check if kubectl is installed first
 	if err := checkKubectlInstalled(); err != nil {
-		return fmt.Errorf("kubectl is not installed or not accessible: %v", err)
+		return fmt.Errorf("kubectl is not installed or not accessible: %w", err)
 	}
 
 	logSection("Deploy to Kubernetes Cluster")

@@ -1,15 +1,15 @@
 package config
 
 const (
-	LOGGER_DIR         = "LOGGER_DIR"
-	LOGGER_PREFIX      = "LOGGER_PREFIX"
-	LOGGER_FILE        = "LOGGER_FILE"
-	LOGGER_LEVEL       = "LOGGER_LEVEL"
-	LOGGER_FORMAT      = "LOGGER_FORMAT"
-	LOGGER_ENCODER     = "LOGGER_ENCODER"
-	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"
-	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"
-	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS"
+	LOGGER_DIR         = "LOGGER_DIR"         //nolint:staticcheck
+	LOGGER_PREFIX      = "LOGGER_PREFIX"      //nolint:staticcheck
+	LOGGER_FILE        = "LOGGER_FILE"        //nolint:staticcheck
+	LOGGER_LEVEL       = "LOGGER_LEVEL"       //nolint:staticcheck
+	LOGGER_FORMAT      = "LOGGER_FORMAT"      //nolint:staticcheck
+	LOGGER_ENCODER     = "LOGGER_ENCODER"     //nolint:staticcheck
+	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"     //nolint:staticcheck
+	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"    //nolint:staticcheck
+	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS" //nolint:staticcheck
 )
 
 // Logger represents section "logger" for client-side or server-side configuration,
@@ -42,15 +42,15 @@ type Logger struct {
 	// MaxAge is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.
 	// uint is "day" and default to 7.
-	MaxAge uint `json:"max_age" ini:"max_age" yaml:"max_age" mapstructure:"max_age"`
+	MaxAge int `json:"max_age" ini:"max_age" yaml:"max_age" mapstructure:"max_age"`
 
 	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated, default to 1MB.
-	MaxSize uint `json:"max_size" ini:"max_size" yaml:"max_size" mapstructure:"max_size"`
+	MaxSize int `json:"max_size" ini:"max_size" yaml:"max_size" mapstructure:"max_size"`
 
 	// MaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
-	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
+	MaxBackups int `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 }
 
 func (*Logger) setDefault() {

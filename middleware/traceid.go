@@ -8,23 +8,23 @@ import (
 
 func TraceID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		traceId := c.Request.Header.Get(consts.TRACE_ID)
-		pspanId := c.Request.Header.Get(consts.SPAN_ID)
-		spanId := util.SpanID()
-		if len(traceId) == 0 {
+		traceID := c.Request.Header.Get(consts.TRACE_ID)
+		pspanID := c.Request.Header.Get(consts.SPAN_ID)
+		spanID := util.SpanID()
+		if len(traceID) == 0 {
 			// If traceid is empty, it means that it is the first request.
-			traceId = spanId
+			traceID = spanID
 		}
-		requestId := traceId
-		c.Set(consts.REQUEST_ID, requestId)
-		c.Set(consts.TRACE_ID, traceId)
-		c.Set(consts.PSPAN_ID, pspanId)
-		c.Set(consts.SPAN_ID, spanId)
+		requestID := traceID
+		c.Set(consts.REQUEST_ID, requestID)
+		c.Set(consts.TRACE_ID, traceID)
+		c.Set(consts.PSPAN_ID, pspanID)
+		c.Set(consts.SPAN_ID, spanID)
 		c.Set(consts.SEQ, 0)
-		c.Header(consts.HEADER_REQUEST_ID, requestId)
-		c.Header(consts.HEADER_TRACE_ID, traceId)
-		c.Header(consts.HEADER_SPAN_ID, spanId)
-		c.Header(consts.HEADER_PSPAN_ID, pspanId)
+		c.Header(consts.HEADER_REQUEST_ID, requestID)
+		c.Header(consts.HEADER_TRACE_ID, traceID)
+		c.Header(consts.HEADER_SPAN_ID, spanID)
+		c.Header(consts.HEADER_PSPAN_ID, pspanID)
 		c.Next()
 	}
 }

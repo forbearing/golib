@@ -34,10 +34,11 @@ type localCache[T any] struct {
 
 // NewLocalCache 创建的缓存不具备分布式的能力, 需要分布式缓存请使用 NewDistributedCache
 func NewLocalCache[T any]() (types.Cache[T], error) {
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := localCacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T]), nil
 	}
 
@@ -50,6 +51,7 @@ func NewLocalCache[T any]() (types.Cache[T], error) {
 		val = &localCache[T]{c: c}
 		localCacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T]), nil
 }
 

@@ -12,7 +12,7 @@ type Pool struct {
 // NewPool constructs a new Pool.
 func NewPool() Pool {
 	return Pool{p: &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return &Buffer{bs: make([]byte, 0, _size)}
 		},
 	}}
@@ -20,7 +20,7 @@ func NewPool() Pool {
 
 // Get retrieves a Buffer from the pool, creating one if necessary.
 func (p Pool) Get() *Buffer {
-	buf := p.p.Get().(*Buffer)
+	buf := p.p.Get().(*Buffer) //nolint:errcheck
 	buf.Reset()
 	buf.pool = p
 	return buf

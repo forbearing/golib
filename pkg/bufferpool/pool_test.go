@@ -12,10 +12,10 @@ func TestBuffers(t *testing.T) {
 	p := NewPool()
 
 	var wg sync.WaitGroup
-	for g := 0; g < 10; g++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				buf := p.Get()
 				assert.Zero(t, buf.Len(), "Expected truncated buffer")
 				assert.NotZero(t, buf.Cap(), "Expected non-zero capacity")

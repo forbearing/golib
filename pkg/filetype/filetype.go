@@ -1,6 +1,7 @@
 package filetype
 
 import (
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -14,7 +15,7 @@ import (
 //     https://github.com/gabriel-vasile/mimetype/blob/master/supported_mimes.md
 
 const (
-	MAX_READ_FILESIZE = 10 * 1024 * 1024
+	MAX_READ_FILESIZE = 10 * 1024 * 1024 //nolint:staticcheck
 )
 
 // Detect detect filetype for binary files and text/plain files.
@@ -23,7 +24,7 @@ func Detect(filename string) (Filetype, Mime) {
 	fi, err := os.Stat(filename)
 	if err != nil {
 		zap.S().Error(err)
-		return FiletypeUnknow, MimeUnknow
+		return FiletypeUnknown, MimeUnknown
 	}
 	var buf []byte
 
@@ -31,28 +32,28 @@ func Detect(filename string) (Filetype, Mime) {
 		buf, err = os.ReadFile(filename)
 		if err != nil {
 			zap.S().Error(err)
-			return FiletypeUnknow, MimeUnknow
+			return FiletypeUnknown, MimeUnknown
 		}
 	} else {
+		var fd *os.File
 		buf = make([]byte, MAX_READ_FILESIZE)
-		fd, err := os.Open(filename)
-		if err != nil {
+		if fd, err = os.Open(filename); err != nil {
 			zap.S().Error(err)
-			return FiletypeUnknow, MimeUnknow
+			return FiletypeUnknown, MimeUnknown
 		}
-		if _, err := fd.Read(buf); err != nil && err != io.EOF {
+		if _, err = fd.Read(buf); err != nil && !errors.Is(err, io.EOF) {
 			zap.S().Error(err)
-			return FiletypeUnknow, MimeUnknow
+			return FiletypeUnknown, MimeUnknown
 		}
-		if err := fd.Close(); err != nil {
+		if err = fd.Close(); err != nil {
 			zap.S().Error(err)
-			return FiletypeUnknow, MimeUnknow
+			return FiletypeUnknown, MimeUnknown
 		}
 	}
 	kind, err := filetype.Match(buf)
 	if err != nil {
 		zap.S().Error(err)
-		return FiletypeUnknow, MimeUnknow
+		return FiletypeUnknown, MimeUnknown
 	}
 
 	switch kind.Extension {
@@ -107,7 +108,7 @@ func DetectBytes(data []byte) (Filetype, Mime) {
 	kind, err := filetype.Match(data)
 	if err != nil {
 		zap.S().Error(err)
-		return FiletypeUnknow, MimeUnknow
+		return FiletypeUnknown, MimeUnknown
 	}
 
 	switch kind.Extension {
@@ -147,7 +148,7 @@ func MimeByFiletype(filetype Filetype) Mime {
 	if ok {
 		return mime
 	}
-	return MimeUnknow
+	return MimeUnknown
 }
 
 // GetFiletypeAndMime get the Filetype and Mime by the provided string.
@@ -159,7 +160,7 @@ func GetFiletypeAndMime(s string) (Filetype, Mime) {
 	if ok {
 		return filetype, mime
 	}
-	return FiletypeUnknow, MimeUnknow
+	return FiletypeUnknown, MimeUnknown
 }
 
 type (
@@ -169,6 +170,7 @@ type (
 
 const (
 	// Filetype for documents.
+
 	FiletypeDOC  Filetype = "doc"
 	FiletypeXLS  Filetype = "xls"
 	FiletypePPT  Filetype = "ppt"
@@ -182,6 +184,7 @@ const (
 	FiletypeRTF  Filetype = "rtf"
 
 	// Filetype for text/plain files.
+
 	FiletypeTXT  Filetype = "txt"
 	FiletypeHTML Filetype = "html"
 	FiletypeJSON Filetype = "json"
@@ -191,6 +194,7 @@ const (
 	FiletypeText Filetype = "text"
 
 	// Filetype for compressed files.
+
 	FiletypeZIP Filetype = "zip"
 	FiletypeTAR Filetype = "tar"
 	FiletypeGZ  Filetype = "gz"
@@ -203,6 +207,7 @@ const (
 	FiletypeRAR Filetype = "rar"
 
 	// Filetype for Images.
+
 	FiletypePNG  Filetype = "png"
 	FiletypeICO  Filetype = "ico"
 	FiletypeJPG  Filetype = "jpg"
@@ -212,6 +217,7 @@ const (
 	FiletypeSVG  Filetype = "svg"
 
 	// Filetype for videos.
+
 	FiletypeAVI  Filetype = "avi"
 	FiletypeMOV  Filetype = "mov"
 	FiletypeMP4  Filetype = "mp4"
@@ -219,11 +225,13 @@ const (
 	FiletypeWMV  Filetype = "wmv"
 
 	// Filetype for audio.
+
 	FiletypeMP3 Filetype = "mp3"
 	FiletypeOGG Filetype = "ogg"
 	FiletypeWAV Filetype = "wav"
 
 	// Filetype for other files.
+
 	FiletypeELF   Filetype = "elf"
 	FiletypeEXE   Filetype = "exe"
 	FiletypeMACHO Filetype = "macho"
@@ -231,15 +239,17 @@ const (
 	FiletypeJAR   Filetype = "jar"
 
 	// Filetype for octet-stream
+
 	FiletypeStream Filetype = "binary"
 	FiletypeMSI    Filetype = "msi"
 	FiletypeOLE    Filetype = "ole"
 
-	FiletypeUnknow Filetype = "unknown"
+	FiletypeUnknown Filetype = "unknown"
 )
 
 const (
 	// Mime for documents.
+
 	MimeDOC  Mime = "application/msword"
 	MimeXLS  Mime = "application/vnd.ms-excel"
 	MimePPT  Mime = "application/vnd.ms-powerpoint"
@@ -253,6 +263,7 @@ const (
 	MimeRTF  Mime = "application/rtf"
 
 	// Mime for text/plain files.
+
 	MimeTXT  Mime = "text/plain; charset=utf-8"
 	MimeHTML Mime = "text/html; charset=utf-8"
 	MimeJSON Mime = "application/json"
@@ -262,6 +273,7 @@ const (
 	MimeTEXT Mime = "text/plain; charset=utf-8"
 
 	// Mime for compressed files.
+
 	MimeZIP Mime = "application/zip"
 	MimeTAR Mime = "application/x-tar"
 	MimeGZ  Mime = "application/gzip"
@@ -274,6 +286,7 @@ const (
 	MimeRAR Mime = "application/vnd.rar"
 
 	// Mime for Images.
+
 	MimePNG  Mime = "image/png"
 	MimeICO  Mime = "image/vnd.microsoft.icon"
 	MimeJPG  Mime = "image/jpeg"
@@ -283,6 +296,7 @@ const (
 	MimeSVG  Mime = "image/svg+xml"
 
 	// Mime for videos.
+
 	MimeAVI  Mime = "video/x-msvideo"
 	MimeMOV  Mime = "video/quicktime"
 	MimeMP4  Mime = "video/mp4"
@@ -290,11 +304,13 @@ const (
 	MimeWMV  Mime = "video/x-ms-wmv"
 
 	// Mime for audio.
+
 	MimeMP3 Mime = "audio/mpeg"
 	MimeOGG Mime = "audio/ogg"
 	MimeWAV Mime = "audio/x-wav"
 
 	// Mime for other files.
+
 	MimeELF   = "application/x-executable"
 	MimeEXE   = "application/vnd.microsoft.portable-executable"
 	MimeMACHO = "application/x-mach-binary"
@@ -302,11 +318,12 @@ const (
 	MimeJAR   = "application/jar"
 
 	// Mime for octet-stream
+
 	MimeStream = "application/octet-stream"
 	MimeMSI    = "application/x-ms-installer"
 	MimeOLE    = "application/x-ole-storage"
 
-	MimeUnknow Mime = "unknow"
+	MimeUnknown Mime = "unknown"
 )
 
 var MapFiletypeMime = map[Filetype]Mime{
@@ -376,5 +393,5 @@ var MapFiletypeMime = map[Filetype]Mime{
 	FiletypeMSI:    MimeMSI,
 	FiletypeOLE:    MimeOLE,
 
-	FiletypeUnknow: MimeUnknow,
+	FiletypeUnknown: MimeUnknown,
 }

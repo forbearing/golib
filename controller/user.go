@@ -13,7 +13,6 @@ import (
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/logger"
 	"github.com/forbearing/gst/model"
-	"github.com/forbearing/gst/response"
 	. "github.com/forbearing/gst/response"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
@@ -44,7 +43,7 @@ func (*user) Login(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many login requests")
-		ResponseJSON(c, response.NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many login requests"))
+		ResponseJSON(c, NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many login requests"))
 		return
 	}
 
@@ -86,8 +85,8 @@ func (*user) Login(c *gin.Context) {
 	u.Token = aToken
 	u.AccessToken = aToken
 	u.RefreshToken = rToken
-	u.SessionId = util.UUID()
-	fmt.Println("SessionId: ", u.SessionId)
+	u.SessionID = util.UUID()
+	fmt.Println("SessionId: ", u.SessionID)
 	u.TokenExpiration = util.ValueOf(model.GormTime(time.Now().Add(config.App.AccessTokenExpireDuration)))
 	writeLocalSessionAndCookie(c, aToken, rToken, u)
 	// WARN: you must clean password before response to user.
@@ -95,12 +94,12 @@ func (*user) Login(c *gin.Context) {
 
 	u.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	u.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
-	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLoginAt); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateByID(u.ID, "last_login", u.LastLoginAt); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateByID(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
@@ -133,7 +132,7 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many signup requests")
-		ResponseJSON(c, response.NewCode(response.CodeTooManyRequests, http.StatusTooManyRequests, "too many signup requests"))
+		ResponseJSON(c, NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many signup requests"))
 		return
 	}
 
@@ -146,12 +145,12 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if err = validateUsername(req.Name); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, NewCode(CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if err = validatePassword(req.Password); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, NewCode(CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if req.Password != req.RePassword {
@@ -199,8 +198,8 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	if len(req.ID) == 0 {
-		log.Error(CodeNotFoundUserId)
-		ResponseJSON(c, CodeNotFoundUserId)
+		log.Error(CodeNotFoundUserID)
+		ResponseJSON(c, CodeNotFoundUserID)
 		return
 	}
 	u := new(model.User)
@@ -321,7 +320,7 @@ func createSession(c *gin.Context) *model.Session {
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
 	return &model.Session{
-		UserId:         c.GetString(consts.CTX_USER_ID),
+		UserID:         c.GetString(consts.CTX_USER_ID),
 		Username:       c.GetString(consts.CTX_USERNAME),
 		Platform:       ua.Platform(),
 		OS:             ua.OS(),

@@ -14,7 +14,7 @@ import (
 // ErrEntryNotFound is returned when a cache entry is not found.
 var ErrEntryNotFound = errors.New("cache entry not found")
 
-// Initalizer interface is used to initialize configuration, flag arguments, logger, or other components.
+// Initializer interface is used to initialize configuration, flag arguments, logger, or other components.
 // This interface is commonly implemented by bootstrap components that need to perform
 // initialization tasks during application startup.
 //
@@ -23,7 +23,7 @@ var ErrEntryNotFound = errors.New("cache entry not found")
 //   - Logger initializers
 //   - Database connection setup
 //   - Cache initialization
-type Initalizer interface {
+type Initializer interface {
 	Init() error
 }
 
@@ -143,9 +143,9 @@ type Database[M Model] interface {
 	// Pass []M to update multiple record.
 	// It will just update the "updated_at" field.
 	Update(objs ...M) error
-	// UpdateById only update one record with specific id.
+	// UpdateByID only update one record with specific id.
 	// its not invoke model hook.
-	UpdateById(id string, key string, value any) error
+	UpdateByID(id string, key string, value any) error
 	// List all records and write to dest.
 	List(dest *[]M, cache ...*[]byte) error
 	// Get one record with specific id and write to dest.
@@ -279,7 +279,7 @@ type DatabaseOption[M Model] interface {
 
 	// WithExclude excludes records that matchs a condition within a list.
 	// For example:
-	//   - If you want exlcude users with specific ids from your query,
+	//   - If you want exclude users with specific ids from your query,
 	//     you can use WithExclude(excludes),
 	//     excludes: "id" as key, ["myid1", "myid2", "myid3"] as value.
 	//   - If you want excludes users that id not ["myid1", "myid2"] and not not ["root", "noname"],
@@ -372,8 +372,8 @@ type Model interface {
 }
 
 type (
-	Request  interface{}
-	Response interface{}
+	Request  any
+	Response any
 )
 
 // Service interface provides comprehensive business logic operations for model types.

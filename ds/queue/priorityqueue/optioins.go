@@ -14,7 +14,7 @@ func WithSafe[E any]() Option[E] {
 	}
 }
 
-// WithMaxHeap returns an Option that configures the priority queue to use max-heap ordering,
+// WithMaxPriority returns an Option that configures the priority queue to use max-heap ordering,
 // where larger values have higher priority. By default, the queue uses min-heap ordering
 // (smaller values have higher priority).
 func WithMaxPriority[E any]() Option[E] {

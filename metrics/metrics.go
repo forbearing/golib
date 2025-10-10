@@ -16,17 +16,17 @@ var (
 	State                 prometheus.Gauge
 	Uptime                prometheus.Gauge
 	CountOnlineUser       prometheus.Gauge
-	HttpRequestsTotal     *prometheus.CounterVec
-	HttpRequestDuration   *prometheus.HistogramVec
+	HTTPRequestsTotal     *prometheus.CounterVec
+	HTTPRequestDuration   *prometheus.HistogramVec
 	ResponseTime          prometheus.Histogram
 	ErrorRate             prometheus.Counter
 	MemoryTotal           prometheus.Gauge
 	MemoryUsed            prometheus.Gauge
 	MemoryUsedPercent     prometheus.Gauge
-	CpuCount              prometheus.Gauge
-	CpuUsedPercent        prometheus.Gauge
+	CPUCount              prometheus.Gauge
+	CPUUsedPercent        prometheus.Gauge
 	ConcurrentConnections prometheus.Gauge
-	DbConnectionsOpen     prometheus.Gauge
+	DBConnectionsOpen     prometheus.Gauge
 	CacheHit              *prometheus.CounterVec
 	CacheMiss             *prometheus.CounterVec
 	QueueSize             prometheus.Gauge
@@ -47,7 +47,7 @@ func Init() error {
 	})
 	// HttpRequestsTotal.WithLabelValues("GET").Inc()
 	// HttpRequestsTotal.WithLabelValues("POST").Inc()
-	HttpRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+	HTTPRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: NAMESPACE,
 		Subsystem: SUBSYSTEM,
 		Name:      "http_requests_total",
@@ -55,7 +55,7 @@ func Init() error {
 	},
 		[]string{"method", "path", "status"},
 	)
-	HttpRequestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	HTTPRequestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: NAMESPACE,
 		Subsystem: SUBSYSTEM,
 		Name:      "http_request_duration_seconds",
@@ -103,13 +103,13 @@ func Init() error {
 		Name:      "memory_usage_percent",
 		Help:      "Current memory used in percent",
 	})
-	CpuCount = prometheus.NewGauge(prometheus.GaugeOpts{
+	CPUCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: NAMESPACE,
 		Subsystem: SUBSYSTEM,
 		Name:      "cpu_count",
 		Help:      "Current cpu count",
 	})
-	CpuUsedPercent = prometheus.NewGauge(prometheus.GaugeOpts{
+	CPUUsedPercent = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: NAMESPACE,
 		Subsystem: SUBSYSTEM,
 		Name:      "cpu_used_percent",
@@ -121,7 +121,7 @@ func Init() error {
 		Name:      "concurrent_connections",
 		Help:      "Number of concurrent connections",
 	})
-	DbConnectionsOpen = prometheus.NewGauge(prometheus.GaugeOpts{
+	DBConnectionsOpen = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: NAMESPACE,
 		Subsystem: SUBSYSTEM,
 		Name:      "db_connections_open",
@@ -149,17 +149,17 @@ func Init() error {
 	errs := make([]error, 0)
 	errs = append(errs, prometheus.Register(State))
 	errs = append(errs, prometheus.Register(Uptime))
-	errs = append(errs, prometheus.Register(HttpRequestsTotal))
+	errs = append(errs, prometheus.Register(HTTPRequestsTotal))
 	errs = append(errs, prometheus.Register(CountOnlineUser))
 	errs = append(errs, prometheus.Register(ResponseTime))
 	errs = append(errs, prometheus.Register(ErrorRate))
 	errs = append(errs, prometheus.Register(MemoryTotal))
 	errs = append(errs, prometheus.Register(MemoryUsed))
 	errs = append(errs, prometheus.Register(MemoryUsedPercent))
-	errs = append(errs, prometheus.Register(CpuCount))
-	errs = append(errs, prometheus.Register(CpuUsedPercent))
+	errs = append(errs, prometheus.Register(CPUCount))
+	errs = append(errs, prometheus.Register(CPUUsedPercent))
 	errs = append(errs, prometheus.Register(ConcurrentConnections))
-	errs = append(errs, prometheus.Register(DbConnectionsOpen))
+	errs = append(errs, prometheus.Register(DBConnectionsOpen))
 	errs = append(errs, prometheus.Register(CacheHit))
 	errs = append(errs, prometheus.Register(CacheMiss))
 	errs = append(errs, prometheus.Register(QueueSize))

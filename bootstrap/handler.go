@@ -41,7 +41,7 @@ func runHandlers() {
 	for _, handler := range handlers {
 		g.Go(func() error { runSafe(handler); return nil })
 	}
-	g.Wait()
+	_ = g.Wait()
 }
 
 func runSafe(handler func()) {

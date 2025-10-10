@@ -36,7 +36,7 @@ func Write(filename string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filename, data, 0o644)
+	return os.WriteFile(filename, data, 0o600)
 }
 
 func Set[M types.Model, REQ types.Request, RSP types.Response](path string, verb ...consts.HTTPVerb) {
@@ -194,7 +194,7 @@ func DocumentHandler() http.Handler {
 		// data, _ := json.MarshalIndent(doc, "", "  ")
 		data, _ := json.Marshal(doc)
 		docMutex.RUnlock()
-		w.Write(data)
+		_, _ = w.Write(data)
 	})
 }
 

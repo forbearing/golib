@@ -1,4 +1,4 @@
-package model_authz
+package modelauthz
 
 import "github.com/forbearing/gst/model"
 

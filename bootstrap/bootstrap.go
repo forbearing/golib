@@ -44,8 +44,8 @@ import (
 	"github.com/forbearing/gst/provider/rocketmq"
 	"github.com/forbearing/gst/router"
 	"github.com/forbearing/gst/service"
-	service_authz "github.com/forbearing/gst/service/authz"
-	service_log "github.com/forbearing/gst/service/log"
+	serviceauthz "github.com/forbearing/gst/service/authz"
+	servicelog "github.com/forbearing/gst/service/log"
 	"github.com/forbearing/gst/task"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
@@ -57,7 +57,7 @@ var (
 )
 
 func Bootstrap() error {
-	maxprocs.Set(maxprocs.Logger(pkgzap.New().Infof))
+	_, _ = maxprocs.Set(maxprocs.Logger(pkgzap.New().Infof))
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -107,8 +107,8 @@ func Bootstrap() error {
 
 		// service
 		service.Init,
-		service_authz.Init,
-		service_log.Init,
+		serviceauthz.Init,
+		servicelog.Init,
 
 		controller.Init,
 		middleware.Init,
@@ -165,7 +165,7 @@ func Run() error {
 	}()
 	select {
 	case sig := <-sigCh:
-		zap.S().Infow("cancelled by signal", "signal", sig)
+		zap.S().Infow("canceled by signal", "signal", sig)
 		return nil
 	case err := <-errCh:
 		return err

@@ -25,16 +25,16 @@ import (
 type action int
 
 const (
-	create action = iota
-	delete_
+	create  action = iota
+	delete_        //nolint:staticcheck
 	update
 	patch
 	list
 	get
-	create_many
-	delete_many
-	update_many
-	patch_many
+	create_many //nolint:staticcheck
+	delete_many //nolint:staticcheck
+	update_many //nolint:staticcheck
+	patch_many  //nolint:staticcheck
 )
 
 var (

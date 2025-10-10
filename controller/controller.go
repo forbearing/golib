@@ -18,7 +18,7 @@ import (
 	"github.com/forbearing/gst/ds/queue/circularbuffer"
 	"github.com/forbearing/gst/logger"
 	"github.com/forbearing/gst/model"
-	model_log "github.com/forbearing/gst/model/log"
+	modellog "github.com/forbearing/gst/model/log"
 	"github.com/forbearing/gst/pkg/filetype"
 	"github.com/forbearing/gst/provider/otel"
 	. "github.com/forbearing/gst/response"
@@ -75,17 +75,17 @@ const defaultLimit = 1000
 var (
 	pluralizeCli = pluralize.NewClient()
 
-	cb *circularbuffer.CircularBuffer[*model_log.OperationLog]
+	cb *circularbuffer.CircularBuffer[*modellog.OperationLog]
 )
 
 func Init() (err error) {
-	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
+	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*modellog.OperationLog]()); err != nil {
 		return err
 	}
 
 	// Consume operation log.
 	go func() {
-		operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
+		operationLogs := make([]*modellog.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 		ticker := time.NewTicker(5 * time.Second)
 		for range ticker.C {
 			operationLogs = operationLogs[:0]
@@ -94,7 +94,7 @@ func Init() (err error) {
 				operationLogs = append(operationLogs, ol)
 			}
 			if len(operationLogs) > 0 {
-				if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
+				if err := database.Database[*modellog.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
 					zap.S().Error(err)
 				}
 			}
@@ -105,13 +105,13 @@ func Init() (err error) {
 }
 
 func Clean() {
-	operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
+	operationLogs := make([]*modellog.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 	for !cb.IsEmpty() {
 		ol, _ := cb.Dequeue()
 		operationLogs = append(operationLogs, ol)
 	}
 	if len(operationLogs) > 0 {
-		if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+		if err := database.Database[*modellog.OperationLog](nil).WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
 			zap.S().Error(err)
 		}
 	}
@@ -180,14 +180,14 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -205,14 +205,14 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 			otel.RecordError(span, err)
 			return
 		}
-		if reqErr == io.EOF {
+		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		} else {
 			req.SetCreatedBy(c.GetString(consts.CTX_USERNAME))
@@ -236,7 +236,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// We should update it instead of creating it, and update the "created_at" and "updated_at" field.
 		// NOTE: WithExpand(req.Expands()...) is not a good choices.
 		// if err := database.Database[M]().WithExpand(req.Expands()...).Update(req); err != nil {
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			if err = handler(types.NewDatabaseContext(c)).WithExpand(req.Expands()).Create(req); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -265,17 +265,17 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreate,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeCreate,
 			Model:     typ.Name(),
 			Table:     tableName,
-			RecordId:  req.GetID(),
+			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -361,8 +361,8 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
@@ -388,7 +388,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		ml := make([]M, 0)
 		idsSet := make(map[string]struct{})
 
-		addId := func(id string) {
+		addID := func(id string) {
 			if len(id) == 0 {
 				return
 			}
@@ -396,7 +396,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				return
 			}
 			// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(id)
 			ml = append(ml, m)
 			idsSet[id] = struct{}{}
@@ -404,17 +404,17 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		// Delete one record accoding to "query parameter `id`".
 		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
-			addId(id)
+			addID(id)
 		}
 		// Delete one record accoding to "route parameter `id`".
 		if len(cfg) > 0 {
-			addId(cctx.Params[util.Deref(cfg[0]).ParamName])
+			addID(cctx.Params[util.Deref(cfg[0]).ParamName])
 		}
 		// Delete multiple records accoding to "http body data".
 		bodyIds := make([]string, 0)
 		if err := c.ShouldBindJSON(&bodyIds); err == nil && len(bodyIds) > 0 {
 			for _, id := range bodyIds {
-				addId(id)
+				addID(id)
 			}
 		}
 
@@ -442,7 +442,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// find out the records and record to operation log.
 		copied := make([]M, len(ml))
 		for i := range ml {
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(ml[i].GetID())
 			if err := handler(types.NewDatabaseContext(c)).WithExpand(m.Expands()).Get(m, ml[i].GetID()); err != nil {
 				log.Error(err)
@@ -481,15 +481,15 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		for i := range ml {
 			record, _ := json.Marshal(copied[i])
-			cb.Enqueue(&model_log.OperationLog{
-				Op:        model_log.OperationTypeDelete,
+			cb.Enqueue(&modellog.OperationLog{
+				Op:        modellog.OperationTypeDelete,
 				Model:     typ.Name(),
 				Table:     tableName,
-				RecordId:  ml[i].GetID(),
+				RecordID:  ml[i].GetID(),
 				Record:    util.BytesToString(record),
 				IP:        c.ClientIP(),
 				User:      c.GetString(consts.CTX_USERNAME),
-				RequestId: c.GetString(consts.REQUEST_ID),
+				RequestID: c.GetString(consts.REQUEST_ID),
 				URI:       c.Request.RequestURI,
 				Method:    c.Request.Method,
 				UserAgent: c.Request.UserAgent(),
@@ -581,14 +581,14 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -606,7 +606,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if reqErr := c.ShouldBindJSON(&req); reqErr != nil {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -615,23 +615,23 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// param id has more priority than http body data id
-		var paramId string
+		var paramID string
 		if len(cfg) > 0 {
-			paramId = cctx.Params[util.Deref(cfg[0]).ParamName]
+			paramID = cctx.Params[util.Deref(cfg[0]).ParamName]
 		}
-		bodyId := req.GetID()
+		bodyID := req.GetID()
 		var id string
 		log.Infoz("update from request",
-			zap.String("param_id", paramId),
-			zap.String("body_id", bodyId),
+			zap.String("param_id", paramID),
+			zap.String("body_id", bodyID),
 			zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
 		)
-		if paramId != "" {
-			req.SetID(paramId)
-			id = paramId
-		} else if bodyId != "" {
-			paramId = bodyId
-			id = bodyId
+		if paramID != "" {
+			req.SetID(paramID)
+			id = paramID
+		} else if bodyID != "" {
+			paramID = bodyID //nolint:ineffassign,wastedassign
+			id = bodyID
 		} else {
 			log.Error("id missing")
 			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
@@ -643,7 +643,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 		m.SetID(id)
 		// Make sure the record must be already exists.
 		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
@@ -702,17 +702,17 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdate,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeUpdate,
 			Model:     typ.Name(),
 			Table:     tableName,
-			RecordId:  req.GetID(),
+			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -813,14 +813,14 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			var err error
 			var reqErr error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -838,7 +838,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}
 
 		typ := reflect.TypeOf(*new(M)).Elem()
-		req := reflect.New(typ).Interface().(M)
+		req := reflect.New(typ).Interface().(M) //nolint:errcheck
 		if len(cfg) > 0 {
 			id = cctx.Params[util.Deref(cfg[0]).ParamName]
 		}
@@ -861,7 +861,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		// The underlying type of interface types.Model must be pointer to structure, such as *model.User.
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value such as: &model.User{ID: myid, Name: myname}.
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 		m.SetID(id)
 
 		// Make sure the record must be already exists.
@@ -884,7 +884,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		newVal := reflect.ValueOf(req).Elem()
 		oldVal := reflect.ValueOf(data[0]).Elem()
 		patchValue(log, typ, oldVal, newVal)
-		cur := oldVal.Addr().Interface().(M)
+		cur := oldVal.Addr().Interface().(M) //nolint:errcheck
 
 		// 1.Perform business logic processing before partial update resource.
 		var serviceCtxBefore *types.ServiceContext
@@ -926,17 +926,17 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(cur)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatch,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypePatch,
 			Model:     typ.Name(),
 			Table:     tableName,
-			RecordId:  req.GetID(),
+			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -969,7 +969,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 //     /department/myid?_expand=children
 //     /department/myid?_expand=children,parent
 //   - `_depth`: strings or interger.
-//     How depth to retrieve records from datab recursivly, default to 1, value scope is [1,99].
+//     How depth to retrieve records from datab recursively, default to 1, value scope is [1,99].
 //     For examples:
 //     /department/myid?_expand=children&_depth=3
 //     /department/myid?_expand=children,parent&_depth=10
@@ -1080,8 +1080,8 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				otel.RecordError(span, err)
@@ -1123,7 +1123,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 
 		// FIXME: failed to convert value when size value is -1.
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
@@ -1286,13 +1286,13 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeList,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeList,
 			Model:     typ.Name(),
 			Table:     tableName,
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -1300,7 +1300,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 
 		log.Infoz(fmt.Sprintf("%s: length: %d, total: %d", typ.Name(), len(data), *total), zap.Object(typ.Name(), m))
 		if cached {
-			ResponseBytesList(c, CodeSuccess, uint64(*total), cache)
+			ResponseBytesList(c, CodeSuccess, *total, cache)
 		} else {
 			if !nototal {
 				ResponseJSON(c, CodeSuccess, gin.H{
@@ -1326,7 +1326,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 //     /department/myid?_expand=children
 //     /department/myid?_expand=children,parent
 //   - `_depth`: strings or interger.
-//     How depth to retrieve records from datab recursivly, default to 1, value scope is [1,99].
+//     How depth to retrieve records from datab recursively, default to 1, value scope is [1,99].
 //     For examples:
 //     /department/myid?_expand=children&_depth=3
 //     /department/myid?_expand=children,parent&_depth=10
@@ -1425,8 +1425,8 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if err = c.ShouldBindJSON(&req); err != nil && err != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
 				otel.RecordError(span, err)
@@ -1463,8 +1463,8 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem()
-		m := reflect.New(typ).Interface().(M)
-		m.SetID(param) // `GetBefore` hook need id.
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
+		m.SetID(param)                        // `GetBefore` hook need id.
 
 		var err error
 		var expands []string
@@ -1582,13 +1582,13 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeGet,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeGet,
 			Model:     typ.Name(),
 			Table:     tableName,
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
@@ -1788,14 +1788,14 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -1814,14 +1814,14 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		var req requestData[M]
 		typ := reflect.TypeOf(*new(M)).Elem()
-		val := reflect.New(typ).Interface().(M)
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		val := reflect.New(typ).Interface().(M) //nolint:errcheck
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 			otel.RecordError(span, err)
 			return
 		}
-		if reqErr == io.EOF {
+		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
 
@@ -1847,7 +1847,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 2.Batch create resource in database.
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			if err = handler(types.NewDatabaseContext(c)).WithExpand(val.Expands()).Create(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -1876,8 +1876,8 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreateMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeCreateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -1885,14 +1885,14 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		})
 
 		// FIXME: 如果某些字段增加了 gorm unique tag, 则更新成功后的资源 ID 时随机生成的，并不是数据库中的
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			req.Summary = &summary{
 				Total:     len(req.Items),
 				Succeeded: len(req.Items),
@@ -1982,14 +1982,14 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -2007,13 +2007,13 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		var req requestData[M]
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			otel.RecordError(span, err)
 			return
 		}
-		if reqErr == io.EOF {
+		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
 
@@ -2021,7 +2021,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		typ := reflect.TypeOf(*new(M)).Elem()
 		req.Items = make([]M, 0, len(req.Ids))
 		for _, id := range req.Ids {
-			m := reflect.New(typ).Interface().(M)
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
 			m.SetID(id)
 			req.Items = append(req.Items, m)
 		}
@@ -2039,7 +2039,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			req.Options = new(options)
 		}
 		// 2.Batch delete resources in database.
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			if err = handler(types.NewDatabaseContext(c)).WithPurge(req.Options.Purge).Delete(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -2066,20 +2066,20 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeDeleteMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeDeleteMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			req.Summary = &summary{
 				Total:     len(req.Items),
 				Succeeded: len(req.Items),
@@ -2153,14 +2153,14 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -2178,13 +2178,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		var req requestData[M]
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(reqErr))
 			otel.RecordError(span, err)
 			return
 		}
-		if reqErr == io.EOF {
+		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
 
@@ -2200,7 +2200,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			return
 		}
 		// 2.Batch update resource in database.
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			if err = handler(types.NewDatabaseContext(c)).Update(req.Items...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -2230,8 +2230,8 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdateMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeUpdateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -2239,13 +2239,13 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			req.Summary = &summary{
 				Total:     len(req.Items),
 				Succeeded: len(req.Items),
@@ -2318,14 +2318,14 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ)
-			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
 				otel.RecordError(span, err)
 				return
 			}
-			if reqErr == io.EOF {
+			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
 			var serviceCtx *types.ServiceContext
@@ -2345,18 +2345,18 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		var req requestData[M]
 		var shouldUpdates []M
 		typ := reflect.TypeOf(*new(M)).Elem()
-		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && reqErr != io.EOF {
+		if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 			log.Error(reqErr)
 			ResponseJSON(c, CodeFailure.WithErr(reqErr))
 			otel.RecordError(span, err)
 			return
 		}
-		if reqErr == io.EOF {
+		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
 		for _, m := range req.Items {
 			var results []M
-			v := reflect.New(typ).Interface().(M)
+			v := reflect.New(typ).Interface().(M) //nolint:errcheck
 			v.SetID(m.GetID())
 			if err = handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(v).List(&results); err != nil {
 				log.Error(err)
@@ -2373,7 +2373,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			}
 			oldVal, newVal := reflect.ValueOf(results[0]).Elem(), reflect.ValueOf(m).Elem()
 			patchValue(log, typ, oldVal, newVal)
-			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M))
+			shouldUpdates = append(shouldUpdates, oldVal.Addr().Interface().(M)) //nolint:errcheck
 		}
 
 		// 1.Perform business logic processing before batch patch resource.
@@ -2388,7 +2388,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			return
 		}
 		// 2.Batch partial update resource in database.
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			if err = handler(types.NewDatabaseContext(c)).Update(shouldUpdates...); err != nil {
 				log.Error(err)
 				ResponseJSON(c, CodeFailure.WithErr(err))
@@ -2418,8 +2418,8 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatchMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypePatchMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -2427,13 +2427,13 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			Response:  util.BytesToString(respData),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
-			RequestId: c.GetString(consts.REQUEST_ID),
+			RequestID: c.GetString(consts.REQUEST_ID),
 			URI:       c.Request.RequestURI,
 			Method:    c.Request.Method,
 			UserAgent: c.Request.UserAgent(),
 		})
 
-		if reqErr != io.EOF {
+		if !errors.Is(reqErr, io.EOF) {
 			req.Summary = &summary{
 				Total:     len(req.Items),
 				Succeeded: len(req.Items),
@@ -2465,7 +2465,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 //     /department/myid?_expand=children
 //     /department/myid?_expand=children,parent
 //   - `_depth`: strings or interger.
-//     How depth to retrieve records from datab recursivly, default to 1, value scope is [1,99].
+//     How depth to retrieve records from datab recursively, default to 1, value scope is [1,99].
 //     For examples:
 //     /department/myid?_expand=children&_depth=3
 //     /department/myid?_expand=children,parent&_depth=10
@@ -2510,7 +2510,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 'typ' is the structure type, such as: model.User.
 		// 'm' is the structure value, such as: &model.User{ID: myid, Name: myname}.
 		typ := reflect.TypeOf(*new(M)).Elem() // the real underlying structure type
-		m := reflect.New(typ).Interface().(M)
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 
 		if err := schema.NewDecoder().Decode(m, c.Request.URL.Query()); err != nil {
 			log.Warn("failed to parse uri query parameter into model: ", err)
@@ -2520,7 +2520,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		var err error
 		var or bool
 		var fuzzy bool
-		var depth int = 1
+		depth := 1
 		var expands []string
 		data := make([]M, 0)
 		if orStr, ok := c.GetQuery(consts.QUERY_OR); ok {

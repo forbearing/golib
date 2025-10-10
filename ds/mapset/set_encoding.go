@@ -33,7 +33,7 @@ func (s *Set[E]) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	return []byte(fmt.Sprintf("[%s]", strings.Join(items, ","))), nil
+	return fmt.Appendf(nil, "[%s]", strings.Join(items, ",")), nil
 }
 
 // UnmarshalJSON will unmarshal a JSON-based representation byte slice into the set.

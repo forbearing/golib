@@ -69,11 +69,11 @@ func writeFileWithLog(filename string, content string) {
 			logSkip(filename)
 		} else {
 			logUpdate(filename)
-			checkErr(os.WriteFile(filename, []byte(content), 0o644))
+			checkErr(os.WriteFile(filename, []byte(content), 0o600))
 		}
 	} else {
 		logCreate(filename)
 		checkErr(ensureParentDir(filename))
-		checkErr(os.WriteFile(filename, []byte(content), 0o644))
+		checkErr(os.WriteFile(filename, []byte(content), 0o600))
 	}
 }

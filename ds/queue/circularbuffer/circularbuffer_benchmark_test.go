@@ -190,7 +190,7 @@ func BenchmarkCircularBuffer_UnmarshalJSON(b *testing.B) {
 	}
 	bytes := []byte("[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]")
 	benchmark2(b, []int{100, 100000}, func(cb *cb.CircularBuffer[int]) {
-		json.Unmarshal(bytes, dst)
+		_ = json.Unmarshal(bytes, dst)
 	})
 }
 

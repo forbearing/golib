@@ -381,7 +381,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		// We should make sure nothing record will be matched.
 		// db.db = db.db.Where(`1 = 0`)
 
-		// If the query strings has multiple value(seperated by ',')
+		// If the query strings has multiple value(separated by ',')
 		// construct the 'WHERE' 'REGEXP' SQL statement
 		// eg: SELECT * FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
 		//     SELECT count(*) FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
@@ -392,7 +392,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 			if len(strings.Join(items, "")) == 0 {
 				continue
 			}
-			if len(items) > 1 { // If the query string has multiple value(seperated by ','), using regexp
+			if len(items) > 1 { // If the query string has multiple value(separated by ','), using regexp
 				var regexpVal string
 				for _, item := range items {
 					// WARN: not forget to escape the regexp value using regexp.QuoteMeta.
@@ -425,7 +425,7 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		// We should make sure nothing record will be matched.
 		// db.db = db.db.Where(`1 = 0`)
 
-		// If the query string has multiple value(seperated by ','),
+		// If the query string has multiple value(separated by ','),
 		// construct the 'WHERE' 'IN' SQL statement.
 		// eg: SELECT id FROM users WHERE name IN ('user01', 'user02', 'user03', 'user04')
 		for k, v := range q {
@@ -478,21 +478,21 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 					// Not overwrite the "CreatedBy" value set in types.Model.
 					// The "CreatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["created_by"]; !loaded {
-						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string)
+						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("UpdatedBy").IsZero() {
 					// Not overwrite the "UpdatedBy" value set in types.Model.
 					// The "UpdatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["updated_by"]; !loaded {
-						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string)
+						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
-						q["id"] = fieldVal.FieldByName("ID").Interface().(string)
+						q["id"] = fieldVal.FieldByName("ID").Interface().(string) //nolint:errcheck
 					}
 				}
 			} else {
@@ -505,7 +505,7 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		// NOTE: strings.Split always returns at least one element(empty string)
 		// We should not use len(jsonTagItems) to check the json tags exists.
-		jsonTag := ""
+		var jsonTag string
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
 			jsonTagItems[0] = field.Name
@@ -537,7 +537,7 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 			// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
 			// 但是我们想要的是 WHERE `default` IN (true),
 			// 所以没办法就只能直接转成 int 了.
-			_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+			_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			_v = fmt.Sprintf("%d", v)
 		case reflect.Float32, reflect.Float64:
@@ -549,7 +549,7 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 			// switch typ.Elem().Kind() {
 			switch fieldVal.Elem().Kind() {
 			case reflect.Bool:
-				_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+				_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				_v = fmt.Sprintf("%d", v)
 			case reflect.Float32, reflect.Float64:
@@ -574,9 +574,9 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 				// execute statement `slice.Interface().([]string)` directly will case panic.
 				// _v = strings.Join(slice.Interface().([]string), ",") // the slice type is GormStrings not []string.
 				// We should make the slice of []string again.
-				slice = reflect.MakeSlice(reflect.TypeOf([]string{}), _len, _len)
+				slice = reflect.MakeSlice(reflect.TypeFor[[]string](), _len, _len)
 				reflect.Copy(slice, fieldVal)
-				_v = strings.Join(slice.Interface().([]string), ",")
+				_v = strings.Join(slice.Interface().([]string), ",") //nolint:errcheck
 			default:
 				_v = fmt.Sprintf("%v", v)
 			}
@@ -1166,7 +1166,7 @@ func (db *database[M]) WithLimit(limit int) types.Database[M] {
 // eg: [Children Parent]
 //
 // NOTE: WithExpand only workds on mysql foreign key relationship.
-// If you want expand the custom field that without gorm tag about foregin key defination,
+// If you want expand the custom field that without gorm tag about foreign key definition,
 // you should define the GetAfter/ListAfter in model layer or service layoer.
 func (db *database[M]) WithExpand(expand []string, order ...string) types.Database[M] {
 	db.mu.Lock()
@@ -1239,7 +1239,7 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 //
 // WithExclude excludes records that matchs a condition within a list.
 // For example:
-//   - If you want exlcude users with specific ids from your query,
+//   - If you want exclude users with specific ids from your query,
 //     you can use WithExclude(excludes),
 //     excludes: "id" as key, ["myid1", "myid2", "myid3"] as value.
 //   - If you want excludes users that id not ["myid1", "myid2"] and not not ["root", "noname"],
@@ -1428,7 +1428,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// }
 	//
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1456,7 +1456,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 
 	// // because db.db.Delete method just update field "delete_at" to current time,
 	// // not really delete it(soft delete).
-	// // If record already exists, Update method update all fields but exlcude "created_at" by
+	// // If record already exists, Update method update all fields but exclude "created_at" by
 	// // mysql "ON DUPLICATE KEY UPDATE" mechanism. so we should update the "created_at" field manually.
 	// for i := range objs {
 	// 	// 有些 model 重写 SetID 为一个空函数, 则 GetID() 的值为空字符串. 更新 created_at 则会报错
@@ -1560,7 +1560,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		}
 	}
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1697,7 +1697,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	// }
 	//
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1735,7 +1735,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	return nil
 }
 
-// UpdateById updates a specific field of a single record identified by ID.
+// UpdateByID updates a specific field of a single record identified by ID.
 // This is a lightweight update operation that bypasses model hooks for performance.
 // Only updates the specified field without triggering validation or business logic.
 //
@@ -1750,7 +1750,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 //
 //	UpdateById("user123", "status", "active")  // Update user status
 //	UpdateById("order456", "amount", 99.99)    // Update order amount
-func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
+func (db *database[M]) UpdateByID(id string, key string, val any) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
@@ -1776,7 +1776,7 @@ func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
 
 	// return db.db.Model(*new(M)).Where("id = ?", id).Update(key, val).Error
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1827,7 +1827,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
-	if _dest, err := cache.Cache[[]M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[[]M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -1920,7 +1920,7 @@ QUERY:
 	}
 	// if err = db.db.Find(dest).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2012,7 +2012,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2102,7 +2102,7 @@ QUERY:
 	}
 	// if err = db.db.Where("id = ?", id).Find(dest).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2184,7 +2184,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
-	if _cache, err := cache.Cache[int64]().WithContext(ctx).Get(key); err != nil {
+	if _cache, e := cache.Cache[int64]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2228,7 +2228,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 QUERY:
 	// if err = db.db.Model(*new(M)).Count(count).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2290,7 +2290,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2377,7 +2377,7 @@ QUERY:
 	}
 	// if err = db.db.First(dest).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2446,7 +2446,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2533,7 +2533,7 @@ QUERY:
 	}
 	// if err = db.db.Last(dest).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2602,7 +2602,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 		goto QUERY
 	}
 	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
-	if _dest, err := cache.Cache[M]().WithContext(ctx).Get(key); err != nil {
+	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
 	} else {
@@ -2689,7 +2689,7 @@ QUERY:
 	}
 	// if err = db.db.Take(dest).Error; err != nil {
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2750,7 +2750,7 @@ func (db *database[M]) Cleanup() (err error) {
 
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName()
+	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}

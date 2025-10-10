@@ -166,9 +166,9 @@ func initVar() {
 	logLevel = config.App.Logger.Level
 	logFormat = config.App.Logger.Format
 	logEncoder = config.App.Logger.Encoder
-	logMaxAge = int(config.App.Logger.MaxAge)
-	logMaxSize = int(config.App.Logger.MaxSize)
-	logMaxBackups = int(config.App.Logger.MaxBackups)
+	logMaxAge = config.App.Logger.MaxAge
+	logMaxSize = config.App.Logger.MaxSize
+	logMaxBackups = config.App.Logger.MaxBackups
 }
 
 func callerPrettyfier(frame *runtime.Frame) (function, file string) {

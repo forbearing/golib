@@ -63,18 +63,18 @@ func buildRun(cmd *cobra.Command, args []string) error {
 	// Get build information
 	buildInfo, err := getBuildInfo()
 	if err != nil {
-		return fmt.Errorf("failed to get build info: %v", err)
+		return fmt.Errorf("failed to get build info: %w", err)
 	}
 
 	// Determine target platforms
 	targets, err := getBuildTargets()
 	if err != nil {
-		return fmt.Errorf("failed to determine build targets: %v", err)
+		return fmt.Errorf("failed to determine build targets: %w", err)
 	}
 
 	// Create output directory
 	if err := os.MkdirAll(buildOutput, 0o755); err != nil {
-		return fmt.Errorf("failed to create output directory: %v", err)
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Build for each target
@@ -129,7 +129,7 @@ func getBuildInfo() (*BuildInfo, error) {
 	// Get module name
 	moduleName, err := getModuleName()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get module name: %v", err)
+		return nil, fmt.Errorf("failed to get module name: %w", err)
 	}
 	info.Module = moduleName
 	info.Binary = filepath.Base(moduleName)
@@ -138,8 +138,8 @@ func getBuildInfo() (*BuildInfo, error) {
 	if buildVersion != "" {
 		info.Version = buildVersion
 	} else {
-		version, err := getGitVersion()
-		if err != nil {
+		var version string
+		if version, err = getGitVersion(); err != nil {
 			fmt.Printf("%s Failed to get git version, using 'dev': %v\n", yellow("⚠"), err)
 			info.Version = "dev"
 		} else {
@@ -217,7 +217,7 @@ func buildForTarget(target BuildTarget, info *BuildInfo) error {
 
 	// Create target directory
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
-		return fmt.Errorf("failed to create target directory: %v", err)
+		return fmt.Errorf("failed to create target directory: %w", err)
 	}
 
 	// Build ldflags
@@ -238,7 +238,7 @@ func buildForTarget(target BuildTarget, info *BuildInfo) error {
 
 	// Execute build
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("build failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("build failed: %w\nOutput: %s", err, string(output))
 	}
 
 	return nil

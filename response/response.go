@@ -12,12 +12,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 成功处理和失败处理状态码
 const (
-	// 成功处理和失败处理状态码
 	CodeSuccess Code = 0
 	CodeFailure Code = -1
+)
 
-	// 通用状态码
+// 通用状态码
+const (
 	CodeInvalidParam Code = 1000 + iota
 	CodeBadRequest
 	CodeInvalidToken
@@ -31,8 +33,8 @@ const (
 	CodeAlreadyExist
 )
 
+// 业务状态码
 const (
-	// 业务状态码
 	CodeInvalidLogin Code = 2000 + iota
 	CodeInvalidSignup
 	CodeOldPasswordNotMatch
@@ -41,7 +43,7 @@ const (
 	CodeNotFoundQueryID
 	CodeNotFoundRouteParam
 	CodeNotFoundUser
-	CodeNotFoundUserId
+	CodeNotFoundUserID
 
 	CodeAlreadyExistsUser
 	CodeAlreadyExistsRole
@@ -81,7 +83,7 @@ var defaultCodeValueMap = map[Code]codeValue{
 	CodeNotFoundQueryID:     {http.StatusBadRequest, "not found query parameter 'id'"},
 	CodeNotFoundRouteParam:  {http.StatusBadRequest, "not found router param"},
 	CodeNotFoundUser:        {http.StatusBadRequest, "not found user"},
-	CodeNotFoundUserId:      {http.StatusBadRequest, "not found user id"},
+	CodeNotFoundUserID:      {http.StatusBadRequest, "not found user id"},
 	CodeAlreadyExistsUser:   {http.StatusConflict, "user already exists"},
 	CodeAlreadyExistsRole:   {http.StatusConflict, "role already exists"},
 	CodeTooLargeFile:        {http.StatusBadRequest, "too large file"},
@@ -152,7 +154,6 @@ func (r Code) Code() int {
 	return int(r)
 }
 
-// CodeInstance 的方法
 func (ci CodeInstance) Msg() string {
 	if ci.msg != nil {
 		return *ci.msg
@@ -196,7 +197,7 @@ func (ci CodeInstance) WithMsg(msg string) CodeInstance {
 	}
 }
 
-// 响应接口，统一处理 Code 和 CodeInstance
+// Responder 响应接口，统一处理 Code 和 CodeInstance
 type Responder interface {
 	Msg() string
 	Status() int
@@ -217,7 +218,6 @@ func NewCode(code Code, status int, msg string) Code {
 	return code
 }
 
-// 修改响应函数以支持 Responder 接口
 func ResponseJSON(c *gin.Context, responder Responder, data ...any) {
 	if len(data) > 0 {
 		c.JSON(responder.Status(), gin.H{
@@ -246,10 +246,10 @@ func ResponseBytes(c *gin.Context, responder Responder, data ...[]byte) {
 		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":"","request_id":"%s"}`, responder.Code(), responder.Msg(), c.GetString(consts.REQUEST_ID))
 	}
 	c.Writer.WriteHeader(responder.Status())
-	c.Writer.Write(util.StringToBytes(dataStr))
+	_, _ = c.Writer.Write(util.StringToBytes(dataStr))
 }
 
-func ResponseBytesList(c *gin.Context, responder Responder, total uint64, data ...[]byte) {
+func ResponseBytesList(c *gin.Context, responder Responder, total int64, data ...[]byte) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	var dataStr string
 	if len(data) > 0 {
@@ -258,7 +258,7 @@ func ResponseBytesList(c *gin.Context, responder Responder, total uint64, data .
 		dataStr = fmt.Sprintf(`{"code":%d,"msg":"%s","data":{"total":0,"items":[]},"request_id":"%s"}`, responder.Code(), responder.Msg(), c.GetString(consts.REQUEST_ID))
 	}
 	c.Writer.WriteHeader(responder.Status())
-	c.Writer.Write(util.StringToBytes(dataStr))
+	_, _ = c.Writer.Write(util.StringToBytes(dataStr))
 }
 
 func ResponseTEXT(c *gin.Context, responder Responder, data ...any) {

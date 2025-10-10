@@ -15,7 +15,7 @@ type User2 struct {
 	NewPassword  string `json:"new_password,omitempty" gorm:"-"`
 	Email        string `json:"email,omitempty"`
 	Avatar       string `json:"avatar,omitempty"`
-	AvatarUrl    string `json:"avatar_url,omitempty"`    // 用户头像
+	AvatarURL    string `json:"avatar_url,omitempty"`    // 用户头像
 	AvatarThumb  string `json:"avatar_thumb,omitempty"`  // 用户头像 72x72
 	AvatarMiddle string `json:"avatar_middle,omitempty"` // 用户头像 240x240
 	AvatarBig    string `json:"avatar_big,omitempty"`    // 用户头像 640x640
@@ -28,8 +28,8 @@ type User2 struct {
 	// 2 离职
 	// 3 试用期
 	// 4 实习生
-	RoleId       string `json:"role_id,omitempty" schema:"role_id"`
-	DepartmentId string `json:"department_id,omitempty" schema:"department_id"`
+	RoleID       string `json:"role_id,omitempty" schema:"role_id"`
+	DepartmentID string `json:"department_id,omitempty" schema:"department_id"`
 
 	LastLoginIP string `json:"last_login_ip,omitempty"`
 	LockExpire  int64  `json:"lock_expire,omitempty"`
@@ -38,7 +38,7 @@ type User2 struct {
 	Token        string `json:"token,omitempty" gorm:"-"`
 	AccessToken  string `json:"access_token,omitempty" gorm:"-"`
 	RefreshToken string `json:"refresh_token,omitempty" gorm:"-"`
-	SessionId    string `json:"session_id,omitempty" gorm:"-"`
+	SessionID    string `json:"session_id,omitempty" gorm:"-"`
 
 	Base
 }
@@ -50,7 +50,7 @@ func BenchmarkStructFieldToMap(b *testing.B) {
 		Password:     "mypass",
 		Email:        "user@gmail.com",
 		Avatar:       "avatar",
-		AvatarUrl:    "avatar_url",
+		AvatarURL:    "avatar_url",
 		AvatarThumb:  "avatar_thumb",
 		AvatarMiddle: "avatar_middle",
 		AvatarBig:    "avatar_big",
@@ -58,8 +58,8 @@ func BenchmarkStructFieldToMap(b *testing.B) {
 		Nickname:     "nickname",
 		Introduction: "introduction",
 		Status:       1,
-		RoleId:       "role_id",
-		DepartmentId: "department_id",
+		RoleID:       "role_id",
+		DepartmentID: "department_id",
 		LastLoginIP:  "last_login_ip",
 		LockExpire:   0,
 	}

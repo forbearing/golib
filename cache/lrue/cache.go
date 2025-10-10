@@ -27,10 +27,11 @@ type cache[T any] struct {
 }
 
 func Cache[T any]() types.Cache[T] {
-	typ := reflect.TypeOf((*T)(nil)).Elem()
+	typ := reflect.TypeFor[T]()
 	key := typ.PkgPath() + "|" + typ.String()
 	val, exists := cacheMap.Get(key)
 	if exists {
+		//nolint:errcheck
 		return val.(types.Cache[T])
 	}
 
@@ -45,6 +46,7 @@ func Cache[T any]() types.Cache[T] {
 		}, "lrue")
 		cacheMap.Set(key, val)
 	}
+	//nolint:errcheck
 	return val.(types.Cache[T])
 }
 

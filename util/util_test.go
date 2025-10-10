@@ -17,19 +17,19 @@ func TestUtil(t *testing.T) {
 }
 
 func BenchmarkUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		UUID()
 	}
 }
 
 func BenchmarkIndexedUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		IndexedUUID()
 	}
 }
 
 func BenchmarkLightUUID(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		RequestID()
 	}
 }
@@ -187,12 +187,12 @@ func TestRound(t *testing.T) {
 			// compare result
 			switch want := tt.want.(type) {
 			case float64:
-				got64 := got.(float64)
+				got64 := got.(float64) //nolint:errcheck
 				if math.Abs(got64-want) > 1e-10 {
 					t.Errorf("Round() = %v, want %v", got64, want)
 				}
 			case float32:
-				got32 := got.(float32)
+				got32 := got.(float32) //nolint:errcheck
 				if math.Abs(float64(got32-want)) > 1e-6 {
 					t.Errorf("Round() = %v, want %v", got32, want)
 				}

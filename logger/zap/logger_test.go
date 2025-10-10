@@ -23,11 +23,11 @@ var (
 
 func init() {
 	// init keyValues10
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		keyValues10 = append(keyValues10, "key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
 	}
 	// init keyValues100
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		keyValues100 = append(keyValues100, "key"+strconv.Itoa(i), "value"+strconv.Itoa(i))
 	}
 }
@@ -54,81 +54,81 @@ func TestLogger(b *testing.T) {
 
 func BenchmarkLogger_File10(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg10)
 	}
 }
 
 func BenchmarkLogger_File100(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg100)
 	}
 }
 
 func BenchmarkLogger_File1000(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg1000)
 	}
 }
 
 func BenchmarkLogger_File10000(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg10000)
 	}
 }
 
 func BenchmarkLogger_Discard10(b *testing.B) {
 	l := createLogger(b, "/dev/null")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg10)
 	}
 }
 
 func BenchmarkLogger_Discard100(b *testing.B) {
 	l := createLogger(b, "/dev/null")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg100)
 	}
 }
 
 func BenchmarkLogger_Discard1000(b *testing.B) {
 	l := createLogger(b, "/dev/null")
-	for range b.N {
+	for b.Loop() {
 		l.Infoz(msg1000)
 	}
 }
 
 func BenchmarkLogger_Discard10000(b *testing.B) {
 	l := createLogger(b, "/dev/null")
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		l.Infoz(msg10000)
 	}
 }
 
 func BenchmarkLogger_With10(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for range b.N {
+	for b.Loop() {
 		l.With(keyValues10...).Info(msg10)
 	}
 }
 
 func BenchmarkLogger_With100(b *testing.B) {
 	l := createLogger(b, "test.log")
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for range b.N {
+	for b.Loop() {
 		l.With(keyValues100...).Info(msg10)
 	}
 }

@@ -1,13 +1,13 @@
 package config
 
 const (
-	MYSQL_HOST     = "MYSQL_HOST"
-	MYSQL_PORT     = "MYSQL_PORT"
-	MYSQL_DATABASE = "MYSQL_DATABASE"
-	MYSQL_USERNAME = "MYSQL_USERNAME"
-	MYSQL_PASSWORD = "MYSQL_PASSWORD"
-	MYSQL_CHARSET  = "MYSQL_CHARSET"
-	MYSQL_ENABLE   = "MYSQL_ENABLE"
+	MYSQL_HOST     = "MYSQL_HOST"     //nolint:staticcheck
+	MYSQL_PORT     = "MYSQL_PORT"     //nolint:staticcheck
+	MYSQL_DATABASE = "MYSQL_DATABASE" //nolint:staticcheck
+	MYSQL_USERNAME = "MYSQL_USERNAME" //nolint:staticcheck
+	MYSQL_PASSWORD = "MYSQL_PASSWORD" //nolint:staticcheck
+	MYSQL_CHARSET  = "MYSQL_CHARSET"  //nolint:staticcheck
+	MYSQL_ENABLE   = "MYSQL_ENABLE"   //nolint:staticcheck
 )
 
 type MySQL struct {

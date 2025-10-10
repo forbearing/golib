@@ -68,7 +68,7 @@ func GetFdFromListener(l net.Listener) int {
 }
 
 func IsConnClosed(err error) bool {
-	if err == io.EOF || errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) {
+	if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) {
 		return true
 	}
 	return false

@@ -21,7 +21,7 @@ var (
 
 var (
 	ErrNotFoundService   = errors.New("no service instant matches the give Model interface, skip processing service layer")
-	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
+	ErrNotFoundServiceID = errors.New("not found service id in assetIdMap")
 )
 
 func serviceKey[M types.Model](phase consts.Phase) string {
@@ -95,7 +95,7 @@ func (f factory[M, REQ, RSP]) Service(phase consts.Phase) types.Service[M, REQ, 
 		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
 		return new(Base[M, REQ, RSP])
 	}
-	return svc.(types.Service[M, REQ, RSP])
+	return svc.(types.Service[M, REQ, RSP]) //nolint:errcheck
 }
 
 type Base[M types.Model, REQ types.Request, RSP types.Response] struct{ types.Logger }

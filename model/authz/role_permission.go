@@ -1,4 +1,4 @@
-package model_authz
+package modelauthz
 
 import (
 	"github.com/cockroachdb/errors"
@@ -21,6 +21,7 @@ const (
 	EffectDeny  Effect = "deny"
 )
 
+// RolePermission is a permission for a role
 // TODO: remove RoleId and only keep Role(role name).
 type RolePermission struct {
 	Role string `json:"role" schema:"role"`

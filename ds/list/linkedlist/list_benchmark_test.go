@@ -351,7 +351,7 @@ func BenchmarkLinkedList_FindBestCase(b *testing.B) {
 
 func stdListFind(list *golist.List, v any, equal func(int, int) bool) (_v any) {
 	for e := list.Front(); e != nil; e = e.Next() {
-		if equal(v.(int), e.Value.(int)) {
+		if equal(v.(int), e.Value.(int)) { //nolint:errcheck
 			return v
 		}
 	}

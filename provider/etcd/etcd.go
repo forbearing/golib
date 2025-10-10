@@ -67,7 +67,7 @@ func New(cfg config.Etcd) (*clientv3.Client, error) {
 	etcdConfig := clientv3.Config{
 		Endpoints:   cfg.Endpoints,
 		DialTimeout: cfg.DialTimeout,
-		Logger:      logger.Etcd.(*pkgzap.Logger).ZapLogger(),
+		Logger:      logger.Etcd.(*pkgzap.Logger).ZapLogger(), //nolint:errcheck
 	}
 
 	// Set username and password authentication if provided

@@ -185,7 +185,7 @@ func TestDistributedCacheConcurrency(t *testing.T) {
 	const numGoroutines = 100
 
 	// 启动多个goroutines同时进行读写操作
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()

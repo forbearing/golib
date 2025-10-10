@@ -1,4 +1,4 @@
-package model_authz
+package modelauthz
 
 import (
 	"strings"
@@ -55,6 +55,6 @@ func (r *Role) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return nil
 	}
 	enc.AddString("name", r.Name)
-	enc.AddObject("base", &r.Base)
+	_ = enc.AddObject("base", &r.Base)
 	return nil
 }
