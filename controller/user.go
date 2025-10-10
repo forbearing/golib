@@ -198,8 +198,8 @@ func (*user) ChangePasswd(c *gin.Context) {
 		return
 	}
 	if len(req.ID) == 0 {
-		log.Error(CodeNotFoundUserId)
-		ResponseJSON(c, CodeNotFoundUserId)
+		log.Error(CodeNotFoundUserID)
+		ResponseJSON(c, CodeNotFoundUserID)
 		return
 	}
 	u := new(model.User)
