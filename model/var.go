@@ -1,13 +1,13 @@
 package model
 
 var (
-	RootId      = "root"
+	RootID      = "root"
 	RootName    = "root"
-	UnknownId   = "unknown"
+	UnknownID   = "unknown"
 	UnknownName = "未知"
-	NoneId      = "none"
+	NoneID      = "none"
 	NoneName    = "无"
 
 	KeyName = "name"
-	KeyId   = "id"
+	KeyID   = "id"
 )

@@ -56,8 +56,8 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 	}
 	name := user.Name
 	userID := user.ID
-	sessionID := user.SessionId
-	zap.S().Info("user.SessionId: ", user.SessionId)
+	sessionID := user.SessionID
+	zap.S().Info("user.SessionId: ", user.SessionID)
 	sessionData, err := json.Marshal(user)
 	if err != nil {
 		zap.S().Error(err)
@@ -114,7 +114,7 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		return
 	}
 	name := userInfo.Name
-	userID := userInfo.UserId
+	userID := userInfo.UserID
 	sessionData, err := json.Marshal(userInfo)
 	if err != nil {
 		zap.S().Error(err)
@@ -167,7 +167,7 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
 	err = database.Database[*modellog.LoginLog](types.NewDatabaseContext(c)).Create(&modellog.LoginLog{
-		UserID:   userInfo.UserId,
+		UserID:   userInfo.UserID,
 		Username: userInfo.Name,
 		Token:    aToken,
 		Status:   modellog.LoginStatusSuccess,

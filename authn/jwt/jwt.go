@@ -66,7 +66,7 @@ func Init() error {
 		return errors.Wrap(err, "failed to list sessions")
 	}
 	for _, session := range sessions {
-		setSession(session.UserId, session)
+		setSession(session.UserID, session)
 	}
 
 	return nil
@@ -93,7 +93,7 @@ func GenTokens(userID string, username string, session *model.Session) (aToken, 
 	}
 	session.AccessToken = aToken
 	session.RefreshToken = rToken
-	session.UserId = userID
+	session.UserID = userID
 	session.Username = username
 	// setToken(aToken, rToken, session)
 	setSession(userID, session)

@@ -9,8 +9,8 @@ import (
 type Fixed string
 
 const (
-	FIXED_RIGHT Fixed = "right"
-	FIXED_LEFT  Fixed = "left"
+	FIXED_RIGHT Fixed = "right" //nolint:staticcheck
+	FIXED_LEFT  Fixed = "left"  //nolint:staticcheck
 )
 
 func init() {
@@ -19,7 +19,7 @@ func init() {
 
 // TableColumn 表格的列
 type TableColumn struct {
-	UserId    string `json:"user_id,omitempty" schema:"user_id"`       // 属于哪一个用户的
+	UserID    string `json:"user_id,omitempty" schema:"user_id"`       // 属于哪一个用户的
 	TableName string `json:"table_name,omitempty" schema:"table_name"` // 属于哪一张表的
 	Name      string `json:"name,omitempty" schema:"name"`             // 列名
 	Key       string `json:"key,omitempty" schema:"key"`               // 列名对应的id
@@ -52,7 +52,7 @@ func (t *TableColumn) UpdateBefore(*types.ModelContext) error {
 }
 
 func (t *TableColumn) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("user_id", t.UserId)
+	enc.AddString("user_id", t.UserID)
 	enc.AddString("table_name", t.TableName)
 	enc.AddString("name", t.Name)
 	enc.AddString("key", t.Key)

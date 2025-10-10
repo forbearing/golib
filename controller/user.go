@@ -85,8 +85,8 @@ func (*user) Login(c *gin.Context) {
 	u.Token = aToken
 	u.AccessToken = aToken
 	u.RefreshToken = rToken
-	u.SessionId = util.UUID()
-	fmt.Println("SessionId: ", u.SessionId)
+	u.SessionID = util.UUID()
+	fmt.Println("SessionId: ", u.SessionID)
 	u.TokenExpiration = util.ValueOf(model.GormTime(time.Now().Add(config.App.AccessTokenExpireDuration)))
 	writeLocalSessionAndCookie(c, aToken, rToken, u)
 	// WARN: you must clean password before response to user.
@@ -320,7 +320,7 @@ func createSession(c *gin.Context) *model.Session {
 	engineName, engineVersion := ua.Engine()
 	browserName, browserVersion := ua.Browser()
 	return &model.Session{
-		UserId:         c.GetString(consts.CTX_USER_ID),
+		UserID:         c.GetString(consts.CTX_USER_ID),
 		Username:       c.GetString(consts.CTX_USERNAME),
 		Platform:       ua.Platform(),
 		OS:             ua.OS(),

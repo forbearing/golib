@@ -15,9 +15,9 @@ func init() {
 type Session struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	UserId       string `json:"user_id"`
+	UserID       string `json:"user_id"`
 	Username     string `json:"username"`
-	SessionId    string `json:"session_id"`
+	SessionID    string `json:"session_id"`
 
 	// TODO: 统一起来，使用 model.UserAgent
 	Platform       string `json:"platform"`
@@ -44,7 +44,7 @@ func (s *Session) DeleteBefore(*types.ModelContext) error {
 
 func (s *Session) id() string {
 	parts := []string{
-		s.UserId,
+		s.UserID,
 		s.Platform,
 		s.OS,
 		s.EngineName,

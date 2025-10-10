@@ -13,20 +13,20 @@ import (
 
 type GormTime time.Time
 
-func (t *GormTime) Scan(value any) error {
+func (gt *GormTime) Scan(value any) error {
 	localTime, err := time.Parse(consts.DATE_TIME_LAYOUT, string(value.([]byte))) //nolint:errcheck
 	if err != nil {
 		return err
 	}
-	*t = GormTime(localTime)
+	*gt = GormTime(localTime)
 	return nil
 }
 
-func (t GormTime) Value() (driver.Value, error) {
-	return time.Time(t).Format(consts.DATE_TIME_LAYOUT), nil
+func (gt GormTime) Value() (driver.Value, error) {
+	return time.Time(gt).Format(consts.DATE_TIME_LAYOUT), nil
 }
 
-func (t *GormTime) UnmarshalJSON(b []byte) error {
+func (gt *GormTime) UnmarshalJSON(b []byte) error {
 	// Trim quotes from the stringified JSON value
 	s := strings.Trim(string(b), "\"")
 	// Parse the time using the custom format
@@ -35,13 +35,13 @@ func (t *GormTime) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*t = GormTime(parsedTime)
+	*gt = GormTime(parsedTime)
 	return nil
 }
 
-func (ct GormTime) MarshalJSON() ([]byte, error) {
+func (gt GormTime) MarshalJSON() ([]byte, error) {
 	// Convert the time to the custom format and stringify it
-	return []byte("\"" + time.Time(ct).Format(consts.DATE_TIME_LAYOUT) + "\""), nil
+	return []byte("\"" + time.Time(gt).Format(consts.DATE_TIME_LAYOUT) + "\""), nil
 }
 
 func (gs *GormStrings) UnmarshalJSON(data []byte) error {
