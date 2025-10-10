@@ -91,7 +91,6 @@ func (i *initializer) getFunctionName(fn func() error) string {
 	return fullName
 }
 
-// Package-level functions for convenient access
 func Register(fn ...func() error)   { _initializer.Register(fn...) }
 func RegisterGo(fn ...func() error) { _initializer.RegisterGo(fn...) }
 func Init() (err error)             { return _initializer.Init() }

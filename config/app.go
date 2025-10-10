@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	// App related environment variables
 	APP_NAME        = "APP_NAME"        //nolint:staticcheck
 	APP_VERSION     = "APP_VERSION"     //nolint:staticcheck
 	APP_DESCRIPTION = "APP_DESCRIPTION" //nolint:staticcheck

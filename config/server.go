@@ -24,7 +24,6 @@ const (
 	SERVER_WRITE_TIMEOUT = "SERVER_WRITE_TIMEOUT" //nolint:staticcheck
 	SERVER_IDLE_TIMEOUT  = "SERVER_IDLE_TIMEOUT"  //nolint:staticcheck
 
-	// Circuit breaker related environment variables
 	SERVER_CIRCUIT_BREAKER_NAME         = "SERVER_CIRCUIT_BREAKER_NAME"         //nolint:staticcheck
 	SERVER_CIRCUIT_BREAKER_MAX_REQUESTS = "SERVER_CIRCUIT_BREAKER_MAX_REQUESTS" //nolint:staticcheck
 	SERVER_CIRCUIT_BREAKER_INTERVAL     = "SERVER_CIRCUIT_BREAKER_INTERVAL"     //nolint:staticcheck
@@ -33,7 +32,6 @@ const (
 	SERVER_CIRCUIT_BREAKER_MIN_REQUESTS = "SERVER_CIRCUIT_BREAKER_MIN_REQUESTS" //nolint:staticcheck
 	SERVER_CIRCUIT_BREAKER_ENABLE       = "SERVER_CIRCUIT_BREAKER_ENABLE"       //nolint:staticcheck
 
-	// Circular buffer related environment variables
 	SERVER_CIRCULAR_BUFFER_SIZE_OPERATION_LOG = "SERVER_CIRCULAR_BUFFER_SIZE_OPERATION_LOG" //nolint:staticcheck
 )
 

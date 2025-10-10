@@ -28,7 +28,6 @@ func WithHTTPClient(client *http.Client) Option {
 	}
 }
 
-// TODO: WithHeader or WithHeader
 func WithHeader(header http.Header) Option {
 	return func(c *Client) {
 		if header != nil {

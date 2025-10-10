@@ -38,7 +38,7 @@ func randomID(n int) string {
 	return sb.String()
 }
 
-// 滑块验证码生成接口
+// SliderCaptchaGen 滑块验证码生成接口
 func SliderCaptchaGen(c *gin.Context) {
 	// 加载内置背景图
 	bgImages, err := imagesv2.GetImages()
@@ -108,7 +108,7 @@ func SliderCaptchaGen(c *gin.Context) {
 	})
 }
 
-// 滑块验证码校验接口
+// SliderCaptchaVerify 滑块验证码校验接口
 func SliderCaptchaVerify(c *gin.Context) {
 	var req struct {
 		ID     string  `json:"id" binding:"required"`
