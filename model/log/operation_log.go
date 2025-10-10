@@ -1,4 +1,4 @@
-package model_log
+package modellog
 
 import "github.com/forbearing/gst/model"
 

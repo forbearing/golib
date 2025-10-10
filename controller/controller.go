@@ -18,7 +18,7 @@ import (
 	"github.com/forbearing/gst/ds/queue/circularbuffer"
 	"github.com/forbearing/gst/logger"
 	"github.com/forbearing/gst/model"
-	model_log "github.com/forbearing/gst/model/log"
+	model_log "github.com/forbearing/gst/model/modellog"
 	"github.com/forbearing/gst/pkg/filetype"
 	"github.com/forbearing/gst/provider/otel"
 	. "github.com/forbearing/gst/response"

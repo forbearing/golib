@@ -11,7 +11,7 @@ import (
 	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/logger"
-	model_authz "github.com/forbearing/gst/model/modelauthz"
+	modelauthz "github.com/forbearing/gst/model/authz"
 )
 
 const (
@@ -53,7 +53,7 @@ func Init() (err error) {
 		return errors.Wrapf(err, "failed to write model file %s", filename)
 	}
 	// NOTE: gormadapter.NewAdapterByDBWithCustomTable creates the Casbin policy table with an auto-incrementing primary key.
-	if rbac.Adapter, err = gormadapter.NewAdapterByDBWithCustomTable(database.DB, new(model_authz.CasbinRule)); err != nil {
+	if rbac.Adapter, err = gormadapter.NewAdapterByDBWithCustomTable(database.DB, new(modelauthz.CasbinRule)); err != nil {
 		return errors.Wrap(err, "failed to create casbin adapter")
 	}
 	if rbac.Enforcer, err = casbin.NewEnforcer(filename, rbac.Adapter); err != nil {
