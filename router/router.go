@@ -16,7 +16,7 @@ import (
 	"github.com/forbearing/gst/internal/openapigen"
 	"github.com/forbearing/gst/middleware"
 	"github.com/forbearing/gst/model"
-	model_authz "github.com/forbearing/gst/model/authz"
+	modelauthz "github.com/forbearing/gst/model/authz"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
@@ -78,26 +78,26 @@ func Run() error {
 	}
 
 	// Delete all permissions in database
-	permissions := make([]*model_authz.Permission, 0)
-	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).List(&permissions); err != nil {
+	permissions := make([]*modelauthz.Permission, 0)
+	if err := database.Database[*modelauthz.Permission](nil).WithLimit(-1).List(&permissions); err != nil {
 		log.Error(err)
 		return err
 	}
-	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).WithBatchSize(100).WithPurge().Delete(permissions...); err != nil {
+	if err := database.Database[*modelauthz.Permission](nil).WithLimit(-1).WithBatchSize(100).WithPurge().Delete(permissions...); err != nil {
 		log.Error(err)
 		return err
 	}
 	// Create permissions in database
-	permissions = make([]*model_authz.Permission, 0)
+	permissions = make([]*modelauthz.Permission, 0)
 	for endpoint, methods := range model.Routes {
 		for _, method := range methods {
-			permissions = append(permissions, &model_authz.Permission{
+			permissions = append(permissions, &modelauthz.Permission{
 				Resource: convertGinPathToCasbinKeyMatch3(endpoint),
 				Action:   method,
 			})
 		}
 	}
-	if err := database.Database[*model_authz.Permission](nil).WithLimit(-1).WithBatchSize(100).Create(permissions...); err != nil {
+	if err := database.Database[*modelauthz.Permission](nil).WithLimit(-1).WithBatchSize(100).Create(permissions...); err != nil {
 		log.Error(err)
 		return err
 	}

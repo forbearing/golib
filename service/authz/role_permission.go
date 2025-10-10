@@ -3,7 +3,7 @@ package service_authz
 import (
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/logger"
-	model_authz "github.com/forbearing/gst/model/authz"
+	model_authz "github.com/forbearing/gst/model/modelauthz"
 	"github.com/forbearing/gst/service"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"

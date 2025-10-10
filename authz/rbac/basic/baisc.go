@@ -11,7 +11,7 @@ import (
 	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/logger"
-	model_authz "github.com/forbearing/gst/model/authz"
+	model_authz "github.com/forbearing/gst/model/modelauthz"
 )
 
 const (

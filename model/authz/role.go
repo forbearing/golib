@@ -1,4 +1,4 @@
-package model_authz
+package modelauthz
 
 import (
 	"strings"
