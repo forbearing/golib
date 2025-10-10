@@ -94,12 +94,12 @@ func (*user) Login(c *gin.Context) {
 
 	u.LastLoginAt = util.ValueOf(model.GormTime(time.Now()))
 	u.LastLoginIP = util.IPv6ToIPv4(c.ClientIP())
-	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login", u.LastLoginAt); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateByID(u.ID, "last_login", u.LastLoginAt); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return
 	}
-	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateById(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
+	if err = database.Database[*model.User](types.NewDatabaseContext(c)).UpdateByID(u.ID, "last_login_ip", u.LastLoginIP); err != nil {
 		log.Error(err)
 		ResponseJSON(c, CodeFailure)
 		return

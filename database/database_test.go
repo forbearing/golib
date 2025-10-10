@@ -669,11 +669,11 @@ func (suite *DatabaseTestSuite) TestUpdateById() {
 	suite.NoError(err)
 
 	// Test update by ID - update name field
-	err = db.UpdateById(user.ID, "name", "UpdatedById")
+	err = db.UpdateByID(user.ID, "name", "UpdatedById")
 	suite.NoError(err)
 
 	// Test update by ID - update age field
-	err = db.UpdateById(user.ID, "age", 35)
+	err = db.UpdateByID(user.ID, "age", 35)
 	suite.NoError(err)
 
 	// Verify the updates

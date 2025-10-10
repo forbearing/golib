@@ -143,9 +143,9 @@ type Database[M Model] interface {
 	// Pass []M to update multiple record.
 	// It will just update the "updated_at" field.
 	Update(objs ...M) error
-	// UpdateById only update one record with specific id.
+	// UpdateByID only update one record with specific id.
 	// its not invoke model hook.
-	UpdateById(id string, key string, value any) error
+	UpdateByID(id string, key string, value any) error
 	// List all records and write to dest.
 	List(dest *[]M, cache ...*[]byte) error
 	// Get one record with specific id and write to dest.

@@ -1735,7 +1735,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	return nil
 }
 
-// UpdateById updates a specific field of a single record identified by ID.
+// UpdateByID updates a specific field of a single record identified by ID.
 // This is a lightweight update operation that bypasses model hooks for performance.
 // Only updates the specified field without triggering validation or business logic.
 //
@@ -1750,7 +1750,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 //
 //	UpdateById("user123", "status", "active")  // Update user status
 //	UpdateById("order456", "amount", 99.99)    // Update order amount
-func (db *database[M]) UpdateById(id string, key string, val any) (err error) {
+func (db *database[M]) UpdateByID(id string, key string, val any) (err error) {
 	if err = db.prepare(); err != nil {
 		return err
 	}
