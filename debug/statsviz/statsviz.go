@@ -19,10 +19,16 @@ func Run() error {
 	}
 
 	mux := http.NewServeMux()
-	statsviz.Register(mux)
+	if err := statsviz.Register(mux); err != nil {
+		zap.S().Errorw("failed to register statsviz handler", "err", err)
+		return err
+	}
 	server = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.App.StatsvizListen, config.App.StatsvizPort),
-		Handler: mux,
+		Addr:         fmt.Sprintf("%s:%d", config.App.StatsvizListen, config.App.StatsvizPort),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		Handler:      mux,
 	}
 
 	zap.S().Infow("statsviz server started", "listen", config.App.StatsvizListen, "port", config.App.StatsvizPort)
