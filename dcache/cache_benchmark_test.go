@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/dcache"
 	"github.com/forbearing/gst/provider/redis"
@@ -112,7 +113,7 @@ func benchmark(b *testing.B, cache any) {
 	count := 10000
 	keys := make([]string, count)
 	values := make([]string, count)
-	cm := cache.(types.Cache[string])
+	cm := cache.(types.Cache[string]) //nolint:errcheck
 	for i := range count {
 		keys[i] = fmt.Sprintf("key-%d", i)
 		values[i] = fmt.Sprintf("value-%d", i)
@@ -147,7 +148,7 @@ func benchmark(b *testing.B, cache any) {
 
 		for i := 0; i < b.N; i++ {
 			idx := i % count
-			if _, err := cm.Get(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+			if _, err := cm.Get(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 				b.Fatal(err)
 			}
 		}
@@ -163,7 +164,7 @@ func benchmark(b *testing.B, cache any) {
 
 			for i := 0; i < b.N; i++ {
 				idx := i % count
-				if _, err := dcm.GetWithSync(keys[idx], ttl); err != nil && err != types.ErrEntryNotFound {
+				if _, err := dcm.GetWithSync(keys[idx], ttl); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 					b.Fatal(err)
 				}
 			}
@@ -187,7 +188,7 @@ func benchmark(b *testing.B, cache any) {
 				}
 			} else {
 				// 70% get
-				if _, err := cm.Get(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+				if _, err := cm.Get(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 					b.Fatal(err)
 				}
 			}
@@ -204,7 +205,7 @@ func benchmark(b *testing.B, cache any) {
 
 		for i := 0; i < b.N; i++ {
 			idx := i % count
-			if err := cm.Delete(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+			if err := cm.Delete(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 				b.Fatal(err)
 			}
 		}
@@ -220,7 +221,7 @@ func benchmark(b *testing.B, cache any) {
 
 			for i := 0; i < b.N; i++ {
 				idx := i % count
-				if err := dcm.DeleteWithSync(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+				if err := dcm.DeleteWithSync(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 					b.Fatal(err)
 				}
 			}
@@ -264,7 +265,7 @@ func benchmarkParallel(b *testing.B, cm types.Cache[string]) {
 			counter := 0
 			for pb.Next() {
 				idx := counter % count
-				if _, err := cm.Get(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+				if _, err := cm.Get(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 					b.Fatal(err)
 				}
 				counter++
@@ -297,11 +298,11 @@ func benchmarkParallel(b *testing.B, cm types.Cache[string]) {
 						b.Fatal(err)
 					}
 				case opType < 9: // 60% 读操作
-					if _, err := cm.Get(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+					if _, err := cm.Get(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 						b.Fatal(err)
 					}
 				default: // 10% 删除操作
-					if err := cm.Delete(keys[idx]); err != nil && err != types.ErrEntryNotFound {
+					if err := cm.Delete(keys[idx]); err != nil && !errors.Is(err, types.ErrEntryNotFound) {
 						b.Fatal(err)
 					}
 				}

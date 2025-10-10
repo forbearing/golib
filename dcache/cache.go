@@ -121,10 +121,10 @@ func Init() error {
 				})
 
 				// 重置批次计数器
-				var totalRecords int = 0     // 总消息数
+				totalRecords := 0            // 总消息数
 				var successRecords int64 = 0 // 成功处理的消息数
 				var failedRecords int64 = 0  // 处理失败的消息数
-				var skippedRecords int = 0   // 跳过的无效的消息数
+				skippedRecords := 0          // 跳过的无效的消息数
 
 				// 用于跟踪本批次处理的消息的偏移量
 				offsets := make(map[string]map[int32]kgo.EpochOffset)
@@ -166,14 +166,14 @@ func Init() error {
 						}
 
 						// 获取该 key 的历史最大时间戳
-						keyMaxTs, _ := keyMaxTimestamps.Get(event.Key)
+						keyMaxTS, _ := keyMaxTimestamps.Get(event.Key)
 
 						// 规则一：过滤掉时间戳小于该 key 历史最大时间戳的事件
-						if event.TS <= keyMaxTs {
+						if event.TS <= keyMaxTS {
 							log.Warn("skipping outdated event for key",
 								zap.String("key", event.Key),
 								zap.Int64("event_ts", event.TS),
-								zap.Int64("key_max_ts", keyMaxTs),
+								zap.Int64("key_max_ts", keyMaxTS),
 								zap.String("op", event.Op.String()),
 							)
 							skippedRecords++
@@ -223,21 +223,21 @@ func Init() error {
 				// ---------------------------------------------------------------------
 
 				// 记录本批次处理的每个 key 的最大时间戳，用于批处理结束后更新
-				batchKeyMaxTs := make(map[string]int64)
+				batchKeyMaxTS := make(map[string]int64)
 
 				// 批次操作 redis 和 kafka 超时控制
 				wg.Add(len(eventSlice))
 				for i := range eventSlice {
 					evt := eventSlice[i]
 					// 更新该 key 在本批次中的最大时间戳
-					if ts, exists := batchKeyMaxTs[evt.Key]; !exists || evt.TS > ts {
-						batchKeyMaxTs[evt.Key] = evt.TS
+					if ts, exists := batchKeyMaxTS[evt.Key]; !exists || evt.TS > ts {
+						batchKeyMaxTS[evt.Key] = evt.TS
 					}
 
 					// TODO: 生产环境设置成 Debug 级别
 					log.Info("process event", zap.Object("event", evt))
 
-					gopool.Submit(func() {
+					err = gopool.Submit(func() {
 						defer wg.Done()
 						switch evt.Op {
 						case opSet:
@@ -255,7 +255,7 @@ func Init() error {
 							}
 							// 无论是否同步到Redis，都发送完成事件到Kafka
 							evtDone := &event{
-								CacheId:     evt.CacheId,
+								CacheID:     evt.CacheID,
 								Typ:         evt.Typ,
 								Op:          opSetDone,
 								Key:         evt.Key,
@@ -298,7 +298,7 @@ func Init() error {
 							}
 							// 无论是否同步到Redis，都发送完成事件到Kafka
 							evtDone := &event{
-								CacheId:     evt.CacheId,
+								CacheID:     evt.CacheID,
 								Typ:         evt.Typ,
 								Op:          opDelDone,
 								Key:         evt.Key,
@@ -329,11 +329,14 @@ func Init() error {
 							log.Warn("unknown operation type", zap.String("op", evt.Op.String()))
 						}
 					})
+					if err != nil {
+						log.Error("failed to submit event to gopool", zap.Error(err), zap.Object("event", evt))
+					}
 				}
 				wg.Wait()
 
 				// 批处理完成后，更新每个 key 的最大时间戳
-				for key, ts := range batchKeyMaxTs {
+				for key, ts := range batchKeyMaxTS {
 					keyMaxTimestamps.Set(key, ts)
 				}
 
@@ -350,9 +353,9 @@ func Init() error {
 				}
 
 				// 清空 map 和 slice，帮助 GC 自动回收内存
-				keyEvents = nil
-				eventSlice = nil
-				batchKeyMaxTs = nil
+				keyEvents = nil     //nolint:ineffassign
+				eventSlice = nil    //nolint:ineffassign
+				batchKeyMaxTS = nil //nolint:ineffassign,wastedassign
 
 				// // 系统每次重启时，都会从最新的偏移量开始消费, 所以不需要保存偏移量
 				// if len(offsets) > 0 {

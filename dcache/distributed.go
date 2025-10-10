@@ -65,7 +65,7 @@ func (o op) String() string {
 }
 
 type event struct {
-	CacheId string
+	CacheID string
 
 	Key string // redis key
 	TS  int64  // timestamp
@@ -93,12 +93,12 @@ func (e *event) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		val = e.Val
 	}
 	enc.AddString("ts", time.Unix(0, e.TS).Format("2006-01-02 15:04:05"))
-	enc.AddString("cache_id", e.CacheId)
+	enc.AddString("cache_id", e.CacheID)
 	enc.AddString("hostname", e.Hostname)
 	enc.AddString("typ", e.Typ)
 	enc.AddString("op", e.Op.String())
 	enc.AddString("key", e.Key)
-	enc.AddReflected("value", val)
+	_ = enc.AddReflected("value", val)
 	enc.AddString("local_ttl", util.FormatDurationSmart(e.TTL, 2))
 	enc.AddString("redis_ttl", util.FormatDurationSmart(e.RedisTTL, 2))
 	enc.AddBool("sync_to_redis", e.SyncToRedis)
@@ -125,7 +125,7 @@ func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Distri
 	// Fast path: check if cache already exists
 	val, exists := distributedCacheMap.Get(key)
 	if exists {
-		return val.(*distributedCache[T]), nil
+		return val.(*distributedCache[T]), nil //nolint:errcheck
 	}
 
 	distributedCacheMu.Lock()
@@ -141,11 +141,11 @@ func NewDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Distri
 		val = cache
 		distributedCacheMap.Set(key, cache)
 	}
-	return val.(*distributedCache[T]), nil
+	return val.(*distributedCache[T]), nil //nolint:errcheck
 }
 
 // distributedCache implements a two-level cacheing system with local memery cache and redis backend.
-// It provides cache synchronization across multiple isntances using kafka for event publishing and consuming:
+// It provides cache synchronization across multiple instances using kafka for event publishing and consuming:
 //   - Local memory cache for high-speed access.
 //   - Redis for distributed persistence and high availability.
 //   - Kafka for cross-instance cache invalidation.
@@ -168,8 +168,8 @@ type distributedCache[T any] struct {
 	// 每一个实例都有自己唯一的分布式缓存ID
 	// 当某一个实例收到 opSetDone, opDelDone 事件时, 会检查 event.CacheId 是否于等于自己的分布式缓存ID
 	// 如果相同, 则不处理.
-	// NOTE: 多个分布式缓存实例的 cacheId 总是不同
-	cacheId  string
+	// NOTE: 多个分布式缓存实例的 cacheID 总是不同
+	cacheID  string
 	hostname string
 
 	// stats
@@ -197,7 +197,7 @@ type distributedCache[T any] struct {
 
 	// call "WithTrace" to enable set traceEnabled to true to logger each operation costed time.
 	traceEnabled bool
-	// comp is used to mark the distributed cache name that is convienient for logger search.
+	// comp is used to mark the distributed cache name that is convenient for logger search.
 	comp string
 }
 
@@ -207,7 +207,7 @@ type distributedCache[T any] struct {
 //   - brokers: kafka brokers addresses for event publishing and consuming.
 //   - opts: Optional configuration options.
 func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Cache[T], error) {
-	cacheId, err := uuid.NewV7()
+	cacheID, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Cache[
 	}
 
 	dc := &distributedCache[T]{
-		cacheId:  cacheId.String(),
+		cacheID:  cacheID.String(),
 		prefix:   prefix,
 		typ:      typStr,
 		comp:     fmt.Sprintf("[%s:DistributedCache:%s]", hostname, typ.Name()),
@@ -292,7 +292,7 @@ func newDistributedCache[T any](opts ...DistributedCacheOption[T]) (types.Cache[
 	if dc.gocap < MIN_GOROUTINES {
 		dc.gocap = runtime.NumCPU() * 2000
 	}
-	pool, err := ants.NewPool(int(dc.gocap), ants.WithPreAlloc(false))
+	pool, err := ants.NewPool(dc.gocap, ants.WithPreAlloc(false))
 	if err != nil {
 		return nil, err
 	}
@@ -523,7 +523,7 @@ func (dc *distributedCache[T]) listenEvents() {
 				case opSetDone:
 					// 如果是自己发出的事件，跳过处理
 					// 先检查缓存ID, 检查完后其实不用再检查缓存类型
-					if evt.CacheId == dc.cacheId {
+					if evt.CacheID == dc.cacheID {
 						// fmt.Println("----- set 缓存ID不匹配", dc.mark, dc.cacheId, evt.CacheId)
 						continue
 					}
@@ -552,7 +552,7 @@ func (dc *distributedCache[T]) listenEvents() {
 					}
 				case opDelDone:
 					// 先检查缓存ID, 其实不用再检查缓存类型
-					if evt.CacheId == dc.cacheId {
+					if evt.CacheID == dc.cacheID {
 						// fmt.Println("------ delete 缓存ID不匹配", dc.mark, dc.cacheId, evt.CacheId)
 						continue
 					}
@@ -584,7 +584,7 @@ func (dc *distributedCache[T]) sendEvent(evt *event) {
 	if evt == nil {
 		return
 	}
-	dc.gopool.Submit(func() {
+	err := dc.gopool.Submit(func() {
 		val, err := json.Marshal(evt.raw)
 		if err != nil {
 			dc.logger.Error("failed to marshal event raw data", zap.Error(err), zap.Object("event", evt))
@@ -594,7 +594,7 @@ func (dc *distributedCache[T]) sendEvent(evt *event) {
 			dc.logger.Warn("the marshaled value is empty", zap.Object("event", evt))
 			return
 		}
-		evt.CacheId = dc.cacheId
+		evt.CacheID = dc.cacheID
 		evt.Typ = dc.typ
 		evt.Val = val
 		evt.Hostname = dc.hostname
@@ -614,6 +614,9 @@ func (dc *distributedCache[T]) sendEvent(evt *event) {
 			dc.logger.Error("failed to publish event", zap.Error(err), zap.Object("event", evt))
 		}
 	})
+	if err != nil {
+		dc.logger.Error("failed to submit event to gopool", zap.Error(err))
+	}
 }
 
 func (dc *distributedCache[T]) startMonitor() {
