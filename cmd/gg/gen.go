@@ -636,22 +636,22 @@ func buildHierarchicalEndpointsV2(allModels []*gen.ModelInfo) {
 
 		// Extract directory from model file path
 		modelFilePath := strings.TrimPrefix(m.ModelFilePath, "model/")
-		modelDir := filepath.Dir(modelFilePath)
-		if modelDir == "." {
-			modelDir = ""
+		modelDir_ := filepath.Dir(modelFilePath)
+		if modelDir_ == "." {
+			modelDir_ = ""
 		}
 
 		// Store the original endpoint from DSL
 		originalEndpoint := m.Design.Endpoint
 
-		if modelDir == "" {
+		if modelDir_ == "" {
 			// Model is in root model directory, keep original endpoint
 			continue
 		}
 
 		// Build the complete endpoint path by replacing directory names with mapped endpoints
 		var endpointParts []string
-		pathParts := strings.Split(modelDir, "/")
+		pathParts := strings.Split(modelDir_, "/")
 
 		// For each directory level, use trie to lookup mapped endpoint or directory name
 		for i := range pathParts {
