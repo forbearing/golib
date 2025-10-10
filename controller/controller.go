@@ -18,7 +18,7 @@ import (
 	"github.com/forbearing/gst/ds/queue/circularbuffer"
 	"github.com/forbearing/gst/logger"
 	"github.com/forbearing/gst/model"
-	model_log "github.com/forbearing/gst/model/modellog"
+	modellog "github.com/forbearing/gst/model/log"
 	"github.com/forbearing/gst/pkg/filetype"
 	"github.com/forbearing/gst/provider/otel"
 	. "github.com/forbearing/gst/response"
@@ -75,17 +75,17 @@ const defaultLimit = 1000
 var (
 	pluralizeCli = pluralize.NewClient()
 
-	cb *circularbuffer.CircularBuffer[*model_log.OperationLog]
+	cb *circularbuffer.CircularBuffer[*modellog.OperationLog]
 )
 
 func Init() (err error) {
-	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*model_log.OperationLog]()); err != nil {
+	if cb, err = circularbuffer.New(int(config.App.Server.CircularBuffer.SizeOperationLog), circularbuffer.WithSafe[*modellog.OperationLog]()); err != nil {
 		return err
 	}
 
 	// Consume operation log.
 	go func() {
-		operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
+		operationLogs := make([]*modellog.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 		ticker := time.NewTicker(5 * time.Second)
 		for range ticker.C {
 			operationLogs = operationLogs[:0]
@@ -94,7 +94,7 @@ func Init() (err error) {
 				operationLogs = append(operationLogs, ol)
 			}
 			if len(operationLogs) > 0 {
-				if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
+				if err := database.Database[*modellog.OperationLog](nil).WithLimit(-1).WithBatchSize(1000).Create(operationLogs...); err != nil {
 					zap.S().Error(err)
 				}
 			}
@@ -105,13 +105,13 @@ func Init() (err error) {
 }
 
 func Clean() {
-	operationLogs := make([]*model_log.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
+	operationLogs := make([]*modellog.OperationLog, 0, config.App.Server.CircularBuffer.SizeOperationLog)
 	for !cb.IsEmpty() {
 		ol, _ := cb.Dequeue()
 		operationLogs = append(operationLogs, ol)
 	}
 	if len(operationLogs) > 0 {
-		if err := database.Database[*model_log.OperationLog](nil).WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
+		if err := database.Database[*modellog.OperationLog](nil).WithLimit(-1).WithBatchSize(100).Create(operationLogs...); err != nil {
 			zap.S().Error(err)
 		}
 	}
@@ -265,8 +265,8 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreate,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeCreate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
@@ -481,8 +481,8 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		for i := range ml {
 			record, _ := json.Marshal(copied[i])
-			cb.Enqueue(&model_log.OperationLog{
-				Op:        model_log.OperationTypeDelete,
+			cb.Enqueue(&modellog.OperationLog{
+				Op:        modellog.OperationTypeDelete,
 				Model:     typ.Name(),
 				Table:     tableName,
 				RecordId:  ml[i].GetID(),
@@ -702,8 +702,8 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdate,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeUpdate,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
@@ -926,8 +926,8 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(cur)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatch,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypePatch,
 			Model:     typ.Name(),
 			Table:     tableName,
 			RecordId:  req.GetID(),
@@ -1286,8 +1286,8 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeList,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeList,
 			Model:     typ.Name(),
 			Table:     tableName,
 			IP:        c.ClientIP(),
@@ -1582,8 +1582,8 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		if len(items) > 0 {
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeGet,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeGet,
 			Model:     typ.Name(),
 			Table:     tableName,
 			IP:        c.ClientIP(),
@@ -1876,8 +1876,8 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeCreateMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeCreateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -2066,8 +2066,8 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
 		}
 		record, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeDeleteMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeDeleteMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -2230,8 +2230,8 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypeUpdateMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypeUpdateMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
@@ -2418,8 +2418,8 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
-		cb.Enqueue(&model_log.OperationLog{
-			Op:        model_log.OperationTypePatchMany,
+		cb.Enqueue(&modellog.OperationLog{
+			Op:        modellog.OperationTypePatchMany,
 			Model:     typ.Name(),
 			Table:     tableName,
 			Record:    util.BytesToString(record),
