@@ -32,6 +32,6 @@ func (p *Permission) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	}
 	enc.AddString("resource", p.Resource)
 	enc.AddString("action", p.Action)
-	enc.AddObject("base", &p.Base)
+	_ = enc.AddObject("base", &p.Base)
 	return nil
 }

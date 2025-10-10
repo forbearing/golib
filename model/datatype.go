@@ -14,7 +14,7 @@ import (
 type GormTime time.Time
 
 func (t *GormTime) Scan(value any) error {
-	localTime, err := time.Parse(consts.DATE_TIME_LAYOUT, string(value.([]byte)))
+	localTime, err := time.Parse(consts.DATE_TIME_LAYOUT, string(value.([]byte))) //nolint:errcheck
 	if err != nil {
 		return err
 	}

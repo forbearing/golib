@@ -61,7 +61,7 @@ func (u *User) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 	enc.AddString("name", u.Name)
 	enc.AddString("email", u.Email)
-	enc.AddObject("base", &u.Base)
+	_ = enc.AddObject("base", &u.Base)
 
 	return nil
 }

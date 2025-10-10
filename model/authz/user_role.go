@@ -97,6 +97,6 @@ func (r *UserRole) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("role_id", r.RoleId)
 	enc.AddString("user", r.User)
 	enc.AddString("role", r.Role)
-	enc.AddObject("base", &r.Base)
+	_ = enc.AddObject("base", &r.Base)
 	return nil
 }

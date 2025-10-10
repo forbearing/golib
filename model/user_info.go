@@ -50,6 +50,6 @@ func (u *UserInfo) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddInt("refresh_expires_in", u.RefreshExpiresIn)
 	enc.AddString("refresh_token", u.RefreshToken)
 	enc.AddString("sid", u.Sid)
-	enc.AddObject("base", &u.Base)
+	enc.AddObject("base", &u.Base) //nolint:errcheck
 	return nil
 }
