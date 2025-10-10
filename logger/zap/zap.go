@@ -89,7 +89,7 @@ func Init() error {
 
 func Clean() {
 	// types.Logger
-	zap.L().Sync()
+	_ = zap.L().Sync()
 	logs := []types.Logger{
 		logger.Runtime,
 		logger.Cronjob,
@@ -123,12 +123,12 @@ func Clean() {
 	}
 	for _, log := range logs {
 		if l, ok := log.(*Logger); ok {
-			l.zlog.Sync()
+			_ = l.zlog.Sync()
 		}
 	}
 
 	// Gin logger
-	logger.Gin.Sync()
+	_ = logger.Gin.Sync()
 
 	// gorm logger
 	gormLogs := []gorml.Interface{
@@ -137,7 +137,7 @@ func Clean() {
 	for _, glog := range gormLogs {
 		if log, ok := glog.(*GormLogger); ok {
 			if l, ok := log.l.(*Logger); ok {
-				l.zlog.Sync()
+				_ = l.zlog.Sync()
 			}
 		}
 	}
@@ -149,7 +149,7 @@ func Clean() {
 	for _, clog := range casbinLogs {
 		if log, ok := clog.(*CasbinLogger); ok {
 			if l, ok := log.l.(*Logger); ok {
-				l.zlog.Sync()
+				_ = l.zlog.Sync()
 			}
 		}
 	}
@@ -333,9 +333,9 @@ func readConf() {
 	logLevel = config.App.Logger.Level
 	logFormat = config.App.Logger.Format
 	logEncoder = config.App.Logger.Encoder
-	logMaxAge = int(config.App.Logger.MaxAge)
-	logMaxSize = int(config.App.Logger.MaxSize)
-	logMaxBackups = int(config.App.Logger.MaxBackups)
+	logMaxAge = config.App.Logger.MaxAge
+	logMaxSize = config.App.Logger.MaxSize
+	logMaxBackups = config.App.Logger.MaxBackups
 }
 
 // colorfulLevelEncoder 自定义 Level Encoder，为不同的日志级别添加颜色

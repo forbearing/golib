@@ -42,15 +42,15 @@ type Logger struct {
 	// MaxAge is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.
 	// uint is "day" and default to 7.
-	MaxAge uint `json:"max_age" ini:"max_age" yaml:"max_age" mapstructure:"max_age"`
+	MaxAge int `json:"max_age" ini:"max_age" yaml:"max_age" mapstructure:"max_age"`
 
 	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated, default to 1MB.
-	MaxSize uint `json:"max_size" ini:"max_size" yaml:"max_size" mapstructure:"max_size"`
+	MaxSize int `json:"max_size" ini:"max_size" yaml:"max_size" mapstructure:"max_size"`
 
 	// MaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
-	MaxBackups uint `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
+	MaxBackups int `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 }
 
 func (*Logger) setDefault() {
