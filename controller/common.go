@@ -121,7 +121,7 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		return
 	}
 	sessionID := util.UUID()
-	if err := redis.SetSession(sessionID, sessionData); err != nil {
+	if err = redis.SetSession(sessionID, sessionData); err != nil {
 		zap.S().Error(err)
 		return
 	}

@@ -156,7 +156,7 @@ func Init() error {
 
 						// 解析事件
 						event := new(event)
-						if err := json.Unmarshal(record.Value, event); err != nil {
+						if err = json.Unmarshal(record.Value, event); err != nil {
 							log.Error("failed to unmarshal event from kafka record",
 								zap.Error(err),
 								zap.Int64("offset", record.Offset),
@@ -243,7 +243,7 @@ func Init() error {
 						case opSet:
 							if evt.SyncToRedis {
 								// logger.Info("redis set", zap.Int64("event_ts", evt.TS), zap.String("key", evt.Key), zap.Any("value", evt.Val), zap.Duration("redis_ttl", evt.RedisTTL))
-								if err := redisCli.Set(baseCtx, evt.Key, []byte(evt.Val), evt.RedisTTL).Err(); err != nil {
+								if err = redisCli.Set(baseCtx, evt.Key, []byte(evt.Val), evt.RedisTTL).Err(); err != nil {
 									atomic.AddInt64(&failedRecords, 1)
 									log.Error("failed to set redis key",
 										zap.Error(err),
@@ -266,8 +266,8 @@ func Init() error {
 								SyncToRedis: evt.SyncToRedis,
 								RedisTTL:    evt.RedisTTL,
 							}
-							data, err := json.Marshal(evtDone)
-							if err != nil {
+							var data []byte
+							if data, err = json.Marshal(evtDone); err != nil {
 								log.Error("failed to marshal event in redis set",
 									zap.Error(err),
 									zap.Object("event", evtDone),
@@ -277,7 +277,7 @@ func Init() error {
 								atomic.AddInt64(&successRecords, 1)
 								// 同步推送 kafka 消息
 								produceRecord := &kgo.Record{Topic: TOPIC_REDIS_DONE, Value: data}
-								if err := producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
+								if err = producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
 									log.Error("failed to produce redis set done event",
 										zap.Error(err),
 										zap.Object("event", evtDone),
@@ -286,7 +286,7 @@ func Init() error {
 							}
 						case opDel:
 							if evt.SyncToRedis {
-								if err := redisCli.Del(baseCtx, evt.Key).Err(); err != nil {
+								if err = redisCli.Del(baseCtx, evt.Key).Err(); err != nil {
 									log.Error("failed to del redis key",
 										zap.Error(err),
 										zap.String("key", evt.Key),
@@ -307,8 +307,8 @@ func Init() error {
 								SyncToRedis: evt.SyncToRedis,
 								RedisTTL:    evt.RedisTTL,
 							}
-							data, err := json.Marshal(evtDone)
-							if err != nil {
+							var data []byte
+							if data, err = json.Marshal(evtDone); err != nil {
 								log.Error("failed to marshal event in redis del",
 									zap.Error(err),
 									zap.Object("event", evtDone),
@@ -318,7 +318,7 @@ func Init() error {
 								atomic.AddInt64(&successRecords, 1)
 								// 同步推送 kafka 消息
 								produceRecord := &kgo.Record{Topic: TOPIC_REDIS_DONE, Value: data}
-								if err := producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
+								if err = producer.ProduceSync(baseCtx, produceRecord).FirstErr(); err != nil {
 									log.Error("failed to produce redis del done event",
 										zap.Error(err),
 										zap.Object("event", evtDone),
