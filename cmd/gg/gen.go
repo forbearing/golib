@@ -69,7 +69,7 @@ func genRun() {
 
 	// Ensure required files exist
 	logSection("Ensure Required Files")
-	pkgnew.EnsureFileExists()
+	_ = pkgnew.EnsureFileExists()
 
 	if !fileExists(modelDir) {
 		logError(fmt.Sprintf("model dir not found: %s", modelDir))

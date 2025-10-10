@@ -80,7 +80,7 @@ func init() {
 
 func TestGetModulePath(t *testing.T) {
 	content := []byte("module github.com/forbearing/gst")
-	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
+	if err := os.WriteFile("go.mod", content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove("go.mod")
@@ -156,7 +156,7 @@ func TestFindModelPackageName(t *testing.T) {
 
 func TestFindModels(t *testing.T) {
 	content := []byte("module github.com/forbearing/gst")
-	if err := os.WriteFile("go.mod", content, 0o644); err != nil {
+	if err := os.WriteFile("go.mod", content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove("go.mod")
@@ -173,10 +173,10 @@ func TestFindModels(t *testing.T) {
 
 	filename1 := filepath.Join(tmpdir, "user.go")
 	filename2 := filepath.Join(tmpdir, "user2.go")
-	if err = os.WriteFile(filename1, []byte(src1), 0o644); err != nil {
+	if err = os.WriteFile(filename1, []byte(src1), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err = os.WriteFile(filename2, []byte(src2), 0o644); err != nil {
+	if err = os.WriteFile(filename2, []byte(src2), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

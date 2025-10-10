@@ -136,7 +136,7 @@ func isServiceMethod4(fn *ast.FuncDecl) bool {
 // ---------- helpers ----------
 
 // is_pointer_to_ident checks receiver is like (r *recv).
-func is_pointer_to_ident(recv *ast.FieldList) bool {
+func is_pointer_to_ident(recv *ast.FieldList) bool { //nolint:staticcheck
 	if recv == nil || len(recv.List) != 1 {
 		return false
 	}
@@ -149,7 +149,7 @@ func is_pointer_to_ident(recv *ast.FieldList) bool {
 }
 
 // is_ctx_service_context checks "*types.ServiceContext" type.
-func is_ctx_service_context(field *ast.Field) bool {
+func is_ctx_service_context(field *ast.Field) bool { //nolint:staticcheck
 	if field == nil {
 		return false
 	}
@@ -169,7 +169,7 @@ func is_ctx_service_context(field *ast.Field) bool {
 }
 
 // is_star_selector checks "*pkg.Type".
-func is_star_selector(field *ast.Field) bool {
+func is_star_selector(field *ast.Field) bool { //nolint:staticcheck
 	if field == nil {
 		return false
 	}
@@ -177,14 +177,14 @@ func is_star_selector(field *ast.Field) bool {
 }
 
 // is_star_or_selector checks if the field is either *pkg.Type or pkg.Type
-func is_star_or_selector(field *ast.Field) bool {
+func is_star_or_selector(field *ast.Field) bool { //nolint:staticcheck
 	if field == nil {
 		return false
 	}
 	return is_star_or_selector_type(field.Type)
 }
 
-func is_star_selector_type(expr ast.Expr) bool {
+func is_star_selector_type(expr ast.Expr) bool { //nolint:staticcheck
 	se, ok := expr.(*ast.StarExpr)
 	if !ok {
 		return false
@@ -201,7 +201,7 @@ func is_star_selector_type(expr ast.Expr) bool {
 }
 
 // is_selector_type checks if the expression is a SelectorExpr (pkg.Type)
-func is_selector_type(expr ast.Expr) bool {
+func is_selector_type(expr ast.Expr) bool { //nolint:staticcheck
 	sel, ok := expr.(*ast.SelectorExpr)
 	if !ok {
 		return false
@@ -214,12 +214,12 @@ func is_selector_type(expr ast.Expr) bool {
 }
 
 // is_star_or_selector_type checks if the expression is either *pkg.Type or pkg.Type
-func is_star_or_selector_type(expr ast.Expr) bool {
+func is_star_or_selector_type(expr ast.Expr) bool { //nolint:staticcheck
 	return is_star_selector_type(expr) || is_selector_type(expr)
 }
 
 // is_ptr_to_slice_of_star_selector checks "*[]*pkg.Type".
-func is_ptr_to_slice_of_star_selector(field *ast.Field) bool {
+func is_ptr_to_slice_of_star_selector(field *ast.Field) bool { //nolint:staticcheck
 	if field == nil {
 		return false
 	}
@@ -247,7 +247,7 @@ func is_ptr_to_slice_of_star_selector(field *ast.Field) bool {
 }
 
 // is_variadic_star_selector checks "...*pkg.Type".
-func is_variadic_star_selector(field *ast.Field) bool {
+func is_variadic_star_selector(field *ast.Field) bool { //nolint:staticcheck
 	if field == nil {
 		return false
 	}
@@ -271,7 +271,7 @@ func is_variadic_star_selector(field *ast.Field) bool {
 }
 
 // is_ident_name checks if expr is an identifier with specific name.
-func is_ident_name(expr ast.Expr, name string) bool {
+func is_ident_name(expr ast.Expr, name string) bool { //nolint:staticcheck
 	id, ok := expr.(*ast.Ident)
 	return ok && id.Name == name
 }
@@ -301,7 +301,7 @@ func isServiceType(spec *ast.TypeSpec) bool {
 }
 
 // is_service_base_with_three_type_params checks if the type is service.Base[*T, *T, *T]
-func is_service_base_with_three_type_params(expr ast.Expr) bool {
+func is_service_base_with_three_type_params(expr ast.Expr) bool { //nolint:staticcheck
 	// Look for service.Base[T1, T2, T3] pattern
 	indexListExpr, ok := expr.(*ast.IndexListExpr)
 	if !ok {

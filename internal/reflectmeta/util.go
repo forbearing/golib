@@ -38,21 +38,21 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 					// Not overwrite the "CreatedBy" value set in types.Model.
 					// The "CreatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["created_by"]; !loaded {
-						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string)
+						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("UpdatedBy").IsZero() {
 					// Not overwrite the "UpdatedBy" value set in types.Model.
 					// The "UpdatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["updated_by"]; !loaded {
-						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string)
+						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
-						q["id"] = fieldVal.FieldByName("ID").Interface().(string)
+						q["id"] = fieldVal.FieldByName("ID").Interface().(string) //nolint:errcheck
 					}
 				}
 			} else {
@@ -61,11 +61,11 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 			continue
 		}
 		// "json" tag priority is higher than typ.Field(i).Name
-		jsonTagStr := strings.TrimSpace(meta.JsonTag(i))
+		jsonTagStr := strings.TrimSpace(meta.JSONTag(i))
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		// NOTE: strings.Split always returns at least one element(empty string)
 		// We should not use len(jsonTagItems) to check the json tags exists.
-		jsonTag := ""
+		var jsonTag string
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
 			jsonTagItems[0] = field.Name
@@ -97,7 +97,7 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 			// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
 			// 但是我们想要的是 WHERE `default` IN (true),
 			// 所以没办法就只能直接转成 int 了.
-			_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+			_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			_v = fmt.Sprintf("%d", v)
 		case reflect.Float32, reflect.Float64:
@@ -109,7 +109,7 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 			// switch typ.Elem().Kind() {
 			switch fieldVal.Elem().Kind() {
 			case reflect.Bool:
-				_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+				_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				_v = fmt.Sprintf("%d", v)
 			case reflect.Float32, reflect.Float64:
@@ -136,7 +136,7 @@ func StructFieldToMap2(_typ reflect.Type, val reflect.Value, q map[string]string
 				// We should make the slice of []string again.
 				slice = reflect.MakeSlice(reflect.TypeFor[[]string](), _len, _len)
 				reflect.Copy(slice, fieldVal)
-				_v = strings.Join(slice.Interface().([]string), ",")
+				_v = strings.Join(slice.Interface().([]string), ",") //nolint:errcheck
 			default:
 				_v = fmt.Sprintf("%v", v)
 			}
@@ -182,21 +182,21 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 					// Not overwrite the "CreatedBy" value set in types.Model.
 					// The "CreatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["created_by"]; !loaded {
-						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string)
+						q["created_by"] = fieldVal.FieldByName("CreatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("UpdatedBy").IsZero() {
 					// Not overwrite the "UpdatedBy" value set in types.Model.
 					// The "UpdatedBy" value set in types.Model has higher priority than base model.
 					if _, loaded := q["updated_by"]; !loaded {
-						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string)
+						q["updated_by"] = fieldVal.FieldByName("UpdatedBy").Interface().(string) //nolint:errcheck
 					}
 				}
 				if !fieldVal.FieldByName("ID").IsZero() {
 					// Not overwrite the "ID" value set in types.Model.
 					// The "ID" value set in types.Model has higher priority than base model.
 					if _, loaded := q["id"]; !loaded {
-						q["id"] = fieldVal.FieldByName("ID").Interface().(string)
+						q["id"] = fieldVal.FieldByName("ID").Interface().(string) //nolint:errcheck
 					}
 				}
 			} else {
@@ -209,7 +209,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 		jsonTagItems := strings.Split(jsonTagStr, ",")
 		// NOTE: strings.Split always returns at least one element(empty string)
 		// We should not use len(jsonTagItems) to check the json tags exists.
-		jsonTag := ""
+		var jsonTag string
 		if len(jsonTagItems) == 0 {
 			// the structure lowercase field name as the query condition.
 			jsonTagItems[0] = field.Name
@@ -241,7 +241,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 			// 由于 WHERE IN 语句会自动加上单引号,比如 WHERE `default` IN ('true')
 			// 但是我们想要的是 WHERE `default` IN (true),
 			// 所以没办法就只能直接转成 int 了.
-			_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+			_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			_v = fmt.Sprintf("%d", v)
 		case reflect.Float32, reflect.Float64:
@@ -253,7 +253,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 			// switch typ.Elem().Kind() {
 			switch fieldVal.Elem().Kind() {
 			case reflect.Bool:
-				_v = fmt.Sprintf("%d", boolToInt(v.(bool)))
+				_v = fmt.Sprintf("%d", boolToInt(v.(bool))) //nolint:errcheck
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				_v = fmt.Sprintf("%d", v)
 			case reflect.Float32, reflect.Float64:
@@ -280,7 +280,7 @@ func StructFieldToMap(typ reflect.Type, val reflect.Value, q map[string]string) 
 				// We should make the slice of []string again.
 				slice = reflect.MakeSlice(reflect.TypeFor[[]string](), _len, _len)
 				reflect.Copy(slice, fieldVal)
-				_v = strings.Join(slice.Interface().([]string), ",")
+				_v = strings.Join(slice.Interface().([]string), ",") //nolint:errcheck
 			default:
 				_v = fmt.Sprintf("%v", v)
 			}

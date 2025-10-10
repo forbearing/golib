@@ -1283,7 +1283,7 @@ func processAllRequestTypes[REQ types.Request](reqSchemaRef *openapi3.SchemaRef)
 	}
 
 	// 如果是普通请求，直接处理
-	if reqSchemaRef.Value.Properties == nil || len(reqSchemaRef.Value.Properties) == 0 {
+	if len(reqSchemaRef.Value.Properties) == 0 {
 		addSchemaTitle[REQ](reqSchemaRef)
 		return
 	}
@@ -1311,7 +1311,7 @@ func processAllResponseTypes[RSP types.Response](rspSchemaRef *openapi3.SchemaRe
 		// 检查 data 是什么类型的结构
 
 		// 1. 如果 data 直接是 RSP 类型（普通的 apiResponse[RSP]）
-		if dataProperty.Value.Properties == nil || len(dataProperty.Value.Properties) == 0 {
+		if len(dataProperty.Value.Properties) == 0 {
 			// data 是一个简单类型或者没有嵌套属性
 			addSchemaTitle[RSP](dataProperty)
 		} else {
@@ -1348,7 +1348,7 @@ func parseParametersFromPath(path string) []*openapi3.ParameterRef {
 		}
 	}
 
-	var parameterRefList []*openapi3.ParameterRef
+	parameterRefList := make([]*openapi3.ParameterRef, 0, len(params))
 
 	for _, param := range params {
 		parameterRefList = append(parameterRefList, &openapi3.ParameterRef{
@@ -1366,7 +1366,7 @@ func parseParametersFromPath(path string) []*openapi3.ParameterRef {
 		})
 	}
 
-	return nil
+	return parameterRefList
 }
 
 // setupExample will remove field "created_at", "created_by", "updated_at", "updated_by", "id".
@@ -2239,8 +2239,8 @@ type apiResponse[T any] struct {
 	RequestID string `json:"request_id"`
 }
 
-// newApiResponseRefWithData generate a openapi3.SchemaRef with custom data.
-func newApiResponseRefWithData(data any) *openapi3.SchemaRef {
+// newAPIResponseRefWithData generate a openapi3.SchemaRef with custom data.
+func newAPIResponseRefWithData(data any) *openapi3.SchemaRef {
 	dataSchemaRef, err := openapi3gen.NewSchemaRefForValue(data, nil)
 	if err != nil {
 		zap.S().Error(err)

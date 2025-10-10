@@ -13,11 +13,11 @@ func BenchmarkReflectmeta_GetStructMeta(b *testing.B) {
 	for b.Loop() {
 		meta := reflectmeta.GetStructMeta(typ)
 		for i := range meta.NumField() {
-			_ = meta.JsonTag(i)
+			_ = meta.JSONTag(i)
 			_ = meta.SchemaTag(i)
 			_ = meta.GormTag(i)
 			_ = meta.QueryTag(i)
-			_ = meta.UrlTag(i)
+			_ = meta.URLTag(i)
 		}
 	}
 }

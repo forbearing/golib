@@ -1,3 +1,4 @@
+//nolint:predeclared
 package new
 
 import (
@@ -158,12 +159,15 @@ func Run(projectName string) error {
 // 辅助函数
 // ============================================================
 
-func EnsureFileExists() {
+func EnsureFileExists() error {
 	for file, content := range fileContentMap {
 		if _, err := os.Stat(file); err != nil && errors.Is(err, os.ErrNotExist) {
-			createFile(file, content)
+			if err := createFile(file, content); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 func createFile(path string, content string) error {
@@ -171,7 +175,7 @@ func createFile(path string, content string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(content), 0o644)
+	return os.WriteFile(path, []byte(content), 0o600)
 }
 
 func createTeplConfig() error {

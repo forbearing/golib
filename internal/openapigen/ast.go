@@ -151,7 +151,7 @@ func findSourceFile(pkgPath, typeName string) string {
 		}
 
 		// Check if the file contains the target package path
-		if strings.Contains(file, strings.Replace(pkgPath, "/", string(filepath.Separator), -1)) {
+		if strings.Contains(file, strings.ReplaceAll(pkgPath, "/", string(filepath.Separator))) {
 			return file
 		}
 	}
