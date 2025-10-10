@@ -28,7 +28,7 @@ func getProcessStats() {
 
 	// Application startup time
 	var startTime time.Time
-	if info, err := process.NewProcess(int32(os.Getpid())); err == nil {
+	if info, err := process.NewProcess(int32(os.Getpid())); err == nil { //nolint:gosec
 		if ctime, err := info.CreateTime(); err == nil {
 			startTime = time.Unix(ctime/1000, (ctime%1000)*int64(time.Millisecond))
 			logger.Runtime.Infow("Application Uptime",

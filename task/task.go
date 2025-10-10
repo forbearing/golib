@@ -148,7 +148,7 @@ func runtimestats() error {
 	// GC统计
 	logger.Runtime.Infow("GC Stats",
 		"NumGC", rtm.NumGC,
-		"LastGC", time.UnixMilli(int64(rtm.LastGC/1_000_000)),
+		"LastGC", time.UnixMilli(int64(rtm.LastGC/1_000_000)), //nolint:gosec
 		"PauseTotalNs", rtm.PauseTotalNs,
 		"PauseNs", rtm.PauseNs[(rtm.NumGC%256)], // 最近一次GC暂停时间
 		"PauseEnd", rtm.PauseEnd[(rtm.NumGC%256)], // 最近一次GC暂停结束时间
@@ -161,9 +161,9 @@ func runtimestats() error {
 	// GC暂停历史记录（最近几次）
 	gcHistory := make(map[string]any)
 	for i := 0; i < int(rtm.NumGC) && i < 5; i++ {
-		idx := int(rtm.NumGC-uint32(i)) % 256
+		idx := int(rtm.NumGC-uint32(i)) % 256 //nolint:gosec
 		gcHistory[fmt.Sprintf("GC-%d-PauseNs", i+1)] = rtm.PauseNs[idx]
-		gcHistory[fmt.Sprintf("GC-%d-End", i+1)] = time.UnixMilli(int64(rtm.PauseEnd[idx] / 1_000_000))
+		gcHistory[fmt.Sprintf("GC-%d-End", i+1)] = time.UnixMilli(int64(rtm.PauseEnd[idx] / 1_000_000)) //nolint:gosec
 	}
 	logger.Runtime.Infow("Recent GC History", "gcHistory", gcHistory)
 
