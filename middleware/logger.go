@@ -22,8 +22,8 @@ func Logger(filename ...string) gin.HandlerFunc {
 		c.Set(consts.CTX_ROUTE, path)
 		c.Next()
 
-		metrics.HttpRequestsTotal.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Inc()
-		metrics.HttpRequestDuration.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Observe(time.Since(start).Seconds())
+		metrics.HTTPRequestsTotal.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Inc()
+		metrics.HTTPRequestDuration.WithLabelValues(c.Request.Method, path, strconv.Itoa(c.Writer.Status())).Observe(time.Since(start).Seconds())
 
 		// Add tracing information to logs
 		span := GetSpanFromContext(c)
