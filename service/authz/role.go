@@ -1,4 +1,4 @@
-package service_authz
+package serviceauthz
 
 import (
 	"github.com/forbearing/gst/database"

@@ -95,7 +95,7 @@ func (f factory[M, REQ, RSP]) Service(phase consts.Phase) types.Service[M, REQ, 
 		logger.Service.Debugz(ErrNotFoundService.Error(), zap.String("model", serviceKey[M](phase)))
 		return new(Base[M, REQ, RSP])
 	}
-	return svc.(types.Service[M, REQ, RSP])
+	return svc.(types.Service[M, REQ, RSP]) //nolint:errcheck
 }
 
 type Base[M types.Model, REQ types.Request, RSP types.Response] struct{ types.Logger }

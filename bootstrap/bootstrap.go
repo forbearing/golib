@@ -44,7 +44,7 @@ import (
 	"github.com/forbearing/gst/provider/rocketmq"
 	"github.com/forbearing/gst/router"
 	"github.com/forbearing/gst/service"
-	service_authz "github.com/forbearing/gst/service/authz"
+	serviceauthz "github.com/forbearing/gst/service/authz"
 	service_log "github.com/forbearing/gst/service/log"
 	"github.com/forbearing/gst/task"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -107,7 +107,7 @@ func Bootstrap() error {
 
 		// service
 		service.Init,
-		service_authz.Init,
+		serviceauthz.Init,
 		service_log.Init,
 
 		controller.Init,
