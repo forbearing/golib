@@ -346,8 +346,8 @@ func (l *List[E]) Range(fn func(e E) bool) {
 	}
 }
 
-func (l *List[E]) resize(len, cap int) {
-	newElements := make([]E, len, cap)
+func (l *List[E]) resize(len_, cap_ int) {
+	newElements := make([]E, len_, cap_)
 	copy(newElements, l.elements)
 	l.elements = newElements
 }

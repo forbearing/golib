@@ -92,11 +92,11 @@ func HashUint64(u uint64) uint64 { return hash(u) }
 func HashUint32(u uint32) uint64 { return hash(uint64(u)) }
 func HashUint16(u uint16) uint64 { return hash(uint64(u)) }
 func HashUint8(u uint8) uint64   { return hash(uint64(u)) }
-func HashInt64(i int64) uint64   { return hash(uint64(i)) }
-func HashInt32(i int32) uint64   { return hash(uint64(i)) }
-func HashInt16(i int16) uint64   { return hash(uint64(i)) }
-func HashInt8(i int8) uint64     { return hash(uint64(i)) }
-func HashInt(i int) uint64       { return hash(uint64(i)) }
+func HashInt64(i int64) uint64   { return hash(uint64(i)) } //nolint:gosec
+func HashInt32(i int32) uint64   { return hash(uint64(i)) } //nolint:gosec
+func HashInt16(i int16) uint64   { return hash(uint64(i)) } //nolint:gosec
+func HashInt8(i int8) uint64     { return hash(uint64(i)) } //nolint:gosec
+func HashInt(i int) uint64       { return hash(uint64(i)) } //nolint:gosec
 func HashUint(i uint) uint64     { return hash(uint64(i)) }
 func HashString(s string) uint64 { return fnv1a.HashString64(s) }
 func HashBytes(b []byte) uint64  { return fnv1a.HashBytes64(b) }

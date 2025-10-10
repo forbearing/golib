@@ -8,6 +8,7 @@ import (
 
 	pq "github.com/forbearing/gst/ds/queue/priorityqueue"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type User struct {
@@ -75,6 +76,7 @@ func TestPriorityQueue_CustomStruct(t *testing.T) {
 	assert.Equal(t, sorted1, q.Values())
 
 	q, err = pq.New(userCmp, pq.WithMaxPriority[*User]())
+	require.NoError(t, err)
 	for _, u := range users {
 		q.Enqueue(u)
 	}

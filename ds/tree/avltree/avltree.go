@@ -516,7 +516,7 @@ func (t *Tree[K, V]) Ceiling(key K) (K, V, bool) {
 // 	return ch
 // }
 
-// Preorder call function "fn" on each node in preorder traversal order.
+// PreOrder call function "fn" on each node in preorder traversal order.
 // The traversal starts from the root and follows: node → left subtree → right subtree
 func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
 	if fn == nil {
@@ -571,7 +571,7 @@ func (t *Tree[K, V]) PreOrder(fn func(key K, value V) bool) {
 // 	return ch
 // }
 
-// Inorder call function "fn" on each node in inorder traversal order.
+// InOrder call function "fn" on each node in inorder traversal order.
 // The traversal starts from the root and follows: left subtree → node → right subtree
 func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
 	if fn == nil {
@@ -626,7 +626,7 @@ func (t *Tree[K, V]) InOrder(fn func(key K, value V) bool) {
 // 	return ch
 // }
 
-// Postorder call function "fn" on each node in postorder traversal order.
+// PostOrder call function "fn" on each node in postorder traversal order.
 // The traversal starts from the root and follows: left subtree → right subtree → node
 func (t *Tree[K, V]) PostOrder(fn func(key K, value V) bool) {
 	if fn == nil {

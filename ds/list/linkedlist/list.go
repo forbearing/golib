@@ -1,4 +1,4 @@
-// Package list provides an implementation of a doubly-linked list with a front
+// Package linkedlist provides an implementation of a doubly-linked list with a front
 // and back. The individual node of the list are publicly exposed so that the
 // user can have fine-grained control over the list.
 //

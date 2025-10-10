@@ -71,7 +71,7 @@ type SkipList[K comparable, V any] struct {
 	nodeFormatter func(K, V) string
 }
 
-// NewSkipList creates a new skiplist with the given comparison function and optional parameters.
+// New creates a new skiplist with the given comparison function and optional parameters.
 func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*SkipList[K, V], error) {
 	if cmp == nil {
 		return nil, types.ErrComparisonNil
@@ -82,7 +82,7 @@ func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*SkipLis
 		maxLevel: defaultMaxLevel,
 		p:        defaultProbability,
 		cmp:      cmp,
-		rand:     rand.New(rand.NewPCG(uint64(time.Now().Unix()), uint64(time.Now().Unix()))),
+		rand:     rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(time.Now().UnixNano()))), // #nosec G404 G115
 	}
 	for _, op := range ops {
 		if op == nil {
