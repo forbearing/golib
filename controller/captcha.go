@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	images "github.com/wenlng/go-captcha-assets/resources/images_v2"
+	"github.com/wenlng/go-captcha-assets/resources/imagesv2"
 	"github.com/wenlng/go-captcha-assets/resources/tiles"
 	"github.com/wenlng/go-captcha/v2/slide"
 )
@@ -41,7 +41,7 @@ func randomID(n int) string {
 // 滑块验证码生成接口
 func SliderCaptchaGen(c *gin.Context) {
 	// 加载内置背景图
-	bgImages, err := images.GetImages()
+	bgImages, err := imagesv2.GetImages()
 	if err != nil || len(bgImages) == 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "load bg images failed"})
 		return
@@ -52,7 +52,7 @@ func SliderCaptchaGen(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "load tiles failed"})
 		return
 	}
-	var slideGraphs []*slide.GraphImage
+	slideGraphs := make([]*slide.GraphImage, 0, len(tileGraphs))
 	for _, g := range tileGraphs {
 		slideGraphs = append(slideGraphs, &slide.GraphImage{
 			OverlayImage: g.OverlayImage,
@@ -102,8 +102,8 @@ func SliderCaptchaGen(c *gin.Context) {
 		"tile":       "data:image/png;base64," + tileBase64,
 		"width":      block.Width,
 		"height":     block.Height,
-		"tileWidth":  block.TileX,
-		"tileHeight": block.TileY,
+		"tileWidth":  block.DX,
+		"tileHeight": block.DY,
 		// "answerX": block.X, // 不要返回给前端！
 	})
 }

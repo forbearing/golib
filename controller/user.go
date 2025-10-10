@@ -13,7 +13,6 @@ import (
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/logger"
 	"github.com/forbearing/gst/model"
-	"github.com/forbearing/gst/response"
 	. "github.com/forbearing/gst/response"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
@@ -44,7 +43,7 @@ func (*user) Login(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many login requests")
-		ResponseJSON(c, response.NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many login requests"))
+		ResponseJSON(c, NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many login requests"))
 		return
 	}
 
@@ -133,7 +132,7 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if !limiter.Allow() {
 		log.Error("too many signup requests")
-		ResponseJSON(c, response.NewCode(response.CodeTooManyRequests, http.StatusTooManyRequests, "too many signup requests"))
+		ResponseJSON(c, NewCode(CodeTooManyRequests, http.StatusTooManyRequests, "too many signup requests"))
 		return
 	}
 
@@ -146,12 +145,12 @@ func (*user) Signup(c *gin.Context) {
 	}
 	if err = validateUsername(req.Name); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, NewCode(CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if err = validatePassword(req.Password); err != nil {
 		log.Error(err)
-		ResponseJSON(c, response.NewCode(response.CodeFailure, http.StatusBadRequest, err.Error()))
+		ResponseJSON(c, NewCode(CodeFailure, http.StatusBadRequest, err.Error()))
 		return
 	}
 	if req.Password != req.RePassword {

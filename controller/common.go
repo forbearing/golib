@@ -20,7 +20,7 @@ import (
 )
 
 // writeCookie 写 cookie 并重定向
-func writeCookie(c *gin.Context, token, userId, name string, redirect ...bool) {
+func writeCookie(c *gin.Context, token, userID, name string, redirect ...bool) {
 	zap.S().Info("writeCookie")
 	zap.S().Info("'TokenExpireDuration:' ", config.App.AccessTokenExpireDuration)
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -32,7 +32,7 @@ func writeCookie(c *gin.Context, token, userId, name string, redirect ...bool) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -55,15 +55,15 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 		return
 	}
 	name := user.Name
-	userId := user.ID
-	sessionId := user.SessionId
+	userID := user.ID
+	sessionID := user.SessionId
 	zap.S().Info("user.SessionId: ", user.SessionId)
 	sessionData, err := json.Marshal(user)
 	if err != nil {
 		zap.S().Error(err)
 		return
 	}
-	if err := redis.SetSession(sessionId, sessionData); err != nil {
+	if err := redis.SetSession(sessionID, sessionData); err != nil {
 		zap.S().Error(err)
 		return
 	}
@@ -90,13 +90,13 @@ func writeLocalSessionAndCookie(c *gin.Context, aToken, rToken string, user *mod
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    SESSION_ID,
-		Value:   sessionId,
+		Value:   sessionID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -114,14 +114,14 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 		return
 	}
 	name := userInfo.Name
-	userId := userInfo.UserId
+	userID := userInfo.UserId
 	sessionData, err := json.Marshal(userInfo)
 	if err != nil {
 		zap.S().Error(err)
 		return
 	}
-	sessionId := util.UUID()
-	if err := redis.SetSession(sessionId, sessionData); err != nil {
+	sessionID := util.UUID()
+	if err := redis.SetSession(sessionID, sessionData); err != nil {
 		zap.S().Error(err)
 		return
 	}
@@ -148,13 +148,13 @@ func writeFeishuSessionAndCookie(c *gin.Context, aToken, rToken string, userInfo
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    SESSION_ID,
-		Value:   sessionId,
+		Value:   sessionID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{
 		Path:    "/",
 		Name:    ID,
-		Value:   userId,
+		Value:   userID,
 		Expires: time.Now().Add(config.App.AccessTokenExpireDuration),
 	})
 	http.SetCookie(c.Writer, &http.Cookie{

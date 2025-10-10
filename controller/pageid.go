@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var PAGE_ID = time.Now().Unix()
+var PAGE_ID = time.Now().Unix() //nolint:staticcheck
 
 func PageID(c *gin.Context) {
 	ResponseJSON(c, CodeSuccess, gin.H{"page_id": PAGE_ID})

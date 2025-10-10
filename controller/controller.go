@@ -388,7 +388,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		ml := make([]M, 0)
 		idsSet := make(map[string]struct{})
 
-		addId := func(id string) {
+		addID := func(id string) {
 			if len(id) == 0 {
 				return
 			}
@@ -404,17 +404,17 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		// Delete one record accoding to "query parameter `id`".
 		if id, ok := c.GetQuery(consts.QUERY_ID); ok {
-			addId(id)
+			addID(id)
 		}
 		// Delete one record accoding to "route parameter `id`".
 		if len(cfg) > 0 {
-			addId(cctx.Params[util.Deref(cfg[0]).ParamName])
+			addID(cctx.Params[util.Deref(cfg[0]).ParamName])
 		}
 		// Delete multiple records accoding to "http body data".
 		bodyIds := make([]string, 0)
 		if err := c.ShouldBindJSON(&bodyIds); err == nil && len(bodyIds) > 0 {
 			for _, id := range bodyIds {
-				addId(id)
+				addID(id)
 			}
 		}
 
@@ -615,23 +615,23 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// param id has more priority than http body data id
-		var paramId string
+		var paramID string
 		if len(cfg) > 0 {
-			paramId = cctx.Params[util.Deref(cfg[0]).ParamName]
+			paramID = cctx.Params[util.Deref(cfg[0]).ParamName]
 		}
-		bodyId := req.GetID()
+		bodyID := req.GetID()
 		var id string
 		log.Infoz("update from request",
-			zap.String("param_id", paramId),
-			zap.String("body_id", bodyId),
+			zap.String("param_id", paramID),
+			zap.String("body_id", bodyID),
 			zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req),
 		)
-		if paramId != "" {
-			req.SetID(paramId)
-			id = paramId
-		} else if bodyId != "" {
-			paramId = bodyId
-			id = bodyId
+		if paramID != "" {
+			req.SetID(paramID)
+			id = paramID
+		} else if bodyID != "" {
+			paramID = bodyID //nolint:ineffassign,wastedassign
+			id = bodyID
 		} else {
 			log.Error("id missing")
 			ResponseJSON(c, CodeFailure.WithErr(errors.New("id missing")))
