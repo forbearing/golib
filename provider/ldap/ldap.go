@@ -210,7 +210,7 @@ func Search(baseDN, filter string, attributes []string, scope int) ([]*ldap.Entr
 
 	// If pagination is enabled (page size > 0), use the paged search
 	if cfg.PageSize > 0 {
-		control := ldap.NewControlPaging(uint32(cfg.PageSize))
+		control := ldap.NewControlPaging(uint32(cfg.PageSize)) //nolint:gosec
 
 		for {
 			searchRequest.Controls = []ldap.Control{control}
@@ -456,11 +456,11 @@ func GetGroupMembers(groupName string) ([]string, error) {
 	}
 
 	// Get the member DNs
-	memberDNs := groupEntry.GetAttributeValues(cfg.GroupAttribute)
+	memberDNS := groupEntry.GetAttributeValues(cfg.GroupAttribute)
 
 	// Convert member DNs to usernames
-	usernames := make([]string, 0, len(memberDNs))
-	for _, memberDN := range memberDNs {
+	usernames := make([]string, 0, len(memberDNS))
+	for _, memberDN := range memberDNS {
 		// Search for this user to get their username
 		filter := fmt.Sprintf("(%s)", ldap.EscapeFilter(cfg.UserAttribute))
 

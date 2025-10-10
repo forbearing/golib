@@ -19,8 +19,8 @@ import (
 var (
 	initialized bool
 	client      influxdb2.Client
-	writeApi    api.WriteAPIBlocking
-	queryApi    api.QueryAPI
+	writeApi    api.WriteAPIBlocking //nolint:staticcheck
+	queryAPI    api.QueryAPI         //nolint:staticcheck
 	mu          sync.RWMutex
 )
 
@@ -63,7 +63,7 @@ func Init() (err error) {
 
 	// Get write and query APIs
 	writeApi = client.WriteAPIBlocking(cfg.Org, cfg.Bucket)
-	queryApi = client.QueryAPI(cfg.Org)
+	queryAPI = client.QueryAPI(cfg.Org)
 
 	zap.S().Infow("successfully connected to influxdb",
 		"host", cfg.Host,
@@ -84,10 +84,10 @@ func New(cfg config.Influxdb) (influxdb2.Client, error) {
 		opts.SetBatchSize(cfg.BatchSize)
 	}
 	if cfg.FlushInterval > 0 {
-		opts.SetFlushInterval(uint(cfg.FlushInterval))
+		opts.SetFlushInterval(uint(cfg.FlushInterval)) //nolint:gosec
 	}
 	if cfg.RetryInterval > 0 {
-		opts.SetRetryInterval(uint(cfg.RetryInterval))
+		opts.SetRetryInterval(uint(cfg.RetryInterval)) //nolint:gosec
 	}
 	if cfg.MaxRetries > 0 {
 		opts.SetMaxRetries(cfg.MaxRetries)
@@ -96,10 +96,10 @@ func New(cfg config.Influxdb) (influxdb2.Client, error) {
 		opts.SetRetryBufferLimit(cfg.RetryBufferLimit)
 	}
 	if cfg.MaxRetryInterval > 0 {
-		opts.SetMaxRetryInterval(uint(cfg.MaxRetryInterval.Milliseconds()))
+		opts.SetMaxRetryInterval(uint(cfg.MaxRetryInterval.Milliseconds())) //nolint:gosec
 	}
 	if cfg.MaxRetryTime > 0 {
-		opts.SetMaxRetryTime(uint(cfg.MaxRetryTime.Milliseconds()))
+		opts.SetMaxRetryTime(uint(cfg.MaxRetryTime.Milliseconds())) //nolint:gosec
 	}
 	if cfg.ExponentialBase > 0 {
 		opts.SetExponentialBase(cfg.ExponentialBase)
@@ -166,7 +166,7 @@ func Query(query string) (*api.QueryTableResult, error) {
 	}
 
 	// Execute query
-	return queryApi.Query(context.Background(), query)
+	return queryAPI.Query(context.Background(), query)
 }
 
 // Client returns the global InfluxDB client
@@ -187,7 +187,7 @@ func WriteAPI() api.WriteAPIBlocking {
 func QueryAPI() api.QueryAPI {
 	mu.RLock()
 	defer mu.RUnlock()
-	return queryApi
+	return queryAPI
 }
 
 // Close gracefully shuts down the InfluxDB client

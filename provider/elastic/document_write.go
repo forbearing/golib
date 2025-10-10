@@ -40,7 +40,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 	// 执行批量请求
 	res, err = client.Bulk(bytes.NewReader(buf.Bytes()), client.Bulk.WithIndex(indexName))
 	if err != nil {
-		err = fmt.Errorf("failed to execute bulk request: %v", err)
+		err = fmt.Errorf("failed to execute bulk request: %w", err)
 		logger.Elastic.Error(err)
 		return err
 	}
@@ -48,7 +48,7 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 
 	if res.IsError() {
 		if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
-			err = fmt.Errorf("failed to parse response body: %v", err)
+			err = fmt.Errorf("failed to parse response body: %w", err)
 			logger.Elastic.Error(err)
 			return err
 		}
@@ -59,12 +59,12 @@ func (*document) BulkIndex(_ context.Context, indexName string, docs ...types.ES
 
 	var blk map[string]any
 	if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-		err = fmt.Errorf("failed to parse response body: %v", err)
+		err = fmt.Errorf("failed to parse response body: %w", err)
 		logger.Elastic.Error(err)
 		return err
 	}
-	if blk["errors"].(bool) {
-		for _, item := range blk["items"].([]any) {
+	if blk["errors"].(bool) { //nolint:errcheck
+		for _, item := range blk["items"].([]any) { //nolint:errcheck
 			if idx, ok := item.(map[string]any)["index"].(map[string]any); ok {
 				if idx["error"] != nil {
 					err = fmt.Errorf("error in item: %v", idx["error"])

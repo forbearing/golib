@@ -1,6 +1,7 @@
+package redis
+
 // 如果使用 Redis 版本小于等于 6，安装 v8 版本
 // 如果使用 Redis 版本大于等于 7，安装 v9 版本
-package redis
 
 import (
 	"context"
@@ -19,7 +20,6 @@ import (
 	"github.com/forbearing/gst/util"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/redis/go-redis/extra/redisotel/v9"
-	_ "github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -247,8 +247,8 @@ func SetML[M types.Model](key string, ml []M, expiration ...time.Duration) error
 }
 
 // SetSession wrapped Set function to set session data to redis, only for session.
-func SetSession(sessionId string, data []byte) error {
-	return Set(fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionId), data, config.App.Auth.AccessTokenExpireDuration)
+func SetSession(sessionID string, data []byte) error {
+	return Set(fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionID), data, config.App.Auth.AccessTokenExpireDuration)
 }
 
 // Get will get raw cache([]byte) from redis.
@@ -312,7 +312,7 @@ func GetM[M types.Model](key string) (M, error) {
 		return *new(M), err
 	}
 	typ := reflect.TypeOf(*new(M)).Elem()
-	val := reflect.New(typ).Interface().(M)
+	val := reflect.New(typ).Interface().(M) //nolint:errcheck
 	if err := json.Unmarshal(data, val); err != nil {
 		zap.S().Error(err)
 		return *new(M), err
@@ -354,9 +354,9 @@ func GetML[M types.Model](key string) ([]M, error) {
 	return ml, nil
 }
 
-// Getsession wrapped Get function to get session data from cache
-func GetSession[M types.Model](sessionId string) ([]byte, error) {
-	key := fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionId)
+// GetSession wrapped Get function to get session data from cache
+func GetSession[M types.Model](sessionID string) ([]byte, error) {
+	key := fmt.Sprintf("%s:session:%s", config.App.Redis.Namespace, sessionID)
 	return Get(key)
 }
 
@@ -434,7 +434,7 @@ func (b modelMarshaler[M]) MarshalBinary() ([]byte, error) {
 
 func (b *modelMarshaler[M]) UnmarshalJSON(data []byte) error {
 	if reflect.DeepEqual(b.Model, *new(M)) {
-		b.Model = reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M)
+		b.Model = reflect.New(reflect.TypeOf(*new(M)).Elem()).Interface().(M) //nolint:errcheck
 	}
 	if err := json.Unmarshal(data, &b.Model); err != nil {
 		zap.S().Error(err)

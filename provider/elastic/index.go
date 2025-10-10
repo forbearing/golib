@@ -87,7 +87,7 @@ func (*index) Create(indexName string, options ...*IndexOption) error {
 	// Convert the body to JSON
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("error marshalling index body: %w", err)
+		return fmt.Errorf("error marshaling index body: %w", err)
 	}
 
 	// Create the index

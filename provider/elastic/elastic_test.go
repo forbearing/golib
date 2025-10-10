@@ -74,6 +74,7 @@ func TestDocumentGet(t *testing.T) {
 }
 
 func TestDocumentSearch(t *testing.T) {
+	//nolint:ineffassign,wastedassign
 	req := &elastic.SearchRequest{
 		Query: map[string]any{
 			"bool": map[string]any{
@@ -95,6 +96,7 @@ func TestDocumentSearch(t *testing.T) {
 	}
 
 	// (type.keyword : "message_send" or type.keyword : "message_recv" or type.keyword : "message_ack" ) and message_user_id.keyword : "7143038995084115996" and message_text: hello
+	//nolint:ineffassign,wastedassign
 	req = &elastic.SearchRequest{
 		Query: map[string]any{
 			"bool": map[string]any{
@@ -318,8 +320,8 @@ func TestDocumentSearchAfter(t *testing.T) {
 }
 
 func TestDocumentBoolQueryBuilder(t *testing.T) {
-	userId := "7336820045630406684"
-	peerUserId := "7156029937089069057"
+	userID := "7336820045630406684"
+	peerUserID := "7156029937089069057"
 	{
 
 		query := elastic.NewQueryBuilder().
@@ -329,9 +331,9 @@ func TestDocumentBoolQueryBuilder(t *testing.T) {
 			// 嵌套的 or 条件
 			Bool(func(bq *elastic.QueryBuilder) {
 				// 第一组条件 (message_user_id: A and message_peer_user_id: B)
-				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userID).Term("message_peer_user_id.keyword", peerUserID).BuildQuery())
 				// 第二组条件 (message_user_id: B and message_peer_user_id: A)
-				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserId).Term("message_peer_user_id.keyword", userId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserID).Term("message_peer_user_id.keyword", userID).BuildQuery())
 				// 设置 should 至少匹配一个条件
 				bq.MinimumShouldMatch(1)
 			}).Size(1000)
@@ -352,8 +354,8 @@ func TestDocumentBoolQueryBuilder(t *testing.T) {
 				bq.MinimumShouldMatch(1)
 			}).
 			Bool(func(bq *elastic.QueryBuilder) {
-				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
-				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserId).Term("message_peer_user_id.keyword", userId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", userID).Term("message_peer_user_id.keyword", peerUserID).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("message_user_id.keyword", peerUserID).Term("message_peer_user_id.keyword", userID).BuildQuery())
 				bq.MinimumShouldMatch(1)
 			})
 
@@ -367,8 +369,8 @@ func TestDocumentBoolQueryBuilder(t *testing.T) {
 		query := elastic.NewQueryBuilder().
 			Term("chat_type.keyword", "direct").
 			Bool(func(bq *elastic.QueryBuilder) {
-				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_send").Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
-				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_recv").Term("message_user_id.keyword", userId).Term("message_peer_user_id.keyword", peerUserId).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_send").Term("message_user_id.keyword", userID).Term("message_peer_user_id.keyword", peerUserID).BuildQuery())
+				bq.Should(elastic.NewQueryBuilder().Term("type.keyword", "message_recv").Term("message_user_id.keyword", userID).Term("message_peer_user_id.keyword", peerUserID).BuildQuery())
 				bq.MinimumShouldMatch(1)
 			})
 		if _, err := query.Build(); err != nil {
@@ -395,7 +397,7 @@ func TestDocumentSearchAsc(t *testing.T) {
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(res)
+	_ = enc.Encode(res)
 }
 
 func TestDocumentSearchDesc(t *testing.T) {
@@ -415,7 +417,7 @@ func TestDocumentSearchDesc(t *testing.T) {
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(res)
+	_ = enc.Encode(res)
 }
 
 func TestDocumentSearchNext(t *testing.T) {
@@ -436,7 +438,7 @@ func TestDocumentSearchNext(t *testing.T) {
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(res)
+	_ = enc.Encode(res)
 }
 
 func TestDocumentSearchPrev(t *testing.T) {
@@ -457,7 +459,7 @@ func TestDocumentSearchPrev(t *testing.T) {
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(res)
+	_ = enc.Encode(res)
 }
 
 func TestDocumentQueryBuilderMatchPharseOptions(t *testing.T) {
@@ -523,5 +525,5 @@ func TestDocumentQueryBuilderAggs(t *testing.T) {
 	assert.NoError(t, err)
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
-	enc.Encode(res)
+	_ = enc.Encode(res)
 }

@@ -477,7 +477,7 @@ func (qb *QueryBuilder) BuildQuery() map[string]any {
 // Clone creates a deep copy of the QueryBuilder
 func (qb *QueryBuilder) Clone() *QueryBuilder {
 	clone := new(QueryBuilder)
-	copier.Copy(clone, qb)
+	_ = copier.Copy(clone, qb)
 	return clone
 }
 

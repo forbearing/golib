@@ -21,7 +21,7 @@ var (
 	client      mqtt.Client
 	mu          sync.RWMutex
 	initialized bool
-	clientId    string
+	clientID    string
 )
 
 func Init() (err error) {
@@ -45,7 +45,7 @@ func Init() (err error) {
 	}
 	zap.S().Infow("successfully connect to mqtt broker",
 		"addr", cfg.Addr,
-		"client_id", clientId,
+		"client_id", clientID,
 		"keepalive", config.App.Keepalive.String(),
 		"connection_timeout", cfg.ConnectTimeout.String(),
 		"clean_session", cfg.CleanSession,
@@ -65,15 +65,15 @@ func New(cfg config.Mqtt) (mqtt.Client, error) {
 }
 
 func buildOptions(cfg config.Mqtt) (*mqtt.ClientOptions, error) {
-	clientId = fmt.Sprintf("%s-%d",
+	clientID = fmt.Sprintf("%s-%d",
 		defaultIfEmpty(cfg.ClientPrefix, "mqtt-client"),
-		rand.New(rand.NewSource(time.Now().UnixNano())).Int(),
+		rand.New(rand.NewSource(time.Now().UnixNano())).Int(), //nolint:gosec
 	)
 
 	opts := mqtt.NewClientOptions().
 		AddBroker(cfg.Addr).
 		SetAutoReconnect(cfg.AutoReconnect).
-		SetClientID(clientId).
+		SetClientID(clientID).
 		SetProtocolVersion(5).
 		SetKeepAlive(cfg.Keepalive).
 		SetConnectTimeout(cfg.ConnectTimeout).
@@ -84,7 +84,7 @@ func buildOptions(cfg config.Mqtt) (*mqtt.ClientOptions, error) {
 	}
 	if cfg.UseTLS {
 		tlsConfig := &tls.Config{
-			InsecureSkipVerify: cfg.InsecureSkipVerify,
+			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
 		}
 		if len(cfg.CertFile) != 0 && len(cfg.KeyFile) != 0 {
 			cert, err := loadCertificate(cfg.CertFile, cfg.KeyFile)
@@ -96,10 +96,10 @@ func buildOptions(cfg config.Mqtt) (*mqtt.ClientOptions, error) {
 		opts.SetTLSConfig(tlsConfig)
 	}
 	opts.SetConnectionLostHandler(func(c mqtt.Client, err error) {
-		logger.Mqtt.Errorw("mqtt connection lost", "error", err, "client_id", clientId)
+		logger.Mqtt.Errorw("mqtt connection lost", "error", err, "client_id", clientID)
 	})
 	opts.SetOnConnectHandler(func(c mqtt.Client) {
-		logger.Mqtt.Infow("mqtt client connected", "client_id", clientId)
+		logger.Mqtt.Infow("mqtt client connected", "client_id", clientID)
 	})
 
 	return opts, nil
