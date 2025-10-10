@@ -2,6 +2,91 @@
 ## [Unreleased]
 
 ### Chore
+- update examples/demo
+- **deps:** upgrade dependencies to latest version
+- **deps:** downgrade github.com/redis/go-redis/v9 v9.15.0 -> v9.14.0
+- **deps:** add tool `nilness`
+- **deps:** add tool `shadow`
+- **openapigen:** comment out unreachable code
+
+### Ci
+- add code quality checks to GitHub workflow
+- golangci-lint add godoclint
+- golangci-lint ignore staticcheck ST1001
+- exclude staticcheck QF1008
+- remove complex, noctx, unused check
+- add .golangci.yml
+- **lint:** ignore nilerr check
+
+### Fix
+- **debug:** resolve golangci-lint gosec issues
+
+### Refactor
+- **config:** change `Save` param: string -> io.Writer
+- **model:** rename model 2
+- **model:** rename model
+- **model:** rename model_log -> modellog
+- **model:** rename model_authz -> modelauthz
+- **service:** rename package service_log -> servicelog
+- **service:** rename package service_authz -> serviceauthz
+- **util:** replace "go-ping/ping" by "prometheus-community/pro-bing"
+
+### Style
+- resolve shadow declarations issues
+- apply golangci-lint fix
+- resolve golangci-lint issues
+- fix shadows declaration
+- resolve shadow declarations issues
+- **authn:** resolve golangci-lint staticcheck ST1003 issues
+- **authz:** resolve golangci-lint issues: errcheck, gosec
+- **bootstrap:** resolve golangci-lint issues: errcheck
+- **cache:** modernize code style: replace reflect.TypeOf by reflect.TypeFor
+- **cache:** resolve golangci-lint issues: errcheck
+- **client:** resolve golangci-lint issues: staticcheck
+- **cmd:** golangci-lint fix errorlint
+- **cmd:** modernize code style
+- **cmd:** fix shadow declarations issues
+- **config:** modernize code style
+- **config:** resolve golangci-lint issues
+- **controller:** modernize code style
+- **controller:** resolve golangci-lint checked issues
+- **controller:** apply golangci-lint errcheck
+- **database:** modernize code style
+- **database:** resolve golangci-lint checked issues
+- **dcache:** resolve golangci-lint checked issues
+- **dcache:** modernize code style
+- **ds:** resolve golangci-lint issues
+- **ds:** resolve golangci-lint issues
+- **ds:** modernize code style
+- **internal:** resolve golangci-lint issues
+- **logger:** modernize code style
+- **logger:** resolve golangci-lint issues
+- **metrics:** resolve golangci-lint issues
+- **middleware:** resolve golangci-lint issues
+- **middleware:** modernize code style
+- **model:** resolve golangci-lint issues
+- **model:** modernize code style
+- **model:** resolve golangci-lint issues
+- **pkg:** modernize code style
+- **pkg:** resolve golangci-lint issues
+- **provider:** resolve golangci-lint issues
+- **provider:** modernize code style
+- **response:** resolve golangci-lint issues
+- **service:** resolve golangci-lint issues
+- **task:** resolve golangci-lint checked issues
+- **types:** modernize code style
+- **types:** resolve golangci-lint issues
+- **util:** resolve golangci-lint issues
+- **util:** modernize code style
+
+### Test
+- **database:** TestUser.UpdateBefore add param: *types.ModelContext
+
+
+<a name="v0.9.1-beta.1"></a>
+## [v0.9.1-beta.1] - 2025-10-08
+### Chore
+- generate CHANGELOG.md
 - add jaeger and uptrace docker-compose.yml
 - update examples/demo
 - **jaeger:** update jaeger logging
@@ -12,6 +97,13 @@
 ### Refactor
 - migrate from Jaeger to OpenTelemetry (OTEL) tracing
 - **jaeger:** support stand otlp-http and otlp-grpc and unsupport jaeger endpoint
+
+### Pull Requests
+- Merge pull request [#25](https://github.com/forbearing/gst/issues/25) from forbearing/dev
+
+### BREAKING CHANGE
+
+Configuration field names changed from Jaeger to OTEL
 
 
 <a name="v0.9.1"></a>
@@ -340,11 +432,11 @@
 - Merge pull request [#5](https://github.com/forbearing/gst/issues/5) from forbearing/dev
 
 
-<a name="v0.7.0"></a>
-## [v0.7.0] - 2025-08-20
-
 <a name="v0.7.0-beta.3"></a>
 ## [v0.7.0-beta.3] - 2025-08-20
+
+<a name="v0.7.0"></a>
+## [v0.7.0] - 2025-08-20
 ### Chore
 - update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
@@ -1935,7 +2027,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.1-beta.1...HEAD
+[v0.9.1-beta.1]: https://github.com/forbearing/gst/compare/v0.9.1...v0.9.1-beta.1
 [v0.9.1]: https://github.com/forbearing/gst/compare/v0.9.0...v0.9.1
 [v0.9.0]: https://github.com/forbearing/gst/compare/v0.8.0...v0.9.0
 [v0.8.0]: https://github.com/forbearing/gst/compare/v0.8.0-beta.1...v0.8.0
@@ -1944,9 +2037,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 [v0.7.4]: https://github.com/forbearing/gst/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/gst/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/gst/compare/v0.7.1...v0.7.2
-[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.1
-[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.0
-[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0-beta.3
+[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.1
+[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.0-beta.3
+[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0
 [v0.7.0-beta.2]: https://github.com/forbearing/gst/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/gst/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/gst/compare/v0.6.1...v0.6.2
