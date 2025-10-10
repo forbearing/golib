@@ -21,8 +21,8 @@ import (
 
 	tcping "github.com/cloverstd/tcping/ping"
 	"github.com/cockroachdb/errors"
-	"github.com/go-ping/ping"
 	"github.com/google/uuid"
+	probing "github.com/prometheus-community/pro-bing"
 	"github.com/rs/xid"
 	"github.com/segmentio/ksuid"
 	"github.com/spf13/cast"
@@ -224,7 +224,7 @@ func Ping(ip string, timeout time.Duration) (bool, error) {
 	if timeout < 500*time.Millisecond {
 		timeout = 1 * time.Second
 	}
-	pinger, err := ping.NewPinger(ip)
+	pinger, err := probing.NewPinger(ip)
 	if err != nil {
 		return false, err
 	}
