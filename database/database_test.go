@@ -67,9 +67,9 @@ func (suite *DatabaseTestSuite) SetupSuite() {
 // SetupTest runs before each test
 func (suite *DatabaseTestSuite) SetupTest() {
 	// Clean up test data before each test
-	suite.userDB.WithPurge().Delete(&TestUser{})
-	suite.productDB.WithPurge().Delete(&TestProduct{})
-	suite.categoryDB.WithPurge().Delete(&TestCategory{})
+	_ = suite.userDB.WithPurge().Delete(&TestUser{})
+	_ = suite.productDB.WithPurge().Delete(&TestProduct{})
+	_ = suite.categoryDB.WithPurge().Delete(&TestCategory{})
 }
 
 func init() {
@@ -78,9 +78,7 @@ func init() {
 	os.Setenv(config.SQLITE_IS_MEMORY, "false")
 	os.Setenv(config.SQLITE_PATH, "/tmp/test.db")
 
-	if err := os.Remove("/tmp/test.db"); err != nil {
-		// Ignore error if file doesn't exist
-	}
+	_ = os.Remove("/tmp/test.db")
 
 	// os.Setenv(config.DATABASE_TYPE, string(config.DBMySQL))
 	// os.Setenv(config.MYSQL_DATABASE, "test")
