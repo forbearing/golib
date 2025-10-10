@@ -58,7 +58,7 @@ func New[K comparable, V any](cmp func(K, K) int, ops ...Option[K, V]) (*Tree[K,
 }
 
 // NewOrderedKeys creates and returns a splay tree.
-// It use the cmp.Compare[K] as the default comparsion function.
+// It use the cmp.Compare[K] as the default comparison function.
 // This is suitable for types that implement the cmp.Ordered interface,
 // such as int, float64 and string
 func NewOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], error) {
@@ -66,7 +66,7 @@ func NewOrderedKeys[K cmp.Ordered, V any](ops ...Option[K, V]) (*Tree[K, V], err
 }
 
 // NewFromSlice creates and returns a splay tree from a given slice.
-// It use the cmp.Compare[K] as the default comparsion function.
+// It use the cmp.Compare[K] as the default comparison function.
 func NewFromSlice[V any](slice []V, ops ...Option[int, V]) (*Tree[int, V], error) {
 	t, err := NewOrderedKeys(ops...)
 	if err != nil {

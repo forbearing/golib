@@ -51,7 +51,7 @@ func New[E any](cmp func(E, E) int, ops ...Option[E]) (*List[E], error) {
 }
 
 // NewOrdered creates and returns a new array-backed list for ordered elements.
-// It use cmp.Compare[E] as the default comparsion function for elements.
+// It use cmp.Compare[E] as the default comparison function for elements.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func NewOrdered[E cmp.Ordered](ops ...Option[E]) (*List[E], error) {
 	return New(cmp.Compare[E], ops...)
@@ -71,7 +71,7 @@ func NewFromSlice[E any](cmp func(E, E) int, elements []E, ops ...Option[E]) (*L
 }
 
 // NewFromOrderedSlice creates a new array-backed list from the given slice.
-// It use cmp.Compare[E] as the default comparsion function for elements.
+// It use cmp.Compare[E] as the default comparison function for elements.
 // Optional options can be passed to modify the list's behavior, such as enabling concurrent safety.
 func NewFromOrderedSlice[E cmp.Ordered](elements []E, ops ...Option[E]) (*List[E], error) {
 	return NewFromSlice(cmp.Compare[E], elements, ops...)

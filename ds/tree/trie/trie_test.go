@@ -70,7 +70,7 @@ func TestTrie(t *testing.T) {
 			if count > 1 {
 				return fmt.Sprintf("%s(%d)", string(k), count)
 			}
-			return fmt.Sprintf("%s", string(k))
+			return string(k)
 		}),
 	)
 	if err != nil {
