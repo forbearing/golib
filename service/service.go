@@ -21,7 +21,7 @@ var (
 
 var (
 	ErrNotFoundService   = errors.New("no service instant matches the give Model interface, skip processing service layer")
-	ErrNotFoundServiceId = errors.New("not found service id in assetIdMap")
+	ErrNotFoundServiceID = errors.New("not found service id in assetIdMap")
 )
 
 func serviceKey[M types.Model](phase consts.Phase) string {
