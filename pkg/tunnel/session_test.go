@@ -59,19 +59,19 @@ func server(t *testing.T) {
 		switch event.Cmd {
 		case tunnel.Ping:
 			t.Log("client ping")
-			session.Write(&tunnel.Event{Cmd: tunnel.Pong})
+			_ = session.Write(&tunnel.Event{Cmd: tunnel.Pong})
 		case Hello:
 			payload := new(HelloPaylod)
 			assert.NoError(t, tunnel.DecodePayload(event.Payload, payload))
 			assert.Equal(t, helloPayload1, *payload)
 			t.Logf("client hello: %+v\n", *payload)
-			session.Write(&tunnel.Event{Cmd: Hello, Payload: helloPayload2})
+			_ = session.Write(&tunnel.Event{Cmd: Hello, Payload: helloPayload2})
 		case Bye:
 			payload := new(ByePaylod)
 			assert.NoError(t, tunnel.DecodePayload(event.Payload, payload))
 			assert.Equal(t, byePayload1, *payload)
 			t.Logf("client bye: %+v\n", *payload)
-			session.Write(&tunnel.Event{Cmd: Bye, Payload: byePayload2})
+			_ = session.Write(&tunnel.Event{Cmd: Bye, Payload: byePayload2})
 		}
 	}
 }
@@ -84,7 +84,7 @@ func client(t *testing.T) {
 	defer conn.Close()
 
 	session, _ := tunnel.NewSession(conn, consts.Client)
-	session.Write(&tunnel.Event{Cmd: tunnel.Ping})
+	_ = session.Write(&tunnel.Event{Cmd: tunnel.Ping})
 
 	for {
 		event, err := session.Read()
@@ -93,13 +93,13 @@ func client(t *testing.T) {
 		switch event.Cmd {
 		case tunnel.Pong:
 			t.Log("server pong")
-			session.Write(&tunnel.Event{Cmd: Hello, Payload: helloPayload1})
+			_ = session.Write(&tunnel.Event{Cmd: Hello, Payload: helloPayload1})
 		case Hello:
 			payload := new(HelloPaylod)
 			assert.NoError(t, tunnel.DecodePayload(event.Payload, payload))
 			assert.Equal(t, helloPayload2, *payload)
 			t.Logf("server hello: %+v\n", *payload)
-			session.Write(&tunnel.Event{Cmd: Bye, Payload: byePayload1})
+			_ = session.Write(&tunnel.Event{Cmd: Bye, Payload: byePayload1})
 		case Bye:
 			payload := new(ByePaylod)
 			assert.NoError(t, tunnel.DecodePayload(event.Payload, payload))

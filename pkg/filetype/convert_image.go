@@ -8,7 +8,7 @@ import (
 	"github.com/sunshineplan/imgconv"
 )
 
-const IMAGE_TMP_FILE_PREFIX = "convert-image"
+const IMAGE_TMP_FILE_PREFIX = "convert-image" //nolint:staticcheck
 
 // ConvertImage2JPG convert image to jpg format (ignore source image filetype).
 // the converted image default store to server temporary directory.

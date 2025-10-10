@@ -9,6 +9,7 @@ import (
 
 	"github.com/forbearing/gst/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWrappedRequest(t *testing.T) {
@@ -19,6 +20,7 @@ func TestWrappedRequest(t *testing.T) {
 
 	body = []byte{}
 	req, err = http.NewRequest("POST", "http://example.com", bytes.NewReader(body))
+	require.NoError(t, err)
 	testWrappedRequest(t, req, body)
 }
 
@@ -47,12 +49,13 @@ func TestWrappedResponse(t *testing.T) {
 		req, err := http.NewRequest(http.MethodGet, domain, nil)
 		assert.NoError(t, err)
 		resp, err := http.DefaultClient.Do(req)
-
+		require.NoError(t, err)
 		body, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		resp.Body = io.NopCloser(bytes.NewBuffer(body))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		testWrappedResponse(t, resp, body)
+		resp.Body.Close()
 	}
 }
 

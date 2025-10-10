@@ -1,4 +1,4 @@
-// package tunnel is communication protocol between with server and user, server and client.
+// Package tunnel is communication protocol between with server and user, server and client.
 package tunnel
 
 import (
@@ -25,7 +25,7 @@ func NewCmd(name string, value uint32) Cmd {
 
 func (c Cmd) String() string {
 	if v, loaded := cmdMap.Load(uint32(c)); loaded {
-		return v.(string)
+		return v.(string) //nolint:errcheck
 	}
 	return "Unknown"
 }
