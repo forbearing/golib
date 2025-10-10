@@ -14,7 +14,7 @@ import (
 // ErrEntryNotFound is returned when a cache entry is not found.
 var ErrEntryNotFound = errors.New("cache entry not found")
 
-// Initalizer interface is used to initialize configuration, flag arguments, logger, or other components.
+// Initializer interface is used to initialize configuration, flag arguments, logger, or other components.
 // This interface is commonly implemented by bootstrap components that need to perform
 // initialization tasks during application startup.
 //
@@ -23,7 +23,7 @@ var ErrEntryNotFound = errors.New("cache entry not found")
 //   - Logger initializers
 //   - Database connection setup
 //   - Cache initialization
-type Initalizer interface {
+type Initializer interface {
 	Init() error
 }
 
@@ -279,7 +279,7 @@ type DatabaseOption[M Model] interface {
 
 	// WithExclude excludes records that matchs a condition within a list.
 	// For example:
-	//   - If you want exlcude users with specific ids from your query,
+	//   - If you want exclude users with specific ids from your query,
 	//     you can use WithExclude(excludes),
 	//     excludes: "id" as key, ["myid1", "myid2", "myid3"] as value.
 	//   - If you want excludes users that id not ["myid1", "myid2"] and not not ["root", "noname"],
