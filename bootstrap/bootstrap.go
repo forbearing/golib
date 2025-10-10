@@ -45,7 +45,7 @@ import (
 	"github.com/forbearing/gst/router"
 	"github.com/forbearing/gst/service"
 	serviceauthz "github.com/forbearing/gst/service/authz"
-	service_log "github.com/forbearing/gst/service/log"
+	servicelog "github.com/forbearing/gst/service/log"
 	"github.com/forbearing/gst/task"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
@@ -108,7 +108,7 @@ func Bootstrap() error {
 		// service
 		service.Init,
 		serviceauthz.Init,
-		service_log.Init,
+		servicelog.Init,
 
 		controller.Init,
 		middleware.Init,
