@@ -7,8 +7,6 @@ require (
 	gorm.io/datatypes v1.2.6
 )
 
-replace github.com/forbearing/gst => ../..
-
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
@@ -171,7 +169,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.14.0 // indirect
 	github.com/redis/go-redis/extra/redisotel/v9 v9.14.0 // indirect
-	github.com/redis/go-redis/v9 v9.15.0 // indirect
+	github.com/redis/go-redis/v9 v9.14.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
@@ -270,3 +268,5 @@ require (
 	modernc.org/sqlite v1.33.1 // indirect
 	stathat.com/c/consistent v1.0.0 // indirect
 )
+
+replace github.com/forbearing/gst => ../..
