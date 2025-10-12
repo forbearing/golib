@@ -1,7 +1,21 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Feat
+- prepare support audit manager in controller layer
+
+### Fix
+- **deps:** downgrade redis version in examples/demo
+
+### Style
+- **golangci-lint:** resolve issues
+- **shadow:** reslove shadow issues
+
+
+<a name="v0.9.1-beta.2"></a>
+## [v0.9.1-beta.2] - 2025-10-10
 ### Chore
+- generate CHANGELOG.md
 - update examples/demo
 - **deps:** upgrade dependencies to latest version
 - **deps:** downgrade github.com/redis/go-redis/v9 v9.15.0 -> v9.14.0
@@ -81,6 +95,9 @@
 
 ### Test
 - **database:** TestUser.UpdateBefore add param: *types.ModelContext
+
+### Pull Requests
+- Merge pull request [#27](https://github.com/forbearing/gst/issues/27) from forbearing/dev
 
 
 <a name="v0.9.1-beta.1"></a>
@@ -432,11 +449,11 @@ Configuration field names changed from Jaeger to OTEL
 - Merge pull request [#5](https://github.com/forbearing/gst/issues/5) from forbearing/dev
 
 
-<a name="v0.7.0-beta.3"></a>
-## [v0.7.0-beta.3] - 2025-08-20
-
 <a name="v0.7.0"></a>
 ## [v0.7.0] - 2025-08-20
+
+<a name="v0.7.0-beta.3"></a>
+## [v0.7.0-beta.3] - 2025-08-20
 ### Chore
 - update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
@@ -2027,7 +2044,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.1-beta.1...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.1-beta.2...HEAD
+[v0.9.1-beta.2]: https://github.com/forbearing/gst/compare/v0.9.1-beta.1...v0.9.1-beta.2
 [v0.9.1-beta.1]: https://github.com/forbearing/gst/compare/v0.9.1...v0.9.1-beta.1
 [v0.9.1]: https://github.com/forbearing/gst/compare/v0.9.0...v0.9.1
 [v0.9.0]: https://github.com/forbearing/gst/compare/v0.8.0...v0.9.0
@@ -2037,9 +2055,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 [v0.7.4]: https://github.com/forbearing/gst/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/gst/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/gst/compare/v0.7.1...v0.7.2
-[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.1
-[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.0-beta.3
-[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0
+[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.1
+[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.0
+[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0-beta.3
 [v0.7.0-beta.2]: https://github.com/forbearing/gst/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/gst/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/gst/compare/v0.6.1...v0.6.2
