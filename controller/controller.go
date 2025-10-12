@@ -672,7 +672,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		m := reflect.New(typ).Interface().(M) //nolint:errcheck
 		m.SetID(id)
 		// Make sure the record must be already exists.
-		if err := handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
+		if err = handler(types.NewDatabaseContext(c)).WithLimit(1).WithQuery(m).List(&data); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			otel.RecordError(span, err)
@@ -690,7 +690,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		// 1.Perform business logic processing before update resource.
 		var serviceCtxBefore *types.ServiceContext
-		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_BEFORE, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_BEFORE, func(spanCtx context.Context) error {
 			serviceCtxBefore = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_BEFORE)
 			return svc.UpdateBefore(serviceCtxBefore, req)
 		}); err != nil {
@@ -701,7 +701,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		// 2.Update resource in database.
 		log.Infoz("update in database", zap.Object(typ.Name(), req))
-		if err := handler(types.NewDatabaseContext(c)).Update(req); err != nil {
+		if err = handler(types.NewDatabaseContext(c)).Update(req); err != nil {
 			log.Error(err)
 			ResponseJSON(c, CodeFailure.WithErr(err))
 			otel.RecordError(span, err)
@@ -709,7 +709,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 		// 3.Perform business logic processing after update resource.
 		var serviceCtxAfter *types.ServiceContext
-		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_UPDATE_AFTER, func(spanCtx context.Context) error {
 			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_AFTER)
 			return svc.UpdateAfter(serviceCtxAfter, req)
 		}); err != nil {
@@ -1308,7 +1308,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}
 		// 3.Perform business logic processing after list resources.
 		var serviceCtxAfter *types.ServiceContext
-		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_LIST_AFTER, func(spanCtx context.Context) error {
 			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST_AFTER)
 			return svc.ListAfter(serviceCtxAfter, &data)
 		}); err != nil {
@@ -1322,7 +1322,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		nototal, _ = strconv.ParseBool(nototalStr)
 		// NOTE: Total count is not provided when using cursor-based pagination.
 		if !nototal && len(cursorValue) == 0 {
-			if err := handler(types.NewDatabaseContext(c)).
+			if err = handler(types.NewDatabaseContext(c)).
 				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
@@ -1629,7 +1629,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		}
 		// 3.Perform business logic processing after get resource.
 		var serviceCtxAfter *types.ServiceContext
-		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_GET_AFTER, func(spanCtx context.Context) error {
 			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET_AFTER)
 			return svc.GetAfter(serviceCtxAfter, m)
 		}); err != nil {
@@ -2531,7 +2531,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 		// 3.Perform business logic processing after batch patch resource.
 		var serviceCtxAfter *types.ServiceContext
-		if err := traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_AFTER, func(spanCtx context.Context) error {
+		if err = traceServiceHook[M](ctrlSpanCtx, consts.PHASE_PATCH_MANY_AFTER, func(spanCtx context.Context) error {
 			serviceCtxAfter = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY_AFTER)
 			return svc.PatchManyAfter(serviceCtxAfter, shouldUpdates...)
 		}); err != nil {
