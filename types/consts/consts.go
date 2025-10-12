@@ -400,3 +400,21 @@ const (
 const LayoutTimeEncoder = "2006-01-02|15:04:05"
 
 const IMPORT_PATH_MODEL = `"github.com/forbearing/gst/model"`
+
+type OP string
+
+const (
+	OP_CREATE OP = "create"
+	OP_DELETE OP = "delete"
+	OP_UPDATE OP = "update"
+	OP_PATCH  OP = "patch"
+	OP_LIST   OP = "list"
+	OP_GET    OP = "get"
+	OP_EXPORT OP = "export"
+	OP_IMPORT OP = "import"
+
+	OP_CREATE_MANY OP = "create_many"
+	OP_DELETE_MANY OP = "delete_many"
+	OP_UPDATE_MANY OP = "update_many"
+	OP_PATCH_MANY  OP = "patch_many"
+)
