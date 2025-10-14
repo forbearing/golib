@@ -40,7 +40,7 @@ const (
 // OTEL represents OpenTelemetry tracing configuration using OTLP exporters.
 // This configuration supports sending traces to Jaeger, Uptrace, or other OTLP-compatible backends.
 type OTEL struct {
-	// Enable controls whether OpenTelemetry tracing is enabled
+	// Enable controls whether Jaeger tracing is enabled
 	Enable bool `json:"enable" mapstructure:"enable" ini:"enable" yaml:"enable"`
 
 	// ServiceName is the name of the service for tracing
@@ -51,22 +51,22 @@ type OTEL struct {
 	// Jaeger officially accepts and recommends using OTLP instead
 	ExporterType ExportType `json:"exporter_type" mapstructure:"exporter_type" ini:"exporter_type" yaml:"exporter_type"`
 
-	// OTLPEndpoint is the OTLP endpoint URL (e.g., http://localhost:4318/v1/traces for HTTP, localhost:4317 for gRPC)
+	// OTLPEndpoint is the OTLP endpoint for HTTP/gRPC
 	OTLPEndpoint string `json:"otlp_endpoint" mapstructure:"otlp_endpoint" ini:"otlp_endpoint" yaml:"otlp_endpoint"`
 
-	// OTLPHeaders are additional headers to send with OTLP requests
+	// OTLPHeaders are the headers to send with OTLP requests
 	OTLPHeaders map[string]string `json:"otlp_headers" mapstructure:"otlp_headers" ini:"otlp_headers" yaml:"otlp_headers"`
 
 	// OTLPInsecure controls whether to use insecure connection for OTLP
 	OTLPInsecure bool `json:"otlp_insecure" mapstructure:"otlp_insecure" ini:"otlp_insecure" yaml:"otlp_insecure"`
 
-	// SamplerType defines the sampling strategy
+	// SamplerType defines the sampling strategy (const, probabilistic, ratelimiting, remote)
 	SamplerType SamplerType `json:"sampler_type" mapstructure:"sampler_type" ini:"sampler_type" yaml:"sampler_type"`
 
-	// SamplerParam is the parameter for the sampler (e.g., sampling rate for probabilistic)
+	// SamplerParam is the parameter for the sampling strategy
 	SamplerParam float64 `json:"sampler_param" mapstructure:"sampler_param" ini:"sampler_param" yaml:"sampler_param"`
 
-	// LogSpans controls whether to log spans
+	// LogSpans controls whether to log spans to the logger
 	LogSpans bool `json:"log_spans" mapstructure:"log_spans" ini:"log_spans" yaml:"log_spans"`
 
 	// MaxTagValueLen is the maximum length of tag values
@@ -83,19 +83,17 @@ type OTEL struct {
 }
 
 func (o *OTEL) setDefault() {
-	if o.ServiceName == "" {
-		o.ServiceName = consts.FrameworkName
-	}
-	if o.ExporterType == "" {
-		o.ExporterType = ExportTypeOtlpHTTP
-	}
-	if o.OTLPEndpoint == "" {
-		o.OTLPEndpoint = "http://localhost:4318/v1/traces"
-	}
-	if o.SamplerType == "" {
-		o.SamplerType = SamplerTypeConst
-	}
-	if o.SamplerParam == 0 {
-		o.SamplerParam = 1
-	}
+	cv.SetDefault("otel.enable", false)
+	cv.SetDefault("otel.service_name", consts.FrameworkName)
+	cv.SetDefault("otel.exporter_type", ExportTypeOtlpHTTP)
+	cv.SetDefault("otel.otlp_endpoint", "localhost:4318") // Default OTLP HTTP endpoint
+	cv.SetDefault("otel.otlp_headers", map[string]string{})
+	cv.SetDefault("otel.otlp_insecure", true) // Default to insecure for local development
+	cv.SetDefault("otel.sampler_type", SamplerTypeConst)
+	cv.SetDefault("otel.sampler_param", 1.0)
+	cv.SetDefault("otel.log_spans", false)
+	cv.SetDefault("otel.max_tag_value_len", 256)
+	cv.SetDefault("otel.buffer_flush_interval", time.Second)
+	cv.SetDefault("otel.reporter_queue_size", 100)
+	cv.SetDefault("otel.reporter_flush_interval", time.Second)
 }
