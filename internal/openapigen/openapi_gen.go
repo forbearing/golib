@@ -279,28 +279,10 @@ func buildVerbs(verbs ...consts.HTTPVerb) []consts.HTTPVerb {
 	verbMap := make(map[consts.HTTPVerb]bool)
 
 	if len(verbs) == 0 {
-		verbMap[consts.Most] = true
-	} else {
-		for _, verb := range verbs {
-			verbMap[verb] = true
-		}
+		return make([]consts.HTTPVerb, 0)
 	}
-	if verbMap[consts.All] {
-		verbMap[consts.Most] = true
-		verbMap[consts.Import] = true
-		verbMap[consts.Export] = true
-	}
-	if verbMap[consts.Most] {
-		verbMap[consts.Create] = true
-		verbMap[consts.Delete] = true
-		verbMap[consts.Update] = true
-		verbMap[consts.Patch] = true
-		verbMap[consts.List] = true
-		verbMap[consts.Get] = true
-		verbMap[consts.CreateMany] = true
-		verbMap[consts.DeleteMany] = true
-		verbMap[consts.UpdateMany] = true
-		verbMap[consts.PatchMany] = true
+	for _, verb := range verbs {
+		verbMap[verb] = true
 	}
 
 	vs := make([]consts.HTTPVerb, 0, len(verbMap))

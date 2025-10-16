@@ -378,11 +378,6 @@ const (
 
 	Export HTTPVerb = export  // GET /resource/export
 	Import HTTPVerb = import_ // POST /resource/import
-
-	// Verb groups
-	Most      HTTPVerb = "most"       // Basic CRUD operations (Create, Delete, Update, UpdatePartial, List, Get)
-	MostBatch HTTPVerb = "most_batch" // Basic batch operations (CreateMany, DeleteMany, UpdateMany, PatchMany)
-	All       HTTPVerb = "all"        // All operations including Most, MostBatch, Import and Export
 )
 
 // HTTPVerb represents the supported HTTP operations for a resource
