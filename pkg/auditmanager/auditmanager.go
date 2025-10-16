@@ -1,7 +1,9 @@
 package auditmanager
 
 import (
+	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -10,8 +12,11 @@ import (
 	"github.com/forbearing/gst/ds/queue/circularbuffer"
 	modellog "github.com/forbearing/gst/model/log"
 	"github.com/forbearing/gst/types"
+	"github.com/gertd/go-pluralize"
 	"go.uber.org/zap"
 )
+
+var pluralizeCli = pluralize.NewClient()
 
 // AuditManager manages audit logging based on configuration.
 // It provides a centralized way to handle operation logging across all Factory functions,
@@ -34,7 +39,7 @@ func New(auditConfig *config.Audit, cb *circularbuffer.CircularBuffer[*modellog.
 // RecordOperation records a single operation audit log.
 // This method is now used by all Factory functions instead of directly enqueuing OperationLog records.
 // It provides centralized audit logging with configurable filtering and supports both sync and async writing.
-func (am *AuditManager) RecordOperation(ctx *types.DatabaseContext, operationLog *modellog.OperationLog) error {
+func (am *AuditManager) RecordOperation(ctx *types.DatabaseContext, m types.Model, operationLog *modellog.OperationLog) error {
 	// Skip if audit is disabled
 	if !am.config.Enable {
 		return nil
@@ -44,6 +49,17 @@ func (am *AuditManager) RecordOperation(ctx *types.DatabaseContext, operationLog
 	if slices.Contains(am.config.ExcludeOperations, operationLog.OP) {
 		return nil
 	}
+
+	// Record the table name
+	tableName := m.GetTableName()
+	if len(tableName) == 0 {
+		typ := reflect.TypeOf(m).Elem()
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+	}
+	operationLog.Table = tableName
 
 	if am.config.AsyncWrite {
 		// Use existing circular buffer for async writing
@@ -59,13 +75,26 @@ func (am *AuditManager) RecordOperation(ctx *types.DatabaseContext, operationLog
 }
 
 // RecordBatchOperations records multiple operations audit logs
-func (am *AuditManager) RecordBatchOperations(ctx *types.DatabaseContext, operationLogs []*modellog.OperationLog) error {
+func (am *AuditManager) RecordBatchOperations(ctx *types.DatabaseContext, m types.Model, operationLogs []*modellog.OperationLog) error {
 	if !am.config.Enable {
 		return nil
 	}
 
 	if len(operationLogs) == 0 {
 		return nil
+	}
+
+	// Record the table name
+	tableName := m.GetTableName()
+	if len(tableName) == 0 {
+		typ := reflect.TypeOf(m).Elem()
+		items := strings.Split(typ.Name(), ".")
+		if len(items) > 0 {
+			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
+		}
+	}
+	for _, operationLog := range operationLogs {
+		operationLog.Table = tableName
 	}
 
 	if am.config.AsyncWrite {

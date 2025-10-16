@@ -251,11 +251,6 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
@@ -274,10 +269,9 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err = am.RecordOperation(types.NewDatabaseContext(c), req, &modellog.OperationLog{
 			OP:        consts.OP_CREATE,
 			Model:     typ.Name(),
-			Table:     tableName,
 			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
@@ -485,11 +479,6 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		for i := range ml {
 			record, _ := json.Marshal(copied[i])
 			// cb.Enqueue(&modellog.OperationLog{
@@ -505,10 +494,10 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			// 	Method:    c.Request.Method,
 			// 	UserAgent: c.Request.UserAgent(),
 			// })
-			if err := am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+			m := reflect.New(typ).Interface().(M) //nolint:errcheck
+			if err := am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 				OP:        consts.OP_DELETE,
 				Model:     typ.Name(),
-				Table:     tableName,
 				RecordID:  ml[i].GetID(),
 				Record:    util.BytesToString(record),
 				IP:        c.ClientIP(),
@@ -720,11 +709,6 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
@@ -743,10 +727,9 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err = am.RecordOperation(types.NewDatabaseContext(c), req, &modellog.OperationLog{
 			OP:        consts.OP_UPDATE,
 			Model:     typ.Name(),
-			Table:     tableName,
 			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
@@ -960,11 +943,6 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
@@ -984,10 +962,9 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err := am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err := am.RecordOperation(types.NewDatabaseContext(c), req, &modellog.OperationLog{
 			OP:        consts.OP_PATCH,
 			Model:     typ.Name(),
-			Table:     tableName,
 			RecordID:  req.GetID(),
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
@@ -1341,11 +1318,6 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		// cb.Enqueue(&modellog.OperationLog{
 		// 	OP:        consts.OP_LIST,
 		// 	Model:     typ.Name(),
@@ -1357,10 +1329,9 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err = am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 			OP:        consts.OP_LIST,
 			Model:     typ.Name(),
-			Table:     tableName,
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestID: c.GetString(consts.REQUEST_ID),
@@ -1650,11 +1621,6 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		// cb.Enqueue(&modellog.OperationLog{
 		// 	OP:        consts.OP_GET,
 		// 	Model:     typ.Name(),
@@ -1666,10 +1632,9 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err = am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 			OP:        consts.OP_GET,
 			Model:     typ.Name(),
-			Table:     tableName,
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
 			RequestID: c.GetString(consts.REQUEST_ID),
@@ -1955,11 +1920,6 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
@@ -1977,10 +1937,9 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		if err = am.RecordOperation(types.NewDatabaseContext(c), val, &modellog.OperationLog{
 			OP:        consts.OP_CREATE_MANY,
 			Model:     typ.Name(),
-			Table:     tableName,
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
@@ -2163,11 +2122,6 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		record, _ := json.Marshal(req)
 		// cb.Enqueue(&modellog.OperationLog{
 		// 	OP:        consts.OP_DELETE_MANY,
@@ -2181,10 +2135,10 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
+		if err = am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 			OP:        consts.OP_DELETE_MANY,
 			Model:     typ.Name(),
-			Table:     tableName,
 			Record:    util.BytesToString(record),
 			IP:        c.ClientIP(),
 			User:      c.GetString(consts.CTX_USERNAME),
@@ -2339,11 +2293,6 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 
 		// 4.record operation log to database.
 		typ := reflect.TypeOf(*new(M)).Elem()
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
 		respData, _ := json.Marshal(req)
@@ -2361,10 +2310,10 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
+		if err = am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 			OP:        consts.OP_UPDATE_MANY,
 			Model:     typ.Name(),
-			Table:     tableName,
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
@@ -2542,11 +2491,6 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		}
 
 		// 4.record operation log to database.
-		var tableName string
-		items := strings.Split(typ.Name(), ".")
-		if len(items) > 0 {
-			tableName = pluralizeCli.Plural(strings.ToLower(items[len(items)-1]))
-		}
 		// NOTE: We should record the `req` instead of `oldVal`, the req is `newVal`.
 		record, _ := json.Marshal(req)
 		reqData, _ := json.Marshal(req)
@@ -2565,10 +2509,10 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		// 	Method:    c.Request.Method,
 		// 	UserAgent: c.Request.UserAgent(),
 		// })
-		if err = am.RecordOperation(types.NewDatabaseContext(c), &modellog.OperationLog{
+		m := reflect.New(typ).Interface().(M) //nolint:errcheck
+		if err = am.RecordOperation(types.NewDatabaseContext(c), m, &modellog.OperationLog{
 			OP:        consts.OP_PATCH_MANY,
 			Model:     typ.Name(),
-			Table:     tableName,
 			Record:    util.BytesToString(record),
 			Request:   util.BytesToString(reqData),
 			Response:  util.BytesToString(respData),
