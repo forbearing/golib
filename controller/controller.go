@@ -173,8 +173,20 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_CREATE)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -365,8 +377,20 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr := c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -595,8 +619,20 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_UPDATE)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -838,8 +874,20 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
 			var reqErr error
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -1116,8 +1164,20 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
@@ -1468,8 +1528,20 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
 			var err error
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 				log.Error(err)
 				ResponseJSON(c, CodeInvalidParam.WithErr(err))
@@ -1839,8 +1911,20 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_CREATE_MANY)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -2043,8 +2127,20 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_DELETE_MANY)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeInvalidParam.WithErr(reqErr))
@@ -2223,8 +2319,20 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_UPDATE_MANY)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
@@ -2399,8 +2507,20 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		svc := service.Factory[M, REQ, RSP]().Service(consts.PHASE_PATCH_MANY)
 
 		if !model.AreTypesEqual[M, REQ, RSP]() {
+			var req REQ
 			var rsp RSP
-			req := reflect.New(reflect.TypeOf(*new(REQ)).Elem()).Interface().(REQ) //nolint:errcheck
+
+			reqTyp := reflect.TypeFor[REQ]()
+			switch reqTyp.Kind() {
+			case reflect.Struct:
+				req = reflect.New(reqTyp).Elem().Interface().(REQ) //nolint:errcheck
+			case reflect.Pointer:
+				for reqTyp.Kind() == reflect.Pointer {
+					reqTyp = reqTyp.Elem()
+				}
+				req = reflect.New(reqTyp).Interface().(REQ) //nolint:errcheck
+			}
+
 			if reqErr = c.ShouldBindJSON(&req); reqErr != nil && !errors.Is(reqErr, io.EOF) {
 				log.Error(reqErr)
 				ResponseJSON(c, CodeFailure.WithErr(reqErr))
