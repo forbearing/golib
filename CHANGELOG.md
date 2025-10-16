@@ -2,6 +2,19 @@
 ## [Unreleased]
 
 
+<a name="v0.9.5"></a>
+## [v0.9.5] - 2025-10-16
+### Chore
+- **release:** generate CHANGEME.md
+
+### Fix
+- **controller:** If the `REQ` type is not pointer to struct, will cause panic 2
+- **controller:** If the `REQ` type is not pointer to struct, will cause panic
+
+### Pull Requests
+- Merge pull request [#31](https://github.com/forbearing/gst/issues/31) from forbearing/dev
+
+
 <a name="v0.9.4"></a>
 ## [v0.9.4] - 2025-10-16
 ### Fix
@@ -2078,7 +2091,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.5...HEAD
+[v0.9.5]: https://github.com/forbearing/gst/compare/v0.9.4...v0.9.5
 [v0.9.4]: https://github.com/forbearing/gst/compare/v0.9.3...v0.9.4
 [v0.9.3]: https://github.com/forbearing/gst/compare/v0.9.2...v0.9.3
 [v0.9.2]: https://github.com/forbearing/gst/compare/v0.9.1-beta.2...v0.9.2
