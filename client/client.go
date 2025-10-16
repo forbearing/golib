@@ -156,12 +156,20 @@ func (c *Client) Delete(id string) (*Resp, error) {
 }
 
 // Update send a PUT request to fully update a resource.
-func (c *Client) Update(payload any) (*Resp, error) {
+func (c *Client) Update(id string, payload any) (*Resp, error) {
+	if len(id) == 0 {
+		return nil, errors.New("id is required")
+	}
+	c.param = id
 	return c.request(update, payload)
 }
 
 // Patch send a PATCH request to partially update a resource.
-func (c *Client) Patch(payload any) (*Resp, error) {
+func (c *Client) Patch(id string, payload any) (*Resp, error) {
+	if len(id) == 0 {
+		return nil, errors.New("id is required")
+	}
+	c.param = id
 	return c.request(patch, payload)
 }
 
@@ -312,10 +320,10 @@ func (c *Client) request(action action, payload any) (*Resp, error) {
 		url = fmt.Sprintf("%s/%s", c.addr, c.param)
 	case update:
 		method = http.MethodPut
-		url = c.addr
+		url = fmt.Sprintf("%s/%s", c.addr, c.param)
 	case patch:
 		method = http.MethodPatch
-		url = c.addr
+		url = fmt.Sprintf("%s/%s", c.addr, c.param)
 	case create_many:
 		method = http.MethodPost
 		url = fmt.Sprintf("%s/batch", c.addr)

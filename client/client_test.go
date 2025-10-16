@@ -14,6 +14,7 @@ import (
 	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/model"
 	"github.com/forbearing/gst/router"
+	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ import (
 var (
 	token = "-"
 	port  = 8000
-	addr2 = fmt.Sprintf("http://localhost:%d/api/user/", port)
+	addr2 = fmt.Sprintf("http://localhost:%d/api/test-user/", port)
 
 	id1     = "user1"
 	id2     = "user2"
@@ -78,7 +79,16 @@ func startServer() {
 	}
 
 	go func() {
-		router.Register[*User, *User, *User](router.Auth(), "user", nil, consts.Most)
+		router.Register[*User, *User, *User](router.Auth(), "test-user", nil, consts.Create)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/:id", &types.ControllerConfig[*User]{ParamName: "id"}, consts.Delete)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/:id", &types.ControllerConfig[*User]{ParamName: "id"}, consts.Update)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/:id", &types.ControllerConfig[*User]{ParamName: "id"}, consts.Patch)
+		router.Register[*User, *User, *User](router.Auth(), "test-user", nil, consts.List)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/:id", &types.ControllerConfig[*User]{ParamName: "id"}, consts.Get)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/batch", nil, consts.CreateMany)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/batch", nil, consts.DeleteMany)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/batch", nil, consts.UpdateMany)
+		router.Register[*User, *User, *User](router.Auth(), "test-user/batch", nil, consts.PatchMany)
 		if err := bootstrap.Run(); err != nil {
 			panic(err)
 		}
@@ -181,7 +191,7 @@ func Test_Client(t *testing.T) {
 
 	// Test Update
 	t.Run("update", func(t *testing.T) {
-		resp, err := cli.Update(&User{Name: name1Modified, Email: email1Modified, Base: model.Base{ID: id1}})
+		resp, err := cli.Update(id1, &User{Name: name1Modified, Email: email1Modified, Base: model.Base{ID: id1}})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -198,7 +208,7 @@ func Test_Client(t *testing.T) {
 
 	// Test Patch
 	t.Run("patch", func(t *testing.T) {
-		resp, err := cli.Patch(&User{Avatar: avatar1Modified, Base: model.Base{ID: id1}})
+		resp, err := cli.Patch(id1, &User{Avatar: avatar1Modified, Base: model.Base{ID: id1}})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -212,7 +222,7 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, email1Modified, user.Email)
 		require.Equal(t, avatar1Modified, user.Avatar)
 
-		resp, err = cli.Patch(&User{Name: name1, Base: model.Base{ID: id1}})
+		resp, err = cli.Patch(id1, &User{Name: name1, Base: model.Base{ID: id1}})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
@@ -226,7 +236,7 @@ func Test_Client(t *testing.T) {
 		require.Equal(t, email1Modified, user.Email)
 		require.Equal(t, avatar1Modified, user.Avatar)
 
-		resp, err = cli.Patch(&User{Email: email1, Avatar: avatar1, Base: model.Base{ID: id1}})
+		resp, err = cli.Patch(id1, &User{Email: email1, Avatar: avatar1, Base: model.Base{ID: id1}})
 		require.NotNil(t, resp)
 		require.NotEmpty(t, resp.RequestID)
 		require.NoError(t, err)
