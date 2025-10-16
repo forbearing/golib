@@ -1,8 +1,30 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.9.4"></a>
+## [v0.9.4] - 2025-10-16
+### Fix
+- **client:** adjust `Update` and `Patch` behaviour to conform the standard RESTful API
+- **controller:** record the correct table name
+
+### Refactor
+- **types:** remove HTTPVerb: Most,MostBatch,All
+
+### Pull Requests
+- Merge pull request [#30](https://github.com/forbearing/gst/issues/30) from forbearing/dev
+
+
+<a name="v0.9.3"></a>
+## [v0.9.3] - 2025-10-14
+### Chore
+- **release:** generate CHANGEME.md
+
 ### Fix
 - **config:** fix setDfault() for otel
+
+### Pull Requests
+- Merge pull request [#29](https://github.com/forbearing/gst/issues/29) from forbearing/dev
 
 
 <a name="v0.9.2"></a>
@@ -2056,7 +2078,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.4...HEAD
+[v0.9.4]: https://github.com/forbearing/gst/compare/v0.9.3...v0.9.4
+[v0.9.3]: https://github.com/forbearing/gst/compare/v0.9.2...v0.9.3
 [v0.9.2]: https://github.com/forbearing/gst/compare/v0.9.1-beta.2...v0.9.2
 [v0.9.1-beta.2]: https://github.com/forbearing/gst/compare/v0.9.1-beta.1...v0.9.1-beta.2
 [v0.9.1-beta.1]: https://github.com/forbearing/gst/compare/v0.9.1...v0.9.1-beta.1
