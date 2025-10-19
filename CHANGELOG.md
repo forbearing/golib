@@ -1,6 +1,23 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- **database:** relocate TransactionFunc 2
+- **database:** relocate TransactionFunc to end of file for better organization
+- **release:** generate CHANGEME.md
+
+### Enh
+- **database:** add typed LockMode for safer row-level locking in WithLock
+- **database:** extend WithIndex to support hint mode and update associated docs
+- **database:** add TransactionFunc and manual rollback support
+- **database:** enhance WithTimeRange to support flexible time filters
+
+### Feat
+- **database:** add WithTx to allow sharing an existing transaction across multile resource types
+
+### Refactor
+- rename interface DatabaseOption[M] method WithScope to WithPagination and update associated docs and test cases
+
 
 <a name="v0.9.5"></a>
 ## [v0.9.5] - 2025-10-16
