@@ -666,27 +666,61 @@ func (db *database[M]) applyCursorPagination() {
 	}
 }
 
-// WithTimeRange adds a time range condition to the query using BETWEEN clause.
-// Filters records where the specified column value falls between startTime and endTime (inclusive).
-// Returns the same instance if columnName is empty or either time parameter is zero value.
+// WithTimeRange filters records within a specific time range.
+// Supports flexible time range queries:
+//   - Both times provided: uses BETWEEN clause
+//   - Only startTime provided (endTime is zero): uses >= clause
+//   - Only endTime provided (startTime is zero): uses <= clause
+//   - Both times are zero: returns without filtering
 //
 // Parameters:
-//   - columnName: The database column name to filter on
-//   - startTime: The start time of the range (inclusive)
-//   - endTime: The end time of the range (inclusive)
+//   - columnName: The name of the time column to filter on
+//   - startTime: The start time of the range (inclusive). Use zero value to ignore.
+//   - endTime: The end time of the range (inclusive). Use zero value to ignore.
 //
-// Example:
+// Examples:
 //
+//	// Range query: created_at BETWEEN start AND end
 //	WithTimeRange("created_at", time.Now().AddDate(0, -1, 0), time.Now())
 //
-// WithTimeRange
+//	// After query: created_at >= start
+//	WithTimeRange("created_at", time.Now().AddDate(0, -1, 0), time.Time{})
+//
+//	// Before query: created_at <= end
+//	WithTimeRange("created_at", time.Time{}, time.Now())
 func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, endTime time.Time) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if len(columnName) == 0 || startTime.IsZero() || endTime.IsZero() {
+	if len(columnName) == 0 {
 		return db
 	}
-	db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
+
+	startIsZero := startTime.IsZero()
+	endIsZero := endTime.IsZero()
+
+	// Both times are zero, no filtering
+	if startIsZero && endIsZero {
+		return db
+	}
+
+	// Both times provided, use BETWEEN
+	if !startIsZero && !endIsZero {
+		db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
+		return db
+	}
+
+	// Only start time provided, use >=
+	if !startIsZero && endIsZero {
+		db.db = db.db.Where(fmt.Sprintf("`%s` >= ?", columnName), startTime)
+		return db
+	}
+
+	// Only end time provided, use <=
+	if startIsZero && !endIsZero {
+		db.db = db.db.Where(fmt.Sprintf("`%s` <= ?", columnName), endTime)
+		return db
+	}
+
 	return db
 }
 
