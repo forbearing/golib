@@ -137,7 +137,7 @@ type Database[M Model] interface {
 	Count(*int64) error
 	Cleanup() error
 	Health() error
-	TransactionFunc(fn func(tx Database[M]) error) error
+	TransactionFunc(fn func(tx any) error) error
 
 	DatabaseOption[M]
 }

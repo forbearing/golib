@@ -945,7 +945,7 @@ func (suite *DatabaseTestSuite) TestWithTx() {
 	categoryDB := suite.categoryDB
 
 	// Test WithTx with valid transaction
-	err := userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+	err := userDB.TransactionFunc(func(tx any) error {
 		// Create a user within transaction
 		user := &TestUser{
 			Name:     "TxUser",
@@ -953,14 +953,9 @@ func (suite *DatabaseTestSuite) TestWithTx() {
 			Age:      30,
 			IsActive: true,
 		}
-		if err := tx.Create(user); err != nil {
+		if err := userDB.WithTx(tx).Create(user); err != nil {
 			return err
 		}
-
-		// Use the same transaction for different resource types
-		// Get the underlying *gorm.DB from the transaction
-		// We need to access the internal db field through reflection or a getter method
-		// For now, let's use a simpler approach by passing the transaction parameter
 
 		// Test WithTx with product database - using the tx parameter directly
 		product := &TestProduct{
@@ -1017,7 +1012,7 @@ func (suite *DatabaseTestSuite) TestTransactionFuncMultiResource() {
 	productDB := suite.productDB
 
 	// Test successful multi-resource transaction
-	err := userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+	err := userDB.TransactionFunc(func(tx any) error {
 		// Create user
 		user := &TestUser{
 			Name:     "MultiUser",
@@ -1025,7 +1020,7 @@ func (suite *DatabaseTestSuite) TestTransactionFuncMultiResource() {
 			Age:      25,
 			IsActive: true,
 		}
-		if createErr := tx.Create(user); createErr != nil {
+		if createErr := userDB.WithTx(tx).Create(user); createErr != nil {
 			return createErr
 		}
 
@@ -1059,7 +1054,7 @@ func (suite *DatabaseTestSuite) TestTransactionFuncMultiResource() {
 	suite.Equal(user.ID, product.CategoryID)
 
 	// Test failed multi-resource transaction (should rollback all changes)
-	err = userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+	err = userDB.TransactionFunc(func(tx any) error {
 		// Create user
 		user := &TestUser{
 			Name:     "FailUser",
@@ -1067,7 +1062,7 @@ func (suite *DatabaseTestSuite) TestTransactionFuncMultiResource() {
 			Age:      30,
 			IsActive: true,
 		}
-		if createErr := tx.Create(user); createErr != nil {
+		if createErr := userDB.WithTx(tx).Create(user); createErr != nil {
 			return createErr
 		}
 

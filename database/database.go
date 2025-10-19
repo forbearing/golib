@@ -107,7 +107,8 @@ func (db *database[M]) reset() {
 	db.cursorNext = true
 	db.enableCursor = false
 
-	// db.db = DB.WithContext(context.Background())
+	// reset rollback function
+	db.rollbackFunc = nil
 }
 
 // prepare prepares the database instance for query execution by applying all configured
@@ -182,6 +183,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 func (db *database[M]) WithTx(tx any) types.Database[M] {
 	var empty *gorm.DB
 	if tx == nil || tx == new(gorm.DB) || tx == empty {
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithTx")).Warn("invalid database type, expect *gorm.DB")
 		return db
 	}
 
@@ -191,9 +193,16 @@ func (db *database[M]) WithTx(tx any) types.Database[M] {
 		return db
 	}
 
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.ins = _tx
+	// return &database[M]{
+	// 	ins:          _tx.Model(*new(M)),
+	// 	ctx:          db.ctx,
+	// 	rollbackFunc: db.rollbackFunc,
+	// }
+	db.ins = _tx.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+		NewDB:                  false,
+	})
+
 	return db
 }
 
@@ -857,13 +866,14 @@ func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 //	err := db.WithRollback(func() error {
 //	    // custom rollback logic
 //	    return nil
-//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	}).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
 //	    // Get the rollback function from the transaction context
-//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	    if txDB, ok := userDB.WithTx(tx).(*database[*model.User]); ok && txDB.rollbackFunc != nil {
 //	        rollbackFunc = txDB.rollbackFunc
 //	    }
 //
-//	    if err := tx.Create(&user); err != nil {
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //
@@ -1122,6 +1132,23 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 //	db.WithHaving("COUNT(*) > ? AND SUM(amount) > ?", 5, 1000)
 //
 // Note: WithHaving must be used with GROUP BY clause and aggregate functions.
+// WithHaving adds HAVING clause to filter grouped results.
+// Used with GROUP BY to apply conditions on aggregated data.
+// Similar to WHERE but operates on grouped results after aggregation.
+//
+// Parameters:
+//   - query: HAVING condition (string, map, or struct)
+//   - args: Optional arguments for parameterized queries
+//
+// Examples:
+//
+//	WithHaving("COUNT(*) > ?", 5)                    // Groups with more than 5 records
+//	WithHaving("AVG(price) > 100")                   // Groups with average price > 100
+//	WithHaving("SUM(amount) BETWEEN ? AND ?", 1000, 5000)  // Sum within range
+//	WithHaving(map[string]any{"COUNT(*)": 10})       // Exact count match
+//
+// Note: HAVING clause is typically used after GROUP BY operations.
+// Use WithGroup() before WithHaving() for proper SQL structure.
 func (db *database[M]) WithHaving(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -1251,6 +1278,26 @@ func (db *database[M]) WithLimit(limit int) types.Database[M] {
 // NOTE: WithExpand only workds on mysql foreign key relationship.
 // If you want expand the custom field that without gorm tag about foreign key definition,
 // you should define the GetAfter/ListAfter in model layer or service layoer.
+// WithExpand enables eager loading of related models with optional ordering.
+// It uses GORM's Preload functionality to load associated data in a single query.
+//
+// Parameters:
+//   - expand: Slice of relationship names to preload (e.g., ["Children", "Parent"])
+//   - order: Optional ordering for the preloaded relationships
+//
+// Example:
+//
+//	// Load user with their posts
+//	db.WithExpand([]string{"Posts"})
+//
+//	// Load user with posts ordered by creation date
+//	db.WithExpand([]string{"Posts"}, "created_at desc")
+//
+//	// Load nested relationships
+//	db.WithExpand([]string{"Posts.Comments", "Profile"})
+//
+// Note: The first field in the order string will be wrapped with backticks
+// to handle SQL keywords properly.
 func (db *database[M]) WithExpand(expand []string, order ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -1258,8 +1305,9 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 	if len(order) > 0 {
 		if len(order[0]) > 0 {
 			items := strings.Fields(order[0])
-			// 第一个是排序字段,必须加上反引号,因为排序的字符串可能是 sql 语句关键字
-			// 第二个可能是 "desc" 等关键字不需要加反引号
+			// The first item is the sort field, must be wrapped with backticks
+			// because the sort string might be a SQL keyword
+			// The second item might be "desc" etc., which doesn't need backticks
 			items[0] = "`" + items[0] + "`"
 			_orders = strings.Join(items, " ")
 		}
@@ -1309,27 +1357,29 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 	return db
 }
 
-// WithExclude omits specified fields from SELECT queries.
-// Useful when you want most fields except a few (opposite of WithSelect).
+// WithExclude excludes records that match specified conditions.
+// It adds NOT conditions to the query to filter out records with matching values.
 //
 // Parameters:
-//   - columns: Field names to exclude from the result
+//   - excludes: Map where keys are field names and values are slices of values to exclude
 //
 // Example:
 //
-//	WithExclude("password", "secret_key")  // Exclude sensitive fields
-//	WithExclude("large_text_field")  // Exclude large fields for performance
+//	// Exclude users with specific IDs
+//	excludes := map[string][]any{
+//		"id": {"user1", "user2", "user3"},
+//	}
+//	db.WithExclude(excludes)
 //
-// WithExclude excludes records that matchs a condition within a list.
-// For example:
-//   - If you want exclude users with specific ids from your query,
-//     you can use WithExclude(excludes),
-//     excludes: "id" as key, ["myid1", "myid2", "myid3"] as value.
-//   - If you want excludes users that id not ["myid1", "myid2"] and not not ["root", "noname"],
-//     the `excludes` should be:
-//     excludes := make(map[string][]any)
-//     excludes["id"] = []any{"myid1", "myid2"}
-//     excludes["name"] = []any{"root", "noname"}.
+//	// Exclude users with specific IDs and names
+//	excludes := map[string][]any{
+//		"id":   {"user1", "user2"},
+//		"name": {"admin", "root"},
+//	}
+//	db.WithExclude(excludes)
+//
+// Note: This method affects the WHERE clause, not the SELECT clause.
+// Use WithOmit() to exclude fields from SELECT queries.
 func (db *database[M]) WithExclude(excludes map[string][]any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -2940,27 +2990,31 @@ func (db *database[M]) Health() error {
 // Example usage:
 //
 //	// Simple transaction with automatic management
-//	err := database.Database[*model.User](nil).TransactionFunc(func(tx types.Database[*model.User]) error {
-//	    if err := tx.Create(&user); err != nil {
+//	err := database.Database[*model.User](nil).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // Automatic rollback
 //	    }
-//	    if err := tx.UpdateByID(user.ID, "status", "active"); err != nil {
+//	    if err := userDB.WithTx(tx).UpdateByID(user.ID, "status", "active"); err != nil {
 //	        return err // Automatic rollback
 //	    }
 //	    return nil // Automatic commit
 //	})
 //
 //	// Complex transaction with multiple operations
-//	err := database.Database[*model.Order](nil).TransactionFunc(func(tx types.Database[*model.Order]) error {
+//	err := database.Database[*model.Order](nil).TransactionFunc(func(tx any) error {
+//	    orderDB := database.Database[*model.Order](nil)
 //	    // All operations share the same transaction context
-//	    if err := tx.WithLock(consts.LockUpdate).Get(&order, orderID); err != nil {
+//	    if err := orderDB.WithTx(tx).WithLock(consts.LockUpdate).Get(&order, orderID); err != nil {
 //	        return err
 //	    }
 //	    order.Status = "processed"
-//	    return tx.Update(&order)
+//	    return orderDB.WithTx(tx).Update(&order)
 //	})
 //
 // TransactionFunc executes a function within a database transaction.
+// The tx parameter is the underlying GORM transaction instance (*gorm.DB).
+// Use WithTx(tx) to create database instances that operate within the transaction.
 // If the function returns an error, the transaction is rolled back.
 // If the function returns nil, the transaction is committed.
 // When used with WithRollback, you can call the rollback function directly
@@ -2968,8 +3022,9 @@ func (db *database[M]) Health() error {
 //
 // Example with automatic transaction management:
 //
-//	err := db.TransactionFunc(func(tx types.Database[M]) error {
-//	    if err := tx.Create(&user); err != nil {
+//	err := db.TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //	    return nil // automatic commit
@@ -2981,13 +3036,14 @@ func (db *database[M]) Health() error {
 //	err := db.WithRollback(func() error {
 //	    // custom rollback logic
 //	    return nil
-//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	}).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
 //	    // Get the rollback function from the transaction context
-//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	    if txDB, ok := userDB.WithTx(tx).(*database[*model.User]); ok && txDB.rollbackFunc != nil {
 //	        rollbackFunc = txDB.rollbackFunc
 //	    }
 //
-//	    if err := tx.Create(&user); err != nil {
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //
@@ -2999,7 +3055,7 @@ func (db *database[M]) Health() error {
 //	    }
 //	    return nil // automatic commit
 //	})
-func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) error {
+func (db *database[M]) TransactionFunc(fn func(tx any) error) error {
 	if err := db.prepare(); err != nil {
 		return err
 	}
@@ -3007,20 +3063,13 @@ func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) erro
 	begin := time.Now()
 
 	return db.ins.Transaction(func(tx *gorm.DB) error {
-		// Create a new database instance for the transaction
-		txDB := &database[M]{
-			ins:          tx,
-			ctx:          db.ctx,
-			rollbackFunc: db.rollbackFunc, // inherit rollback function
-		}
-
-		// Execute the user function with the transaction database
-		if err := fn(txDB); err != nil {
+		// Execute the user function with the transaction gorm.DB instance
+		if err := fn(tx); err != nil {
 			// Check if this is a manual rollback request
 			if errors.Is(err, ErrManualRollback) {
 				// Execute custom rollback logic if provided
-				if txDB.rollbackFunc != nil {
-					if rollbackErr := txDB.rollbackFunc(); rollbackErr != nil {
+				if db.rollbackFunc != nil {
+					if rollbackErr := db.rollbackFunc(); rollbackErr != nil {
 						logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Errorz("custom rollback function failed",
 							zap.Error(rollbackErr),
 							zap.String("cost", util.FormatDurationSmart(time.Since(begin))),

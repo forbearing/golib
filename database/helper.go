@@ -191,6 +191,9 @@ func buildCacheKey(stmt *gorm.Statement, action string, id ...string) (prefix, t
 	return prefix, table, key
 }
 
+// boolToInt converts a boolean value to an integer.
+// Returns 1 for true, 0 for false.
+// Useful for database operations that require integer representations of boolean values.
 func boolToInt(b bool) int {
 	if b {
 		return 1
@@ -306,6 +309,15 @@ func traceModelHook[M types.Model](ctx *types.DatabaseContext, phase consts.Phas
 // 	return err
 // }
 
+// contains checks if a string item exists in a string slice.
+// Uses a map-based approach for O(n) time complexity with O(n) space complexity.
+// More efficient than linear search for larger slices.
+//
+// Parameters:
+//   - slice: The string slice to search in
+//   - item: The string item to search for
+//
+// Returns true if the item is found, false otherwise.
 func contains(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
 	for _, s := range slice {
@@ -315,6 +327,22 @@ func contains(slice []string, item string) bool {
 	return ok
 }
 
+// indirectTypeAndValue recursively dereferences pointer types and values.
+// Follows pointer chains until reaching a non-pointer type.
+// Used for reflection operations that need to work with the underlying concrete type.
+//
+// Parameters:
+//   - t: The reflect.Type to dereference
+//   - v: The reflect.Value to dereference
+//
+// Returns:
+//   - reflect.Type: The final non-pointer type
+//   - reflect.Value: The final non-pointer value
+//   - bool: true if successful, false if encountered nil pointer
+//
+// Example:
+//   - Input: **int (pointer to pointer to int)
+//   - Output: int (the underlying int type)
 func indirectTypeAndValue(t reflect.Type, v reflect.Value) (reflect.Type, reflect.Value, bool) {
 	for t.Kind() == reflect.Pointer {
 		if v.IsNil() {
