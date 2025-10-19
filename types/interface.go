@@ -177,6 +177,23 @@ type DatabaseOption[M Model] interface {
 	// WithDB returns a new database manipulator, only support *gorm.DB.
 	WithDB(any) Database[M]
 
+	// WithTx returns a new database manipulator with transaction context.
+	// This method allows using an existing transaction to operate on multiple resource types.
+	// The tx parameter should be a *gorm.DB transaction instance or any compatible transaction type.
+	// Example:
+	//
+	//	database.Database[*User](nil).TransactionFunc(func(tx any) error {
+	//	    // Use the same transaction for different resource types
+	//	    if err := database.Database[*User](nil).WithTx(tx).Create(&user); err != nil {
+	//	        return err
+	//	    }
+	//	    if err := database.Database[*Order](nil).WithTx(tx).Create(&order); err != nil {
+	//	        return err
+	//	    }
+	//	    return nil
+	//	})
+	WithTx(tx any) Database[M]
+
 	// WithTable multiple custom table, always used with the method `WithDB`.
 	WithTable(name string) Database[M]
 
@@ -326,13 +343,29 @@ type DatabaseOption[M Model] interface {
 	//     excludes["name"] = []any{"root", "noname"}.
 	WithExclude(map[string][]any) Database[M]
 
-	// WithOrder
-	// For example:
-	// - WithOrder("name") // default ASC.
-	// - WithOrder("name desc")
-	// - WithOrder("created_at")
-	// - WithOrder("updated_at desc")
-	// NOTE: you cannot using the mysql keyword, such as: "order", "limit".
+	// WithOrder adds ORDER BY clause to sort query results.
+	// Supports multiple sorting criteria and directions (ASC/DESC).
+	// Column names are automatically wrapped with backticks to handle SQL keywords.
+	//
+	// Parameters:
+	//   - order: Column name(s) with optional direction. Multiple columns separated by commas.
+	//            Direction can be "ASC" (default) or "DESC" (case-insensitive).
+	//
+	// Examples:
+	//
+	//	WithOrder("name")                        // Sort by name ascending (default)
+	//	WithOrder("name ASC")                    // Sort by name ascending (explicit)
+	//	WithOrder("name asc")                    // Sort by name ascending (case-insensitive)
+	//	WithOrder("created_at DESC")             // Sort by creation date descending
+	//	WithOrder("created_at desc")             // Sort by creation date descending (case-insensitive)
+	//	WithOrder("priority DESC, name ASC")     // Multiple sort criteria
+	//	WithOrder("priority desc, name asc")     // Multiple sort criteria (case-insensitive)
+	//	WithOrder("order DESC, limit ASC")       // Handles SQL keywords safely
+	//
+	// Note:
+	//   - Column names are automatically escaped with backticks to prevent SQL injection
+	//     and handle reserved keywords like "order", "limit", etc.
+	//   - Direction keywords (ASC/DESC) are case-insensitive and will be converted to uppercase.
 	WithOrder(order string) Database[M]
 
 	// WithExpand, for "foreign key".

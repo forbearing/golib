@@ -59,7 +59,7 @@ var (
 // database inplement types.Database[T types.Model] interface.
 type database[M types.Model] struct {
 	mu  sync.Mutex
-	db  *gorm.DB
+	ins *gorm.DB
 	ctx *types.DatabaseContext
 
 	// options
@@ -113,11 +113,11 @@ func (db *database[M]) reset() {
 // prepare prepares the database instance for query execution by applying all configured
 // query conditions, joins, and other settings to the underlying GORM database instance.
 func (db *database[M]) prepare() error {
-	if db.db == nil || db.db == new(gorm.DB) {
+	if db.ins == nil || db.ins == new(gorm.DB) {
 		return ErrInvalidDB
 	}
 	if db.shouldAutoMigrate {
-		if err := db.db.AutoMigrate(new(M)); err != nil {
+		if err := db.ins.AutoMigrate(new(M)); err != nil {
 			return err
 		}
 	}
@@ -148,7 +148,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	ctx := db.db.Statement.Context
+	ctx := db.ins.Statement.Context
 	if ctx == nil {
 		ctx = context.Background()
 		if db.ctx != nil {
@@ -157,10 +157,43 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 	}
 	// db.shouldAutoMigrate = true
 	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		db.db = _db.WithContext(ctx).Debug().Limit(defaultLimit)
+		db.ins = _db.WithContext(ctx).Debug().Limit(defaultLimit)
 	} else {
-		db.db = _db.WithContext(ctx).Limit(defaultLimit)
+		db.ins = _db.WithContext(ctx).Limit(defaultLimit)
 	}
+	return db
+}
+
+// WithTx returns a new database manipulator with transaction context.
+// This method allows using an existing transaction to operate on multiple resource types.
+// The tx parameter should be a *gorm.DB transaction instance or any compatible transaction type.
+// Example:
+//
+//	database.Database[*User](nil).TransactionFunc(func(tx any) error {
+//	    // Use the same transaction for different resource types
+//	    if err := database.Database[*User](nil).WithTx(tx).Create(&user); err != nil {
+//	        return err
+//	    }
+//	    if err := database.Database[*Order](nil).WithTx(tx).Create(&order); err != nil {
+//	        return err
+//	    }
+//	    return nil
+//	})
+func (db *database[M]) WithTx(tx any) types.Database[M] {
+	var empty *gorm.DB
+	if tx == nil || tx == new(gorm.DB) || tx == empty {
+		return db
+	}
+
+	_tx, ok := tx.(*gorm.DB)
+	if !ok || _tx == nil {
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithTx")).Warn("invalid database type, expect *gorm.DB")
+		return db
+	}
+
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.ins = _tx
 	return db
 }
 
@@ -191,7 +224,7 @@ func (db *database[M]) WithBatchSize(size int) types.Database[M] {
 func (db *database[M]) WithDebug() types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Debug()
+	db.ins = db.ins.Debug()
 	return db
 }
 
@@ -253,15 +286,15 @@ func (db *database[M]) WithIndex(indexName string, hint ...consts.IndexHintMode)
 	// Apply the appropriate hint
 	switch hintMode {
 	case consts.IndexHintUse:
-		db.db = db.db.Clauses(hints.UseIndex(indexName))
+		db.ins = db.ins.Clauses(hints.UseIndex(indexName))
 	case consts.IndexHintForce:
-		db.db = db.db.Clauses(hints.ForceIndex(indexName))
+		db.ins = db.ins.Clauses(hints.ForceIndex(indexName))
 	case consts.IndexHintIgnore:
-		db.db = db.db.Clauses(hints.IgnoreIndex(indexName))
+		db.ins = db.ins.Clauses(hints.IgnoreIndex(indexName))
 	default:
 		logger.Database.Warnf(`unknown index hint mode: %s, using "USE INDEX"`, hintMode)
 		// Default to USE INDEX for unknown modes
-		db.db = db.db.Clauses(hints.UseIndex(indexName))
+		db.ins = db.ins.Clauses(hints.UseIndex(indexName))
 	}
 
 	return db
@@ -437,16 +470,16 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 				regexpVal = strings.TrimPrefix(regexpVal, "|")
 				// db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
 				if db.orQuery {
-					db.db = db.db.Or(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+					db.ins = db.ins.Or(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
 				} else {
-					db.db = db.db.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
+					db.ins = db.ins.Where(fmt.Sprintf("`%s` REGEXP ?", k), regexpVal)
 				}
 			} else { // If the query string has only one value, using LIKE
 				// db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
 				if db.orQuery {
-					db.db = db.db.Or(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+					db.ins = db.ins.Or(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
 				} else {
-					db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
+					db.ins = db.ins.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
 				}
 			}
 		}
@@ -471,9 +504,9 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 			}
 			// db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 			if db.orQuery {
-				db.db = db.db.Or(fmt.Sprintf("`%s` IN (?)", k), items)
+				db.ins = db.ins.Or(fmt.Sprintf("`%s` IN (?)", k), items)
 			} else {
-				db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
+				db.ins = db.ins.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 			}
 		}
 	}
@@ -641,7 +674,7 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Where(query, args...)
+	db.ins = db.ins.Where(query, args...)
 	return db
 }
 
@@ -689,14 +722,14 @@ func (db *database[M]) applyCursorPagination() {
 		// Apply cursor condition based on direction
 		if db.cursorNext {
 			// Next page: get records after the cursor
-			db.db = db.db.Where(fmt.Sprintf("`%s` > ?", db.cursorField), db.cursorValue)
+			db.ins = db.ins.Where(fmt.Sprintf("`%s` > ?", db.cursorField), db.cursorValue)
 			// Order by cursor field ascending for next page
-			db.db = db.db.Order(fmt.Sprintf("`%s` ASC", db.cursorField))
+			db.ins = db.ins.Order(fmt.Sprintf("`%s` ASC", db.cursorField))
 		} else {
 			// Previous page: get records before the cursor
-			db.db = db.db.Where(fmt.Sprintf("`%s` < ?", db.cursorField), db.cursorValue)
+			db.ins = db.ins.Where(fmt.Sprintf("`%s` < ?", db.cursorField), db.cursorValue)
 			// Order by cursor field descending for previous page
-			db.db = db.db.Order(fmt.Sprintf("`%s` DESC", db.cursorField))
+			db.ins = db.ins.Order(fmt.Sprintf("`%s` DESC", db.cursorField))
 		}
 	}
 }
@@ -740,19 +773,19 @@ func (db *database[M]) WithTimeRange(columnName string, startTime time.Time, end
 
 	// Both times provided, use BETWEEN
 	if !startIsZero && !endIsZero {
-		db.db = db.db.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
+		db.ins = db.ins.Where(fmt.Sprintf("`%s` BETWEEN ? AND ?", columnName), startTime, endTime)
 		return db
 	}
 
 	// Only start time provided, use >=
 	if !startIsZero && endIsZero {
-		db.db = db.db.Where(fmt.Sprintf("`%s` >= ?", columnName), startTime)
+		db.ins = db.ins.Where(fmt.Sprintf("`%s` >= ?", columnName), startTime)
 		return db
 	}
 
 	// Only end time provided, use <=
 	if startIsZero && !endIsZero {
-		db.db = db.db.Where(fmt.Sprintf("`%s` <= ?", columnName), endTime)
+		db.ins = db.ins.Where(fmt.Sprintf("`%s` <= ?", columnName), endTime)
 		return db
 	}
 
@@ -776,7 +809,7 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if len(columns) == 0 {
-		db.db = db.db.Select(defaultsColumns)
+		db.ins = db.ins.Select(defaultsColumns)
 		return db
 	}
 	_columns := make([]string, 0)
@@ -789,7 +822,7 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 	if len(_columns) == 0 {
 		return db
 	}
-	db.db = db.db.Select(append(_columns, defaultsColumns...))
+	db.ins = db.ins.Select(append(_columns, defaultsColumns...))
 	return db
 }
 
@@ -810,7 +843,7 @@ func (db *database[M]) WithSelect(columns ...string) types.Database[M] {
 func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Select(query, args...)
+	db.ins = db.ins.Select(query, args...)
 	return db
 }
 
@@ -912,7 +945,7 @@ func (db *database[M]) WithLock(mode ...consts.LockMode) types.Database[M] {
 		}
 	}
 
-	db.db = db.db.Clauses(clause.Locking{
+	db.ins = db.ins.Clauses(clause.Locking{
 		Strength: strength,
 		Options:  options,
 	})
@@ -1021,7 +1054,7 @@ func (db *database[M]) WithJoinRaw(query string, args ...any) types.Database[M] 
 		return db
 	}
 
-	db.db = db.db.Joins(query, args...)
+	db.ins = db.ins.Joins(query, args...)
 	return db
 }
 
@@ -1056,7 +1089,7 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 	defer db.mu.Unlock()
 	name = strings.TrimSpace(name)
 	if len(name) > 0 {
-		db.db = db.db.Group(name)
+		db.ins = db.ins.Group(name)
 	}
 	return db
 }
@@ -1092,33 +1125,33 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 func (db *database[M]) WithHaving(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Having(query, args...)
+	db.ins = db.ins.Having(query, args...)
 	return db
 }
 
 // WithOrder adds ORDER BY clause to sort query results.
 // Supports multiple sorting criteria and directions (ASC/DESC).
+// Column names are automatically wrapped with backticks to handle SQL keywords.
 //
 // Parameters:
-//   - value: Column name with optional direction (e.g., "name ASC", "created_at DESC")
+//   - order: Column name(s) with optional direction. Multiple columns separated by commas.
+//     Direction can be "ASC" (default) or "DESC" (case-insensitive).
 //
-// Example:
+// Examples:
 //
-//	WithOrder("name ASC")  // Sort by name ascending
-//	WithOrder("created_at DESC")  // Sort by creation date descending
-//	WithOrder("priority DESC, name ASC")  // Multiple sort criteria
+//	WithOrder("name")                        // Sort by name ascending (default)
+//	WithOrder("name ASC")                    // Sort by name ascending (explicit)
+//	WithOrder("name asc")                    // Sort by name ascending (case-insensitive)
+//	WithOrder("created_at DESC")             // Sort by creation date descending
+//	WithOrder("created_at desc")             // Sort by creation date descending (case-insensitive)
+//	WithOrder("priority DESC, name ASC")     // Multiple sort criteria
+//	WithOrder("priority desc, name asc")     // Multiple sort criteria (case-insensitive)
+//	WithOrder("order DESC, limit ASC")       // Handles SQL keywords safely
 //
-// WithOrder
-// reference: https://www.cnblogs.com/Braveliu/p/10654091.html
-// For example:
-// - WithOrder("name") // default ASC.
-// - WithOrder("name desc")
-// - WithOrder("created_at")
-// - WithOrder("updated_at desc")
-// multiple keyw order, eg:
-// - "field1, field2 desc, field3 asc"
-// - "created_at desc, id desc"
-// NOTE: you can using the mysql keyword, such as: "order", "limit".
+// Note:
+//   - Column names are automatically escaped with backticks to prevent SQL injection
+//     and handle reserved keywords like "order", "limit", etc.
+//   - Direction keywords (ASC/DESC) are case-insensitive and will be converted to uppercase.
 func (db *database[M]) WithOrder(order string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -1140,7 +1173,7 @@ func (db *database[M]) WithOrder(order string) types.Database[M] {
 				}
 			}
 			_orders := strings.Join(items, " ")
-			db.db = db.db.Order(_orders)
+			db.ins = db.ins.Order(_orders)
 		}
 	}
 	return db
@@ -1170,7 +1203,7 @@ func (db *database[M]) WithPagination(page, size int) types.Database[M] {
 		size = defaultLimit
 	}
 	offset := (page - 1) * size
-	db.db = db.db.Scopes(func(d *gorm.DB) *gorm.DB {
+	db.ins = db.ins.Scopes(func(d *gorm.DB) *gorm.DB {
 		return d.Offset(offset).Limit(size)
 	})
 	return db
@@ -1193,7 +1226,7 @@ func (db *database[M]) WithPagination(page, size int) types.Database[M] {
 func (db *database[M]) WithLimit(limit int) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Limit(limit)
+	db.ins = db.ins.Limit(limit)
 	return db
 }
 
@@ -1264,11 +1297,11 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 		switch len(items) {
 		case 0:
 		case 1:
-			db.db = db.db.Preload(expand[i], withOrder)
+			db.ins = db.ins.Preload(expand[i], withOrder)
 		default:
 			for j := range items {
 				// fmt.Println("================== ", strings.Join(items[0:j+1], "."))
-				db.db = db.db.Preload(strings.Join(items[0:j+1], "."), withOrder)
+				db.ins = db.ins.Preload(strings.Join(items[0:j+1], "."), withOrder)
 			}
 		}
 	}
@@ -1301,7 +1334,7 @@ func (db *database[M]) WithExclude(excludes map[string][]any) types.Database[M] 
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	for k, v := range excludes {
-		db.db = db.db.Not(k, v)
+		db.ins = db.ins.Not(k, v)
 	}
 	return db
 }
@@ -1366,7 +1399,7 @@ func (db *database[M]) WithCache(enable ...bool) types.Database[M] {
 func (db *database[M]) WithOmit(columns ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.db = db.db.Omit(columns...)
+	db.ins = db.ins.Omit(columns...)
 	return db
 }
 
@@ -1494,7 +1527,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	}
 	for i := 0; i < len(objs); i += batchSize {
 		end := min(i+batchSize, len(objs))
-		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			return err
 		}
 	}
@@ -1627,7 +1660,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		}
 		for i := 0; i < len(objs); i += batchSize {
 			end := min(i+batchSize, len(objs))
-			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
+			if err = db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Unscoped().Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -1648,7 +1681,7 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 		}
 		for i := 0; i < len(objs); i += batchSize {
 			end := min(i+batchSize, len(objs))
-			if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
+			if err = db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Delete(objs[i:end]).Error; err != nil {
 				return err
 			}
 			if db.enableCache {
@@ -1757,7 +1790,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	}
 	for i := 0; i < len(objs); i += batchSize {
 		end := min(i+batchSize, len(objs))
-		if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
+		if err = db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Save(objs[i:end]).Error; err != nil {
 			zap.S().Error(err)
 			return err
 		}
@@ -1830,7 +1863,7 @@ func (db *database[M]) UpdateByID(id string, key string, val any) (err error) {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
+	if err = db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Model(*new(M)).Where("id = ?", id).Update(key, val).Error; err != nil {
 		return err
 	}
 	if db.enableCache {
@@ -1876,7 +1909,7 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
 	if _dest, e := cache.Cache[[]M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -1976,7 +2009,7 @@ QUERY:
 	}
 	// apply cursor-based pagination.
 	db.applyCursorPagination()
-	if err = db.db.Table(tableName).Find(dest).Error; err != nil {
+	if err = db.ins.Table(tableName).Find(dest).Error; err != nil {
 		return err
 	}
 	// If cursor-based pagination is enabled and this is a previous page query,
@@ -2061,7 +2094,7 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2168,10 +2201,10 @@ QUERY:
 	// 	return err
 	// }
 	if len(tableName) == 0 {
-		_, tableName, _ = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
+		_, tableName, _ = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
 	}
 	dest.ClearID()
-	if err = db.db.Table(tableName).Where(fmt.Sprintf("`%s`.`id` = ?", tableName), id).Find(dest).Error; err != nil {
+	if err = db.ins.Table(tableName).Where(fmt.Sprintf("`%s`.`id` = ?", tableName), id).Find(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
@@ -2233,7 +2266,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
 	if _cache, e := cache.Cache[int64]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2282,7 +2315,7 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Model(*new(M)).Limit(-1).Count(count).Error; err != nil {
+	if err = db.ins.Table(tableName).Model(*new(M)).Limit(-1).Count(count).Error; err != nil {
 		logger.Cache.Error(err)
 		return err
 	}
@@ -2339,7 +2372,7 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2431,7 +2464,7 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).First(dest).Error; err != nil {
+	if err = db.ins.Table(tableName).First(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter
@@ -2495,7 +2528,7 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2587,7 +2620,7 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Last(dest).Error; err != nil {
+	if err = db.ins.Table(tableName).Last(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter
@@ -2651,7 +2684,7 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	if !db.enableCache {
 		goto QUERY
 	}
-	_, _, key = buildCacheKey(db.db.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
+	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
 		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
 		goto QUERY
@@ -2743,7 +2776,7 @@ QUERY:
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if err = db.db.Table(tableName).Take(dest).Error; err != nil {
+	if err = db.ins.Table(tableName).Take(dest).Error; err != nil {
 		return err
 	}
 	// Invoke model hook: GetAfter.
@@ -2804,7 +2837,7 @@ func (db *database[M]) Cleanup() (err error) {
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	return db.db.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
+	return db.ins.Session(&gorm.Session{DryRun: db.tryRun}).Table(tableName).Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
 }
 
 // Health performs comprehensive database health checks including connectivity,
@@ -2838,7 +2871,7 @@ func (db *database[M]) Health() error {
 	begin := time.Now()
 
 	// 1.check database connection
-	if err := db.db.Exec("SELECT 1").Error; err != nil {
+	if err := db.ins.Exec("SELECT 1").Error; err != nil {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("database connection check failed",
 			zap.Error(err),
 			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
@@ -2847,7 +2880,7 @@ func (db *database[M]) Health() error {
 	}
 
 	// 2.check database connection pool
-	sqlDB, err := db.db.DB()
+	sqlDB, err := db.ins.DB()
 	if err != nil {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("Health")).Errorz("get sql.DB instance failed",
 			zap.Error(err),
@@ -2973,10 +3006,10 @@ func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) erro
 
 	begin := time.Now()
 
-	return db.db.Transaction(func(tx *gorm.DB) error {
+	return db.ins.Transaction(func(tx *gorm.DB) error {
 		// Create a new database instance for the transaction
 		txDB := &database[M]{
-			db:           tx,
+			ins:          tx,
 			ctx:          db.ctx,
 			rollbackFunc: db.rollbackFunc, // inherit rollback function
 		}
@@ -3060,7 +3093,7 @@ func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
 	}
 
 	return &database[M]{
-		db:  ins,
+		ins: ins,
 		ctx: dbctx,
 	}
 }

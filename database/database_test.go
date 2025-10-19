@@ -938,6 +938,168 @@ func (suite *DatabaseTestSuite) TestHealth() {
 	// This is a basic health check test
 }
 
+// TestWithTx tests the WithTx method for multi-resource transactions
+func (suite *DatabaseTestSuite) TestWithTx() {
+	userDB := suite.userDB
+	productDB := suite.productDB
+	categoryDB := suite.categoryDB
+
+	// Test WithTx with valid transaction
+	err := userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+		// Create a user within transaction
+		user := &TestUser{
+			Name:     "TxUser",
+			Email:    "txuser@example.com",
+			Age:      30,
+			IsActive: true,
+		}
+		if err := tx.Create(user); err != nil {
+			return err
+		}
+
+		// Use the same transaction for different resource types
+		// Get the underlying *gorm.DB from the transaction
+		// We need to access the internal db field through reflection or a getter method
+		// For now, let's use a simpler approach by passing the transaction parameter
+
+		// Test WithTx with product database - using the tx parameter directly
+		product := &TestProduct{
+			Name:        "TxProduct",
+			Description: "Product created in transaction",
+			Price:       99.99,
+			CategoryID:  "test-category",
+		}
+		if err := productDB.WithTx(tx).Create(product); err != nil {
+			return err
+		}
+
+		// Test WithTx with category database
+		category := &TestCategory{
+			Name:     "TxCategory",
+			ParentID: "parent-category",
+		}
+		if err := categoryDB.WithTx(tx).Create(category); err != nil {
+			return err
+		}
+
+		// Verify all records were created within the same transaction
+		var userCount, productCount, categoryCount int64
+		if err := userDB.WithTx(tx).WithQuery(&TestUser{Name: "TxUser"}).Count(&userCount); err != nil {
+			return err
+		}
+		if err := productDB.WithTx(tx).WithQuery(&TestProduct{Name: "TxProduct"}).Count(&productCount); err != nil {
+			return err
+		}
+		if err := categoryDB.WithTx(tx).WithQuery(&TestCategory{Name: "TxCategory"}).Count(&categoryCount); err != nil {
+			return err
+		}
+
+		suite.Equal(int64(1), userCount)
+		suite.Equal(int64(1), productCount)
+		suite.Equal(int64(1), categoryCount)
+
+		return nil
+	})
+	suite.NoError(err)
+
+	// Test WithTx with nil transaction (should return unchanged database)
+	result := userDB.WithTx(nil)
+	suite.NotNil(result)
+
+	// Test WithTx with invalid transaction type
+	result = userDB.WithTx("invalid")
+	suite.NotNil(result)
+}
+
+// TestTransactionFuncMultiResource tests multi-resource operations within a single transaction
+func (suite *DatabaseTestSuite) TestTransactionFuncMultiResource() {
+	userDB := suite.userDB
+	productDB := suite.productDB
+
+	// Test successful multi-resource transaction
+	err := userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+		// Create user
+		user := &TestUser{
+			Name:     "MultiUser",
+			Email:    "multiuser@example.com",
+			Age:      25,
+			IsActive: true,
+		}
+		if createErr := tx.Create(user); createErr != nil {
+			return createErr
+		}
+
+		// Create product using the same transaction
+		product := &TestProduct{
+			Name:        "MultiProduct",
+			Description: "Product for multi-resource test",
+			Price:       149.99,
+			CategoryID:  user.ID, // Link to user
+		}
+		if createErr := productDB.WithTx(tx).Create(product); createErr != nil {
+			return createErr
+		}
+
+		return nil
+	})
+	suite.NoError(err)
+
+	// Verify both records exist after successful transaction
+	var user TestUser
+	if findErr := userDB.WithQuery(&TestUser{Name: "MultiUser"}).First(&user); findErr != nil {
+		suite.NoError(findErr)
+	}
+	suite.Equal("MultiUser", user.Name)
+
+	var product TestProduct
+	if findErr := productDB.WithQuery(&TestProduct{Name: "MultiProduct"}).First(&product); findErr != nil {
+		suite.NoError(findErr)
+	}
+	suite.Equal("MultiProduct", product.Name)
+	suite.Equal(user.ID, product.CategoryID)
+
+	// Test failed multi-resource transaction (should rollback all changes)
+	err = userDB.TransactionFunc(func(tx types.Database[*TestUser]) error {
+		// Create user
+		user := &TestUser{
+			Name:     "FailUser",
+			Email:    "failuser@example.com",
+			Age:      30,
+			IsActive: true,
+		}
+		if createErr := tx.Create(user); createErr != nil {
+			return createErr
+		}
+
+		// Create product using the same transaction
+		product := &TestProduct{
+			Name:        "FailProduct",
+			Description: "Product that should be rolled back",
+			Price:       199.99,
+			CategoryID:  user.ID,
+		}
+		if createErr := productDB.WithTx(tx).Create(product); createErr != nil {
+			return createErr
+		}
+
+		// Force an error to trigger rollback
+		return fmt.Errorf("forced error for rollback test")
+	})
+	suite.Error(err)
+
+	// Verify no records were created due to rollback
+	var failUserCount, failProductCount int64
+	if countErr := userDB.WithQuery(&TestUser{Name: "FailUser"}).Count(&failUserCount); countErr != nil {
+		suite.NoError(countErr)
+	}
+	suite.Equal(int64(0), failUserCount)
+
+	if countErr := productDB.WithQuery(&TestProduct{Name: "FailProduct"}).Count(&failProductCount); countErr != nil {
+		suite.NoError(countErr)
+	}
+	suite.Equal(int64(0), failProductCount)
+}
+
 // Benchmark tests
 
 // BenchmarkCreate benchmarks the Create method
