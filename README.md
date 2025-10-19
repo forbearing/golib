@@ -137,6 +137,7 @@ type Database[M Model] interface {
 	Count(*int64) error
 	Cleanup() error
 	Health() error
+	TransactionFunc(fn func(tx Database[M]) error) error
 
 	DatabaseOption[M]
 }
@@ -153,12 +154,11 @@ type DatabaseOption[M Model] interface {
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
 	WithSelect(columns ...string) Database[M]
 	WithSelectRaw(query any, args ...any) Database[M]
-	WithIndex(index string) Database[M]
-	WithTransaction(tx any) Database[M]
+	WithIndex(indexName string, hint ...consts.IndexHintMode) Database[M]
 	WithJoinRaw(query string, args ...any) Database[M]
-	WithLock(mode ...string) Database[M]
+	WithLock(mode ...consts.LockMode) Database[M]
 	WithBatchSize(size int) Database[M]
-	WithScope(page, size int) Database[M]
+	WithPagination(page, size int) Database[M]
 	WithLimit(limit int) Database[M]
 	WithExclude(map[string][]any) Database[M]
 	WithOrder(order string) Database[M]

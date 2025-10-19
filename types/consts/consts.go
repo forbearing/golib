@@ -396,6 +396,36 @@ const LayoutTimeEncoder = "2006-01-02|15:04:05"
 
 const IMPORT_PATH_MODEL = `"github.com/forbearing/gst/model"`
 
+// IndexHintMode represents database index hint modes
+type IndexHintMode string
+
+const (
+	// IndexHintUse suggests the database to use the specified index
+	IndexHintUse IndexHintMode = "USE"
+	// IndexHintForce forces the database to use the specified index
+	IndexHintForce IndexHintMode = "FORCE"
+	// IndexHintIgnore tells the database to ignore the specified index
+	IndexHintIgnore IndexHintMode = "IGNORE"
+)
+
+// LockMode represents the lock mode for database row-level locking
+type LockMode string
+
+const (
+	// LockUpdate represents FOR UPDATE lock mode
+	LockUpdate LockMode = "UPDATE"
+	// LockShare represents FOR SHARE lock mode
+	LockShare LockMode = "SHARE"
+	// LockUpdateNoWait represents FOR UPDATE NOWAIT lock mode
+	LockUpdateNoWait LockMode = "UPDATE_NOWAIT"
+	// LockShareNoWait represents FOR SHARE NOWAIT lock mode
+	LockShareNoWait LockMode = "SHARE_NOWAIT"
+	// LockUpdateSkipLocked represents FOR UPDATE SKIP LOCKED lock mode
+	LockUpdateSkipLocked LockMode = "UPDATE_SKIP_LOCKED"
+	// LockShareSkipLocked represents FOR SHARE SKIP LOCKED lock mode
+	LockShareSkipLocked LockMode = "SHARE_SKIP_LOCKED"
+)
+
 type OP string
 
 const (

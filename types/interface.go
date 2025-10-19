@@ -163,6 +163,10 @@ type Database[M Model] interface {
 	// Health checks the database connectivity and basic operations.
 	// It returns nil if the database is healthy, otherwise returns an error.
 	Health() error
+	// TransactionFunc executes a function within a transaction with automatic rollback on error.
+	// If the function returns an error, the transaction is automatically rolled back.
+	// If the function completes successfully, the transaction is committed.
+	TransactionFunc(fn func(tx Database[M]) error) error
 
 	DatabaseOption[M]
 }
@@ -172,6 +176,23 @@ type Database[M Model] interface {
 type DatabaseOption[M Model] interface {
 	// WithDB returns a new database manipulator, only support *gorm.DB.
 	WithDB(any) Database[M]
+
+	// WithTx returns a new database manipulator with transaction context.
+	// This method allows using an existing transaction to operate on multiple resource types.
+	// The tx parameter should be a *gorm.DB transaction instance or any compatible transaction type.
+	// Example:
+	//
+	//	database.Database[*User](nil).TransactionFunc(func(tx any) error {
+	//	    // Use the same transaction for different resource types
+	//	    if err := database.Database[*User](nil).WithTx(tx).Create(&user); err != nil {
+	//	        return err
+	//	    }
+	//	    if err := database.Database[*Order](nil).WithTx(tx).Create(&order); err != nil {
+	//	        return err
+	//	    }
+	//	    return nil
+	//	})
+	WithTx(tx any) Database[M]
 
 	// WithTable multiple custom table, always used with the method `WithDB`.
 	WithTable(name string) Database[M]
@@ -238,11 +259,20 @@ type DatabaseOption[M Model] interface {
 	// WithSelectRaw
 	WithSelectRaw(query any, args ...any) Database[M]
 
-	// WithIndex use specific index to query.
-	WithIndex(index string) Database[M]
+	// WithIndex specifies database index hints for query optimization.
+	// The first parameter is the index name, and the second optional parameter specifies the hint type.
+	// If no hint is provided, defaults to USE INDEX.
+	// Usage:
+	//
+	//	WithIndex("idx_name")                           - defaults to USE INDEX
+	//	WithIndex("idx_name", consts.IndexHintUse)      - suggests using the index
+	//	WithIndex("idx_name", consts.IndexHintForce)    - forces using the index
+	//	WithIndex("idx_name", consts.IndexHintIgnore)   - ignores the index
+	WithIndex(indexName string, hint ...consts.IndexHintMode) Database[M]
 
-	// WithTransaction executes operations within a transaction.
-	WithTransaction(tx any) Database[M]
+	// WithRollback configures a rollback function for manual transaction control.
+	// This method should be used with TransactionFunc to enable manual rollback capability.
+	WithRollback(rollbackFunc func() error) Database[M]
 
 	// WithJoinRaw
 	WithJoinRaw(query string, args ...any) Database[M]
@@ -252,13 +282,37 @@ type DatabaseOption[M Model] interface {
 	// WithHaving(query any, args ...any) Database[M]
 
 	// WithLock adds locking clause to SELECT statement.
-	// It must be used within a transaction (WithTransaction).
-	WithLock(mode ...string) Database[M]
+	// It must be used within a transaction.
+	//
+	// Lock modes:
+	//   - consts.LockUpdate (default): SELECT ... FOR UPDATE
+	//   - consts.LockShare: SELECT ... FOR SHARE
+	//   - consts.LockUpdateNoWait: SELECT ... FOR UPDATE NOWAIT
+	//   - consts.LockShareNoWait: SELECT ... FOR SHARE NOWAIT
+	//   - consts.LockUpdateSkipLocked: SELECT ... FOR UPDATE SKIP LOCKED
+	//   - consts.LockShareSkipLocked: SELECT ... FOR SHARE SKIP LOCKED
+	//
+	// Example:
+	//
+	//	DB.Transaction(func(tx *gorm.DB) error {
+	//	    // Default FOR UPDATE lock
+	//	    err := Database[*Order]().
+	//	        WithTx(tx).
+	//	        WithLock().
+	//	        Get(&order, orderID)
+	//
+	//	    // FOR UPDATE NOWAIT
+	//	    err = Database[*Order]().
+	//	        WithTx(tx).
+	//	        WithLock(consts.LockUpdateNoWait).
+	//	        Get(&order, orderID)
+	//	})
+	WithLock(mode ...consts.LockMode) Database[M]
 
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]
 
-	// WithScope applies pagination parameters to the query, useful for retrieving data in pages.
+	// WithPagination applies pagination parameters to the query, useful for retrieving data in pages.
 	// This method enables front-end applications to request a specific subset of records,
 	// based on the desired page number and the number of records per page.
 	//
@@ -271,7 +325,7 @@ type DatabaseOption[M Model] interface {
 	// data fetching suitable for front-end pagination displays.
 	//
 	// Returns: A modified Database instance that includes pagination parameters in its query conditions.
-	WithScope(page, size int) Database[M]
+	WithPagination(page, size int) Database[M]
 
 	// WithLimit determines how much record should retrieve.
 	// limit is 0 or -1 means no limit.
@@ -289,13 +343,29 @@ type DatabaseOption[M Model] interface {
 	//     excludes["name"] = []any{"root", "noname"}.
 	WithExclude(map[string][]any) Database[M]
 
-	// WithOrder
-	// For example:
-	// - WithOrder("name") // default ASC.
-	// - WithOrder("name desc")
-	// - WithOrder("created_at")
-	// - WithOrder("updated_at desc")
-	// NOTE: you cannot using the mysql keyword, such as: "order", "limit".
+	// WithOrder adds ORDER BY clause to sort query results.
+	// Supports multiple sorting criteria and directions (ASC/DESC).
+	// Column names are automatically wrapped with backticks to handle SQL keywords.
+	//
+	// Parameters:
+	//   - order: Column name(s) with optional direction. Multiple columns separated by commas.
+	//            Direction can be "ASC" (default) or "DESC" (case-insensitive).
+	//
+	// Examples:
+	//
+	//	WithOrder("name")                        // Sort by name ascending (default)
+	//	WithOrder("name ASC")                    // Sort by name ascending (explicit)
+	//	WithOrder("name asc")                    // Sort by name ascending (case-insensitive)
+	//	WithOrder("created_at DESC")             // Sort by creation date descending
+	//	WithOrder("created_at desc")             // Sort by creation date descending (case-insensitive)
+	//	WithOrder("priority DESC, name ASC")     // Multiple sort criteria
+	//	WithOrder("priority desc, name asc")     // Multiple sort criteria (case-insensitive)
+	//	WithOrder("order DESC, limit ASC")       // Handles SQL keywords safely
+	//
+	// Note:
+	//   - Column names are automatically escaped with backticks to prevent SQL injection
+	//     and handle reserved keywords like "order", "limit", etc.
+	//   - Direction keywords (ASC/DESC) are case-insensitive and will be converted to uppercase.
 	WithOrder(order string) Database[M]
 
 	// WithExpand, for "foreign key".

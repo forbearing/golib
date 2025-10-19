@@ -74,7 +74,7 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), context.Cont
 		ctx, span = otel.StartSpan(db.ctx.Context(), spanName)
 
 		// Update GORM database context with new span context
-		db.db = db.db.WithContext(ctx)
+		db.ins = db.ins.WithContext(ctx)
 
 		// Add database-specific attributes
 		span.SetAttributes(
