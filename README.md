@@ -158,7 +158,7 @@ type DatabaseOption[M Model] interface {
 	WithJoinRaw(query string, args ...any) Database[M]
 	WithLock(mode ...string) Database[M]
 	WithBatchSize(size int) Database[M]
-	WithScope(page, size int) Database[M]
+	WithPagination(page, size int) Database[M]
 	WithLimit(limit int) Database[M]
 	WithExclude(map[string][]any) Database[M]
 	WithOrder(order string) Database[M]

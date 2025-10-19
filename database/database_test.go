@@ -447,20 +447,20 @@ func (suite *DatabaseTestSuite) TestWithOrder() {
 	suite.NotNil(result)
 }
 
-// TestWithScope tests the WithScope method
-func (suite *DatabaseTestSuite) TestWithScope() {
+// TestWithPagination tests the WithPagination method
+func (suite *DatabaseTestSuite) TestWithPagination() {
 	db := suite.userDB
 
 	// Test with page and size parameters
-	result := db.WithScope(1, 10)
+	result := db.WithPagination(1, 10)
 	suite.NotNil(result)
 
 	// Test with different page and size
-	result = db.WithScope(2, 20)
+	result = db.WithPagination(2, 20)
 	suite.NotNil(result)
 
 	// Test with zero values
-	result = db.WithScope(0, 0)
+	result = db.WithPagination(0, 0)
 	suite.NotNil(result)
 }
 

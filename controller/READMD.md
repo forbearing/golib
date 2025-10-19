@@ -343,7 +343,7 @@
 > `Database equivalent`
 >
 > ```go
-> database.Database[*model.User]().WithScope(1, 20).List(&users)
+> database.Database[*model.User]().WithPagination(1, 20).List(&users)
 > ```
 
 #### `_expand=parent,children`

@@ -1126,25 +1126,21 @@ func (db *database[M]) WithOrder(order string) types.Database[M] {
 	return db
 }
 
-// WithScope applies predefined query scopes to modify the query.
-// Scopes are reusable query modifiers that can be applied to any query.
+// WithPagination applies pagination parameters to the query.
+// It calculates the offset based on the page and size parameters and applies
+// the OFFSET and LIMIT clauses to the query.
 //
 // Parameters:
-//   - funcs: One or more scope functions that modify the query
+//   - page: The page number (1-based). If page <= 0, it defaults to 1.
+//   - size: The number of records per page. If size <= 0, it defaults to defaultLimit.
 //
-// Example:
-//
-//	WithScope(ActiveUsers, RecentlyCreated)
-//	WithScope(func(db *gorm.DB) *gorm.DB { return db.Where("status = ?", "active") })
-//
-// WithScope
 // Examples:
 //   - pageStr, _ := c.GetQuery("page")
 //     sizeStr, _ := c.GetQuery("size")
 //     page, _ := strconv.Atoi(pageStr)
 //     size, _ := strconv.Atoi(sizeStr)
-//     WithScope(page, size)
-func (db *database[M]) WithScope(page, size int) types.Database[M] {
+//     WithPagination(page, size)
+func (db *database[M]) WithPagination(page, size int) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if page <= 0 {

@@ -258,7 +258,7 @@ type DatabaseOption[M Model] interface {
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]
 
-	// WithScope applies pagination parameters to the query, useful for retrieving data in pages.
+	// WithPagination applies pagination parameters to the query, useful for retrieving data in pages.
 	// This method enables front-end applications to request a specific subset of records,
 	// based on the desired page number and the number of records per page.
 	//
@@ -271,7 +271,7 @@ type DatabaseOption[M Model] interface {
 	// data fetching suitable for front-end pagination displays.
 	//
 	// Returns: A modified Database instance that includes pagination parameters in its query conditions.
-	WithScope(page, size int) Database[M]
+	WithPagination(page, size int) Database[M]
 
 	// WithLimit determines how much record should retrieve.
 	// limit is 0 or -1 means no limit.

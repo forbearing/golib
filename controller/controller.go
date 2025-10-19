@@ -1322,7 +1322,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			size = defaultLimit
 		}
 		if err = handler(types.NewDatabaseContext(c)).
-			WithScope(page, size).
+			WithPagination(page, size).
 			WithOr(or).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
@@ -1360,7 +1360,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 		// NOTE: Total count is not provided when using cursor-based pagination.
 		if !nototal && len(cursorValue) == 0 {
 			if err = handler(types.NewDatabaseContext(c)).
-				// WithScope(page, size). // NOTE: WithScope should not apply in Count method.
+				// WithPagination(page, size). // NOTE: WithPagination should not apply in Count method.
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
 				WithIndex(index).
@@ -2806,7 +2806,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 		_, _ = page, size
 		// 2.List resources from database.
 		if err = handler(types.NewDatabaseContext(c)).
-			// WithScope(page, size). // 不要使用 WithScope, 否则 WithLimit 不生效
+			// WithPagination(page, size). // 不要使用 WithPagination, 否则 WithLimit 不生效
 			WithLimit(limit).
 			WithOr(or).
 			WithIndex(index).
