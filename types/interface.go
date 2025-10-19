@@ -266,7 +266,31 @@ type DatabaseOption[M Model] interface {
 
 	// WithLock adds locking clause to SELECT statement.
 	// It must be used within a transaction.
-	WithLock(mode ...string) Database[M]
+	//
+	// Lock modes:
+	//   - consts.LockUpdate (default): SELECT ... FOR UPDATE
+	//   - consts.LockShare: SELECT ... FOR SHARE
+	//   - consts.LockUpdateNoWait: SELECT ... FOR UPDATE NOWAIT
+	//   - consts.LockShareNoWait: SELECT ... FOR SHARE NOWAIT
+	//   - consts.LockUpdateSkipLocked: SELECT ... FOR UPDATE SKIP LOCKED
+	//   - consts.LockShareSkipLocked: SELECT ... FOR SHARE SKIP LOCKED
+	//
+	// Example:
+	//
+	//	DB.Transaction(func(tx *gorm.DB) error {
+	//	    // Default FOR UPDATE lock
+	//	    err := Database[*Order]().
+	//	        WithTx(tx).
+	//	        WithLock().
+	//	        Get(&order, orderID)
+	//
+	//	    // FOR UPDATE NOWAIT
+	//	    err = Database[*Order]().
+	//	        WithTx(tx).
+	//	        WithLock(consts.LockUpdateNoWait).
+	//	        Get(&order, orderID)
+	//	})
+	WithLock(mode ...consts.LockMode) Database[M]
 
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.
 	WithBatchSize(size int) Database[M]

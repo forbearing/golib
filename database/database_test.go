@@ -402,12 +402,20 @@ func (suite *DatabaseTestSuite) TestWithLock() {
 	result := db.WithLock()
 	suite.NotNil(result)
 
-	// Test with specific lock type
-	result = db.WithLock("FOR SHARE")
+	// Test with specific lock types using constants
+	result = db.WithLock(consts.LockShare)
 	suite.NotNil(result)
 
-	// Test with multiple lock options
-	result = db.WithLock("FOR UPDATE", "NOWAIT")
+	result = db.WithLock(consts.LockUpdateNoWait)
+	suite.NotNil(result)
+
+	result = db.WithLock(consts.LockShareNoWait)
+	suite.NotNil(result)
+
+	result = db.WithLock(consts.LockUpdateSkipLocked)
+	suite.NotNil(result)
+
+	result = db.WithLock(consts.LockShareSkipLocked)
 	suite.NotNil(result)
 }
 

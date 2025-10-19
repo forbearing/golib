@@ -156,7 +156,7 @@ func (db *database[M]) prepare() error {
 //	// Complex transaction with multiple operations
 //	err := database.Database[*model.Order](nil).TransactionFunc(func(tx types.Database[*model.Order]) error {
 //	    // All operations share the same transaction context
-//	    if err := tx.WithLock("UPDATE").Get(&order, orderID); err != nil {
+//	    if err := tx.WithLock(consts.LockUpdate).Get(&order, orderID); err != nil {
 //	        return err
 //	    }
 //	    order.Status = "processed"
@@ -990,12 +990,12 @@ func (db *database[M]) WithRollback(rollbackFunc func() error) types.Database[M]
 // It must be used within a transaction.
 //
 // Lock modes:
-//   - "UPDATE" (default): SELECT ... FOR UPDATE
-//   - "SHARE": SELECT ... FOR SHARE
-//   - "UPDATE_NOWAIT": SELECT ... FOR UPDATE NOWAIT
-//   - "SHARE_NOWAIT": SELECT ... FOR SHARE NOWAIT
-//   - "UPDATE_SKIP_LOCKED": SELECT ... FOR UPDATE SKIP LOCKED
-//   - "SHARE_SKIP_LOCKED": SELECT ... FOR SHARE SKIP LOCKED
+//   - consts.LockUpdate (default): SELECT ... FOR UPDATE
+//   - consts.LockShare: SELECT ... FOR SHARE
+//   - consts.LockUpdateNoWait: SELECT ... FOR UPDATE NOWAIT
+//   - consts.LockShareNoWait: SELECT ... FOR SHARE NOWAIT
+//   - consts.LockUpdateSkipLocked: SELECT ... FOR UPDATE SKIP LOCKED
+//   - consts.LockShareSkipLocked: SELECT ... FOR SHARE SKIP LOCKED
 //
 // Example:
 //
@@ -1009,29 +1009,29 @@ func (db *database[M]) WithRollback(rollbackFunc func() error) types.Database[M]
 //	    // FOR UPDATE NOWAIT
 //	    err = Database[*Order]().
 //	        WithTx(tx).
-//	        WithLock("UPDATE_NOWAIT").
+//	        WithLock(consts.LockUpdateNoWait).
 //	        Get(&order, orderID)
 //	})
-func (db *database[M]) WithLock(mode ...string) types.Database[M] {
+func (db *database[M]) WithLock(mode ...consts.LockMode) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	strength := "UPDATE"
 	options := ""
 	if len(mode) > 0 {
-		switch strings.ToUpper(mode[0]) {
-		case "SHARE":
+		switch mode[0] {
+		case consts.LockShare:
 			strength = "SHARE"
-		case "UPDATE_NOWAIT":
+		case consts.LockUpdateNoWait:
 			strength = "UPDATE"
 			options = "NOWAIT"
-		case "SHARE_NOWAIT":
+		case consts.LockShareNoWait:
 			strength = "SHARE"
 			options = "NOWAIT"
-		case "UPDATE_SKIP_LOCKED":
+		case consts.LockUpdateSkipLocked:
 			strength = "UPDATE"
 			options = "SKIP LOCKED"
-		case "SHARE_SKIP_LOCKED":
+		case consts.LockShareSkipLocked:
 			strength = "SHARE"
 			options = "SKIP LOCKED"
 		}

@@ -156,7 +156,7 @@ type DatabaseOption[M Model] interface {
 	WithSelectRaw(query any, args ...any) Database[M]
 	WithIndex(indexName string, hint ...consts.IndexHintMode) Database[M]
 	WithJoinRaw(query string, args ...any) Database[M]
-	WithLock(mode ...string) Database[M]
+	WithLock(mode ...consts.LockMode) Database[M]
 	WithBatchSize(size int) Database[M]
 	WithPagination(page, size int) Database[M]
 	WithLimit(limit int) Database[M]

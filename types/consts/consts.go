@@ -408,6 +408,24 @@ const (
 	IndexHintIgnore IndexHintMode = "IGNORE"
 )
 
+// LockMode represents the lock mode for database row-level locking
+type LockMode string
+
+const (
+	// LockUpdate represents FOR UPDATE lock mode
+	LockUpdate LockMode = "UPDATE"
+	// LockShare represents FOR SHARE lock mode
+	LockShare LockMode = "SHARE"
+	// LockUpdateNoWait represents FOR UPDATE NOWAIT lock mode
+	LockUpdateNoWait LockMode = "UPDATE_NOWAIT"
+	// LockShareNoWait represents FOR SHARE NOWAIT lock mode
+	LockShareNoWait LockMode = "SHARE_NOWAIT"
+	// LockUpdateSkipLocked represents FOR UPDATE SKIP LOCKED lock mode
+	LockUpdateSkipLocked LockMode = "UPDATE_SKIP_LOCKED"
+	// LockShareSkipLocked represents FOR SHARE SKIP LOCKED lock mode
+	LockShareSkipLocked LockMode = "SHARE_SKIP_LOCKED"
+)
+
 type OP string
 
 const (
