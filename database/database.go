@@ -2888,58 +2888,6 @@ func (db *database[M]) Health() error {
 	return nil
 }
 
-// Database creates and returns a generic database manipulator implementing types.Database interface.
-// Provides comprehensive CRUD capabilities with advanced features like caching, hooks, and query building.
-// Automatically enables debug mode when log level is set to debug.
-//
-// Type Parameters:
-//   - M: Model type that implements types.Model interface
-//
-// Parameters:
-//   - ctx: Required database context for request tracing and metadata.
-//     In service layer operations, pass a valid DatabaseContext to track requests.
-//     For non-service layer operations, pass nil.
-//
-// Returns a database manipulator with full CRUD and query capabilities.
-//
-// Features:
-//   - Generic type safety for model operations
-//   - Automatic debug mode based on configuration
-//   - Context-aware operations for tracing
-//   - Default query limit protection
-//   - Panic protection for uninitialized database
-//
-// Example:
-//
-//	// Service layer usage with context
-//	db := Database[*User](ctx.DatabaseContext())
-//	// Non-service layer usage
-//	db := Database[*User](nil)
-//	users := db.WithQuery(&User{Name: "John"}).List()
-func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
-	if DB == nil || DB == new(gorm.DB) {
-		panic("database is not initialized")
-	}
-	dbctx := new(types.DatabaseContext)
-	gctx := context.Background()
-	if ctx != nil {
-		dbctx = ctx
-		gctx = dbctx.Context()
-	}
-
-	var ins *gorm.DB
-	if strings.ToLower(config.App.Logger.Level) == "debug" {
-		ins = DB.Debug().WithContext(gctx).Limit(defaultLimit)
-	} else {
-		ins = DB.WithContext(gctx).Limit(defaultLimit)
-	}
-
-	return &database[M]{
-		db:  ins,
-		ctx: dbctx,
-	}
-}
-
 // TransactionFunc executes a function within a complete transaction with automatic management.
 // This is the recommended method for most transaction scenarios as it provides:
 // 1. Automatic transaction begin/commit/rollback management
@@ -3063,4 +3011,56 @@ func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) erro
 		)
 		return nil
 	})
+}
+
+// Database creates and returns a generic database manipulator implementing types.Database interface.
+// Provides comprehensive CRUD capabilities with advanced features like caching, hooks, and query building.
+// Automatically enables debug mode when log level is set to debug.
+//
+// Type Parameters:
+//   - M: Model type that implements types.Model interface
+//
+// Parameters:
+//   - ctx: Required database context for request tracing and metadata.
+//     In service layer operations, pass a valid DatabaseContext to track requests.
+//     For non-service layer operations, pass nil.
+//
+// Returns a database manipulator with full CRUD and query capabilities.
+//
+// Features:
+//   - Generic type safety for model operations
+//   - Automatic debug mode based on configuration
+//   - Context-aware operations for tracing
+//   - Default query limit protection
+//   - Panic protection for uninitialized database
+//
+// Example:
+//
+//	// Service layer usage with context
+//	db := Database[*User](ctx.DatabaseContext())
+//	// Non-service layer usage
+//	db := Database[*User](nil)
+//	users := db.WithQuery(&User{Name: "John"}).List()
+func Database[M types.Model](ctx *types.DatabaseContext) types.Database[M] {
+	if DB == nil || DB == new(gorm.DB) {
+		panic("database is not initialized")
+	}
+	dbctx := new(types.DatabaseContext)
+	gctx := context.Background()
+	if ctx != nil {
+		dbctx = ctx
+		gctx = dbctx.Context()
+	}
+
+	var ins *gorm.DB
+	if strings.ToLower(config.App.Logger.Level) == "debug" {
+		ins = DB.Debug().WithContext(gctx).Limit(defaultLimit)
+	} else {
+		ins = DB.WithContext(gctx).Limit(defaultLimit)
+	}
+
+	return &database[M]{
+		db:  ins,
+		ctx: dbctx,
+	}
 }
