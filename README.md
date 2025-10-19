@@ -137,6 +137,7 @@ type Database[M Model] interface {
 	Count(*int64) error
 	Cleanup() error
 	Health() error
+	TransactionFunc(fn func(tx Database[M]) error) error
 
 	DatabaseOption[M]
 }
@@ -154,7 +155,6 @@ type DatabaseOption[M Model] interface {
 	WithSelect(columns ...string) Database[M]
 	WithSelectRaw(query any, args ...any) Database[M]
 	WithIndex(index string) Database[M]
-	WithTransaction(tx any) Database[M]
 	WithJoinRaw(query string, args ...any) Database[M]
 	WithLock(mode ...string) Database[M]
 	WithBatchSize(size int) Database[M]

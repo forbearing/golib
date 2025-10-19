@@ -37,6 +37,7 @@ var (
 	ErrNotAddressableSlice = errors.New("slice is not addressable")
 	ErrNotSetSlice         = errors.New("slice cannot set")
 	ErrIDRequired          = errors.New("id is required")
+	ErrManualRollback      = errors.New("manual rollback requested")
 )
 
 var (
@@ -62,20 +63,22 @@ type database[M types.Model] struct {
 	ctx *types.DatabaseContext
 
 	// options
-	enablePurge   bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
-	enableCache   bool   // using cache or not, only works 'List', 'Get', 'Count' method.
-	tableName     string // support multiple custom table name, always used with the `WithDB` method.
-	batchSize     int    // batch size for bulk operations. affects Create, Update, Delete.
-	noHook        bool   // disable model hook.
-	orQuery       bool   // or query
-	inTransaction bool   // in transaction
-	tryRun        bool   // try run
+	enablePurge bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
+	enableCache bool   // using cache or not, only works 'List', 'Get', 'Count' method.
+	tableName   string // support multiple custom table name, always used with the `WithDB` method.
+	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
+	noHook      bool   // disable model hook.
+	orQuery     bool   // or query
+	tryRun      bool   // try run
 
 	// cursor pagination
 	cursorField  string // field used for cursor pagination, default is "id"
 	cursorValue  string // cursor value for pagination
 	cursorNext   bool   // direction of cursor pagination, true for next page, false for previous page
 	enableCursor bool   // enable cursor pagination
+
+	// rollback control
+	rollbackFunc func() error // rollback function for manual transaction control
 
 	shouldAutoMigrate bool
 }
@@ -95,7 +98,6 @@ func (db *database[M]) reset() {
 	db.batchSize = 0
 	db.noHook = false
 	db.orQuery = false
-	db.inTransaction = false
 	db.shouldAutoMigrate = false
 	db.tryRun = false
 
@@ -120,6 +122,131 @@ func (db *database[M]) prepare() error {
 		}
 	}
 	return nil
+}
+
+// TransactionFunc executes a function within a complete transaction with automatic management.
+// This is the recommended method for most transaction scenarios as it provides:
+// 1. Automatic transaction begin/commit/rollback management
+// 2. Built-in error handling and logging
+// 3. Performance monitoring with execution time tracking
+// 4. Type-safe transaction context
+//
+// Transaction behavior:
+// - If the function returns nil: transaction is automatically committed
+// - If the function returns an error: transaction is automatically rolled back
+// - All database operations within the function are executed in the same transaction
+//
+// Relationship with other transaction methods:
+// - Use TransactionFunc: For most transaction scenarios (recommended)
+// - Use WithRollback: When you need manual control over rollback timing
+//
+// Example usage:
+//
+//	// Simple transaction with automatic management
+//	err := database.Database[*model.User](nil).TransactionFunc(func(tx types.Database[*model.User]) error {
+//	    if err := tx.Create(&user); err != nil {
+//	        return err // Automatic rollback
+//	    }
+//	    if err := tx.UpdateByID(user.ID, "status", "active"); err != nil {
+//	        return err // Automatic rollback
+//	    }
+//	    return nil // Automatic commit
+//	})
+//
+//	// Complex transaction with multiple operations
+//	err := database.Database[*model.Order](nil).TransactionFunc(func(tx types.Database[*model.Order]) error {
+//	    // All operations share the same transaction context
+//	    if err := tx.WithLock("UPDATE").Get(&order, orderID); err != nil {
+//	        return err
+//	    }
+//	    order.Status = "processed"
+//	    return tx.Update(&order)
+//	})
+//
+// TransactionFunc executes a function within a database transaction.
+// If the function returns an error, the transaction is rolled back.
+// If the function returns nil, the transaction is committed.
+// When used with WithRollback, you can call the rollback function directly
+// to trigger a manual rollback.
+//
+// Example with automatic transaction management:
+//
+//	err := db.TransactionFunc(func(tx types.Database[M]) error {
+//	    if err := tx.Create(&user); err != nil {
+//	        return err // automatic rollback
+//	    }
+//	    return nil // automatic commit
+//	})
+//
+// Example with manual rollback control:
+//
+//	var rollbackFunc func() error
+//	err := db.WithRollback(func() error {
+//	    // custom rollback logic
+//	    return nil
+//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	    // Get the rollback function from the transaction context
+//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	        rollbackFunc = txDB.rollbackFunc
+//	    }
+//
+//	    if err := tx.Create(&user); err != nil {
+//	        return err // automatic rollback
+//	    }
+//
+//	    if someCondition {
+//	        if rollbackFunc != nil {
+//	            rollbackFunc() // execute custom rollback logic
+//	        }
+//	        return ErrManualRollback // trigger transaction rollback
+//	    }
+//	    return nil // automatic commit
+//	})
+func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) error {
+	if err := db.prepare(); err != nil {
+		return err
+	}
+
+	begin := time.Now()
+
+	return db.db.Transaction(func(tx *gorm.DB) error {
+		// Create a new database instance for the transaction
+		txDB := &database[M]{
+			db:           tx,
+			ctx:          db.ctx,
+			rollbackFunc: db.rollbackFunc, // inherit rollback function
+		}
+
+		// Execute the user function with the transaction database
+		if err := fn(txDB); err != nil {
+			// Check if this is a manual rollback request
+			if errors.Is(err, ErrManualRollback) {
+				// Execute custom rollback logic if provided
+				if txDB.rollbackFunc != nil {
+					if rollbackErr := txDB.rollbackFunc(); rollbackErr != nil {
+						logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Errorz("custom rollback function failed",
+							zap.Error(rollbackErr),
+							zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
+						)
+					}
+				}
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Infoz("transaction rolled back manually",
+					zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
+				)
+			} else {
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Errorz("transaction rolled back due to error",
+					zap.Error(err),
+					zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
+				)
+			}
+			return err
+		}
+
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Infoz("transaction committed successfully",
+			zap.String("cost", util.FormatDurationSmart(time.Since(begin))),
+		)
+		return nil
+	})
 }
 
 // WithDB sets the underlying GORM database instance for this database manipulator.
@@ -779,48 +906,38 @@ func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 	return db
 }
 
-// WithTransaction executes operations within a database transaction.
-// This method is typically used with DB.Transaction() to ensure ACID properties.
-// It disables GORM's default transaction behavior when a transaction is provided.
-//
-// Parameters:
-//   - tx: A *gorm.DB transaction instance (nil values are ignored)
-//
-// Notes:
-//   - If tx is provided, disables GORM's default transaction
-//   - If tx is nil, uses default behavior
-//   - Invalid transaction types are logged and ignored
+// WithRollback sets a rollback function for manual transaction control.
+// This method is used with TransactionFunc to enable manual rollback control.
+// To trigger a manual rollback, call the rollback function directly and return ErrManualRollback.
 //
 // Example:
 //
-//	err := DB.Transaction(func(tx *gorm.DB) error {
-//	    return Database[*Order]().
-//	        WithTransaction(tx).
-//	        WithLock().
-//	        Get(&order, orderID)
+//	var rollbackFunc func() error
+//	err := db.WithRollback(func() error {
+//	    // custom rollback logic
+//	    return nil
+//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	    // Get the rollback function from the transaction context
+//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	        rollbackFunc = txDB.rollbackFunc
+//	    }
+//
+//	    if err := tx.Create(&user); err != nil {
+//	        return err // automatic rollback
+//	    }
+//
+//	    if someCondition {
+//	        if rollbackFunc != nil {
+//	            rollbackFunc() // execute custom rollback logic
+//	        }
+//	        return ErrManualRollback // trigger transaction rollback
+//	    }
+//	    return nil // automatic commit
 //	})
-func (db *database[M]) WithTransaction(tx any) types.Database[M] {
-	var empty *gorm.DB
-	if tx == nil || tx == new(gorm.DB) || tx == empty {
-		return db
-	}
-	// v := reflect.ValueOf(x)
-	// if v.Kind() != reflect.Pointer {
-	// 	return db
-	// }
-	// if v.IsNil() {
-	// 	return db
-	// }
-	_tx, ok := tx.(*gorm.DB)
-	if !ok {
-		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithTransaction")).Warn("invalid database type, expect *gorm.DB")
-		return db
-	}
-
+func (db *database[M]) WithRollback(rollbackFunc func() error) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.inTransaction = true
-	db.db = _tx.Session(&gorm.Session{SkipDefaultTransaction: true})
+	db.rollbackFunc = rollbackFunc
 	return db
 }
 
@@ -832,13 +949,12 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 //
 //	DB.Transaction(func(tx *gorm.DB) error {
 //	    return Database[*User]().
-//	        WithTransaction(tx).
 //	        WithLock().
 //	        Get(&user, userID)
 //	})
 //
 // WithLock adds locking clause to SELECT statement.
-// It must be used within a transaction (WithTransaction).
+// It must be used within a transaction.
 //
 // Lock modes:
 //   - "UPDATE" (default): SELECT ... FOR UPDATE
@@ -866,10 +982,6 @@ func (db *database[M]) WithTransaction(tx any) types.Database[M] {
 func (db *database[M]) WithLock(mode ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if !db.inTransaction {
-		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithLock")).Warn("WithLock must be used within a transaction")
-		return db
-	}
 
 	strength := "UPDATE"
 	options := ""

@@ -163,6 +163,10 @@ type Database[M Model] interface {
 	// Health checks the database connectivity and basic operations.
 	// It returns nil if the database is healthy, otherwise returns an error.
 	Health() error
+	// TransactionFunc executes a function within a transaction with automatic rollback on error.
+	// If the function returns an error, the transaction is automatically rolled back.
+	// If the function completes successfully, the transaction is committed.
+	TransactionFunc(fn func(tx Database[M]) error) error
 
 	DatabaseOption[M]
 }
@@ -241,8 +245,9 @@ type DatabaseOption[M Model] interface {
 	// WithIndex use specific index to query.
 	WithIndex(index string) Database[M]
 
-	// WithTransaction executes operations within a transaction.
-	WithTransaction(tx any) Database[M]
+	// WithRollback configures a rollback function for manual transaction control.
+	// This method should be used with TransactionFunc to enable manual rollback capability.
+	WithRollback(rollbackFunc func() error) Database[M]
 
 	// WithJoinRaw
 	WithJoinRaw(query string, args ...any) Database[M]
@@ -252,7 +257,7 @@ type DatabaseOption[M Model] interface {
 	// WithHaving(query any, args ...any) Database[M]
 
 	// WithLock adds locking clause to SELECT statement.
-	// It must be used within a transaction (WithTransaction).
+	// It must be used within a transaction.
 	WithLock(mode ...string) Database[M]
 
 	// WithBatchSize set batch size for bulk operations. affects Create, Update, Delete.

@@ -377,18 +377,6 @@ func (suite *DatabaseTestSuite) TestWithExclude() {
 	suite.NotNil(result)
 }
 
-// TestWithTransaction tests the WithTransaction method
-func (suite *DatabaseTestSuite) TestWithTransaction() {
-	db := suite.userDB
-
-	// Test with nil transaction (should return same instance)
-	result := db.WithTransaction(nil)
-	suite.NotNil(result)
-
-	// Note: Actual transaction testing would require a real transaction object
-	// which is typically created by the database driver
-}
-
 // TestWithLock tests the WithLock method
 func (suite *DatabaseTestSuite) TestWithLock() {
 	db := suite.userDB
