@@ -107,7 +107,8 @@ func (db *database[M]) reset() {
 	db.cursorNext = true
 	db.enableCursor = false
 
-	// db.db = DB.WithContext(context.Background())
+	// reset rollback function
+	db.rollbackFunc = nil
 }
 
 // prepare prepares the database instance for query execution by applying all configured
@@ -182,6 +183,7 @@ func (db *database[M]) WithDB(x any) types.Database[M] {
 func (db *database[M]) WithTx(tx any) types.Database[M] {
 	var empty *gorm.DB
 	if tx == nil || tx == new(gorm.DB) || tx == empty {
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithTx")).Warn("invalid database type, expect *gorm.DB")
 		return db
 	}
 
@@ -191,9 +193,16 @@ func (db *database[M]) WithTx(tx any) types.Database[M] {
 		return db
 	}
 
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.ins = _tx
+	// return &database[M]{
+	// 	ins:          _tx.Model(*new(M)),
+	// 	ctx:          db.ctx,
+	// 	rollbackFunc: db.rollbackFunc,
+	// }
+	db.ins = _tx.Session(&gorm.Session{
+		SkipDefaultTransaction: false,
+		NewDB:                  false,
+	})
+
 	return db
 }
 
@@ -857,13 +866,14 @@ func (db *database[M]) WithSelectRaw(query any, args ...any) types.Database[M] {
 //	err := db.WithRollback(func() error {
 //	    // custom rollback logic
 //	    return nil
-//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	}).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
 //	    // Get the rollback function from the transaction context
-//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	    if txDB, ok := userDB.WithTx(tx).(*database[*model.User]); ok && txDB.rollbackFunc != nil {
 //	        rollbackFunc = txDB.rollbackFunc
 //	    }
 //
-//	    if err := tx.Create(&user); err != nil {
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //
@@ -2940,27 +2950,31 @@ func (db *database[M]) Health() error {
 // Example usage:
 //
 //	// Simple transaction with automatic management
-//	err := database.Database[*model.User](nil).TransactionFunc(func(tx types.Database[*model.User]) error {
-//	    if err := tx.Create(&user); err != nil {
+//	err := database.Database[*model.User](nil).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // Automatic rollback
 //	    }
-//	    if err := tx.UpdateByID(user.ID, "status", "active"); err != nil {
+//	    if err := userDB.WithTx(tx).UpdateByID(user.ID, "status", "active"); err != nil {
 //	        return err // Automatic rollback
 //	    }
 //	    return nil // Automatic commit
 //	})
 //
 //	// Complex transaction with multiple operations
-//	err := database.Database[*model.Order](nil).TransactionFunc(func(tx types.Database[*model.Order]) error {
+//	err := database.Database[*model.Order](nil).TransactionFunc(func(tx any) error {
+//	    orderDB := database.Database[*model.Order](nil)
 //	    // All operations share the same transaction context
-//	    if err := tx.WithLock(consts.LockUpdate).Get(&order, orderID); err != nil {
+//	    if err := orderDB.WithTx(tx).WithLock(consts.LockUpdate).Get(&order, orderID); err != nil {
 //	        return err
 //	    }
 //	    order.Status = "processed"
-//	    return tx.Update(&order)
+//	    return orderDB.WithTx(tx).Update(&order)
 //	})
 //
 // TransactionFunc executes a function within a database transaction.
+// The tx parameter is the underlying GORM transaction instance (*gorm.DB).
+// Use WithTx(tx) to create database instances that operate within the transaction.
 // If the function returns an error, the transaction is rolled back.
 // If the function returns nil, the transaction is committed.
 // When used with WithRollback, you can call the rollback function directly
@@ -2968,8 +2982,9 @@ func (db *database[M]) Health() error {
 //
 // Example with automatic transaction management:
 //
-//	err := db.TransactionFunc(func(tx types.Database[M]) error {
-//	    if err := tx.Create(&user); err != nil {
+//	err := db.TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //	    return nil // automatic commit
@@ -2981,13 +2996,14 @@ func (db *database[M]) Health() error {
 //	err := db.WithRollback(func() error {
 //	    // custom rollback logic
 //	    return nil
-//	}).TransactionFunc(func(tx types.Database[M]) error {
+//	}).TransactionFunc(func(tx any) error {
+//	    userDB := database.Database[*model.User](nil)
 //	    // Get the rollback function from the transaction context
-//	    if txDB, ok := tx.(*database[M]); ok && txDB.rollbackFunc != nil {
+//	    if txDB, ok := userDB.WithTx(tx).(*database[*model.User]); ok && txDB.rollbackFunc != nil {
 //	        rollbackFunc = txDB.rollbackFunc
 //	    }
 //
-//	    if err := tx.Create(&user); err != nil {
+//	    if err := userDB.WithTx(tx).Create(&user); err != nil {
 //	        return err // automatic rollback
 //	    }
 //
@@ -2999,7 +3015,7 @@ func (db *database[M]) Health() error {
 //	    }
 //	    return nil // automatic commit
 //	})
-func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) error {
+func (db *database[M]) TransactionFunc(fn func(tx any) error) error {
 	if err := db.prepare(); err != nil {
 		return err
 	}
@@ -3007,20 +3023,13 @@ func (db *database[M]) TransactionFunc(fn func(tx types.Database[M]) error) erro
 	begin := time.Now()
 
 	return db.ins.Transaction(func(tx *gorm.DB) error {
-		// Create a new database instance for the transaction
-		txDB := &database[M]{
-			ins:          tx,
-			ctx:          db.ctx,
-			rollbackFunc: db.rollbackFunc, // inherit rollback function
-		}
-
-		// Execute the user function with the transaction database
-		if err := fn(txDB); err != nil {
+		// Execute the user function with the transaction gorm.DB instance
+		if err := fn(tx); err != nil {
 			// Check if this is a manual rollback request
 			if errors.Is(err, ErrManualRollback) {
 				// Execute custom rollback logic if provided
-				if txDB.rollbackFunc != nil {
-					if rollbackErr := txDB.rollbackFunc(); rollbackErr != nil {
+				if db.rollbackFunc != nil {
+					if rollbackErr := db.rollbackFunc(); rollbackErr != nil {
 						logger.Database.WithDatabaseContext(db.ctx, consts.Phase("TransactionFunc")).Errorz("custom rollback function failed",
 							zap.Error(rollbackErr),
 							zap.String("cost", util.FormatDurationSmart(time.Since(begin))),

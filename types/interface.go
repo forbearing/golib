@@ -166,7 +166,7 @@ type Database[M Model] interface {
 	// TransactionFunc executes a function within a transaction with automatic rollback on error.
 	// If the function returns an error, the transaction is automatically rolled back.
 	// If the function completes successfully, the transaction is committed.
-	TransactionFunc(fn func(tx Database[M]) error) error
+	TransactionFunc(fn func(tx any) error) error
 
 	DatabaseOption[M]
 }
