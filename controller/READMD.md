@@ -812,10 +812,20 @@ type User struct {
 >   ```
 >
 >   `Database equivalent`
->
->   ```go
->   database.Database[*model.User]().WithIndex("idx_composite_name_email_createdby").List(&users)
->   ```
+
+  ```go
+  // Default behavior - defaults to USE INDEX
+  database.Database[*model.User]().WithIndex("idx_composite_name_email_createdby").List(&users)
+  
+  // Explicit USE INDEX
+  database.Database[*model.User]().WithIndex("idx_composite_name_email_createdby", consts.IndexHintUse).List(&users)
+  
+  // FORCE INDEX for critical performance
+  database.Database[*model.User]().WithIndex("idx_composite_name_email_createdby", consts.IndexHintForce).List(&users)
+  
+  // IGNORE INDEX to avoid using specific index
+  database.Database[*model.User]().WithIndex("idx_composite_name_email_createdby", consts.IndexHintIgnore).List(&users)
+  ```
 >
 >   `SQL equivalent`
 >

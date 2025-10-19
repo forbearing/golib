@@ -11,6 +11,7 @@ import (
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/model"
 	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -201,12 +202,28 @@ func (suite *DatabaseTestSuite) TestWithOr() {
 func (suite *DatabaseTestSuite) TestWithIndex() {
 	db := suite.userDB
 
-	// Test setting index hint
+	// Test default behavior - single index name defaults to USE INDEX
 	result := db.WithIndex("idx_name")
 	suite.NotNil(result)
 
-	// Test with empty index
+	// Test explicit USE INDEX
+	result = db.WithIndex("idx_name", consts.IndexHintUse)
+	suite.NotNil(result)
+
+	// Test FORCE INDEX
+	result = db.WithIndex("idx_name", consts.IndexHintForce)
+	suite.NotNil(result)
+
+	// Test IGNORE INDEX
+	result = db.WithIndex("idx_name", consts.IndexHintIgnore)
+	suite.NotNil(result)
+
+	// Test with empty index name (should return unchanged)
 	result = db.WithIndex("")
+	suite.NotNil(result)
+
+	// Test with whitespace-only index name (should return unchanged)
+	result = db.WithIndex("  ")
 	suite.NotNil(result)
 }
 

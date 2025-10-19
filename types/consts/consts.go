@@ -396,6 +396,18 @@ const LayoutTimeEncoder = "2006-01-02|15:04:05"
 
 const IMPORT_PATH_MODEL = `"github.com/forbearing/gst/model"`
 
+// IndexHintMode represents database index hint modes
+type IndexHintMode string
+
+const (
+	// IndexHintUse suggests the database to use the specified index
+	IndexHintUse IndexHintMode = "USE"
+	// IndexHintForce forces the database to use the specified index
+	IndexHintForce IndexHintMode = "FORCE"
+	// IndexHintIgnore tells the database to ignore the specified index
+	IndexHintIgnore IndexHintMode = "IGNORE"
+)
+
 type OP string
 
 const (

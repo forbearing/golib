@@ -346,16 +346,49 @@ func (db *database[M]) WithOr(flag ...bool) types.Database[M] {
 	return db
 }
 
-// WithIndex specifies a database index to use for query optimization.
-// Helps improve query performance by forcing the database to use a specific index.
+// WithIndex specifies database index hints for query optimization.
+// The first parameter is the index name, and the second optional parameter specifies the hint type.
+// If no hint type is provided, defaults to USE INDEX.
+// Usage:
+//
+//	WithIndex("idx_name")                           - defaults to USE INDEX
+//	WithIndex("idx_name", consts.IndexHintUse)      - suggests using the index
+//	WithIndex("idx_name", consts.IndexHintForce)    - forces using the index
+//	WithIndex("idx_name", consts.IndexHintIgnore)   - ignores the index
+//
 // Empty or whitespace-only index names are ignored.
-func (db *database[M]) WithIndex(index string) types.Database[M] {
+func (db *database[M]) WithIndex(indexName string, hint ...consts.IndexHintMode) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if len(strings.TrimSpace(index)) == 0 {
+
+	// Trim whitespace from the index name
+	indexName = strings.TrimSpace(indexName)
+	if len(indexName) == 0 {
 		return db
 	}
-	db.db = db.db.Clauses(hints.UseIndex(strings.TrimSpace(index)))
+
+	// Determine the hint type, default to USE if not provided
+	var hintMode consts.IndexHintMode
+	if len(hint) > 0 {
+		hintMode = hint[0]
+	} else {
+		hintMode = consts.IndexHintUse
+	}
+
+	// Apply the appropriate hint
+	switch hintMode {
+	case consts.IndexHintUse:
+		db.db = db.db.Clauses(hints.UseIndex(indexName))
+	case consts.IndexHintForce:
+		db.db = db.db.Clauses(hints.ForceIndex(indexName))
+	case consts.IndexHintIgnore:
+		db.db = db.db.Clauses(hints.IgnoreIndex(indexName))
+	default:
+		logger.Database.Warnf(`unknown index hint mode: %s, using "USE INDEX"`, hintMode)
+		// Default to USE INDEX for unknown modes
+		db.db = db.db.Clauses(hints.UseIndex(indexName))
+	}
+
 	return db
 }
 

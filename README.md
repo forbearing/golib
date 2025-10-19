@@ -154,7 +154,7 @@ type DatabaseOption[M Model] interface {
 	WithTimeRange(columnName string, startTime time.Time, endTime time.Time) Database[M]
 	WithSelect(columns ...string) Database[M]
 	WithSelectRaw(query any, args ...any) Database[M]
-	WithIndex(index string) Database[M]
+	WithIndex(indexName string, hint ...consts.IndexHintMode) Database[M]
 	WithJoinRaw(query string, args ...any) Database[M]
 	WithLock(mode ...string) Database[M]
 	WithBatchSize(size int) Database[M]

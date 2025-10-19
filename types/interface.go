@@ -242,8 +242,16 @@ type DatabaseOption[M Model] interface {
 	// WithSelectRaw
 	WithSelectRaw(query any, args ...any) Database[M]
 
-	// WithIndex use specific index to query.
-	WithIndex(index string) Database[M]
+	// WithIndex specifies database index hints for query optimization.
+	// The first parameter is the index name, and the second optional parameter specifies the hint type.
+	// If no hint is provided, defaults to USE INDEX.
+	// Usage:
+	//
+	//	WithIndex("idx_name")                           - defaults to USE INDEX
+	//	WithIndex("idx_name", consts.IndexHintUse)      - suggests using the index
+	//	WithIndex("idx_name", consts.IndexHintForce)    - forces using the index
+	//	WithIndex("idx_name", consts.IndexHintIgnore)   - ignores the index
+	WithIndex(indexName string, hint ...consts.IndexHintMode) Database[M]
 
 	// WithRollback configures a rollback function for manual transaction control.
 	// This method should be used with TransactionFunc to enable manual rollback capability.
