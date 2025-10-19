@@ -1132,6 +1132,23 @@ func (db *database[M]) WithGroup(name string) types.Database[M] {
 //	db.WithHaving("COUNT(*) > ? AND SUM(amount) > ?", 5, 1000)
 //
 // Note: WithHaving must be used with GROUP BY clause and aggregate functions.
+// WithHaving adds HAVING clause to filter grouped results.
+// Used with GROUP BY to apply conditions on aggregated data.
+// Similar to WHERE but operates on grouped results after aggregation.
+//
+// Parameters:
+//   - query: HAVING condition (string, map, or struct)
+//   - args: Optional arguments for parameterized queries
+//
+// Examples:
+//
+//	WithHaving("COUNT(*) > ?", 5)                    // Groups with more than 5 records
+//	WithHaving("AVG(price) > 100")                   // Groups with average price > 100
+//	WithHaving("SUM(amount) BETWEEN ? AND ?", 1000, 5000)  // Sum within range
+//	WithHaving(map[string]any{"COUNT(*)": 10})       // Exact count match
+//
+// Note: HAVING clause is typically used after GROUP BY operations.
+// Use WithGroup() before WithHaving() for proper SQL structure.
 func (db *database[M]) WithHaving(query any, args ...any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -1261,6 +1278,26 @@ func (db *database[M]) WithLimit(limit int) types.Database[M] {
 // NOTE: WithExpand only workds on mysql foreign key relationship.
 // If you want expand the custom field that without gorm tag about foreign key definition,
 // you should define the GetAfter/ListAfter in model layer or service layoer.
+// WithExpand enables eager loading of related models with optional ordering.
+// It uses GORM's Preload functionality to load associated data in a single query.
+//
+// Parameters:
+//   - expand: Slice of relationship names to preload (e.g., ["Children", "Parent"])
+//   - order: Optional ordering for the preloaded relationships
+//
+// Example:
+//
+//	// Load user with their posts
+//	db.WithExpand([]string{"Posts"})
+//
+//	// Load user with posts ordered by creation date
+//	db.WithExpand([]string{"Posts"}, "created_at desc")
+//
+//	// Load nested relationships
+//	db.WithExpand([]string{"Posts.Comments", "Profile"})
+//
+// Note: The first field in the order string will be wrapped with backticks
+// to handle SQL keywords properly.
 func (db *database[M]) WithExpand(expand []string, order ...string) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -1268,8 +1305,9 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 	if len(order) > 0 {
 		if len(order[0]) > 0 {
 			items := strings.Fields(order[0])
-			// 第一个是排序字段,必须加上反引号,因为排序的字符串可能是 sql 语句关键字
-			// 第二个可能是 "desc" 等关键字不需要加反引号
+			// The first item is the sort field, must be wrapped with backticks
+			// because the sort string might be a SQL keyword
+			// The second item might be "desc" etc., which doesn't need backticks
 			items[0] = "`" + items[0] + "`"
 			_orders = strings.Join(items, " ")
 		}
@@ -1319,27 +1357,29 @@ func (db *database[M]) WithExpand(expand []string, order ...string) types.Databa
 	return db
 }
 
-// WithExclude omits specified fields from SELECT queries.
-// Useful when you want most fields except a few (opposite of WithSelect).
+// WithExclude excludes records that match specified conditions.
+// It adds NOT conditions to the query to filter out records with matching values.
 //
 // Parameters:
-//   - columns: Field names to exclude from the result
+//   - excludes: Map where keys are field names and values are slices of values to exclude
 //
 // Example:
 //
-//	WithExclude("password", "secret_key")  // Exclude sensitive fields
-//	WithExclude("large_text_field")  // Exclude large fields for performance
+//	// Exclude users with specific IDs
+//	excludes := map[string][]any{
+//		"id": {"user1", "user2", "user3"},
+//	}
+//	db.WithExclude(excludes)
 //
-// WithExclude excludes records that matchs a condition within a list.
-// For example:
-//   - If you want exclude users with specific ids from your query,
-//     you can use WithExclude(excludes),
-//     excludes: "id" as key, ["myid1", "myid2", "myid3"] as value.
-//   - If you want excludes users that id not ["myid1", "myid2"] and not not ["root", "noname"],
-//     the `excludes` should be:
-//     excludes := make(map[string][]any)
-//     excludes["id"] = []any{"myid1", "myid2"}
-//     excludes["name"] = []any{"root", "noname"}.
+//	// Exclude users with specific IDs and names
+//	excludes := map[string][]any{
+//		"id":   {"user1", "user2"},
+//		"name": {"admin", "root"},
+//	}
+//	db.WithExclude(excludes)
+//
+// Note: This method affects the WHERE clause, not the SELECT clause.
+// Use WithOmit() to exclude fields from SELECT queries.
 func (db *database[M]) WithExclude(excludes map[string][]any) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
