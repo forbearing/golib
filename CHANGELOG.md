@@ -1,11 +1,32 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.9.6-beta.2"></a>
+## [v0.9.6-beta.2] - 2025-10-21
+### Enh
+- **config:** enhance AppInfo with build metadata and runtime details
+
+### Refactor
+- **config:** rename server mode constants to remove prefix "Mode" and add "Local" mode
+
+### Pull Requests
+- Merge pull request [#34](https://github.com/forbearing/gst/issues/34) from forbearing/dev
+
+
+<a name="v0.9.6-beta.1"></a>
+## [v0.9.6-beta.1] - 2025-10-19
+### Chore
+- **release:** generate CHANGEME.md
+
 ### Docs
 - **database:** update method comments
 
 ### Refactor
 - **database:** update TransactionFunc to use generic `any` for tx parameter
+
+### Pull Requests
+- Merge pull request [#33](https://github.com/forbearing/gst/issues/33) from forbearing/dev
 
 
 <a name="v0.9.6-beta.0"></a>
@@ -2121,7 +2142,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.6-beta.0...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.6-beta.2...HEAD
+[v0.9.6-beta.2]: https://github.com/forbearing/gst/compare/v0.9.6-beta.1...v0.9.6-beta.2
+[v0.9.6-beta.1]: https://github.com/forbearing/gst/compare/v0.9.6-beta.0...v0.9.6-beta.1
 [v0.9.6-beta.0]: https://github.com/forbearing/gst/compare/v0.9.5...v0.9.6-beta.0
 [v0.9.5]: https://github.com/forbearing/gst/compare/v0.9.4...v0.9.5
 [v0.9.4]: https://github.com/forbearing/gst/compare/v0.9.3...v0.9.4
