@@ -21,7 +21,7 @@ func (p *portal) Tick(c *gin.Context) {
 	targetURL := "%s/api/feishu/qrlogin"
 	// redirectURL := fmt.Sprintf(feishuAuthUrl, config.App.FeishuConfig.AppID) + url.QueryEscape(fmt.Sprintf(targetUrl, config.App.ServerConfig.Domain))
 	redirectURL := fmt.Sprintf(feishuAuthURL, config.App.Feishu.AppID) + url.QueryEscape(fmt.Sprintf(targetURL, config.App.Server.Domain))
-	if config.App.Mode == config.ModeDev {
+	if config.App.Mode == config.Dev {
 		redirectURL = fmt.Sprintf(feishuAuthURL, config.App.Feishu.AppID) + url.QueryEscape(fmt.Sprintf(targetURL, "http://172.31.8.8:8001"))
 	}
 	fmt.Println("============= redirect: ", redirectURL)

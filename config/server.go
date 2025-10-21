@@ -7,11 +7,12 @@ type (
 )
 
 const (
-	ModeProd = "prod"
-	ModeStg  = "stg"
-	ModePre  = "pre"
-	ModeTest = "test"
-	ModeDev  = "dev"
+	Prod  = "prod"
+	Stg   = "stg"
+	Pre   = "pre"
+	Test  = "test"
+	Dev   = "dev"
+	Local = "local"
 )
 
 const (
@@ -66,7 +67,7 @@ type CircularBuffer struct {
 }
 
 func (*Server) setDefault() {
-	cv.SetDefault("server.mode", ModeDev)
+	cv.SetDefault("server.mode", Dev)
 	cv.SetDefault("server.listen", "")
 	cv.SetDefault("server.port", 8080)
 	cv.SetDefault("server.domain", "")
