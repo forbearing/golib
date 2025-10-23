@@ -22,10 +22,11 @@ const (
 )
 
 const (
-	CTX_ROUTE      = "route"
-	CTX_USERNAME   = "username"
-	CTX_USER_ID    = "user_id"
-	CTX_SESSION_ID = "session_id"
+	CTX_ROUTE         = "route"
+	CTX_USERNAME      = "username"
+	CTX_USER_ID       = "user_id"
+	CTX_SESSION_ID    = "session_id"
+	CTX_REQUIRES_AUTH = "requires_auth"
 
 	DATE_TIME_LAYOUT = "2006-01-02 15:04:05"
 	DATE_ID_LAYOUT   = "20060102"

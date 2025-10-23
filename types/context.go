@@ -149,8 +149,9 @@ type ServiceContext struct {
 	SpanID    string
 	Seq       int
 
-	ginCtx *gin.Context
-	phase  consts.Phase
+	ginCtx       *gin.Context
+	phase        consts.Phase
+	requiresAuth bool // indicates whether the current API requires authentication
 }
 
 // NewServiceContext creates ServiceContext from gin.Context.
@@ -196,6 +197,10 @@ func NewServiceContext(c *gin.Context, ctxs ...context.Context) *ServiceContext 
 		ginCtx:  c,
 		context: ctx,
 		Writer:  c.Writer,
+
+		// Check if the current route requires authentication
+		// Determined by checking if there's a flag set by authentication middleware in gin.Context
+		requiresAuth: c.GetBool(consts.CTX_REQUIRES_AUTH),
 	}
 }
 
@@ -253,6 +258,9 @@ func (sc *ServiceContext) WithPhase(phase consts.Phase) *ServiceContext {
 	sc.phase = phase
 	return sc
 }
+
+// RequiresAuth returns whether the current API requires authentication
+func (sc *ServiceContext) RequiresAuth() bool { return sc.requiresAuth }
 
 type ModelContext struct {
 	dbctx *DatabaseContext

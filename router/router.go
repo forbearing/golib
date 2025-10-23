@@ -65,6 +65,7 @@ func Init() error {
 
 	auth.Use(middleware.CommonMiddlewares...)
 	auth.Use(middleware.AuthMiddlewares...)
+	auth.Use(middleware.AuthMarker()) // Mark authenticated routes
 	pub.Use(middleware.CommonMiddlewares...)
 
 	return nil
