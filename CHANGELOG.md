@@ -2,6 +2,18 @@
 ## [Unreleased]
 
 
+<a name="v0.9.6-beta.3"></a>
+## [v0.9.6-beta.3] - 2025-10-23
+### Chore
+- **release:** generate CHANGEME.md
+
+### Feat
+- add authentication marker middleware and simplify auth logic
+
+### Pull Requests
+- Merge pull request [#35](https://github.com/forbearing/gst/issues/35) from forbearing/dev
+
+
 <a name="v0.9.6-beta.2"></a>
 ## [v0.9.6-beta.2] - 2025-10-21
 ### Enh
@@ -2142,7 +2154,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.6-beta.2...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.6-beta.3...HEAD
+[v0.9.6-beta.3]: https://github.com/forbearing/gst/compare/v0.9.6-beta.2...v0.9.6-beta.3
 [v0.9.6-beta.2]: https://github.com/forbearing/gst/compare/v0.9.6-beta.1...v0.9.6-beta.2
 [v0.9.6-beta.1]: https://github.com/forbearing/gst/compare/v0.9.6-beta.0...v0.9.6-beta.1
 [v0.9.6-beta.0]: https://github.com/forbearing/gst/compare/v0.9.5...v0.9.6-beta.0
