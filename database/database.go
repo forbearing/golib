@@ -90,9 +90,12 @@ func (db *database[M]) reset() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// default not delete resource permanently.
-	// call option method 'WithPurge' to set enablePurge to true.
-	db.enablePurge = false
+	// Set enablePurge based on model's Purge() method.
+	// If model.Purge() returns true, records will be permanently deleted (hard delete).
+	// If model.Purge() returns false (default), records will be soft deleted (only update deleted_at).
+	// The WithPurge() option can override this default behavior.
+	var m M
+	db.enablePurge = m.Purge()
 	db.enableCache = false
 	db.tableName = ""
 	db.batchSize = 0
