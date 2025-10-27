@@ -90,13 +90,7 @@ func (db *database[M]) reset() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// Set enablePurge based on model's Purge() method.
-	// If model.Purge() returns true, records will be permanently deleted (hard delete).
-	// If model.Purge() returns false (default), records will be soft deleted (only update deleted_at).
-	// The WithPurge() option can override this default behavior.
-	typ := reflect.TypeOf(*new(M)).Elem()
-	m := reflect.New(typ).Interface().(M) //nolint:errcheck
-	db.enablePurge = m.Purge()
+	db.enablePurge = false
 	db.enableCache = false
 	db.tableName = ""
 	db.batchSize = 0
@@ -126,6 +120,15 @@ func (db *database[M]) prepare() error {
 			return err
 		}
 	}
+
+	// Set enablePurge based on model's Purge() method.
+	// If model.Purge() returns true, records will be permanently deleted (hard delete).
+	// If model.Purge() returns false (default), records will be soft deleted (only update deleted_at).
+	// The WithPurge() option can override this default behavior.
+	typ := reflect.TypeOf(*new(M)).Elem()
+	m := reflect.New(typ).Interface().(M) //nolint:errcheck
+	db.enablePurge = m.Purge()
+
 	return nil
 }
 
