@@ -94,7 +94,8 @@ func (db *database[M]) reset() {
 	// If model.Purge() returns true, records will be permanently deleted (hard delete).
 	// If model.Purge() returns false (default), records will be soft deleted (only update deleted_at).
 	// The WithPurge() option can override this default behavior.
-	var m M
+	typ := reflect.TypeOf(*new(M)).Elem()
+	m := reflect.New(typ).Interface().(M) //nolint:errcheck
 	db.enablePurge = m.Purge()
 	db.enableCache = false
 	db.tableName = ""
