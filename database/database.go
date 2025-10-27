@@ -58,12 +58,14 @@ var (
 
 // database inplement types.Database[T types.Model] interface.
 type database[M types.Model] struct {
-	mu  sync.Mutex
 	ins *gorm.DB
+	m   M
+	typ reflect.Type
 	ctx *types.DatabaseContext
+	mu  sync.Mutex
 
 	// options
-	enablePurge bool   // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
+	enablePurge *bool  // delete resource permanently, not only update deleted_at field, only works on 'Delete' method.
 	enableCache bool   // using cache or not, only works 'List', 'Get', 'Count' method.
 	tableName   string // support multiple custom table name, always used with the `WithDB` method.
 	batchSize   int    // batch size for bulk operations. affects Create, Update, Delete.
@@ -90,9 +92,7 @@ func (db *database[M]) reset() {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// default not delete resource permanently.
-	// call option method 'WithPurge' to set enablePurge to true.
-	db.enablePurge = false
+	db.enablePurge = nil
 	db.enableCache = false
 	db.tableName = ""
 	db.batchSize = 0
@@ -122,6 +122,19 @@ func (db *database[M]) prepare() error {
 			return err
 		}
 	}
+
+	db.typ = reflect.TypeOf(*new(M)).Elem()
+	db.m = reflect.New(db.typ).Interface().(M) //nolint:errcheck
+	// Set enablePurge based on model's Purge() method if not explicitly set by WithPurge().
+	// Priority: WithPurge() > model.Purge() > default (soft delete)
+	// - If WithPurge() was called, use the explicitly set value (highest priority)
+	// - Otherwise, use model.Purge() to determine the default delete behavior
+	// - model.Purge() returns true: hard delete (permanent deletion)
+	// - model.Purge() returns false: soft delete (only update deleted_at field)
+	if db.enablePurge == nil {
+		db.enablePurge = util.ValueOf(db.m.Purge())
+	}
+
 	return nil
 }
 
@@ -1059,7 +1072,7 @@ func (db *database[M]) WithJoinRaw(query string, args ...any) types.Database[M] 
 	if !strings.Contains(upperQuery, "JOIN") || !strings.Contains(upperQuery, "ON") {
 		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithJoinRaw")).Warnz("invalid join clause, must contain JOIN and ON",
 			zap.String("query", query),
-			zap.String("table", reflect.TypeOf(*new(M)).Elem().Name()),
+			zap.String("table", db.typ.Name()),
 		)
 		return db
 	}
@@ -1389,17 +1402,27 @@ func (db *database[M]) WithExclude(excludes map[string][]any) types.Database[M] 
 	return db
 }
 
-// WithPurge enables permanent deletion of records (hard delete).
-// Bypasses soft delete mechanism and removes records from the database permanently.
-// Use with extreme caution as this operation cannot be undone.
+// WithPurge explicitly controls whether to permanently delete records (hard delete).
+// This option has the HIGHEST PRIORITY and overrides the model's default Purge() behavior.
 //
-// Example:
+// Priority order:
+//  1. WithPurge() - explicitly set by user (highest priority)
+//  2. model.Purge() - default behavior defined in the model
+//  3. false - framework default (soft delete)
 //
-//	WithPurge().Delete(&user)  // Permanently delete user record
+// Parameters:
+//   - enable: Optional boolean flag (default: true if omitted)
+//   - true: Hard delete (permanent deletion, bypasses soft delete)
+//   - false: Soft delete (only updates deleted_at field)
 //
-// WARNING: This will permanently remove data from the database.
-// WithPurge will delete resource in database permanently.
-// It only works on 'Delete' method.
+// Usage:
+//
+//	WithPurge().Delete(&user)        // Hard delete (enable=true by default)
+//	WithPurge(true).Delete(&user)    // Hard delete (explicit)
+//	WithPurge(false).Delete(&user)   // Soft delete (explicit, overrides model.Purge())
+//
+// WARNING: Hard delete will permanently remove data from the database and cannot be undone.
+// Only works on 'Delete' method.
 func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
 	_enable := true
 	if len(enable) > 0 {
@@ -1407,7 +1430,7 @@ func (db *database[M]) WithPurge(enable ...bool) types.Database[M] {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.enablePurge = _enable
+	db.enablePurge = util.ValueOf(_enable)
 	return db
 }
 
@@ -1560,8 +1583,7 @@ func (db *database[M]) Create(objs ...M) (err error) {
 	// 	return err
 	// }
 	//
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1692,12 +1714,11 @@ func (db *database[M]) Delete(objs ...M) (err error) {
 			return err
 		}
 	}
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
-	if db.enablePurge {
+	if util.Deref(db.enablePurge) {
 		// delete permanently.
 		// if err = db.db.Unscoped().Delete(objs).Error; err != nil {
 		// if err = db.db.Table(db.tableName).Unscoped().Delete(objs).Error; err != nil {
@@ -1829,8 +1850,7 @@ func (db *database[M]) Update(objs ...M) (err error) {
 	// 	return err
 	// }
 	//
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1908,8 +1928,7 @@ func (db *database[M]) UpdateByID(id string, key string, val any) (err error) {
 	// }
 
 	// return db.db.Model(*new(M)).Where("id = ?", id).Update(key, val).Error
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -1961,10 +1980,10 @@ func (db *database[M]) List(dest *[]M, _cache ...*[]byte) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Find(dest).Statement, "list")
 	if _dest, e := cache.Cache[[]M]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("list", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("list", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("list", db.typ.Name()).Inc()
 		*dest = _dest
 		logger.Cache.Infow("list from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return nil
@@ -2052,8 +2071,7 @@ QUERY:
 		}
 	}
 	// if err = db.db.Find(dest).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2146,10 +2164,10 @@ func (db *database[M]) Get(dest M, id string, _cache ...*[]byte) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Where("id = ?", id).Find(dest).Statement, "get", id)
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("get", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("get", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("get", db.typ.Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
@@ -2234,8 +2252,7 @@ QUERY:
 		}
 	}
 	// if err = db.db.Where("id = ?", id).Find(dest).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2318,10 +2335,10 @@ func (db *database[M]) Count(count *int64) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).Model(*new(M)).Count(count).Statement, "count")
 	if _cache, e := cache.Cache[int64]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("count", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("count", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("count", db.typ.Name()).Inc()
 		*count = _cache
 		logger.Cache.Infow("count from cache", "cost", util.FormatDurationSmart(time.Since(begin)), "key", key)
 		return err
@@ -2360,8 +2377,7 @@ func (db *database[M]) Count(count *int64) (err error) {
 
 QUERY:
 	// if err = db.db.Model(*new(M)).Count(count).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2424,10 +2440,10 @@ func (db *database[M]) First(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "first")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("first", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("first", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("first", db.typ.Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
@@ -2509,8 +2525,7 @@ QUERY:
 		}
 	}
 	// if err = db.db.First(dest).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2580,10 +2595,10 @@ func (db *database[M]) Last(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "last")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("last", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("last", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("last", db.typ.Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
@@ -2665,8 +2680,7 @@ QUERY:
 		}
 	}
 	// if err = db.db.Last(dest).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2736,10 +2750,10 @@ func (db *database[M]) Take(dest M, _cache ...*[]byte) (err error) {
 	}
 	_, _, key = buildCacheKey(db.ins.Session(&gorm.Session{DryRun: true, Logger: glogger.Default.LogMode(glogger.Silent)}).First(dest).Statement, "take")
 	if _dest, e := cache.Cache[M]().WithContext(ctx).Get(key); e != nil {
-		// metrics.CacheMiss.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheMiss.WithLabelValues("take", db.typ.Name()).Inc()
 		goto QUERY
 	} else {
-		// metrics.CacheHit.WithLabelValues("take", reflect.TypeOf(*new(M)).Elem().Name()).Inc()
+		// metrics.CacheHit.WithLabelValues("take", db.typ.Name()).Inc()
 		val := reflect.ValueOf(dest)
 		if val.Kind() != reflect.Pointer {
 			return ErrNotPtrStruct
@@ -2821,8 +2835,7 @@ QUERY:
 		}
 	}
 	// if err = db.db.Take(dest).Error; err != nil {
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}
@@ -2882,8 +2895,7 @@ func (db *database[M]) Cleanup() (err error) {
 	defer done(err)
 
 	// return db.db.Limit(-1).Where("deleted_at IS NOT NULL").Model(*new(M)).Unscoped().Delete(make([]M, 0)).Error
-	typ := reflect.TypeOf(*new(M)).Elem()
-	tableName := reflect.New(typ).Interface().(M).GetTableName() //nolint:errcheck
+	tableName := db.m.GetTableName() //nolint:errcheck
 	if len(db.tableName) > 0 {
 		tableName = db.tableName
 	}

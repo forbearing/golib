@@ -179,6 +179,7 @@ func (b *Base) SetID(id ...string)         { setID(b, id...) }
 func (b *Base) ClearID()                   { clearID(b) }
 func (b *Base) Expands() []string          { return nil }
 func (b *Base) Excludes() map[string][]any { return nil }
+func (b *Base) Purge() bool                { return false } // Default to soft delete
 func (b *Base) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("id", b.ID)
 	enc.AddString("created_by", b.CreatedBy)
@@ -257,6 +258,7 @@ func (Empty) SetID(id ...string)         {}
 func (Empty) ClearID()                   {}
 func (Empty) Expands() []string          { return nil }
 func (Empty) Excludes() map[string][]any { return nil }
+func (Empty) Purge() bool                { return false } // Default to soft delete
 func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }

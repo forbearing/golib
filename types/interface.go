@@ -427,6 +427,7 @@ type Model interface {
 	SetUpdatedAt(time.Time)
 	Expands() []string // Expands returns the foreign keys should preload.
 	Excludes() map[string][]any
+	Purge() bool                                  // Purge indicates whether to permanently delete records (hard delete). Default is false (soft delete).
 	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
 
 	CreateBefore(*ModelContext) error
