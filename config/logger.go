@@ -1,15 +1,17 @@
 package config
 
 const (
-	LOGGER_DIR         = "LOGGER_DIR"         //nolint:staticcheck
-	LOGGER_PREFIX      = "LOGGER_PREFIX"      //nolint:staticcheck
-	LOGGER_FILE        = "LOGGER_FILE"        //nolint:staticcheck
-	LOGGER_LEVEL       = "LOGGER_LEVEL"       //nolint:staticcheck
-	LOGGER_FORMAT      = "LOGGER_FORMAT"      //nolint:staticcheck
-	LOGGER_ENCODER     = "LOGGER_ENCODER"     //nolint:staticcheck
-	LOGGER_MAX_AGE     = "LOGGER_MAX_AGE"     //nolint:staticcheck
-	LOGGER_MAX_SIZE    = "LOGGER_MAX_SIZE"    //nolint:staticcheck
-	LOGGER_MAX_BACKUPS = "LOGGER_MAX_BACKUPS" //nolint:staticcheck
+	LOGGER_DIR                     = "LOGGER_DIR"                     //nolint:staticcheck
+	LOGGER_PREFIX                  = "LOGGER_PREFIX"                  //nolint:staticcheck
+	LOGGER_FILE                    = "LOGGER_FILE"                    //nolint:staticcheck
+	LOGGER_LEVEL                   = "LOGGER_LEVEL"                   //nolint:staticcheck
+	LOGGER_FORMAT                  = "LOGGER_FORMAT"                  //nolint:staticcheck
+	LOGGER_ENCODER                 = "LOGGER_ENCODER"                 //nolint:staticcheck
+	LOGGER_MAX_AGE                 = "LOGGER_MAX_AGE"                 //nolint:staticcheck
+	LOGGER_MAX_SIZE                = "LOGGER_MAX_SIZE"                //nolint:staticcheck
+	LOGGER_MAX_BACKUPS             = "LOGGER_MAX_BACKUPS"             //nolint:staticcheck
+	LOGGER_CONTROLLER_LOG_REQUEST  = "LOGGER_CONTROLLER_LOG_REQUEST"  //nolint:staticcheck
+	LOGGER_CONTROLLER_LOG_RESPONSE = "LOGGER_CONTROLLER_LOG_RESPONSE" //nolint:staticcheck
 )
 
 // Logger represents section "logger" for client-side or server-side configuration,
@@ -51,6 +53,20 @@ type Logger struct {
 	// MaxBackups is the maximum number of old log files to retain.
 	// The value default to 3.
 	MaxBackups int `json:"max_backups" ini:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
+
+	// Controller contains controller-specific logging configurations
+	Controller ControllerLogger `json:"controller" ini:"controller" yaml:"controller" mapstructure:"controller"`
+}
+
+// ControllerLogger represents controller logging configuration
+type ControllerLogger struct {
+	// LogRequest enables logging of HTTP request body using zap logger
+	// Default: true
+	LogRequest bool `json:"log_request" ini:"log_request" yaml:"log_request" mapstructure:"log_request"`
+
+	// LogResponse enables logging of HTTP response body using zap logger
+	// Default: true
+	LogResponse bool `json:"log_response" ini:"log_response" yaml:"log_response" mapstructure:"log_response"`
 }
 
 func (*Logger) setDefault() {
@@ -63,4 +79,6 @@ func (*Logger) setDefault() {
 	cv.SetDefault("logger.max_age", 30)
 	cv.SetDefault("logger.max_size", 100)
 	cv.SetDefault("logger.max_backups", 1)
+	cv.SetDefault("logger.controller.log_request", false)
+	cv.SetDefault("logger.controller.log_response", false)
 }
