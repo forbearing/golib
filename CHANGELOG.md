@@ -2,6 +2,38 @@
 ## [Unreleased]
 
 
+<a name="v0.9.7-beta.2"></a>
+## [v0.9.7-beta.2] - 2025-10-29
+### Chore
+- just format code
+
+### Feat
+- **gg:** add subcommand `watch` to watch model directory changes and automatically generates code
+
+### Fix
+- **database:** prevent data loss from empty query conditions
+
+### Refactor
+- **codegen:** extract ast strings into constants
+
+### Style
+- **gofumpt:** gofumpt -l -w .
+- **golangci-lint:** resolve issues
+
+### Pull Requests
+- Merge pull request [#42](https://github.com/forbearing/gst/issues/42) from forbearing/dev
+- Merge pull request [#41](https://github.com/forbearing/gst/issues/41) from forbearing/dev
+
+
+<a name="v0.9.7-beta.1"></a>
+## [v0.9.7-beta.1] - 2025-10-29
+### Chore
+- **release:** generate CHANGEME.md
+
+### Fix
+- **model:** make model.Any implements types.Model interfaces
+
+
 <a name="v0.9.7-beta.0"></a>
 ## [v0.9.7-beta.0] - 2025-10-29
 ### Chore
@@ -613,11 +645,11 @@ Configuration field names changed from Jaeger to OTEL
 - Merge pull request [#5](https://github.com/forbearing/gst/issues/5) from forbearing/dev
 
 
-<a name="v0.7.0-beta.3"></a>
-## [v0.7.0-beta.3] - 2025-08-20
-
 <a name="v0.7.0"></a>
 ## [v0.7.0] - 2025-08-20
+
+<a name="v0.7.0-beta.3"></a>
+## [v0.7.0-beta.3] - 2025-08-20
 ### Chore
 - update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
@@ -2208,7 +2240,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.7-beta.0...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.7-beta.2...HEAD
+[v0.9.7-beta.2]: https://github.com/forbearing/gst/compare/v0.9.7-beta.1...v0.9.7-beta.2
+[v0.9.7-beta.1]: https://github.com/forbearing/gst/compare/v0.9.7-beta.0...v0.9.7-beta.1
 [v0.9.7-beta.0]: https://github.com/forbearing/gst/compare/v0.9.6...v0.9.7-beta.0
 [v0.9.6]: https://github.com/forbearing/gst/compare/v0.9.6-beta.4...v0.9.6
 [v0.9.6-beta.4]: https://github.com/forbearing/gst/compare/v0.9.6-beta.3...v0.9.6-beta.4
@@ -2230,9 +2264,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 [v0.7.4]: https://github.com/forbearing/gst/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/gst/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/gst/compare/v0.7.1...v0.7.2
-[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.1
-[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.0-beta.3
-[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0
+[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.1
+[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.0
+[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0-beta.3
 [v0.7.0-beta.2]: https://github.com/forbearing/gst/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/gst/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/gst/compare/v0.6.1...v0.6.2
