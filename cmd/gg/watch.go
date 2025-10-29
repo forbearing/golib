@@ -31,9 +31,7 @@ Example:
 	},
 }
 
-var (
-	debounce time.Duration
-)
+var debounce time.Duration
 
 func init() {
 	watchCmd.Flags().DurationVar(&debounce, "debounce", 300*time.Millisecond, "debounce duration to avoid multiple regenerations")
