@@ -460,6 +460,16 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 	structFieldToMap(db.ctx, typ, val, q)
 	// fmt.Println("------------- WithQuery", q)
 
+	// WARN: CRITICAL SAFETY CHECK: If all query fields are zero values (empty map q),
+	// prevent querying all records by adding an impossible condition.
+	// This prevents catastrophic data loss scenarios where empty query conditions
+	// could lead to deletion of all records in production.
+	if len(q) == 0 {
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query fields are empty, adding safety condition to prevent matching all records")
+		db.ins = db.ins.Where("1 = 0")
+		return db
+	}
+
 	if _fuzzyMatch {
 		// // Deprecated!
 		// for k, v := range q {
@@ -467,21 +477,18 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 		// 	db.db = db.db.Where(fmt.Sprintf("`%s` LIKE ?", k), fmt.Sprintf("%%%v%%", v))
 		// }
 
-		// TODO: empty query conditions will list all resource from database.
-		// We should make sure nothing record will be matched.
-		// db.db = db.db.Where(`1 = 0`)
-
 		// If the query strings has multiple value(separated by ',')
 		// construct the 'WHERE' 'REGEXP' SQL statement
 		// eg: SELECT * FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
 		//     SELECT count(*) FROM `assets` WHERE `category_level2_id` REGEXP '.*XS.*|.*NU.*'
+		hasValidCondition := false
 		for k, v := range q {
 			items := strings.Split(v, ",")
-			// TODO: should we skip if items length is 0?
 			// skip the string slice which all element is empty.
 			if len(strings.Join(items, "")) == 0 {
 				continue
 			}
+			hasValidCondition = true
 			if len(items) > 1 { // If the query string has multiple value(separated by ','), using regexp
 				var regexpVal string
 				for _, item := range items {
@@ -505,31 +512,38 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 				}
 			}
 		}
+		// SAFETY CHECK: If all values are empty after filtering, prevent matching all records
+		if !hasValidCondition {
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
+			db.ins = db.ins.Where("1 = 0")
+		}
 	} else {
 		// // Deprecated!
 		// // SELECT * FROM `assets` WHERE `assets`.`category_level2_id` = 'NU
 		// // SELECT count(*) FROM `assets` WHERE `assets`.`category_level2_id` = 'NU'
 		// db.db = db.db.Where(query)
 
-		// TODO: empty query conditions will list all resource from database.
-		// We should make sure nothing record will be matched.
-		// db.db = db.db.Where(`1 = 0`)
-
 		// If the query string has multiple value(separated by ','),
 		// construct the 'WHERE' 'IN' SQL statement.
 		// eg: SELECT id FROM users WHERE name IN ('user01', 'user02', 'user03', 'user04')
+		hasValidCondition := false
 		for k, v := range q {
 			items := strings.Split(v, ",")
-			// TODO: should we skip if items total length is 0?
 			if len(strings.Join(items, "")) == 0 {
 				continue
 			}
+			hasValidCondition = true
 			// db.db = db.db.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 			if db.orQuery {
 				db.ins = db.ins.Or(fmt.Sprintf("`%s` IN (?)", k), items)
 			} else {
 				db.ins = db.ins.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 			}
+		}
+		// SAFETY CHECK: If all values are empty after filtering, prevent matching all records
+		if !hasValidCondition {
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
+			db.ins = db.ins.Where("1 = 0")
 		}
 	}
 	return db

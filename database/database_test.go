@@ -1261,6 +1261,73 @@ func BenchmarkFirst(b *testing.B) {
 	}
 }
 
+// TestEmptyQueryConditionSafety tests that empty query conditions do not match all records
+// This is a critical safety feature to prevent catastrophic data loss scenarios
+func (suite *DatabaseTestSuite) TestEmptyQueryConditionSafety() {
+	db := suite.userDB
+
+	// Create multiple test users
+	testUsers := []*TestUser{
+		{Name: "SafetyUser1", Email: "safety1@example.com", Age: 25, IsActive: true},
+		{Name: "SafetyUser2", Email: "safety2@example.com", Age: 30, IsActive: true},
+		{Name: "SafetyUser3", Email: "safety3@example.com", Age: 35, IsActive: false},
+	}
+	err := db.Create(testUsers...)
+	suite.NoError(err)
+
+	// Get total count before empty query
+	var totalCount int64
+	err = db.Count(&totalCount)
+	suite.NoError(err)
+	suite.GreaterOrEqual(totalCount, int64(3), "Should have at least 3 users")
+
+	// Test 1: Empty query condition should NOT return all records
+	emptyQuery := &TestUser{} // All fields are zero values
+	var results []*TestUser
+	err = db.WithQuery(emptyQuery).List(&results)
+	suite.NoError(err)
+	suite.Equal(0, len(results), "Empty query should not match any records due to safety check")
+
+	// Test 2: Empty query with fuzzy match should also NOT return all records
+	var fuzzyResults []*TestUser
+	err = db.WithQuery(emptyQuery, true).List(&fuzzyResults)
+	suite.NoError(err)
+	suite.Equal(0, len(fuzzyResults), "Empty fuzzy query should not match any records due to safety check")
+
+	// Test 3: Query with empty string fields should NOT return all records
+	emptyStringQuery := &TestUser{Name: "", Email: ""}
+	var emptyStringResults []*TestUser
+	err = db.WithQuery(emptyStringQuery).List(&emptyStringResults)
+	suite.NoError(err)
+	suite.Equal(0, len(emptyStringResults), "Query with empty strings should not match any records due to safety check")
+
+	// Test 4: Verify that valid queries still work
+	validQuery := &TestUser{Name: "SafetyUser1"}
+	var validResults []*TestUser
+	err = db.WithQuery(validQuery).List(&validResults)
+	suite.NoError(err)
+	suite.Equal(1, len(validResults), "Valid query should return matching records")
+	suite.Equal("SafetyUser1", validResults[0].Name)
+
+	// Test 5: CRITICAL - Empty query with Delete should NOT delete all records
+	emptyDeleteQuery := &TestUser{}
+	var toDelete []*TestUser
+	err = db.WithQuery(emptyDeleteQuery).List(&toDelete)
+	suite.NoError(err)
+	suite.Equal(0, len(toDelete), "Empty query should not match any records for deletion")
+
+	// Verify all records still exist after empty query
+	var countAfter int64
+	err = db.Count(&countAfter)
+	suite.NoError(err)
+	suite.Equal(totalCount, countAfter, "All records should still exist after empty query operations")
+
+	// Clean up
+	for _, user := range testUsers {
+		_ = db.WithPurge().Delete(user)
+	}
+}
+
 // BenchmarkQueryBuilder benchmarks query building methods
 func BenchmarkQueryBuilder(b *testing.B) {
 	db := database.Database[*TestUser](nil)
