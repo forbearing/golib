@@ -196,6 +196,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_CREATE, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE)
@@ -206,6 +207,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_CREATE, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -225,6 +227,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			req.SetUpdatedBy(c.GetString(consts.CTX_USERNAME))
 			log.Infoz("create", zap.Object(reflect.TypeOf(*new(M)).Elem().String(), req))
 		}
+		logRequest(log, consts.PHASE_CREATE, req)
 
 		// 1.Perform business logic processing before create resource.
 		var serviceCtxBefore *types.ServiceContext
@@ -298,6 +301,7 @@ func CreateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			log.Warn(err)
 		}
 
+		logResponse(log, consts.PHASE_CREATE, req)
 		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 	}
 }
@@ -397,6 +401,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				otel.RecordError(span, err)
 				return
 			}
+			logRequest(log, consts.PHASE_DELETE, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE)
@@ -407,6 +412,7 @@ func DeleteFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_DELETE, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -642,6 +648,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_UPDATE, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE)
@@ -652,6 +659,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_UPDATE, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -664,6 +672,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			otel.RecordError(span, err)
 			return
 		}
+		logRequest(log, consts.PHASE_UPDATE, req)
 
 		// param id has more priority than http body data id
 		var paramID string
@@ -780,6 +789,7 @@ func UpdateFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			log.Warn(err)
 		}
 
+		logResponse(log, consts.PHASE_UPDATE, req)
 		ResponseJSON(c, CodeSuccess, req)
 	}
 }
@@ -897,6 +907,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_PATCH, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH)
@@ -907,6 +918,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_PATCH, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -922,6 +934,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 			otel.RecordError(span, err)
 			return
 		}
+		logRequest(log, consts.PHASE_PATCH, req)
 		if len(id) == 0 {
 			id = req.GetID()
 		}
@@ -1029,6 +1042,7 @@ func PatchFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*
 
 		// NOTE: You should response `oldVal` instead of `req`.
 		// The req is `newVal`.
+		logResponse(log, consts.PHASE_PATCH, cur)
 		ResponseJSON(c, CodeSuccess, cur)
 	}
 }
@@ -1184,6 +1198,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				otel.RecordError(span, err)
 				return
 			}
+			logRequest(log, consts.PHASE_LIST, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_LIST, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_LIST)
@@ -1194,6 +1209,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_LIST, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -1548,6 +1564,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 				otel.RecordError(span, err)
 				return
 			}
+			logRequest(log, consts.PHASE_GET, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_GET, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_GET)
@@ -1558,6 +1575,7 @@ func GetFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*ty
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_GET, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -1934,6 +1952,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_CREATE_MANY, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_CREATE_MANY, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_CREATE_MANY)
@@ -1944,6 +1963,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_CREATE_MANY, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -1960,6 +1980,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
+		logRequest(log, consts.PHASE_CREATE_MANY, req)
 
 		if req.Options == nil {
 			req.Options = new(options)
@@ -2045,6 +2066,7 @@ func CreateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				Failed:    0,
 			}
 		}
+		logResponse(log, consts.PHASE_CREATE_MANY, req)
 		ResponseJSON(c, CodeSuccess.WithStatus(http.StatusCreated), req)
 	}
 }
@@ -2150,6 +2172,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_DELETE_MANY, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_DELETE_MANY, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_DELETE_MANY)
@@ -2160,6 +2183,7 @@ func DeleteManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_DELETE_MANY, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -2342,6 +2366,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_UPDATE_MANY, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_UPDATE_MANY, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_UPDATE_MANY)
@@ -2352,6 +2377,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_UPDATE_MANY, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -2366,6 +2392,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
+		logRequest(log, consts.PHASE_UPDATE_MANY, req)
 
 		// 1.Perform business logic processing before batch update resource.
 		var serviceCtxBefore *types.ServiceContext
@@ -2442,6 +2469,7 @@ func UpdateManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg
 				Failed:    0,
 			}
 		}
+		logResponse(log, consts.PHASE_UPDATE_MANY, req)
 		ResponseJSON(c, CodeSuccess, req)
 	}
 }
@@ -2530,6 +2558,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 			if errors.Is(reqErr, io.EOF) {
 				log.Warn(ErrRequestBodyEmpty)
 			}
+			logRequest(log, consts.PHASE_PATCH_MANY, req)
 			var serviceCtx *types.ServiceContext
 			if rsp, err = traceServiceOperation[M, RSP](ctrlSpanCtx, consts.PHASE_PATCH_MANY, func(spanCtx context.Context) (RSP, error) {
 				serviceCtx = types.NewServiceContext(c, spanCtx).WithPhase(consts.PHASE_PATCH_MANY)
@@ -2540,6 +2569,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 				otel.RecordError(span, err)
 				return
 			}
+			logResponse(log, consts.PHASE_PATCH_MANY, rsp)
 			ResponseJSON(c, CodeSuccess, rsp)
 			return
 		}
@@ -2556,6 +2586,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 		if errors.Is(reqErr, io.EOF) {
 			log.Warn(ErrRequestBodyEmpty)
 		}
+		logRequest(log, consts.PHASE_PATCH_MANY, req)
 		for _, m := range req.Items {
 			var results []M
 			v := reflect.New(typ).Interface().(M) //nolint:errcheck
@@ -2653,6 +2684,7 @@ func PatchManyFactory[M types.Model, REQ types.Request, RSP types.Response](cfg 
 				Failed:    0,
 			}
 		}
+		logResponse(log, consts.PHASE_PATCH_MANY, req)
 		ResponseJSON(c, CodeSuccess, req)
 	}
 }

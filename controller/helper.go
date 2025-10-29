@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/forbearing/gst/config"
 	"github.com/forbearing/gst/database"
 	"github.com/forbearing/gst/provider/otel"
 	. "github.com/forbearing/gst/response"
@@ -16,6 +17,7 @@ import (
 	"github.com/forbearing/gst/types/consts"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 func patchValue(log types.Logger, typ reflect.Type, oldVal reflect.Value, newVal reflect.Value) {
@@ -378,4 +380,20 @@ func handleServiceError(c *gin.Context, ctx *types.ServiceContext, err error) {
 
 	// Default error handling
 	ResponseJSON(c, CodeFailure.WithErr(err))
+}
+
+// logRequest logs the HTTP request using zap logger if enabled in config
+func logRequest(log types.Logger, phase consts.Phase, req any) {
+	if !config.App.Logger.Controller.LogRequest {
+		return
+	}
+	log.Info("request", zap.String("phase", phase.MethodName()), zap.Any("request", req))
+}
+
+// logResponse logs the HTTP response using zap logger if enabled in config
+func logResponse(log types.Logger, phase consts.Phase, rsp any) {
+	if !config.App.Logger.Controller.LogResponse {
+		return
+	}
+	log.Info("response", zap.String("phase", phase.MethodName()), zap.Any("response", rsp))
 }
