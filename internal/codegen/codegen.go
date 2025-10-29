@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/forbearing/gst/internal/codegen/constants"
 	"github.com/forbearing/gst/internal/codegen/gen"
 )
 
@@ -20,15 +21,15 @@ func FindModels(module, modelDir, serviceDir string, excludes []string) ([]*gen.
 		}
 
 		base := filepath.Base(path)
-		if path != modelDir && (base == "vendor" || base == "testdata") {
+		if path != modelDir && (base == constants.DirVendor || base == constants.DirTestData) {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {
 			return nil
 		}
-		if !strings.HasSuffix(info.Name(), ".go") ||
-			strings.HasSuffix(info.Name(), "_test.go") ||
-			strings.HasPrefix(info.Name(), "_") ||
+		if !strings.HasSuffix(info.Name(), constants.ExtensionGo) ||
+			strings.HasSuffix(info.Name(), constants.PatternTestFile) ||
+			strings.HasPrefix(info.Name(), constants.PrefixIgnore) ||
 			slices.Contains(excludes, info.Name()) {
 			return nil
 		}

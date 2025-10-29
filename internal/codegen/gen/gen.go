@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/forbearing/gst/dsl"
+	"github.com/forbearing/gst/internal/codegen/constants"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/stoewer/go-strcase"
 )
@@ -135,12 +136,12 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 		return false
 	}
 
-	aliasName := "model"
+	aliasName := constants.PkgModel
 	for _, imp := range file.Imports {
 		if imp.Path == nil {
 			continue
 		}
-		if imp.Path.Value == `"github.com/forbearing/gst/model"` {
+		if imp.Path.Value == constants.ModelPackagePath {
 			if imp.Name != nil {
 				aliasName = imp.Name.Name
 			}
@@ -151,10 +152,10 @@ func isModelBase(file *ast.File, field *ast.Field) bool {
 	switch t := field.Type.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := t.X.(*ast.Ident); ok {
-			return ident.Name == aliasName && t.Sel.Name == "Base"
+			return ident.Name == aliasName && t.Sel.Name == constants.FieldBase
 		}
 	case *ast.Ident:
-		return t.Name == "Base"
+		return t.Name == constants.FieldBase
 	}
 
 	return false
@@ -166,12 +167,12 @@ func isModelEmpty(file *ast.File, field *ast.Field) bool {
 		return false
 	}
 
-	aliasName := "model"
+	aliasName := constants.PkgModel
 	for _, imp := range file.Imports {
 		if imp.Path == nil {
 			continue
 		}
-		if imp.Path.Value == `"github.com/forbearing/gst/model"` {
+		if imp.Path.Value == constants.ModelPackagePath {
 			if imp.Name != nil {
 				aliasName = imp.Name.Name
 			}
@@ -182,10 +183,10 @@ func isModelEmpty(file *ast.File, field *ast.Field) bool {
 	switch t := field.Type.(type) {
 	case *ast.SelectorExpr:
 		if ident, ok := t.X.(*ast.Ident); ok {
-			return ident.Name == aliasName && t.Sel.Name == "Empty"
+			return ident.Name == aliasName && t.Sel.Name == constants.FieldEmpty
 		}
 	case *ast.Ident:
-		return t.Name == "Empty"
+		return t.Name == constants.FieldEmpty
 	}
 
 	return false
@@ -269,14 +270,16 @@ func FindModels(module string, modelDir string, filename string) ([]*ModelInfo, 
 
 // modelPkg2ServicePkg converts model name to service name.
 func modelPkg2ServicePkg(pkgName string) string {
-	if pkgName == "model" {
-		return "service"
+	if pkgName == constants.PkgModel {
+		return constants.PkgService
 	}
 	// For model_xxx format, replace with service_xxx
-	if strings.HasPrefix(pkgName, "model_") {
-		return strings.Replace(pkgName, "model_", "service_", 1)
+	modelPrefix := constants.PrefixModel + constants.SeparatorUnderscore
+	servicePrefix := constants.PrefixService + constants.SeparatorUnderscore
+	if strings.HasPrefix(pkgName, modelPrefix) {
+		return strings.Replace(pkgName, modelPrefix, servicePrefix, 1)
 	}
-	return strings.Replace(pkgName, "model", "service", 1)
+	return strings.Replace(pkgName, constants.PrefixModel, constants.PrefixService, 1)
 }
 
 // genServiceMethod1 uses AST to generate CreateBefore,CreateAfter,UpdateBefore,UpdateAfter,
