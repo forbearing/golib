@@ -1,7 +1,23 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v0.9.7-beta.0"></a>
+## [v0.9.7-beta.0] - 2025-10-29
 ### Chore
+- **codegen:** update comments
+
+### Feat
+- **model:** add model.Any used to database transactions
+
+### Pull Requests
+- Merge pull request [#40](https://github.com/forbearing/gst/issues/40) from forbearing/dev
+
+
+<a name="v0.9.6"></a>
+## [v0.9.6] - 2025-10-29
+### Chore
+- **release:** generate CHANGEME.md
 - **release:** generate CHANGEME.md
 
 ### Docs
@@ -13,6 +29,11 @@
 
 ### Style
 - **golangci-lint:** resolve issues
+
+### Pull Requests
+- Merge pull request [#39](https://github.com/forbearing/gst/issues/39) from forbearing/dev
+- Merge pull request [#38](https://github.com/forbearing/gst/issues/38) from forbearing/dev
+- Merge pull request [#37](https://github.com/forbearing/gst/issues/37) from forbearing/dev
 
 
 <a name="v0.9.6-beta.4"></a>
@@ -2187,7 +2208,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.6-beta.4...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.7-beta.0...HEAD
+[v0.9.7-beta.0]: https://github.com/forbearing/gst/compare/v0.9.6...v0.9.7-beta.0
+[v0.9.6]: https://github.com/forbearing/gst/compare/v0.9.6-beta.4...v0.9.6
 [v0.9.6-beta.4]: https://github.com/forbearing/gst/compare/v0.9.6-beta.3...v0.9.6-beta.4
 [v0.9.6-beta.3]: https://github.com/forbearing/gst/compare/v0.9.6-beta.2...v0.9.6-beta.3
 [v0.9.6-beta.2]: https://github.com/forbearing/gst/compare/v0.9.6-beta.1...v0.9.6-beta.2
