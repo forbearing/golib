@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 
+	"github.com/forbearing/gst/internal/codegen/constants"
 	"github.com/forbearing/gst/types/consts"
 )
 
@@ -26,7 +27,7 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 
 	// Create Init function declaration
 	initDecl := &ast.FuncDecl{
-		Name: ast.NewIdent("init"),
+		Name: ast.NewIdent(constants.FuncInit),
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
@@ -43,7 +44,7 @@ func BuildModelFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (s
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/gst/model"`,
+					Value: fmt.Sprintf(`"%s"`, constants.ImportPathModel),
 				},
 			},
 		},
@@ -117,7 +118,7 @@ func BuildServiceFile(pkgName string, modelImports []string, stmts ...ast.Stmt) 
 	body = append(body, stmts...)
 
 	initDecl := &ast.FuncDecl{
-		Name: ast.NewIdent("init"),
+		Name: ast.NewIdent(constants.FuncInit),
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
@@ -134,13 +135,13 @@ func BuildServiceFile(pkgName string, modelImports []string, stmts ...ast.Stmt) 
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/gst/service"`,
+					Value: fmt.Sprintf(`"%s"`, constants.ImportPathService),
 				},
 			},
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/gst/types/consts"`,
+					Value: fmt.Sprintf(`"%s"`, constants.ImportPathConsts),
 				},
 			},
 		},
@@ -221,7 +222,7 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 	})
 
 	initDecl := &ast.FuncDecl{
-		Name: ast.NewIdent("Init"),
+		Name: ast.NewIdent(constants.FuncInit2),
 		Type: &ast.FuncType{
 			TypeParams: nil,
 			Params:     nil,
@@ -242,13 +243,13 @@ func BuildRouterFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/gst/router"`,
+					Value: fmt.Sprintf(`"%s"`, constants.ImportPathRouter),
 				},
 			},
 			&ast.ImportSpec{
 				Path: &ast.BasicLit{
 					Kind:  token.STRING,
-					Value: `"github.com/forbearing/gst/types/consts"`,
+					Value: fmt.Sprintf(`"%s"`, constants.ImportPathConsts),
 				},
 			},
 		},
@@ -320,58 +321,58 @@ func main() {
 */
 func BuildMainFile(projectName string) (string, error) {
 	f := &ast.File{
-		Name: ast.NewIdent("main"),
+		Name: ast.NewIdent(constants.PkgMain),
 		Decls: []ast.Decl{
 			&ast.GenDecl{
 				Tok: token.IMPORT,
 				Specs: []ast.Spec{
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/configx")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/cronjob")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/middleware")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/model")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/service")}, Name: ast.NewIdent("_")},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/router")}},
-					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/gst/bootstrap")}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirConfigx)}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirCronjob)}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirMiddleware)}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirModel)}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirService)}, Name: ast.NewIdent("_")},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", projectName+"/"+constants.SubDirRouter)}},
+					&ast.ImportSpec{Path: &ast.BasicLit{Value: fmt.Sprintf("%q", constants.ImportPathBootstrap)}},
 					&ast.ImportSpec{
-						Path: &ast.BasicLit{Value: fmt.Sprintf("%q", "github.com/forbearing/gst/util")},
+						Path: &ast.BasicLit{Value: fmt.Sprintf("%q", constants.ImportPathUtil)},
 						Name: ast.NewIdent("."),
 					},
 				},
 			},
 			&ast.FuncDecl{
-				Name: ast.NewIdent("main"),
+				Name: ast.NewIdent(constants.FuncMain),
 				Type: &ast.FuncType{},
 				Body: &ast.BlockStmt{
 					List: []ast.Stmt{
 						&ast.ExprStmt{
 							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
+								Fun: ast.NewIdent(constants.FuncRunOrDie),
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
-										X:   ast.NewIdent("bootstrap"),
-										Sel: ast.NewIdent("Bootstrap"),
+										X:   ast.NewIdent(constants.PkgBootstrap),
+										Sel: ast.NewIdent(constants.BootstrapBootstrap),
 									},
 								},
 							},
 						},
 						&ast.ExprStmt{
 							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
+								Fun: ast.NewIdent(constants.FuncRunOrDie),
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
-										X:   ast.NewIdent("router"),
-										Sel: ast.NewIdent("Init"),
+										X:   ast.NewIdent(constants.PkgRouter),
+										Sel: ast.NewIdent(constants.RouterInit),
 									},
 								},
 							},
 						},
 						&ast.ExprStmt{
 							X: &ast.CallExpr{
-								Fun: ast.NewIdent("RunOrDie"),
+								Fun: ast.NewIdent(constants.FuncRunOrDie),
 								Args: []ast.Expr{
 									&ast.SelectorExpr{
-										X:   ast.NewIdent("bootstrap"),
-										Sel: ast.NewIdent("Run"),
+										X:   ast.NewIdent(constants.PkgBootstrap),
+										Sel: ast.NewIdent(constants.BootstrapRun),
 									},
 								},
 							},
