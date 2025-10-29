@@ -22,10 +22,18 @@ var (
 )
 
 type cronjob struct {
-	name  string
-	spec  string
-	fn    func() error
-	sched cron.Schedule
+	name           string
+	spec           string
+	fn             func() error
+	sched          cron.Schedule
+	runImmediately bool
+}
+
+// Config defines the configuration for cronjob package
+type Config struct {
+	// RunImmediately indicates whether to run the cronjob immediately after registration
+	// in addition to the scheduled execution
+	RunImmediately bool `json:"run_immediately" yaml:"run_immediately" toml:"run_immediately"`
 }
 
 func init() {
@@ -51,21 +59,26 @@ func Init() (err error) {
 }
 
 // Register cronjob can be called at any point before or after Init().
-func Register(fn func() error, spec string, name string) {
+// The config parameter is optional and can be used to customize cronjob behavior.
+func Register(fn func() error, spec string, name string, config ...Config) {
+	var cfg Config
+	if len(config) > 0 {
+		cfg = config[0]
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
+	cj := &cronjob{
+		name:           name,
+		spec:           spec,
+		fn:             fn,
+		runImmediately: cfg.RunImmediately,
+	}
+
 	if inited {
-		register(&cronjob{
-			name: name,
-			spec: spec,
-			fn:   fn,
-		})
+		register(cj)
 	} else {
-		cronjobs = append(cronjobs, &cronjob{
-			name: name,
-			spec: spec,
-			fn:   fn,
-		})
+		cronjobs = append(cronjobs, cj)
 	}
 }
 
@@ -81,6 +94,24 @@ func register(cj *cronjob) {
 		log.Errorz(fmt.Sprintf("failed to parse cronjob spec: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec))
 		return
 	}
+
+	// Execute immediately if configured to do so
+	if cj.runImmediately {
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Errorw(fmt.Sprintf("cronjob immediate execution panic: %s", err), "name", cj.name, "spec", cj.spec)
+				}
+			}()
+			begin := time.Now()
+			if err = cj.fn(); err != nil {
+				log.Errorz(fmt.Sprintf("finished immediate cronjob execution with error: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec), zap.String("cost", util.FormatDurationSmart(time.Since(begin))))
+			} else {
+				log.Infoz("finished immediate cronjob execution", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.String("cost", util.FormatDurationSmart(time.Since(begin))))
+			}
+		}()
+	}
+
 	if _, err = c.AddFunc(cj.spec, func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -96,6 +127,6 @@ func register(cj *cronjob) {
 	}); err != nil {
 		log.Errorz(fmt.Sprintf("failed to add cronjob: %s", err), zap.String("name", cj.name), zap.String("spec", cj.spec))
 	} else {
-		log.Infoz("successfully add cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec))
+		log.Infoz("successfully add cronjob", zap.String("name", cj.name), zap.String("spec", cj.spec), zap.Bool("run_immediately", cj.runImmediately))
 	}
 }

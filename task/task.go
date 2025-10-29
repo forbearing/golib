@@ -1,3 +1,7 @@
+// Package task provides interval-based task scheduling functionality.
+//
+// Deprecated: Use cronjob package instead for more flexible cron-based scheduling.
+// The cronjob package supports cron expressions and provides better control over task execution.
 package task
 
 import (
@@ -26,6 +30,9 @@ type task struct {
 	cancel   context.CancelFunc
 }
 
+// Init initializes the task scheduler and starts all registered tasks.
+//
+// Deprecated: Use cronjob.Init() instead for cron-based task scheduling.
 func Init() error {
 	Register(runtimestats, 60*time.Second, "runtime stats")
 
@@ -37,7 +44,14 @@ func Init() error {
 	return nil
 }
 
-// Register task can be called at any point before or after Init().
+// Register registers a task with the given function, interval, and name.
+// The task can be registered at any point before or after Init().
+//
+// Deprecated: Use cronjob.Register() instead for more flexible cron-based scheduling.
+// Example migration:
+//
+//	// Old: task.Register(fn, 5*time.Minute, "my-task")
+//	// New: cronjob.Register(fn, "0 */5 * * * *", "my-task")
 func Register(fn func() error, interval time.Duration, name string) {
 	mu.Lock()
 	defer mu.Unlock()

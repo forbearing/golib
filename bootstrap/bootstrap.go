@@ -46,7 +46,7 @@ import (
 	"github.com/forbearing/gst/service"
 	serviceauthz "github.com/forbearing/gst/service/authz"
 	servicelog "github.com/forbearing/gst/service/log"
-	"github.com/forbearing/gst/task"
+	"github.com/forbearing/gst/task" // nolint:staticcheck
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 )
@@ -116,7 +116,7 @@ func Bootstrap() error {
 		grpc.Init,
 
 		// job
-		task.Init,
+		task.Init, // nolint:staticcheck
 		cronjob.Init,
 	)
 
