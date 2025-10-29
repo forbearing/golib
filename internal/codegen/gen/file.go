@@ -105,11 +105,11 @@ func Init() error {
 // FIXME: process imports automatically problem.
 func BuildServiceFile(pkgName string, modelImports []string, stmts ...ast.Stmt) (string, error) {
 	// Handle import conflicts when modelImports contain packages with same base name
-	// For example: ["nebula/service/pkg1/user", "nebula/service/pkg2/user"]
+	// For example: ["myproject/service/pkg1/user", "myproject/service/pkg2/user"]
 	// Should be renamed to:
 	// import (
-	//     pkg1_user "nebula/service/pkg1/user"
-	//     pkg2_user "nebula/service/pkg2/user"
+	//     pkg1_user "myproject/service/pkg1/user"
+	//     pkg2_user "myproject/service/pkg2/user"
 	// )
 	importAliases := ResolveImportConflicts(modelImports)
 

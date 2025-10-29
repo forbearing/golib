@@ -170,7 +170,7 @@ func ResolveImportConflicts(imports []string) map[string]string {
 }
 
 // generateAlias creates a unique alias for an import path
-// For example: "nebula/service/cmdb/machine" -> "cmdb_machine"
+// For example: "myproject/service/config/tag" -> "config_tag"
 func generateAlias(importPath string) string {
 	parts := strings.Split(importPath, "/")
 	if len(parts) < 2 {
@@ -178,6 +178,6 @@ func generateAlias(importPath string) string {
 	}
 
 	// Use the last two parts joined with underscore
-	// e.g., "nebula/service/cmdb/machine" -> "cmdb_machine"
+	// e.g., "myproject/service/config/tag" -> "config_tag"
 	return parts[len(parts)-2] + "_" + parts[len(parts)-1]
 }
