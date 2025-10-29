@@ -11,12 +11,20 @@ import (
 // It will modify the struct type and struct methods if Payload
 // or Result is changed, and returns true.
 // Otherwise returns false.
-func ApplyServiceFile(file *ast.File, action *dsl.Action) bool {
+// The servicePkgName parameter specifies the expected package name for the service file.
+// This should match the package name used in service registration to maintain consistency.
+func ApplyServiceFile(file *ast.File, action *dsl.Action, servicePkgName string) bool {
 	if file == nil || action == nil {
 		return false
 	}
 
 	var changed bool
+
+	// Apply package name correction
+	if len(servicePkgName) > 0 && file.Name != nil && file.Name.Name != servicePkgName {
+		file.Name.Name = servicePkgName
+		changed = true
+	}
 
 	for _, decl := range file.Decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.TYPE {

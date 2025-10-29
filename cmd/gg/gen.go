@@ -141,6 +141,8 @@ func genRun() {
 					// pkg2_user "service/pkg2/user"
 					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", alias, act.Phase.RoleName()), act.Phase))
 				} else {
+					// Use lowercase ModelName as package name to maintain original naming style
+					// For example: ModelName "ConfigSetting" -> package name "configsetting"
 					serviceStmts = append(serviceStmts, gen.StmtServiceRegister(fmt.Sprintf("%s.%s", strings.ToLower(m.ModelName), act.Phase.RoleName()), act.Phase))
 				}
 			}
@@ -247,7 +249,7 @@ func genRun() {
 	logSection("Apply Actions To Services")
 
 	fset := token.NewFileSet()
-	applyFile := func(filename string, code string, action *dsl.Action) {
+	applyFile := func(filename string, code string, action *dsl.Action, servicePkgName string) {
 		if fileExists(filename) {
 			// Read original file content to preserve comments and formatting
 			src, err := os.ReadFile(filename)
@@ -256,7 +258,7 @@ func genRun() {
 			checkErr(err)
 
 			// Apply changes
-			changed := gen.ApplyServiceFile(f, action)
+			changed := gen.ApplyServiceFile(f, action, servicePkgName)
 
 			if changed {
 				// Only reformat and write file when there are changes
@@ -287,7 +289,11 @@ func genRun() {
 				dir := strings.Replace(m.ModelFilePath, modelDir, serviceDir, 1)
 				dir = strings.TrimSuffix(dir, ".go")
 				filename := filepath.Join(dir, strings.ToLower(string(act.Phase))+".go")
-				applyFile(filename, code, act)
+				// Use lowercase ModelName as service package name to ensure consistency
+				// with service registration logic and maintain original naming style
+				// For example: ModelName "ConfigSetting" -> package name "configsetting"
+				servicePkgName := strings.ToLower(m.ModelName)
+				applyFile(filename, code, act, servicePkgName)
 			}
 		})
 	}

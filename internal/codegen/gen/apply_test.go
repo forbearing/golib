@@ -11,11 +11,11 @@ import (
 
 func TestApplyServiceFile(t *testing.T) {
 	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		code   string
-		action *dsl.Action
-		want   string
+		name           string // description of this test case
+		code           string
+		action         *dsl.Action
+		servicePkgName string
+		want           string
 	}{
 		{
 			name: "user_create_with_payload_result",
@@ -25,6 +25,7 @@ func TestApplyServiceFile(t *testing.T) {
 				Payload: "UserReq",
 				Result:  "UserRsp",
 			},
+			servicePkgName: "service",
 			want: `package service
 
 import (
@@ -65,6 +66,7 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 				Payload: "User",
 				Result:  "User",
 			},
+			servicePkgName: "service",
 			want: `package service
 
 import (
@@ -97,6 +99,92 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 }
 `,
 		},
+		{
+			name: "package_name_correction_lowercase",
+			code: `package wrongname
+
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
+)
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
+
+func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
+	return rsp, nil
+}
+`,
+			action: &dsl.Action{
+				Enabled: true,
+				Payload: "*User",
+				Result:  "*User",
+			},
+			servicePkgName: "callback",
+			want: `package callback
+
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
+)
+
+type user struct {
+	service.Base[*model.User, *model.User, *model.User]
+}
+
+func (u *user) Create(ctx *types.ServiceContext, req *model.User) (rsp *model.User, err error) {
+	return rsp, nil
+}
+`,
+		},
+		{
+			name: "package_name_correction_configsetting",
+			code: `package config_setting
+
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
+)
+
+type configSetting struct {
+	service.Base[*model.ConfigSetting, *model.ConfigSetting, *model.ConfigSetting]
+}
+
+func (c *configSetting) Create(ctx *types.ServiceContext, req *model.ConfigSetting) (rsp *model.ConfigSetting, err error) {
+	return rsp, nil
+}
+`,
+			action: &dsl.Action{
+				Enabled: true,
+				Payload: "*ConfigSetting",
+				Result:  "*ConfigSetting",
+			},
+			servicePkgName: "configsetting",
+			want: `package configsetting
+
+import (
+	"helloworld/model"
+
+	"github.com/forbearing/gst/service"
+	"github.com/forbearing/gst/types"
+)
+
+type configSetting struct {
+	service.Base[*model.ConfigSetting, *model.ConfigSetting, *model.ConfigSetting]
+}
+
+func (c *configSetting) Create(ctx *types.ServiceContext, req *model.ConfigSetting) (rsp *model.ConfigSetting, err error) {
+	return rsp, nil
+}
+`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,7 +194,7 @@ func (u *user) CreateAfter(ctx *types.ServiceContext, user *model.User) error {
 				t.Error(err)
 				return
 			}
-			ApplyServiceFile(file, tt.action)
+			ApplyServiceFile(file, tt.action, tt.servicePkgName)
 			got, err := FormatNodeExtra(file)
 			if err != nil {
 				t.Error(err)
