@@ -1,6 +1,19 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- **release:** generate CHANGEME.md
+
+### Docs
+- **task:** deprecated task package in favor of cronjob
+
+### Feat
+- **controller:** add configurable request/response logging with zap
+- **cronjob:** cronjob support run immediately
+
+### Style
+- **golangci-lint:** resolve issues
+
 
 <a name="v0.9.6-beta.4"></a>
 ## [v0.9.6-beta.4] - 2025-10-27
