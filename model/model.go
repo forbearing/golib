@@ -321,3 +321,14 @@ func (Any) Purge() bool                { return false }
 func (Any) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
+
+func (Any) CreateBefore(*types.ModelContext) error { return nil }
+func (Any) CreateAfter(*types.ModelContext) error  { return nil }
+func (Any) DeleteBefore(*types.ModelContext) error { return nil }
+func (Any) DeleteAfter(*types.ModelContext) error  { return nil }
+func (Any) UpdateBefore(*types.ModelContext) error { return nil }
+func (Any) UpdateAfter(*types.ModelContext) error  { return nil }
+func (Any) ListBefore(*types.ModelContext) error   { return nil }
+func (Any) ListAfter(*types.ModelContext) error    { return nil }
+func (Any) GetBefore(*types.ModelContext) error    { return nil }
+func (Any) GetAfter(*types.ModelContext) error     { return nil }
