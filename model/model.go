@@ -244,24 +244,22 @@ func clearID(m types.Model) {
 //	}
 type Empty struct{}
 
-func (Empty) GetTableName() string       { return "" }
-func (Empty) GetCreatedBy() string       { return "" }
-func (Empty) GetUpdatedBy() string       { return "" }
-func (Empty) GetCreatedAt() time.Time    { return time.Time{} }
-func (Empty) GetUpdatedAt() time.Time    { return time.Time{} }
-func (Empty) SetCreatedBy(s string)      {}
-func (Empty) SetUpdatedBy(s string)      {}
-func (Empty) SetCreatedAt(t time.Time)   {}
-func (Empty) SetUpdatedAt(t time.Time)   {}
-func (Empty) GetID() string              { return "" }
-func (Empty) SetID(id ...string)         {}
-func (Empty) ClearID()                   {}
-func (Empty) Expands() []string          { return nil }
-func (Empty) Excludes() map[string][]any { return nil }
-func (Empty) Purge() bool                { return false }
-func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	return nil
-}
+func (Empty) GetTableName() string                             { return "" }
+func (Empty) GetCreatedBy() string                             { return "" }
+func (Empty) GetUpdatedBy() string                             { return "" }
+func (Empty) GetCreatedAt() time.Time                          { return time.Time{} }
+func (Empty) GetUpdatedAt() time.Time                          { return time.Time{} }
+func (Empty) SetCreatedBy(s string)                            {}
+func (Empty) SetUpdatedBy(s string)                            {}
+func (Empty) SetCreatedAt(t time.Time)                         {}
+func (Empty) SetUpdatedAt(t time.Time)                         {}
+func (Empty) GetID() string                                    { return "" }
+func (Empty) SetID(id ...string)                               {}
+func (Empty) ClearID()                                         {}
+func (Empty) Expands() []string                                { return nil }
+func (Empty) Excludes() map[string][]any                       { return nil }
+func (Empty) Purge() bool                                      { return false }
+func (Empty) MarshalLogObject(enc zapcore.ObjectEncoder) error { return nil }
 
 func (Empty) CreateBefore(*types.ModelContext) error { return nil }
 func (Empty) CreateAfter(*types.ModelContext) error  { return nil }
@@ -279,7 +277,7 @@ func (Empty) GetAfter(*types.ModelContext) error     { return nil }
 //
 // Usage example:
 //
-//	err = database.Database[*model.Any](ctx.DatabaseContext()).TransactionFunc(func(tx any) error {
+//	_ = database.Database[*model.Any](ctx.DatabaseContext()).TransactionFunc(func(tx any) error {
 //	    // Perform database operations within transaction
 //	    files := make([]*namespace.File, 0)
 //	    if err = database.Database[*namespace.File](ctx.DatabaseContext()).
@@ -303,24 +301,22 @@ func (Empty) GetAfter(*types.ModelContext) error     { return nil }
 //   - Unlike model.Empty, model.Any is specifically for transaction placeholders
 type Any struct{}
 
-func (Any) GetTableName() string       { return "" }
-func (Any) GetCreatedBy() string       { return "" }
-func (Any) GetUpdatedBy() string       { return "" }
-func (Any) GetCreatedAt() time.Time    { return time.Time{} }
-func (Any) GetUpdatedAt() time.Time    { return time.Time{} }
-func (Any) SetCreatedBy(s string)      {}
-func (Any) SetUpdatedBy(s string)      {}
-func (Any) SetCreatedAt(t time.Time)   {}
-func (Any) SetUpdatedAt(t time.Time)   {}
-func (Any) GetID() string              { return "" }
-func (Any) SetID(id ...string)         {}
-func (Any) ClearID()                   {}
-func (Any) Expands() []string          { return nil }
-func (Any) Excludes() map[string][]any { return nil }
-func (Any) Purge() bool                { return false }
-func (Any) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	return nil
-}
+func (Any) GetTableName() string                             { return "" }
+func (Any) GetCreatedBy() string                             { return "" }
+func (Any) GetUpdatedBy() string                             { return "" }
+func (Any) GetCreatedAt() time.Time                          { return time.Time{} }
+func (Any) GetUpdatedAt() time.Time                          { return time.Time{} }
+func (Any) SetCreatedBy(s string)                            {}
+func (Any) SetUpdatedBy(s string)                            {}
+func (Any) SetCreatedAt(t time.Time)                         {}
+func (Any) SetUpdatedAt(t time.Time)                         {}
+func (Any) GetID() string                                    { return "" }
+func (Any) SetID(id ...string)                               {}
+func (Any) ClearID()                                         {}
+func (Any) Expands() []string                                { return nil }
+func (Any) Excludes() map[string][]any                       { return nil }
+func (Any) Purge() bool                                      { return false }
+func (Any) MarshalLogObject(enc zapcore.ObjectEncoder) error { return nil }
 
 func (Any) CreateBefore(*types.ModelContext) error { return nil }
 func (Any) CreateAfter(*types.ModelContext) error  { return nil }
