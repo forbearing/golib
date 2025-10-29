@@ -3,6 +3,7 @@ package constants
 // Import paths
 const (
 	// Framework import paths
+	//nolint:godoclint
 	ImportPathModel     = "github.com/forbearing/gst/model"
 	ImportPathService   = "github.com/forbearing/gst/service"
 	ImportPathRouter    = "github.com/forbearing/gst/router"
@@ -11,7 +12,7 @@ const (
 	ImportPathBootstrap = "github.com/forbearing/gst/bootstrap"
 	ImportPathUtil      = "github.com/forbearing/gst/util"
 
-	// Model package path for comparison
+	// ModelPackagePath is the package path for comparison
 	ModelPackagePath = `"github.com/forbearing/gst/model"`
 )
 
