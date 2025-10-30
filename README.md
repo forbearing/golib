@@ -147,7 +147,6 @@ type DatabaseOption[M Model] interface {
 	WithTable(name string) Database[M]
 	WithDebug() Database[M]
 	WithQuery(query M, config ...QueryConfig) Database[M]
-	WithQueryRaw(query any, args ...any) Database[M]
 	WithCursor(string, bool, ...string) Database[M]
 	WithAnd(...bool) Database[M]
 	WithOr(...bool) Database[M]
@@ -175,10 +174,10 @@ type DatabaseOption[M Model] interface {
 
 ```go
 type Model interface {
-	GetTableName() string // GetTableName returns the table name.
+	GetTableName() string
 	GetID() string
-	SetID(id ...string) // SetID method will automatically set the id if id is empty.
-	ClearID()           // ClearID always set the id to empty.
+	SetID(id ...string)
+	ClearID()
 	GetCreatedBy() string
 	GetUpdatedBy() string
 	GetCreatedAt() time.Time
@@ -187,9 +186,10 @@ type Model interface {
 	SetUpdatedBy(string)
 	SetCreatedAt(time.Time)
 	SetUpdatedAt(time.Time)
-	Expands() []string // Expands returns the foreign keys should preload.
+	Expands() []string
 	Excludes() map[string][]any
-	MarshalLogObject(zapcore.ObjectEncoder) error // MarshalLogObject implement zap.ObjectMarshaler
+	Purge() bool
+	MarshalLogObject(zapcore.ObjectEncoder) error
 
 	CreateBefore(*ModelContext) error
 	CreateAfter(*ModelContext) error
