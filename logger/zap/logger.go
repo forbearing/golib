@@ -10,6 +10,7 @@ import (
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/forbearing/gst/util"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
@@ -139,12 +140,22 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 //
 // log := logger.Database.WithDatabaseContext(ctx, consts.PHASE_LIST_BEFORE)
 func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Phase) (clone types.Logger) {
+	// Prefer trace ID from DatabaseContext; fall back to OTEL span context
+	traceID := ctx.TraceID
+	// Safely derive trace ID from OTEL span in context when not provided
+	if len(traceID) == 0 && ctx != nil {
+		spanCtx := trace.SpanFromContext(ctx.Context()).SpanContext()
+		if spanCtx.HasTraceID() {
+			traceID = spanCtx.TraceID().String()
+		}
+	}
+
 	return l.With(
 		consts.PHASE, string(phase),
 		consts.CTX_ROUTE, ctx.Route,
 		consts.CTX_USERNAME, ctx.Username,
 		consts.CTX_USER_ID, ctx.UserID,
-		consts.TRACE_ID, ctx.TraceID).
+		consts.TRACE_ID, traceID).
 		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
 		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
@@ -186,6 +197,13 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	username, _ := ctx.Value(consts.CTX_USERNAME).(string)
 	userID, _ := ctx.Value(consts.CTX_USER_ID).(string)
 	traceID, _ := ctx.Value(consts.TRACE_ID).(string)
+	// Fallback to OTEL span context trace ID when not present in ctx values
+	if len(traceID) == 0 {
+		spanCtx := trace.SpanFromContext(ctx).SpanContext()
+		if spanCtx.HasTraceID() {
+			traceID = spanCtx.TraceID().String()
+		}
+	}
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 

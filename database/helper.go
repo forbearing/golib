@@ -46,6 +46,8 @@ import (
 //   - Propagates span context to GORM operations for complete tracing hierarchy
 //   - Automatically handles span lifecycle (creation, attribute setting, completion)
 //   - Integrates with existing tracing infrastructure (controller and service layers)
+//   - Ensures trace_id is available in database logs by backfilling DatabaseContext.TraceID
+//     from the span context when missing
 //
 // Usage Pattern:
 //
@@ -72,6 +74,13 @@ func (db *database[M]) trace(op string, batch ...int) (func(error), context.Cont
 		modelName := reflect.TypeOf(*new(M)).Elem().Name()
 		spanName := "Database." + op + " " + modelName
 		ctx, span = otel.StartSpan(db.ctx.Context(), spanName)
+
+		// Propagate OTEL trace ID to DatabaseContext so database logs carry trace_id
+		if len(db.ctx.TraceID) == 0 {
+			if sc := span.SpanContext(); sc.HasTraceID() {
+				db.ctx.TraceID = sc.TraceID().String()
+			}
+		}
 
 		// Update GORM database context with new span context
 		db.ins = db.ins.WithContext(ctx)
