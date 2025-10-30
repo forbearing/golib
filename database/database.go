@@ -323,20 +323,21 @@ func (db *database[M]) WithIndex(indexName string, hint ...consts.IndexHintMode)
 }
 
 // WithQuery sets query conditions based on the provided model struct fields.
-// It supports exact matching, fuzzy matching (LIKE), and range queries for different field types.
+// It supports exact matching, fuzzy matching (LIKE), range queries, and raw SQL queries.
 // Non-zero fields in the model will be used as query conditions.
 //
 // Parameters:
 //   - query: A model instance with fields set as query conditions
-//   - fuzzyMatch: Optional boolean to enable MySQL fuzzy matching (LIKE queries)
+//   - config: Optional QueryConfig to control query behavior (fuzzy matching, empty queries, raw SQL)
 //
 // Examples:
 //   - WithQuery(&model.JobHistory{JobID: req.ID})
 //   - WithQuery(&model.CronJobHistory{CronJobID: req.ID})
-//   - WithQuery(&model.User{Name: "John"}, true) // fuzzy matching
+//   - WithQuery(&model.User{Name: "John"}, types.QueryConfig{FuzzyMatch: true}) // fuzzy matching
+//   - WithQuery(&model.User{}, types.QueryConfig{RawQuery: "age > ?", RawQueryArgs: []any{18}}) // raw SQL
 //
 // NOTE: The underlying type must be pointer to struct, otherwise panic will occur.
-// NOTE: Empty query conditions will cause listing all resources from database.
+// NOTE: Empty query conditions are blocked by default for safety. Use QueryConfig{AllowEmpty: true} to override.
 func (db *database[M]) WithQuery(query M, config ...types.QueryConfig) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -348,6 +349,9 @@ func (db *database[M]) WithQuery(query M, config ...types.QueryConfig) types.Dat
 	}
 	// cfg.FuzzyMatch: default false (exact match)
 	// cfg.AllowEmpty: default false (block empty queries for safety)
+	if len(cfg.RawQuery) > 0 {
+		db.ins = db.ins.Where(cfg.RawQuery, cfg.RawQueryArgs...)
+	}
 
 	typ := reflect.TypeOf(query).Elem()
 	val := reflect.ValueOf(query).Elem()
@@ -727,22 +731,6 @@ func structFieldToMap(ctx *types.DatabaseContext, typ reflect.Type, val reflect.
 		// q[strcase.SnakeCase(jsonTag)] = fieldVal.Interface()
 		q[strcase.SnakeCase(jsonTag)] = _v
 	}
-}
-
-// WithQueryRaw
-// Examples:
-// - WithQueryRaw("name = ?", "hybfkuf")
-// - WithQueryRaw("name <> ?", "hybfkuf")
-// - WithQueryRaw("name IN (?)", []string{"hybfkuf", "hybfkuf 2"})
-// - WithQueryRaw("name LIKE ?", "%hybfkuf%")
-// - WithQueryRaw("name = ? AND age >= ?", "hybfkuf", "100")
-// - WithQueryRaw("updated_at > ?", lastWeek)
-// - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
-func (db *database[M]) WithQueryRaw(query any, args ...any) types.Database[M] {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.ins = db.ins.Where(query, args...)
-	return db
 }
 
 // WithCursor enables cursor-based pagination.

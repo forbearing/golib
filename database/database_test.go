@@ -246,20 +246,50 @@ func (suite *DatabaseTestSuite) TestWithQuery() {
 	suite.NotNil(result)
 }
 
-// TestWithQueryRaw tests the WithQueryRaw method
-func (suite *DatabaseTestSuite) TestWithQueryRaw() {
+// TestWithQueryRawQuery tests the WithQuery method with RawQuery feature.
+// This test verifies that raw SQL queries can be properly combined with struct-based queries
+// and that various QueryConfig options work correctly with raw SQL.
+func (suite *DatabaseTestSuite) TestWithQueryRawQuery() {
 	db := suite.userDB
 
-	// Test with raw query
-	result := db.WithQueryRaw("name = ?", "John")
+	// Test with struct query + raw query
+	user := &TestUser{Name: "John"}
+	result := db.WithQuery(user, types.QueryConfig{
+		RawQuery:     "age > ?",
+		RawQueryArgs: []any{18},
+	})
 	suite.NotNil(result)
 
-	// Test with multiple parameters
-	result = db.WithQueryRaw("name = ? AND age > ?", "John", 18)
+	// Test with empty struct + raw query only
+	emptyUser := &TestUser{}
+	result = db.WithQuery(emptyUser, types.QueryConfig{
+		AllowEmpty:   true,
+		RawQuery:     "name LIKE ?",
+		RawQueryArgs: []any{"%John%"},
+	})
 	suite.NotNil(result)
 
-	// Test with empty query
-	result = db.WithQueryRaw("")
+	// Test with fuzzy matching + raw query
+	result = db.WithQuery(user, types.QueryConfig{
+		FuzzyMatch:   true,
+		RawQuery:     "is_active = ?",
+		RawQueryArgs: []any{true},
+	})
+	suite.NotNil(result)
+
+	// Test with raw query without args
+	result = db.WithQuery(emptyUser, types.QueryConfig{
+		AllowEmpty: true,
+		RawQuery:   "age IS NOT NULL",
+	})
+	suite.NotNil(result)
+
+	// Test with multiple raw query args
+	result = db.WithQuery(emptyUser, types.QueryConfig{
+		AllowEmpty:   true,
+		RawQuery:     "age BETWEEN ? AND ?",
+		RawQueryArgs: []any{18, 65},
+	})
 	suite.NotNil(result)
 }
 
@@ -633,7 +663,10 @@ func (suite *DatabaseTestSuite) TestDelete() {
 	err = db.Create(users...)
 	suite.NoError(err)
 
-	err = db.WithQueryRaw("age = ?", 25).Delete(&TestUser{})
+	err = db.WithQuery(&TestUser{}, types.QueryConfig{
+		RawQuery:     "age = ?",
+		RawQueryArgs: []any{25},
+	}).Delete(&TestUser{})
 	suite.NoError(err)
 }
 
@@ -799,7 +832,10 @@ func (suite *DatabaseTestSuite) TestCount() {
 
 	// Test count with age range
 	var ageCount int64
-	err = db.WithQueryRaw("age BETWEEN ? AND ?", 20, 30).Count(&ageCount)
+	err = db.WithQuery(&TestUser{}, types.QueryConfig{
+		RawQuery:     "age BETWEEN ? AND ?",
+		RawQueryArgs: []any{20, 30},
+	}).Count(&ageCount)
 	suite.NoError(err)
 	suite.GreaterOrEqual(ageCount, int64(3))
 }
