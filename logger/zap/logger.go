@@ -1,19 +1,19 @@
 package zap
 
 import (
-    "context"
-    "strings"
-    "time"
+	"context"
+	"strings"
+	"time"
 
-    casbinl "github.com/casbin/casbin/v2/log"
-    "github.com/forbearing/gst/config"
-    "github.com/forbearing/gst/types"
-    "github.com/forbearing/gst/types/consts"
-    "github.com/forbearing/gst/util"
-    "go.opentelemetry.io/otel/trace"
-    "go.uber.org/zap"
-    "go.uber.org/zap/zapcore"
-    gorml "gorm.io/gorm/logger"
+	casbinl "github.com/casbin/casbin/v2/log"
+	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/types"
+	"github.com/forbearing/gst/types/consts"
+	"github.com/forbearing/gst/util"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	gorml "gorm.io/gorm/logger"
 )
 
 // Logger implements types.Logger interface.
@@ -140,24 +140,24 @@ func (l *Logger) WithServiceContext(ctx *types.ServiceContext, phase consts.Phas
 //
 // log := logger.Database.WithDatabaseContext(ctx, consts.PHASE_LIST_BEFORE)
 func (l *Logger) WithDatabaseContext(ctx *types.DatabaseContext, phase consts.Phase) (clone types.Logger) {
-    // Prefer trace ID from DatabaseContext; fall back to OTEL span context
-    traceID := ctx.TraceID
-    // Safely derive trace ID from OTEL span in context when not provided
-    if len(traceID) == 0 && ctx != nil {
-        spanCtx := trace.SpanFromContext(ctx.Context()).SpanContext()
-        if spanCtx.HasTraceID() {
-            traceID = spanCtx.TraceID().String()
-        }
-    }
+	// Prefer trace ID from DatabaseContext; fall back to OTEL span context
+	traceID := ctx.TraceID
+	// Safely derive trace ID from OTEL span in context when not provided
+	if len(traceID) == 0 && ctx != nil {
+		spanCtx := trace.SpanFromContext(ctx.Context()).SpanContext()
+		if spanCtx.HasTraceID() {
+			traceID = spanCtx.TraceID().String()
+		}
+	}
 
-    return l.With(
-        consts.PHASE, string(phase),
-        consts.CTX_ROUTE, ctx.Route,
-        consts.CTX_USERNAME, ctx.Username,
-        consts.CTX_USER_ID, ctx.UserID,
-        consts.TRACE_ID, traceID).
-        WithObject(consts.PARAMS, paramsObject(ctx.Params)).
-        WithObject(consts.QUERY, queryObject(ctx.Query))
+	return l.With(
+		consts.PHASE, string(phase),
+		consts.CTX_ROUTE, ctx.Route,
+		consts.CTX_USERNAME, ctx.Username,
+		consts.CTX_USER_ID, ctx.UserID,
+		consts.TRACE_ID, traceID).
+		WithObject(consts.PARAMS, paramsObject(ctx.Params)).
+		WithObject(consts.QUERY, queryObject(ctx.Query))
 }
 
 type paramsObject map[string]string
@@ -194,18 +194,18 @@ func (g *GormLogger) Info(_ context.Context, str string, args ...any)  { g.l.Inf
 func (g *GormLogger) Warn(_ context.Context, str string, args ...any)  { g.l.Warnw(str, args) }
 func (g *GormLogger) Error(_ context.Context, str string, args ...any) { g.l.Errorw(str, args) }
 func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
-    username, _ := ctx.Value(consts.CTX_USERNAME).(string)
-    userID, _ := ctx.Value(consts.CTX_USER_ID).(string)
-    traceID, _ := ctx.Value(consts.TRACE_ID).(string)
-    // Fallback to OTEL span context trace ID when not present in ctx values
-    if len(traceID) == 0 {
-        spanCtx := trace.SpanFromContext(ctx).SpanContext()
-        if spanCtx.HasTraceID() {
-            traceID = spanCtx.TraceID().String()
-        }
-    }
-    elapsed := time.Since(begin)
-    sql, rows := fc()
+	username, _ := ctx.Value(consts.CTX_USERNAME).(string)
+	userID, _ := ctx.Value(consts.CTX_USER_ID).(string)
+	traceID, _ := ctx.Value(consts.TRACE_ID).(string)
+	// Fallback to OTEL span context trace ID when not present in ctx values
+	if len(traceID) == 0 {
+		spanCtx := trace.SpanFromContext(ctx).SpanContext()
+		if spanCtx.HasTraceID() {
+			traceID = spanCtx.TraceID().String()
+		}
+	}
+	elapsed := time.Since(begin)
+	sql, rows := fc()
 
 	if err != nil {
 		g.l.Errorz("", zap.String("sql", sql), zap.Int64("rows", rows), zap.String("elapsed", util.FormatDurationSmart(elapsed)), zap.Error(err))
