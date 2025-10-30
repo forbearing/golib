@@ -6,6 +6,40 @@ type ControllerConfig[M Model] struct {
 	ParamName string
 }
 
+// QueryConfig configures the behavior of WithQuery method.
+//
+// Fields:
+//   - FuzzyMatch: Enable fuzzy matching (LIKE/REGEXP queries). Default: false (exact match with IN clause)
+//   - AllowEmpty: Allow empty query conditions to match all records. Default: false (blocked for safety)
+//
+// CRITICAL SAFETY FEATURE:
+// Empty query conditions (all fields are zero values) are blocked by default to prevent
+// catastrophic data loss scenarios, especially when the result is used for Delete operations.
+//
+// Empty Query Examples:
+//   - WithQuery(&User{})                    → all fields are zero values
+//   - WithQuery(&User{Name: "", Email: ""}) → all field values are empty strings
+//   - WithQuery(&KV{Key: ""})               → happens when removed slice is empty
+//
+// Usage Examples:
+//
+//	// Exact match (default)
+//	WithQuery(&User{Name: "John"})
+//	WithQuery(&User{Name: "John"}, QueryConfig{})
+//
+//	// Fuzzy match
+//	WithQuery(&User{Name: "John"}, QueryConfig{FuzzyMatch: true})
+//
+//	// Allow empty query (ListFactory with pagination)
+//	WithQuery(&User{}, QueryConfig{AllowEmpty: true})
+//
+//	// Fuzzy match + Allow empty
+//	WithQuery(&User{}, QueryConfig{FuzzyMatch: true, AllowEmpty: true})
+type QueryConfig struct {
+	FuzzyMatch bool // Enable fuzzy matching (LIKE/REGEXP). Default: false
+	AllowEmpty bool // Allow empty query conditions. Default: false
+}
+
 // ServiceError represents an error with a custom HTTP status code
 // that can be returned from service layer methods
 type ServiceError struct {

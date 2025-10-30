@@ -146,7 +146,7 @@ type DatabaseOption[M Model] interface {
 	WithDB(any) Database[M]
 	WithTable(name string) Database[M]
 	WithDebug() Database[M]
-	WithQuery(query M, fuzzyMatch ...bool) Database[M]
+	WithQuery(query M, config ...QueryConfig) Database[M]
 	WithQueryRaw(query any, args ...any) Database[M]
 	WithCursor(string, bool, ...string) Database[M]
 	WithAnd(...bool) Database[M]

@@ -201,7 +201,7 @@ type DatabaseOption[M Model] interface {
 	WithDebug() Database[M]
 
 	// WithQuery is where condition.
-	WithQuery(query M, fuzzyMatch ...bool) Database[M]
+	WithQuery(query M, config ...QueryConfig) Database[M]
 
 	// WithQueryRaw is where condition.
 	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.

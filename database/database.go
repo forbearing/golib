@@ -337,13 +337,18 @@ func (db *database[M]) WithIndex(indexName string, hint ...consts.IndexHintMode)
 //
 // NOTE: The underlying type must be pointer to struct, otherwise panic will occur.
 // NOTE: Empty query conditions will cause listing all resources from database.
-func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] {
+func (db *database[M]) WithQuery(query M, config ...types.QueryConfig) types.Database[M] {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	var _fuzzyMatch bool
-	if len(fuzzyMatch) > 0 {
-		_fuzzyMatch = fuzzyMatch[0]
+
+	// Parse query configuration
+	var cfg types.QueryConfig
+	if len(config) > 0 {
+		cfg = config[0]
 	}
+	// cfg.FuzzyMatch: default false (exact match)
+	// cfg.AllowEmpty: default false (block empty queries for safety)
+
 	typ := reflect.TypeOf(query).Elem()
 	val := reflect.ValueOf(query).Elem()
 	q := make(map[string]string)
@@ -460,17 +465,31 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 	structFieldToMap(db.ctx, typ, val, q)
 	// fmt.Println("------------- WithQuery", q)
 
-	// WARN: CRITICAL SAFETY CHECK: If all query fields are zero values (empty map q),
-	// prevent querying all records by adding an impossible condition.
-	// This prevents catastrophic data loss scenarios where empty query conditions
-	// could lead to deletion of all records in production.
+	// CRITICAL SAFETY CHECK: Empty query conditions
+	//
+	// Empty query will match ALL records, which is dangerous when:
+	// 1. The result is used for subsequent Delete operations → deletes all data (CATASTROPHIC!)
+	// 2. Large datasets returned without pagination → performance/memory issues
+	//
+	// Empty Query Examples:
+	//   - WithQuery(&User{})                    → all fields are zero values
+	//   - WithQuery(&User{Name: "", Email: ""}) → all field values are empty strings
+	//   - WithQuery(&KV{Key: ""})               → happens when removed slice is empty
+	//
+	// By default, empty queries are blocked by adding "WHERE 1 = 0" condition.
+	// To allow empty queries, use: WithQuery(&User{}, QueryConfig{AllowEmpty: true})
 	if len(q) == 0 {
-		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query fields are empty, adding safety condition to prevent matching all records")
-		db.ins = db.ins.Where("1 = 0")
+		if !cfg.AllowEmpty {
+			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query fields are empty, adding safety condition to prevent matching all records")
+			db.ins = db.ins.Where("1 = 0")
+			return db
+		}
+		// AllowEmpty=true: allow matching all records
+		logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Info("all query fields are empty but AllowEmpty=true, allowing full table scan")
 		return db
 	}
 
-	if _fuzzyMatch {
+	if cfg.FuzzyMatch {
 		// // Deprecated!
 		// for k, v := range q {
 		// 	// WARN: THE SQL STATEMENT MUST CONTAINS backticks ``.
@@ -512,10 +531,16 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 				}
 			}
 		}
-		// SAFETY CHECK: If all values are empty after filtering, prevent matching all records
+		// CRITICAL: Check if all query values are empty after filtering
+		// Even if query map is not empty, all values might be empty strings
+		// Example: &User{Name: "", Email: ""} has fields but all values are empty
 		if !hasValidCondition {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
-			db.ins = db.ins.Where("1 = 0")
+			if !cfg.AllowEmpty {
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
+				db.ins = db.ins.Where("1 = 0")
+			} else {
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Info("all query values are empty but AllowEmpty=true, allowing full table scan")
+			}
 		}
 	} else {
 		// // Deprecated!
@@ -540,10 +565,16 @@ func (db *database[M]) WithQuery(query M, fuzzyMatch ...bool) types.Database[M] 
 				db.ins = db.ins.Where(fmt.Sprintf("`%s` IN (?)", k), items)
 			}
 		}
-		// SAFETY CHECK: If all values are empty after filtering, prevent matching all records
+		// CRITICAL: Check if all query values are empty after filtering
+		// Even if query map is not empty, all values might be empty strings
+		// Example: &User{Name: "", Email: ""} has fields but all values are empty
 		if !hasValidCondition {
-			logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
-			db.ins = db.ins.Where("1 = 0")
+			if !cfg.AllowEmpty {
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Warn("all query values are empty, adding safety condition to prevent matching all records")
+				db.ins = db.ins.Where("1 = 0")
+			} else {
+				logger.Database.WithDatabaseContext(db.ctx, consts.Phase("WithQuery")).Info("all query values are empty but AllowEmpty=true, allowing full table scan")
+			}
 		}
 	}
 	return db

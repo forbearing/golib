@@ -242,7 +242,7 @@ func (suite *DatabaseTestSuite) TestWithQuery() {
 	suite.NotNil(result)
 
 	// Test with fuzzy matching
-	result = db.WithQuery(user, true)
+	result = db.WithQuery(user, types.QueryConfig{FuzzyMatch: true})
 	suite.NotNil(result)
 }
 
@@ -1261,7 +1261,7 @@ func BenchmarkFirst(b *testing.B) {
 	}
 }
 
-// TestEmptyQueryConditionSafety tests that empty query conditions do not match all records
+// TestEmptyQueryConditionSafety tests that empty query conditions are handled correctly with QueryConfig
 // This is a critical safety feature to prevent catastrophic data loss scenarios
 func (suite *DatabaseTestSuite) TestEmptyQueryConditionSafety() {
 	db := suite.userDB
@@ -1281,27 +1281,45 @@ func (suite *DatabaseTestSuite) TestEmptyQueryConditionSafety() {
 	suite.NoError(err)
 	suite.GreaterOrEqual(totalCount, int64(3), "Should have at least 3 users")
 
-	// Test 1: Empty query condition should NOT return all records
+	// Test 1: Empty query WITHOUT AllowEmpty should NOT return records (safety check)
 	emptyQuery := &TestUser{} // All fields are zero values
 	var results []*TestUser
 	err = db.WithQuery(emptyQuery).List(&results)
 	suite.NoError(err)
-	suite.Equal(0, len(results), "Empty query should not match any records due to safety check")
+	suite.Equal(0, len(results), "Empty query without AllowEmpty should not match any records")
 
-	// Test 2: Empty query with fuzzy match should also NOT return all records
-	var fuzzyResults []*TestUser
-	err = db.WithQuery(emptyQuery, true).List(&fuzzyResults)
+	// Test 2: Empty query WITH AllowEmpty should return all records
+	var allowEmptyResults []*TestUser
+	err = db.WithQuery(emptyQuery, types.QueryConfig{AllowEmpty: true}).List(&allowEmptyResults)
 	suite.NoError(err)
-	suite.Equal(0, len(fuzzyResults), "Empty fuzzy query should not match any records due to safety check")
+	suite.GreaterOrEqual(len(allowEmptyResults), 3, "Empty query with AllowEmpty should return all records")
 
-	// Test 3: Query with empty string fields should NOT return all records
+	// Test 3: Empty fuzzy query without AllowEmpty should NOT return records
+	var fuzzyResults []*TestUser
+	err = db.WithQuery(emptyQuery, types.QueryConfig{FuzzyMatch: true}).List(&fuzzyResults)
+	suite.NoError(err)
+	suite.Equal(0, len(fuzzyResults), "Empty fuzzy query without AllowEmpty should not match any records")
+
+	// Test 4: Empty fuzzy query WITH AllowEmpty should return all records
+	var fuzzyAllowResults []*TestUser
+	err = db.WithQuery(emptyQuery, types.QueryConfig{FuzzyMatch: true, AllowEmpty: true}).List(&fuzzyAllowResults)
+	suite.NoError(err)
+	suite.GreaterOrEqual(len(fuzzyAllowResults), 3, "Empty fuzzy query with AllowEmpty should return all records")
+
+	// Test 5: Query with empty string fields without AllowEmpty should NOT return records
 	emptyStringQuery := &TestUser{Name: "", Email: ""}
 	var emptyStringResults []*TestUser
 	err = db.WithQuery(emptyStringQuery).List(&emptyStringResults)
 	suite.NoError(err)
-	suite.Equal(0, len(emptyStringResults), "Query with empty strings should not match any records due to safety check")
+	suite.Equal(0, len(emptyStringResults), "Query with empty strings without AllowEmpty should not match any records")
 
-	// Test 4: Verify that valid queries still work
+	// Test 6: Query with empty string fields WITH AllowEmpty should return all records
+	var emptyStringAllowResults []*TestUser
+	err = db.WithQuery(emptyStringQuery, types.QueryConfig{AllowEmpty: true}).List(&emptyStringAllowResults)
+	suite.NoError(err)
+	suite.GreaterOrEqual(len(emptyStringAllowResults), 3, "Query with empty strings and AllowEmpty should return all records")
+
+	// Test 7: Verify that valid queries still work (no QueryConfig needed)
 	validQuery := &TestUser{Name: "SafetyUser1"}
 	var validResults []*TestUser
 	err = db.WithQuery(validQuery).List(&validResults)
@@ -1309,18 +1327,26 @@ func (suite *DatabaseTestSuite) TestEmptyQueryConditionSafety() {
 	suite.Equal(1, len(validResults), "Valid query should return matching records")
 	suite.Equal("SafetyUser1", validResults[0].Name)
 
-	// Test 5: CRITICAL - Empty query with Delete should NOT delete all records
+	// Test 8: Fuzzy match with valid query
+	fuzzyValidQuery := &TestUser{Name: "Safety"}
+	var fuzzyValidResults []*TestUser
+	err = db.WithQuery(fuzzyValidQuery, types.QueryConfig{FuzzyMatch: true}).List(&fuzzyValidResults)
+	suite.NoError(err)
+	suite.GreaterOrEqual(len(fuzzyValidResults), 3, "Fuzzy query should match all SafetyUser records")
+
+	// Test 9: CRITICAL - Empty query for Delete scenario should be prevented
+	// This simulates the dangerous pattern: WithQuery(empty).List() + Delete()
 	emptyDeleteQuery := &TestUser{}
 	var toDelete []*TestUser
 	err = db.WithQuery(emptyDeleteQuery).List(&toDelete)
 	suite.NoError(err)
 	suite.Equal(0, len(toDelete), "Empty query should not match any records for deletion")
 
-	// Verify all records still exist after empty query
+	// Verify all records still exist after empty query attempts
 	var countAfter int64
 	err = db.Count(&countAfter)
 	suite.NoError(err)
-	suite.Equal(totalCount, countAfter, "All records should still exist after empty query operations")
+	suite.Equal(totalCount, countAfter, "All records should still exist after empty query attempts")
 
 	// Clean up
 	for _, user := range testUsers {

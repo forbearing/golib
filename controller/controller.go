@@ -1342,7 +1342,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 			WithOr(or).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
-			WithQuery(svc.Filter(ctx, m), fuzzy).
+			WithQuery(svc.Filter(ctx, m), types.QueryConfig{FuzzyMatch: fuzzy, AllowEmpty: true}).
 			WithQueryRaw(svc.FilterRaw(ctx)).
 			WithCursor(cursorValue, cursorNext, cursorFields).
 			WithExclude(m.Excludes()).
@@ -1380,7 +1380,7 @@ func ListFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...*t
 				// WithSelect(strings.Split(selects, ",")...). // NOTE: WithSelect should not apply in Count method.
 				WithOr(or).
 				WithIndex(index).
-				WithQuery(svc.Filter(ctx, m), fuzzy).
+				WithQuery(svc.Filter(ctx, m), types.QueryConfig{FuzzyMatch: fuzzy, AllowEmpty: true}).
 				WithQueryRaw(svc.FilterRaw(ctx)).
 				WithExclude(m.Excludes()).
 				WithTimeRange(columnName, startTime, endTime).
@@ -2843,7 +2843,7 @@ func ExportFactory[M types.Model, REQ types.Request, RSP types.Response](cfg ...
 			WithOr(or).
 			WithIndex(index).
 			WithSelect(strings.Split(selects, ",")...).
-			WithQuery(svc.Filter(svcCtx, m), fuzzy).
+			WithQuery(svc.Filter(svcCtx, m), types.QueryConfig{FuzzyMatch: fuzzy, AllowEmpty: true}).
 			WithQueryRaw(svc.FilterRaw(svcCtx)).
 			WithExclude(m.Excludes()).
 			WithExpand(expands, sortBy).
