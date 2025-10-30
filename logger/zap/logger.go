@@ -7,9 +7,11 @@ import (
 
 	casbinl "github.com/casbin/casbin/v2/log"
 	"github.com/forbearing/gst/config"
+	"github.com/forbearing/gst/provider/otel"
 	"github.com/forbearing/gst/types"
 	"github.com/forbearing/gst/types/consts"
 	"github.com/forbearing/gst/util"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	gorml "gorm.io/gorm/logger"
@@ -186,6 +188,15 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 	username, _ := ctx.Value(consts.CTX_USERNAME).(string)
 	userID, _ := ctx.Value(consts.CTX_USER_ID).(string)
 	traceID, _ := ctx.Value(consts.TRACE_ID).(string)
+
+	// If traceID is empty, try to extract it from the span context for Jaeger tracing
+	if traceID == "" && otel.IsEnabled() {
+		span := trace.SpanFromContext(ctx)
+		if span != nil && span.SpanContext().IsValid() {
+			traceID = span.SpanContext().TraceID().String()
+		}
+	}
+
 	elapsed := time.Since(begin)
 	sql, rows := fc()
 
