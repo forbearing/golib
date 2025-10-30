@@ -200,20 +200,10 @@ type DatabaseOption[M Model] interface {
 	// WithDebug setting debug mode, the priority is higher than config.Server.LogLevel and default value(false).
 	WithDebug() Database[M]
 
-	// WithQuery is where condition.
-	WithQuery(query M, fuzzyMatch ...bool) Database[M]
-
-	// WithQueryRaw is where condition.
-	// database.WithQueryRaw(xxx) same as database.WithQuery(xxx) and provides more flexible query.
-	// Examples:
-	// - WithQueryRaw("name = ?", "hybfkuf")
-	// - WithQueryRaw("name <> ?", "hybfkuf")
-	// - WithQueryRaw("name IN (?)", []string{"hybfkuf", "hybfkuf 2"})
-	// - WithQueryRaw("name LIKE ?", "%hybfkuf%")
-	// - WithQueryRaw("name = ? AND age >= ?", "hybfkuf", "100")
-	// - WithQueryRaw("updated_at > ?", lastWeek)
-	// - WithQueryRaw("created_at BETWEEN ? AND ?", lastWeek, today)
-	WithQueryRaw(query any, args ...any) Database[M]
+	// WithQuery sets query conditions based on model struct fields.
+	// Supports exact matching, fuzzy matching, and raw SQL queries via QueryConfig.
+	// Non-zero fields in the model will be used as query conditions.
+	WithQuery(query M, config ...QueryConfig) Database[M]
 
 	// WithCursor enables cursor-based pagination.
 	// cursorValue is the value of the last record in the previous page.
