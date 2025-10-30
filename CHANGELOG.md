@@ -2,6 +2,28 @@
 ## [Unreleased]
 
 
+<a name="v0.9.7-beta.3"></a>
+## [v0.9.7-beta.3] - 2025-10-30
+### Chore
+- **docs:** update README.md
+- **release:** generate CHANGEME.md
+
+### Feat
+- enhance WithQuery method with QueryConfig for better safety and flexibility
+
+### Refactor
+- **database:** remove WithQueryRaw method and integrate raw query into QueryConfig
+
+### Pull Requests
+- Merge pull request [#43](https://github.com/forbearing/gst/issues/43) from forbearing/dev
+
+### BREAKING CHANGE
+
+WithQueryRaw method has been removed. Use WithQuery with QueryConfig{RawQuery: "...", RawQueryArgs: [...]} instead.
+
+WithQuery method signature changed from WithQuery(query M, fuzzyMatch ...bool) to WithQuery(query M, config ...QueryConfig)
+
+
 <a name="v0.9.7-beta.2"></a>
 ## [v0.9.7-beta.2] - 2025-10-29
 ### Chore
@@ -645,11 +667,11 @@ Configuration field names changed from Jaeger to OTEL
 - Merge pull request [#5](https://github.com/forbearing/gst/issues/5) from forbearing/dev
 
 
-<a name="v0.7.0"></a>
-## [v0.7.0] - 2025-08-20
-
 <a name="v0.7.0-beta.3"></a>
 ## [v0.7.0-beta.3] - 2025-08-20
+
+<a name="v0.7.0"></a>
+## [v0.7.0] - 2025-08-20
 ### Chore
 - update CHANGELOG.md
 - **model:** remove zap debug logging from `setID`
@@ -2240,7 +2262,8 @@ Migration: Update service implementations to specify REQ and RSP types:
 <a name="v0.0.1"></a>
 ## v0.0.1 - 2024-02-15
 
-[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.7-beta.2...HEAD
+[Unreleased]: https://github.com/forbearing/gst/compare/v0.9.7-beta.3...HEAD
+[v0.9.7-beta.3]: https://github.com/forbearing/gst/compare/v0.9.7-beta.2...v0.9.7-beta.3
 [v0.9.7-beta.2]: https://github.com/forbearing/gst/compare/v0.9.7-beta.1...v0.9.7-beta.2
 [v0.9.7-beta.1]: https://github.com/forbearing/gst/compare/v0.9.7-beta.0...v0.9.7-beta.1
 [v0.9.7-beta.0]: https://github.com/forbearing/gst/compare/v0.9.6...v0.9.7-beta.0
@@ -2264,9 +2287,9 @@ Migration: Update service implementations to specify REQ and RSP types:
 [v0.7.4]: https://github.com/forbearing/gst/compare/v0.7.3...v0.7.4
 [v0.7.3]: https://github.com/forbearing/gst/compare/v0.7.2...v0.7.3
 [v0.7.2]: https://github.com/forbearing/gst/compare/v0.7.1...v0.7.2
-[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.1
-[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.0
-[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0-beta.3
+[v0.7.1]: https://github.com/forbearing/gst/compare/v0.7.0-beta.3...v0.7.1
+[v0.7.0-beta.3]: https://github.com/forbearing/gst/compare/v0.7.0...v0.7.0-beta.3
+[v0.7.0]: https://github.com/forbearing/gst/compare/v0.7.0-beta.2...v0.7.0
 [v0.7.0-beta.2]: https://github.com/forbearing/gst/compare/v0.7.0-beta.1...v0.7.0-beta.2
 [v0.7.0-beta.1]: https://github.com/forbearing/gst/compare/v0.6.2...v0.7.0-beta.1
 [v0.6.2]: https://github.com/forbearing/gst/compare/v0.6.1...v0.6.2
