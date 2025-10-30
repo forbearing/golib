@@ -1,6 +1,18 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Chore
+- **release:** generate CHANGEME.md
+
+### Enh
+- **logger:** enhance GormLogger trace ID extraction for nil DatabaseContext scenarios
+
+### Fix
+- **tracing:** ensure trace_id in database logs via OTEL fallback
+
+### Style
+- **gofumpt:** gofumpt -l -w .
+
 
 <a name="v0.9.7-beta.3"></a>
 ## [v0.9.7-beta.3] - 2025-10-30
